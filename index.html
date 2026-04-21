@@ -41,16 +41,58 @@ async function loadLibrary() {
   const list = document.getElementById('library-list');
   if(!exs||exs.length===0){list.innerHTML='<div class="empty-state"><div class="empty-icon">📚</div><div class="empty-text">Sin ejercicios guardados aún.<br>Los ejercicios que crees se guardan automáticamente aquí.</div></div>';return;}
   list.innerHTML = exs.map(ex=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--gray2);">
-      <div style="flex:1;">
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--gray2);" id="lib-item-${ex.id}">
+      <div style="flex:1;min-width:0;">
         <div style="font-size:13px;font-weight:600;">${ex.name}</div>
-        <div style="display:flex;gap:5px;margin-top:3px;">
+        <div style="display:flex;gap:5px;margin-top:3px;flex-wrap:wrap;">
           <span class="ex-tag ${getTagClass(ex.tag)}" style="font-size:8px;">${ex.tag}</span>
           ${ex.muscle_group?`<span class="muscle-tag" style="font-size:8px;">${ex.muscle_group}</span>`:''}
         </div>
       </div>
-      <button onclick="addFromLibrary(${JSON.stringify(ex).replace(/"/g,'&quot;')})" style="background:var(--orange);color:white;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;flex-shrink:0;">+ Agregar</button>
+      <div style="display:flex;gap:4px;flex-shrink:0;">
+        <button onclick="addFromLibrary(${JSON.stringify(ex).replace(/"/g,'&quot;')})" style="background:var(--orange);color:white;border:none;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Usar</button>
+        <button onclick="editLibraryEx('${ex.id}','${ex.name}','${ex.tag}','${ex.muscle_group||''}')" style="background:var(--orange-light);color:var(--orange);border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✏️</button>
+        <button onclick="deleteLibraryEx('${ex.id}')" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>
+      </div>
     </div>`).join('');
+}
+
+function editLibraryEx(id, name, tag, muscle) {
+  const item = document.getElementById('lib-item-'+id);
+  item.innerHTML = `
+    <div style="flex:1;min-width:0;">
+      <input id="lib-edit-name-${id}" value="${name}" style="width:100%;padding:7px 10px;border:1.5px solid var(--orange);border-radius:6px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:5px;">
+      <div style="display:flex;gap:5px;">
+        <select id="lib-edit-tag-${id}" style="flex:1;padding:6px 8px;border:1.5px solid var(--gray2);border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;">
+          <option value="Peso Libre"${tag==='Peso Libre'?' selected':''}>Peso Libre</option>
+          <option value="Máquina"${tag==='Máquina'?' selected':''}>Máquina</option>
+          <option value="Peso Corporal"${tag==='Peso Corporal'?' selected':''}>Peso Corporal</option>
+        </select>
+        <input id="lib-edit-muscle-${id}" value="${muscle}" placeholder="Músculo" style="flex:1;padding:6px 8px;border:1.5px solid var(--gray2);border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;">
+      </div>
+    </div>
+    <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px;">
+      <button onclick="saveLibraryEdit('${id}')" style="background:var(--green);color:white;border:none;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✓</button>
+      <button onclick="loadLibrary()" style="background:var(--gray2);color:var(--gray5);border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>
+    </div>`;
+}
+
+async function saveLibraryEdit(id) {
+  const name = document.getElementById('lib-edit-name-'+id)?.value.trim();
+  const tag = document.getElementById('lib-edit-tag-'+id)?.value;
+  const muscle = document.getElementById('lib-edit-muscle-'+id)?.value.trim();
+  if(!name){showToast('⚠️ El nombre no puede estar vacío');return;}
+  const {error} = await sb.from('exercise_library').update({name,tag,muscle_group:muscle||null}).eq('id',id);
+  if(error){showToast('❌ '+error.message);return;}
+  showToast('✅ Ejercicio actualizado');
+  loadLibrary();
+}
+
+async function deleteLibraryEx(id) {
+  if(!confirm('¿Eliminar este ejercicio de la biblioteca?'))return;
+  await sb.from('exercise_library').delete().eq('id',id);
+  showToast('🗑️ Eliminado');
+  loadLibrary();
 }
 
 function filterLibrary() {
@@ -1250,16 +1292,58 @@ async function loadLibrary() {
   const list = document.getElementById('library-list');
   if(!exs||exs.length===0){list.innerHTML='<div class="empty-state"><div class="empty-icon">📚</div><div class="empty-text">Sin ejercicios guardados aún.<br>Los ejercicios que crees se guardan automáticamente aquí.</div></div>';return;}
   list.innerHTML = exs.map(ex=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--gray2);">
-      <div style="flex:1;">
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--gray2);" id="lib-item-${ex.id}">
+      <div style="flex:1;min-width:0;">
         <div style="font-size:13px;font-weight:600;">${ex.name}</div>
-        <div style="display:flex;gap:5px;margin-top:3px;">
+        <div style="display:flex;gap:5px;margin-top:3px;flex-wrap:wrap;">
           <span class="ex-tag ${getTagClass(ex.tag)}" style="font-size:8px;">${ex.tag}</span>
           ${ex.muscle_group?`<span class="muscle-tag" style="font-size:8px;">${ex.muscle_group}</span>`:''}
         </div>
       </div>
-      <button onclick="addFromLibrary(${JSON.stringify(ex).replace(/"/g,'&quot;')})" style="background:var(--orange);color:white;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;flex-shrink:0;">+ Agregar</button>
+      <div style="display:flex;gap:4px;flex-shrink:0;">
+        <button onclick="addFromLibrary(${JSON.stringify(ex).replace(/"/g,'&quot;')})" style="background:var(--orange);color:white;border:none;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Usar</button>
+        <button onclick="editLibraryEx('${ex.id}','${ex.name}','${ex.tag}','${ex.muscle_group||''}')" style="background:var(--orange-light);color:var(--orange);border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✏️</button>
+        <button onclick="deleteLibraryEx('${ex.id}')" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>
+      </div>
     </div>`).join('');
+}
+
+function editLibraryEx(id, name, tag, muscle) {
+  const item = document.getElementById('lib-item-'+id);
+  item.innerHTML = `
+    <div style="flex:1;min-width:0;">
+      <input id="lib-edit-name-${id}" value="${name}" style="width:100%;padding:7px 10px;border:1.5px solid var(--orange);border-radius:6px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:5px;">
+      <div style="display:flex;gap:5px;">
+        <select id="lib-edit-tag-${id}" style="flex:1;padding:6px 8px;border:1.5px solid var(--gray2);border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;">
+          <option value="Peso Libre"${tag==='Peso Libre'?' selected':''}>Peso Libre</option>
+          <option value="Máquina"${tag==='Máquina'?' selected':''}>Máquina</option>
+          <option value="Peso Corporal"${tag==='Peso Corporal'?' selected':''}>Peso Corporal</option>
+        </select>
+        <input id="lib-edit-muscle-${id}" value="${muscle}" placeholder="Músculo" style="flex:1;padding:6px 8px;border:1.5px solid var(--gray2);border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;">
+      </div>
+    </div>
+    <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px;">
+      <button onclick="saveLibraryEdit('${id}')" style="background:var(--green);color:white;border:none;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✓</button>
+      <button onclick="loadLibrary()" style="background:var(--gray2);color:var(--gray5);border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>
+    </div>`;
+}
+
+async function saveLibraryEdit(id) {
+  const name = document.getElementById('lib-edit-name-'+id)?.value.trim();
+  const tag = document.getElementById('lib-edit-tag-'+id)?.value;
+  const muscle = document.getElementById('lib-edit-muscle-'+id)?.value.trim();
+  if(!name){showToast('⚠️ El nombre no puede estar vacío');return;}
+  const {error} = await sb.from('exercise_library').update({name,tag,muscle_group:muscle||null}).eq('id',id);
+  if(error){showToast('❌ '+error.message);return;}
+  showToast('✅ Ejercicio actualizado');
+  loadLibrary();
+}
+
+async function deleteLibraryEx(id) {
+  if(!confirm('¿Eliminar este ejercicio de la biblioteca?'))return;
+  await sb.from('exercise_library').delete().eq('id',id);
+  showToast('🗑️ Eliminado');
+  loadLibrary();
 }
 
 function filterLibrary() {
