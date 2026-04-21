@@ -506,6 +506,8 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div class="stat-row"><div class="stat-card"><div class="stat-num" id="coach-c-days">0</div><div class="stat-label">Total</div></div><div class="stat-card"><div class="stat-num" id="coach-c-week-trained">0</div><div class="stat-label">Esta semana</div></div></div>
     <div class="section-header"><div class="section-title">Plan mensual</div></div>
     <div id="coach-plan-overview"></div>
+    <div class="section-header"><div class="section-title">Registros del cliente</div><div class="section-action" onclick="toggleLogs()">Ver logs</div></div>
+    <div id="coach-client-logs" style="display:none;"></div>
     <div class="section-header"><div class="section-title">Tu Plan MOVE</div><div class="section-action" onclick="showModal('modal-upload-pdf')">+ PDF</div></div>
     <div id="coach-plans-list"></div>
   </div>
@@ -636,6 +638,59 @@ let exFormCount = 0;
 let selectedPdfFile = null;
 
 const DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+
+// CLIENT LOGS
+let logsVisible = false;
+async function toggleLogs() {
+  const container = document.getElementById('coach-client-logs');
+  logsVisible = !logsVisible;
+  container.style.display = logsVisible ? 'block' : 'none';
+  if(logsVisible) await loadClientLogs();
+}
+
+async function loadClientLogs() {
+  const container = document.getElementById('coach-client-logs');
+  container.innerHTML = '<div class="spinner"></div>';
+  if(!currentClient) return;
+
+  const {data:logs} = await sb
+    .from('exercise_logs')
+    .select('*, exercises(name, reps_range, sets)')
+    .eq('client_id', currentClient.id)
+    .order('logged_at', {ascending: false})
+    .limit(50);
+
+  if(!logs || logs.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">Sin registros aún.</div></div>';
+    return;
+  }
+
+  // Group by date + exercise
+  const grouped = {};
+  logs.forEach(log => {
+    const date = log.logged_at.split('T')[0];
+    const exName = log.exercises?.name || 'Ejercicio';
+    const key = date + '|||' + exName;
+    if(!grouped[key]) grouped[key] = {date, exName, reps_range: log.exercises?.reps_range, sets:[]};
+    grouped[key].sets.push(log);
+  });
+
+  container.innerHTML = Object.values(grouped).map(g => `
+    <div class="card" style="margin-bottom:8px;cursor:default;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-size:13px;font-weight:700;">${g.exName}</div>
+        <div style="font-size:10px;color:var(--gray4);font-family:'DM Mono',monospace;">${new Date(g.date+'T12:00:00').toLocaleDateString('es-CR')}</div>
+      </div>
+      ${g.sets.map(s => `
+        <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--gray2);font-size:12px;">
+          <span style="color:var(--gray4);font-family:'DM Mono',monospace;width:42px;">Set ${s.set_number}</span>
+          <span style="font-weight:600;">${s.weight ? s.weight+'kg' : '—'}</span>
+          <span style="color:var(--gray4);">·</span>
+          <span style="font-weight:600;">${s.reps_done ? s.reps_done+' reps' : '—'}</span>
+          ${s.difficulty ? `<span style="margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:${s.difficulty==='facil'?'var(--green-light)':'var(--red-light)'};color:${s.difficulty==='facil'?'var(--green)':'var(--red)'};">${s.difficulty==='facil'?'Fácil 😊':'Difícil 🔥'}</span>` : ''}
+        </div>`).join('')}
+    </div>`).join('');
+}
 
 // WEEK TRAINING COUNT
 async function loadWeekTrainedCount(clientId) {
