@@ -637,6 +637,40 @@ let selectedPdfFile = null;
 
 const DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 
+// WEEK TRAINING COUNT
+async function loadWeekTrainedCount(clientId) {
+  if(!clientId) return;
+  const weekStart = getWeekStart();
+  const {data:logs} = await sb.from('exercise_logs').select('logged_at').eq('client_id',clientId).gte('logged_at',weekStart);
+  if(!logs) return;
+  // Count unique days this week
+  const uniqueDays = new Set(logs.map(l => l.logged_at.split('T')[0]));
+  document.getElementById('coach-c-week-trained').textContent = uniqueDays.size;
+}
+
+async function loadClientWeekCount(clientId) {
+  if(!clientId) return;
+  const weekStart = getWeekStart();
+  const {data:logs} = await sb.from('exercise_logs').select('logged_at').eq('client_id',clientId).gte('logged_at',weekStart);
+  if(!logs) return;
+  const uniqueDays = new Set(logs.map(l => l.logged_at.split('T')[0]));
+  document.getElementById('c-week-num').textContent = clientWeek;
+  document.getElementById('c-profile-week').textContent = clientWeek;
+  // Update stat card label to show week trained
+  const weekCard = document.querySelector('#screen-client-home .stat-row .stat-card:last-child .stat-num');
+  if(weekCard) weekCard.textContent = uniqueDays.size;
+  const weekCardCoach = document.querySelector('#screen-client-home .stat-row .stat-card:last-child .stat-label');
+  if(weekCardCoach) weekCardCoach.textContent = 'Esta semana';
+}
+
+function getWeekStart() {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(now.setDate(diff));
+  return monday.toISOString().split('T')[0]+'T00:00:00';
+}
+
 // AUTO LOGIN
 window.addEventListener('DOMContentLoaded', async () => {
   const saved = localStorage.getItem('mws_user');
@@ -708,6 +742,7 @@ async function initClient() {
   document.getElementById('c-greeting-name').textContent = firstName;
   document.getElementById('c-days-trained').textContent = cd?.days_trained||0;
   document.getElementById('c-week-num').textContent = clientWeek;
+  loadClientWeekCount(cd?.id);
   document.getElementById('c-profile-initials').textContent = getInitials(cd?.name||currentUser.name);
   document.getElementById('c-profile-name').textContent = cd?.name||currentUser.name;
   document.getElementById('c-profile-username').textContent = '@'+currentUser.username;
@@ -857,9 +892,16 @@ async function saveLog() {
     logs.push({exercise_id:currentExercise.id,client_id:currentClient.id,week_number:clientWeek,set_number:i,weight:w||null,reps_done:r||null,difficulty:diff});
   }
   await sb.from('exercise_logs').insert(logs);
-  const newDays = (currentClient.days_trained||0)+1;
-  await sb.from('clients').update({days_trained:newDays}).eq('id',currentClient.id);
-  currentClient.days_trained=newDays;
+  // Only count as a new day if not already trained today
+  const today = new Date().toISOString().split('T')[0];
+  const lastTrained = currentClient.last_trained_date;
+  let newDays = currentClient.days_trained||0;
+  if(lastTrained !== today) {
+    newDays = newDays + 1;
+    await sb.from('clients').update({days_trained:newDays, last_trained_date:today}).eq('id',currentClient.id);
+    currentClient.days_trained = newDays;
+    currentClient.last_trained_date = today;
+  }
   document.getElementById('c-days-trained').textContent=newDays;
   document.getElementById('c-profile-days').textContent=newDays;
   showToast('✅ ¡Registro guardado!');
@@ -918,6 +960,7 @@ async function openCoachClient(clientId) {
   document.getElementById('ep-date').value=c.next_payment_date||'';
   document.getElementById('ep-amount').value=c.payment_amount||'';
   document.getElementById('coach-c-days').textContent=c.days_trained||0;
+  loadWeekTrainedCount(c.id);
   loadCoachClientDetail(clientId);
   loadCoachPlans();
   showScreen('screen-coach-client');
