@@ -11,22 +11,29 @@ async function saveOneToLibrary(id) {
   const tag = document.getElementById('bt-'+id)?.value;
   const mSel = document.getElementById('bm-'+id)?.value;
   const muscle = mSel==='custom'?document.getElementById('bmc-input-'+id)?.value:(mSel||null);
+  const video = document.getElementById('bv-'+id)?.value.trim()||null;
   if(!name){showToast('⚠️ Escribe el nombre primero');return;}
   if(!currentUser){showToast('❌ No hay sesión activa');return;}
   const {data:exists} = await sb.from('exercise_library').select('id').eq('coach_id',currentUser.id).eq('name',name).maybeSingle();
-  if(exists){showToast('📚 Ya está en tu biblioteca');return;}
-  const {error} = await sb.from('exercise_library').insert([{coach_id:currentUser.id,name,tag:tag||'Peso Libre',muscle_group:muscle}]);
+  if(exists){
+    await sb.from('exercise_library').update({tag:tag||'Peso Libre',muscle_group:muscle,video_url:video}).eq('id',exists.id);
+    showToast('📚 Biblioteca actualizada');return;
+  }
+  const {error} = await sb.from('exercise_library').insert([{coach_id:currentUser.id,name,tag:tag||'Peso Libre',muscle_group:muscle,video_url:video}]);
   if(error){showToast('❌ Error: '+error.message);return;}
   showToast('✅ Guardado en biblioteca');
 }
 
 // ===== EXERCISE LIBRARY =====
-async function saveExerciseToLibrary(name, tag, muscle) {
+async function saveExerciseToLibrary(name, tag, muscle, video) {
   if(!name||!currentUser)return;
   try {
     const {data:exists} = await sb.from('exercise_library').select('id').eq('coach_id',currentUser.id).eq('name',name).maybeSingle();
     if(!exists){ 
-      await sb.from('exercise_library').insert([{coach_id:currentUser.id,name,tag:tag||'Peso Libre',muscle_group:muscle||null}]); 
+      await sb.from('exercise_library').insert([{coach_id:currentUser.id,name,tag:tag||'Peso Libre',muscle_group:muscle||null,video_url:video||null}]); 
+    } else {
+      // Update video if provided and not already saved
+      if(video) await sb.from('exercise_library').update({video_url:video,tag:tag||'Peso Libre',muscle_group:muscle||null}).eq('id',exists.id);
     }
   } catch(e) { console.error('Library save error:',e); }
 }
@@ -51,18 +58,18 @@ async function loadLibrary() {
       </div>
       <div style="display:flex;gap:4px;flex-shrink:0;">
         <button onclick="addFromLibrary(${JSON.stringify(ex).replace(/"/g,'&quot;')})" style="background:var(--orange);color:white;border:none;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Usar</button>
-        <button onclick="editLibraryEx('${ex.id}','${ex.name}','${ex.tag}','${ex.muscle_group||''}')" style="background:var(--orange-light);color:var(--orange);border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✏️</button>
+        <button onclick="editLibraryEx('${ex.id}','${ex.name}','${ex.tag}','${ex.muscle_group||''}','${ex.video_url||''}')" style="background:var(--orange-light);color:var(--orange);border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✏️</button>
         <button onclick="deleteLibraryEx('${ex.id}')" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>
       </div>
     </div>`).join('');
 }
 
-function editLibraryEx(id, name, tag, muscle) {
+function editLibraryEx(id, name, tag, muscle, video) {
   const item = document.getElementById('lib-item-'+id);
   item.innerHTML = `
     <div style="flex:1;min-width:0;">
       <input id="lib-edit-name-${id}" value="${name}" style="width:100%;padding:7px 10px;border:1.5px solid var(--orange);border-radius:6px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:5px;">
-      <div style="display:flex;gap:5px;">
+      <div style="display:flex;gap:5px;margin-bottom:5px;">
         <select id="lib-edit-tag-${id}" style="flex:1;padding:6px 8px;border:1.5px solid var(--gray2);border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;">
           <option value="Peso Libre"${tag==='Peso Libre'?' selected':''}>Peso Libre</option>
           <option value="Máquina"${tag==='Máquina'?' selected':''}>Máquina</option>
@@ -70,8 +77,9 @@ function editLibraryEx(id, name, tag, muscle) {
         </select>
         <input id="lib-edit-muscle-${id}" value="${muscle}" placeholder="Músculo" style="flex:1;padding:6px 8px;border:1.5px solid var(--gray2);border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;">
       </div>
+      <input id="lib-edit-video-${id}" value="${video||''}" placeholder="URL del video (opcional)" style="width:100%;padding:6px 8px;border:1.5px solid var(--gray2);border-radius:6px;font-size:11px;font-family:'DM Sans',sans-serif;outline:none;color:var(--orange);">
     </div>
-    <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px;">
+    <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px;align-self:flex-start;margin-top:4px;">
       <button onclick="saveLibraryEdit('${id}')" style="background:var(--green);color:white;border:none;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✓</button>
       <button onclick="loadLibrary()" style="background:var(--gray2);color:var(--gray5);border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>
     </div>`;
@@ -81,8 +89,9 @@ async function saveLibraryEdit(id) {
   const name = document.getElementById('lib-edit-name-'+id)?.value.trim();
   const tag = document.getElementById('lib-edit-tag-'+id)?.value;
   const muscle = document.getElementById('lib-edit-muscle-'+id)?.value.trim();
+  const video = document.getElementById('lib-edit-video-'+id)?.value.trim();
   if(!name){showToast('⚠️ El nombre no puede estar vacío');return;}
-  const {error} = await sb.from('exercise_library').update({name,tag,muscle_group:muscle||null}).eq('id',id);
+  const {error} = await sb.from('exercise_library').update({name,tag,muscle_group:muscle||null,video_url:video||null}).eq('id',id);
   if(error){showToast('❌ '+error.message);return;}
   showToast('✅ Ejercicio actualizado');
   loadLibrary();
@@ -104,7 +113,7 @@ function filterLibrary() {
 }
 
 function addFromLibrary(ex) {
-  addExerciseForm({name:ex.name,tag:ex.tag,muscle_group:ex.muscle_group,sets:'',reps_range:'',rest_seconds:60,video_url:'',notes:'',superset_group:null});
+  addExerciseForm({name:ex.name,tag:ex.tag,muscle_group:ex.muscle_group,sets:'',reps_range:'',rest_seconds:60,video_url:ex.video_url||'',notes:'',superset_group:null});
   closeModal('modal-ex-library');
 }
 
@@ -1137,7 +1146,7 @@ async function savePlanDay() {
   const exData=exercises.map(e=>({...e,plan_day_id:pd.id}));
   await sb.from('exercises').insert(exData);
   // Save to library
-  for(const e of exercises){ await saveExerciseToLibrary(e.name,e.tag,e.muscle_group); }
+  for(const e of exercises){ await saveExerciseToLibrary(e.name,e.tag,e.muscle_group,e.video_url); }
   showToast('✅ Día guardado');
   await buildWeekTabs(); await buildDayStrip();
 }
@@ -1262,22 +1271,29 @@ async function saveOneToLibrary(id) {
   const tag = document.getElementById('bt-'+id)?.value;
   const mSel = document.getElementById('bm-'+id)?.value;
   const muscle = mSel==='custom'?document.getElementById('bmc-input-'+id)?.value:(mSel||null);
+  const video = document.getElementById('bv-'+id)?.value.trim()||null;
   if(!name){showToast('⚠️ Escribe el nombre primero');return;}
   if(!currentUser){showToast('❌ No hay sesión activa');return;}
   const {data:exists} = await sb.from('exercise_library').select('id').eq('coach_id',currentUser.id).eq('name',name).maybeSingle();
-  if(exists){showToast('📚 Ya está en tu biblioteca');return;}
-  const {error} = await sb.from('exercise_library').insert([{coach_id:currentUser.id,name,tag:tag||'Peso Libre',muscle_group:muscle}]);
+  if(exists){
+    await sb.from('exercise_library').update({tag:tag||'Peso Libre',muscle_group:muscle,video_url:video}).eq('id',exists.id);
+    showToast('📚 Biblioteca actualizada');return;
+  }
+  const {error} = await sb.from('exercise_library').insert([{coach_id:currentUser.id,name,tag:tag||'Peso Libre',muscle_group:muscle,video_url:video}]);
   if(error){showToast('❌ Error: '+error.message);return;}
   showToast('✅ Guardado en biblioteca');
 }
 
 // ===== EXERCISE LIBRARY =====
-async function saveExerciseToLibrary(name, tag, muscle) {
+async function saveExerciseToLibrary(name, tag, muscle, video) {
   if(!name||!currentUser)return;
   try {
     const {data:exists} = await sb.from('exercise_library').select('id').eq('coach_id',currentUser.id).eq('name',name).maybeSingle();
     if(!exists){ 
-      await sb.from('exercise_library').insert([{coach_id:currentUser.id,name,tag:tag||'Peso Libre',muscle_group:muscle||null}]); 
+      await sb.from('exercise_library').insert([{coach_id:currentUser.id,name,tag:tag||'Peso Libre',muscle_group:muscle||null,video_url:video||null}]); 
+    } else {
+      // Update video if provided and not already saved
+      if(video) await sb.from('exercise_library').update({video_url:video,tag:tag||'Peso Libre',muscle_group:muscle||null}).eq('id',exists.id);
     }
   } catch(e) { console.error('Library save error:',e); }
 }
@@ -1302,18 +1318,18 @@ async function loadLibrary() {
       </div>
       <div style="display:flex;gap:4px;flex-shrink:0;">
         <button onclick="addFromLibrary(${JSON.stringify(ex).replace(/"/g,'&quot;')})" style="background:var(--orange);color:white;border:none;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Usar</button>
-        <button onclick="editLibraryEx('${ex.id}','${ex.name}','${ex.tag}','${ex.muscle_group||''}')" style="background:var(--orange-light);color:var(--orange);border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✏️</button>
+        <button onclick="editLibraryEx('${ex.id}','${ex.name}','${ex.tag}','${ex.muscle_group||''}','${ex.video_url||''}')" style="background:var(--orange-light);color:var(--orange);border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✏️</button>
         <button onclick="deleteLibraryEx('${ex.id}')" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>
       </div>
     </div>`).join('');
 }
 
-function editLibraryEx(id, name, tag, muscle) {
+function editLibraryEx(id, name, tag, muscle, video) {
   const item = document.getElementById('lib-item-'+id);
   item.innerHTML = `
     <div style="flex:1;min-width:0;">
       <input id="lib-edit-name-${id}" value="${name}" style="width:100%;padding:7px 10px;border:1.5px solid var(--orange);border-radius:6px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:5px;">
-      <div style="display:flex;gap:5px;">
+      <div style="display:flex;gap:5px;margin-bottom:5px;">
         <select id="lib-edit-tag-${id}" style="flex:1;padding:6px 8px;border:1.5px solid var(--gray2);border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;">
           <option value="Peso Libre"${tag==='Peso Libre'?' selected':''}>Peso Libre</option>
           <option value="Máquina"${tag==='Máquina'?' selected':''}>Máquina</option>
@@ -1321,8 +1337,9 @@ function editLibraryEx(id, name, tag, muscle) {
         </select>
         <input id="lib-edit-muscle-${id}" value="${muscle}" placeholder="Músculo" style="flex:1;padding:6px 8px;border:1.5px solid var(--gray2);border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;">
       </div>
+      <input id="lib-edit-video-${id}" value="${video||''}" placeholder="URL del video (opcional)" style="width:100%;padding:6px 8px;border:1.5px solid var(--gray2);border-radius:6px;font-size:11px;font-family:'DM Sans',sans-serif;outline:none;color:var(--orange);">
     </div>
-    <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px;">
+    <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px;align-self:flex-start;margin-top:4px;">
       <button onclick="saveLibraryEdit('${id}')" style="background:var(--green);color:white;border:none;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✓</button>
       <button onclick="loadLibrary()" style="background:var(--gray2);color:var(--gray5);border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>
     </div>`;
@@ -1332,8 +1349,9 @@ async function saveLibraryEdit(id) {
   const name = document.getElementById('lib-edit-name-'+id)?.value.trim();
   const tag = document.getElementById('lib-edit-tag-'+id)?.value;
   const muscle = document.getElementById('lib-edit-muscle-'+id)?.value.trim();
+  const video = document.getElementById('lib-edit-video-'+id)?.value.trim();
   if(!name){showToast('⚠️ El nombre no puede estar vacío');return;}
-  const {error} = await sb.from('exercise_library').update({name,tag,muscle_group:muscle||null}).eq('id',id);
+  const {error} = await sb.from('exercise_library').update({name,tag,muscle_group:muscle||null,video_url:video||null}).eq('id',id);
   if(error){showToast('❌ '+error.message);return;}
   showToast('✅ Ejercicio actualizado');
   loadLibrary();
@@ -1355,7 +1373,7 @@ function filterLibrary() {
 }
 
 function addFromLibrary(ex) {
-  addExerciseForm({name:ex.name,tag:ex.tag,muscle_group:ex.muscle_group,sets:'',reps_range:'',rest_seconds:60,video_url:'',notes:'',superset_group:null});
+  addExerciseForm({name:ex.name,tag:ex.tag,muscle_group:ex.muscle_group,sets:'',reps_range:'',rest_seconds:60,video_url:ex.video_url||'',notes:'',superset_group:null});
   closeModal('modal-ex-library');
 }
 
