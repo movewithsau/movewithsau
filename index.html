@@ -851,7 +851,7 @@ async function loadClientExercises() {
 
   const muscles = [...new Set(exs.filter(e=>e.muscle_group).map(e=>e.muscle_group))];
   if(muscles.length>0){
-    summary.innerHTML=`<div class="muscle-summary fade-up"><div class="muscle-summary-title">Músculos trabajados hoy</div><div class="muscle-tags-row">${muscles.map(m=>`<span class="muscle-tag" style="font-size:10px;">${m}</span>`).join('')}</div></div>`;
+    summary.innerHTML=`<div class="muscle-summary fade-up"><div class="muscle-summary-title">Trabajo de hoy</div><div class="muscle-tags-row">${muscles.map(m=>`<span class="muscle-tag" style="font-size:10px;">${m}</span>`).join('')}</div></div>`;
   }
 }
 
