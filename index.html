@@ -332,7 +332,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     </div>
     <div class="section-header"><div class="section-title">Día de hoy</div></div>
     <div class="day-strip" id="c-day-strip"></div>
-    <div style="font-size:16px;font-weight:700;color:var(--black);margin-bottom:10px;">¡Vamos Con TODA Hoy CHAMP! 🔥</div>
+    <div style="font-size:16px;font-weight:700;color:var(--black);margin-bottom:10px;">¡Vamos Con TODA Hoy CHAMP! 🏆</div>
     <div id="c-exercises-list"><div class="spinner"></div></div>
     <div id="c-muscle-summary"></div>
   </div>
@@ -384,7 +384,45 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <div class="stat-card"><div class="stat-num" id="c-profile-days">0</div><div class="stat-label">Días entrenados</div></div>
       <div class="stat-card"><div class="stat-num" id="c-profile-week">1</div><div class="stat-label">Semana actual</div></div>
     </div>
-    <button class="btn-secondary" onclick="handleLogout()" style="margin-top:20px;">Cerrar sesión</button>
+    <!-- Weight cards -->
+    <div class="stat-row" style="margin-top:0;">
+      <div class="stat-card" style="position:relative;">
+        <div class="stat-num" style="font-size:22px;" id="c-initial-weight">—</div>
+        <div class="stat-label">Peso inicial (kg)</div>
+        <div style="font-size:10px;color:var(--gray3);margin-top:3px;">Solo tu coach edita</div>
+      </div>
+      <div class="stat-card" style="cursor:pointer;" onclick="showCurrentWeightEdit()">
+        <div class="stat-num" style="font-size:22px;" id="c-current-weight">—</div>
+        <div class="stat-label">Peso actual (kg)</div>
+        <div style="font-size:11px;color:var(--orange);margin-top:3px;font-weight:600;">✏️ Editar</div>
+      </div>
+    </div>
+    <div id="c-weight-edit" style="display:none;background:var(--white);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);margin-bottom:16px;">
+      <div class="notes-label" style="margin-bottom:8px;">Actualizar peso actual</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input class="form-input" type="number" id="c-weight-input" placeholder="ej: 72.5" step="0.1" style="flex:1;">
+        <span style="font-size:13px;color:var(--gray5);font-weight:600;">kg</span>
+        <button onclick="saveCurrentWeight()" style="background:var(--orange);color:white;border:none;border-radius:8px;padding:12px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Guardar</button>
+      </div>
+    </div>
+    <!-- Daily workout rating -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="notes-label" style="margin-bottom:10px;">¿Cómo estuvo tu entreno hoy?</div>
+      <div id="c-rating-display">
+        <div style="display:flex;gap:10px;justify-content:center;">
+          <button onclick="rateWorkout('😎')" id="rate-cool" style="font-size:28px;padding:10px 16px;border-radius:12px;border:2px solid var(--gray2);background:var(--gray1);cursor:pointer;transition:all 0.15s;">😎</button>
+          <button onclick="rateWorkout('🥵')" id="rate-hot" style="font-size:28px;padding:10px 16px;border-radius:12px;border:2px solid var(--gray2);background:var(--gray1);cursor:pointer;transition:all 0.15s;">🥵</button>
+          <button onclick="rateWorkout('😵‍💫')" id="rate-dead" style="font-size:28px;padding:10px 16px;border-radius:12px;border:2px solid var(--gray2);background:var(--gray1);cursor:pointer;transition:all 0.15s;">😵‍💫</button>
+        </div>
+        <div id="c-rating-saved" style="text-align:center;margin-top:8px;font-size:12px;color:var(--gray4);"></div>
+      </div>
+    </div>
+    <!-- Total training time -->
+    <div class="card" style="margin-bottom:16px;text-align:center;">
+      <div class="notes-label" style="margin-bottom:4px;">Tiempo total entrenado</div>
+      <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:var(--orange);" id="c-total-time">0h 0min</div>
+    </div>
+    <button class="btn-secondary" onclick="handleLogout()" style="margin-top:4px;">Cerrar sesión</button>
   </div>
   <div class="bottom-nav">
     <div class="nav-item" onclick="clientNav('home',this)"><div class="nav-icon">🏋️</div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
@@ -395,7 +433,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 
 <!-- ===== CLIENT: EXERCISE DETAIL ===== -->
 <div class="screen" id="screen-ex-detail">
-  <div class="topbar"><div class="back-btn" onclick="goBackFromDetail()">‹ Volver</div><div class="topbar-logo">Move With Sau</div></div>
+  <div class="topbar"><div class="back-btn" onclick="goBackFromDetail()">‹ Volver</div><div class="topbar-logo">Move With Sau</div><div id="workout-timer-display" style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--orange);display:none;">0:00</div></div>
   <div class="detail-header" id="detail-header-bg">
     <div class="detail-tag-text" id="detail-tag">—</div>
     <div class="detail-name" id="detail-name">—</div>
@@ -625,6 +663,10 @@ let selectedPdfFile = null;
 let clientSortMode = 'name';
 let libraryFilterCategory = '';
 let allLibraryExercises = [];
+// Workout timer
+let workoutTimerInterval = null;
+let workoutStartTime = null;
+let workoutTimerStarted = false;
 
 const DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 const MUSCLES = ['Pecho','Espalda','Hombros','Bíceps','Tríceps','Cuádriceps','Isquiotibiales','Glúteos','Core','Pantorrillas','Movilidad','Cardio','Performance'];
@@ -725,6 +767,14 @@ async function initClient() {
   document.getElementById('c-profile-username').textContent = '@'+currentUser.username;
   document.getElementById('c-profile-days').textContent = cd?.days_trained||0;
   document.getElementById('c-profile-week').textContent = clientWeek;
+  // Weight
+  document.getElementById('c-initial-weight').textContent = cd?.initial_weight||'—';
+  document.getElementById('c-current-weight').textContent = cd?.current_weight||'—';
+  // Total time
+  const totalMin = cd?.total_training_minutes||0;
+  document.getElementById('c-total-time').textContent = `${Math.floor(totalMin/60)}h ${totalMin%60}min`;
+  // Today's rating
+  loadTodayRating();
   loadGoalDisplay(cd?.goal_text);
   updateClientWeekUI();
   loadClientDayStrip();
@@ -902,8 +952,8 @@ function openExDetail(ex) {
   for(let i=1;i<=ex.sets;i++){
     c.innerHTML+=`<div class="set-row">
       <div class="set-num">Set ${i}</div>
-      <input class="set-input" type="number" placeholder="peso" id="log-w-${i}" min="0" step="0.5">
-      <input class="set-input" type="number" placeholder="reps" id="log-r-${i}" min="0">
+      <input class="set-input" type="number" placeholder="peso" id="log-w-${i}" min="0" step="0.5" oninput="startWorkoutTimerIfNeeded()">
+      <input class="set-input" type="number" placeholder="reps" id="log-r-${i}" min="0" oninput="startWorkoutTimerIfNeeded()">
       <div class="diff-btns">
         <button class="diff-btn easy" onclick="toggleDiff(this,'easy')">😊</button>
         <button class="diff-btn hard" onclick="toggleDiff(this,'hard')">🔥</button>
@@ -913,33 +963,140 @@ function openExDetail(ex) {
   showScreen('screen-ex-detail');
 }
 
-function goBackFromDetail() { showScreen('screen-client-home'); }
+function goBackFromDetail() { stopWorkoutTimer(); showScreen('screen-client-home'); }
 function toggleDiff(btn,type) { const row=btn.closest('.set-row'); row.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); }
+
+// ===== WORKOUT TIMER =====
+function startWorkoutTimerIfNeeded() {
+  if(workoutTimerStarted) return;
+  workoutTimerStarted = true;
+  workoutStartTime = Date.now();
+  const timerEl = document.getElementById('workout-timer-display');
+  if(timerEl) timerEl.style.display = 'block';
+  workoutTimerInterval = setInterval(()=>{
+    const elapsed = Math.floor((Date.now() - workoutStartTime) / 1000);
+    const m = Math.floor(elapsed/60);
+    const s = elapsed%60;
+    if(timerEl) timerEl.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  }, 1000);
+}
+
+function stopWorkoutTimer() {
+  clearInterval(workoutTimerInterval);
+  workoutTimerInterval = null;
+  workoutTimerStarted = false;
+  const timerEl = document.getElementById('workout-timer-display');
+  if(timerEl){ timerEl.style.display='none'; timerEl.textContent='0:00'; }
+  const elapsed = workoutStartTime ? Math.floor((Date.now() - workoutStartTime) / 1000) : 0;
+  workoutStartTime = null;
+  return elapsed; // return seconds
+}
+
+// ===== BODY WEIGHT =====
+function showCurrentWeightEdit() {
+  const el = document.getElementById('c-weight-edit');
+  el.style.display = el.style.display==='none'?'block':'none';
+  if(el.style.display==='block'){
+    document.getElementById('c-weight-input').value = currentClient?.current_weight||'';
+    document.getElementById('c-weight-input').focus();
+  }
+}
+
+async function saveCurrentWeight() {
+  const w = document.getElementById('c-weight-input').value;
+  if(!w){showToast('⚠️ Ingresa el peso');return;}
+  await sb.from('clients').update({current_weight:parseFloat(w)}).eq('id',currentClient.id);
+  currentClient.current_weight = parseFloat(w);
+  document.getElementById('c-current-weight').textContent = w;
+  document.getElementById('c-weight-edit').style.display='none';
+  showToast('✅ Peso actualizado');
+}
+
+// ===== WORKOUT RATING =====
+async function loadTodayRating() {
+  const today = new Date().toISOString().split('T')[0];
+  const {data} = await sb.from('workout_ratings').select('rating').eq('client_id',currentClient.id).eq('date',today).maybeSingle();
+  if(data?.rating) applyRatingUI(data.rating);
+}
+
+async function rateWorkout(emoji) {
+  const today = new Date().toISOString().split('T')[0];
+  await sb.from('workout_ratings').upsert([{client_id:currentClient.id,date:today,rating:emoji}],{onConflict:'client_id,date'});
+  applyRatingUI(emoji);
+  showToast('✅ ¡Guardado!');
+}
+
+function applyRatingUI(emoji) {
+  ['rate-cool','rate-hot','rate-dead'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.style.border='2px solid var(--gray2)';el.style.background='var(--gray1)';}
+  });
+  const map={'😎':'rate-cool','🥵':'rate-hot','😵‍💫':'rate-dead'};
+  const el=document.getElementById(map[emoji]);
+  if(el){el.style.border='2px solid var(--orange)';el.style.background='var(--orange-light)';}
+  const saved=document.getElementById('c-rating-saved');
+  if(saved) saved.textContent=`Marcado: ${emoji}`;
+}
 
 async function saveLog() {
   if(!currentClient||!currentExercise)return;
+  const elapsedSeconds = stopWorkoutTimer();
   const weightUnit = document.getElementById('unit-lb')?.classList.contains('selected') ? 'lb' : 'kg';
   const logs=[];
+  let totalWeight = 0;
   for(let i=1;i<=currentExercise.sets;i++){
-    const w=document.getElementById('log-w-'+i)?.value;
-    const r=document.getElementById('log-r-'+i)?.value;
-    const db=document.querySelector(`.set-row:nth-child(${i+1}) .diff-btn.selected`);
+    const w=parseFloat(document.getElementById('log-w-'+i)?.value)||0;
+    const r=parseInt(document.getElementById('log-r-'+i)?.value)||0;
+    const db=document.querySelector(`#sets-log-container .set-row:nth-child(${i+1}) .diff-btn.selected`);
     const diff=db?(db.classList.contains('easy')?'facil':'dificil'):null;
+    if(w>0&&r>0) totalWeight += w * r;
     logs.push({exercise_id:currentExercise.id,client_id:currentClient.id,week_number:clientWeek,set_number:i,weight:w||null,weight_unit:weightUnit,reps_done:r||null,difficulty:diff});
   }
   await sb.from('exercise_logs').insert(logs);
+  // Save training time
+  const addedMin = Math.round(elapsedSeconds/60);
+  const newTotal = (currentClient.total_training_minutes||0) + addedMin;
+  // Update days and time
   const today = new Date().toISOString().split('T')[0];
   const lastTrained = currentClient.last_trained_date;
   let newDays = currentClient.days_trained||0;
+  const updates = {total_training_minutes: newTotal};
   if(lastTrained !== today) {
     newDays = newDays + 1;
-    await sb.from('clients').update({days_trained:newDays, last_trained_date:today}).eq('id',currentClient.id);
+    updates.days_trained = newDays;
+    updates.last_trained_date = today;
     currentClient.days_trained = newDays;
     currentClient.last_trained_date = today;
   }
+  await sb.from('clients').update(updates).eq('id',currentClient.id);
+  currentClient.total_training_minutes = newTotal;
   document.getElementById('c-days-trained').textContent=newDays;
   document.getElementById('c-profile-days').textContent=newDays;
-  showToast('✅ ¡Registro guardado!');
+  document.getElementById('c-total-time').textContent=`${Math.floor(newTotal/60)}h ${newTotal%60}min`;
+
+  // Total weight lifted summary
+  const OBJECTS = [
+    {w:0.4,label:'una lata de Coca-Cola 🥤'},
+    {w:2,label:'una botella de agua 💧'},
+    {w:7,label:'un gato doméstico 🐱'},
+    {w:15,label:'un perro mediano 🐕'},
+    {w:30,label:'un niño de 5 años 👦'},
+    {w:50,label:'una motocicleta pequeña 🛵'},
+    {w:80,label:'una persona adulta 🙋'},
+    {w:150,label:'un refrigerador 🧊'},
+    {w:300,label:'un piano 🎹'},
+    {w:500,label:'un caballo 🐴'},
+    {w:1000,label:'un carro pequeño 🚗'},
+    {w:5000,label:'un elefante 🐘'},
+  ];
+  if(totalWeight > 0) {
+    let closest = OBJECTS[0];
+    for(const obj of OBJECTS) { if(totalWeight >= obj.w) closest = obj; else break; }
+    const times = Math.round(totalWeight / closest.w);
+    showToast(`🏋️ ¡Levantaste ${totalWeight.toFixed(0)}${weightUnit}! ≈ ${times}x ${closest.label}`, 5000);
+  } else {
+    showToast('✅ ¡Registro guardado!');
+  }
   setTimeout(()=>showScreen('screen-client-home'),800);
 }
 
@@ -1059,7 +1216,17 @@ async function openCoachClient(clientId) {
     <div class="payment-row"><span class="payment-key">Monto</span><span class="payment-val">$${c.payment_amount||'—'}</span></div>
     <div class="payment-row"><span class="payment-key">Días restantes</span><span class="payment-val" style="color:${dColor}">${d!==null?d+' días':'—'}</span></div>
     ${startDateStr?`<div class="payment-row"><span class="payment-key">Fecha de inicio</span><span class="payment-val">${startDateStr}</span></div>`:''}
-    ${c.client_type?`<div class="payment-row"><span class="payment-key">Tipo</span><span class="payment-val">${c.client_type}</span></div>`:''}`;
+    ${c.client_type?`<div class="payment-row"><span class="payment-key">Tipo</span><span class="payment-val">${c.client_type}</span></div>`:''}
+    <div class="payment-row">
+      <span class="payment-key">Peso inicial</span>
+      <span class="payment-val" style="display:flex;align-items:center;gap:6px;">
+        ${c.initial_weight?c.initial_weight+'kg':'—'}
+        <input type="number" id="coach-initial-weight-input" value="${c.initial_weight||''}" placeholder="kg" step="0.1" style="width:70px;padding:4px 8px;border:1.5px solid var(--gray2);border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;">
+        <button onclick="saveInitialWeight()" style="background:var(--orange);color:white;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✓</button>
+      </span>
+    </div>
+    <div class="payment-row"><span class="payment-key">Peso actual</span><span class="payment-val">${c.current_weight?c.current_weight+'kg':'—'}</span></div>
+    <div class="payment-row"><span class="payment-key">Tiempo entrenado</span><span class="payment-val">${Math.floor((c.total_training_minutes||0)/60)}h ${(c.total_training_minutes||0)%60}min</span></div>`;
   // Populate edit modal fields
   document.getElementById('ep-date').value=c.next_payment_date||'';
   document.getElementById('ep-amount').value=c.payment_amount||'';
@@ -1376,6 +1543,15 @@ async function updatePayment() {
   openCoachClient(currentClient.id);
 }
 
+async function saveInitialWeight() {
+  const w = document.getElementById('coach-initial-weight-input')?.value;
+  if(!w){showToast('⚠️ Ingresa el peso');return;}
+  await sb.from('clients').update({initial_weight:parseFloat(w)}).eq('id',currentClient.id);
+  currentClient.initial_weight = parseFloat(w);
+  showToast('✅ Peso inicial guardado');
+  openCoachClient(currentClient.id);
+}
+
 // ===== PDF =====
 async function loadCoachPlans() {
   if(!currentClient)return;
@@ -1459,19 +1635,37 @@ async function loadClientLogs() {
   container.innerHTML = '<div class="spinner"></div>';
   if(!currentClient) return;
   const {data:logs} = await sb.from('exercise_logs').select('*, exercises(name, reps_range, sets)').eq('client_id', currentClient.id).order('logged_at', {ascending: false}).limit(50);
-  if(!logs || logs.length === 0) {
+  const {data:ratings} = await sb.from('workout_ratings').select('*').eq('client_id', currentClient.id).order('date',{ascending:false}).limit(30);
+
+  if((!logs || logs.length === 0) && (!ratings||ratings.length===0)) {
     container.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">Sin registros aún.</div></div>';
     return;
   }
+
+  // Ratings section
+  let ratingsHtml = '';
+  if(ratings&&ratings.length>0){
+    ratingsHtml = `<div class="card" style="margin-bottom:10px;cursor:default;">
+      <div class="notes-label" style="margin-bottom:8px;">Sensaciones por día</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${ratings.map(r=>`<div style="display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--gray1);border-radius:8px;padding:6px 10px;">
+          <span style="font-size:20px;">${r.rating}</span>
+          <span style="font-size:9px;color:var(--gray4);font-family:'DM Mono',monospace;">${new Date(r.date+'T12:00:00').toLocaleDateString('es-CR',{day:'numeric',month:'short'})}</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
   const grouped = {};
-  logs.forEach(log => {
+  (logs||[]).forEach(log => {
     const date = log.logged_at.split('T')[0];
     const exName = log.exercises?.name || 'Ejercicio';
     const key = date + '|||' + exName;
     if(!grouped[key]) grouped[key] = {date, exName, sets:[]};
     grouped[key].sets.push(log);
   });
-  container.innerHTML = Object.values(grouped).map(g => `
+
+  const logsHtml = Object.values(grouped).map(g => `
     <div class="card" style="margin-bottom:8px;cursor:default;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
         <div style="font-size:13px;font-weight:700;">${g.exName}</div>
@@ -1486,6 +1680,8 @@ async function loadClientLogs() {
           ${s.difficulty ? `<span style="margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:${s.difficulty==='facil'?'var(--green-light)':'var(--red-light)'};color:${s.difficulty==='facil'?'var(--green)':'var(--red)'};">${s.difficulty==='facil'?'Fácil 😊':'Difícil 🔥'}</span>` : ''}
         </div>`).join('')}
     </div>`).join('');
+
+  container.innerHTML = ratingsHtml + logsHtml;
 }
 
 // ===== EXERCISE LIBRARY =====
