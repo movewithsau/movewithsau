@@ -266,6 +266,15 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 .sort-chip { flex-shrink:0; padding:6px 12px; border-radius:20px; font-size:11px; font-weight:600; background:var(--white); color:var(--gray5); border:1.5px solid var(--gray2); cursor:pointer; transition:all 0.15s; font-family:'DM Sans',sans-serif; }
 .sort-chip.active { background:var(--orange-light); color:var(--orange); border-color:var(--orange); }
 
+/* CLIENT TYPE TAG */
+.client-type-tag { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:5px; font-size:10px; font-weight:800; background:var(--orange-light); color:var(--orange); border:1.5px solid var(--orange-mid); flex-shrink:0; font-family:'DM Mono',monospace; }
+
+/* GOAL CARD */
+.goal-card { background:var(--white); border-radius:var(--radius); padding:14px 16px; box-shadow:var(--shadow); margin-bottom:16px; }
+.goal-text { font-size:13px; color:var(--black); line-height:1.5; }
+.goal-text span { font-weight:700; color:var(--orange); }
+.goal-edit-btn { font-size:11px; color:var(--orange); font-weight:600; cursor:pointer; margin-top:6px; display:inline-block; }
+
 /* EDIT EX MODAL */
 .edit-ex-section { margin-bottom:12px; }
 </style>
@@ -357,6 +366,19 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <div style="width:76px;height:76px;border-radius:50%;background:var(--orange-light);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--orange);" id="c-profile-initials">--</div>
       <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;" id="c-profile-name">—</div>
       <div style="font-size:12px;color:var(--gray4);margin-top:3px;" id="c-profile-username">—</div>
+    </div>
+    <!-- Goal card -->
+    <div class="goal-card" id="c-goal-card">
+      <div class="notes-label" style="margin-bottom:6px;">Mi motivación</div>
+      <div id="c-goal-display">
+        <div class="goal-text" id="c-goal-text" style="color:var(--gray4);font-style:italic;">Toca para agregar tu meta...</div>
+        <span class="goal-edit-btn" onclick="showGoalEdit()">✏️ Editar meta</span>
+      </div>
+      <div id="c-goal-edit" style="display:none;">
+        <input class="form-input" id="c-goal-input" placeholder="ej: perder 10kg" style="margin-bottom:8px;font-size:14px;">
+        <div style="font-size:12px;color:var(--gray4);margin-bottom:8px;">Vista previa: "Mi meta es <strong id="c-goal-preview">___</strong> y por esto voy a dar mi 100% sin excusas."</div>
+        <button class="btn-primary" style="padding:11px;" onclick="saveGoal()">Guardar meta</button>
+      </div>
     </div>
     <div class="stat-row">
       <div class="stat-card"><div class="stat-num" id="c-profile-days">0</div><div class="stat-label">Días entrenados</div></div>
@@ -476,6 +498,13 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" id="nc-name" placeholder="Nombre"></div>
     <div class="form-group"><label class="form-label">Usuario</label><input class="form-input" id="nc-username" placeholder="@usuario" autocapitalize="none"></div>
     <div class="form-group"><label class="form-label">Contraseña inicial</label><input class="form-input" type="password" id="nc-password" placeholder="••••••••"></div>
+    <div class="form-group"><label class="form-label">Tipo de cliente</label>
+      <select class="form-select" id="nc-client-type">
+        <option value="">Sin especificar</option>
+        <option value="Virtual">Virtual (V)</option>
+        <option value="Híbrido">Híbrido (H)</option>
+      </select>
+    </div>
     <div class="form-group"><label class="form-label">Fecha de inicio</label><input class="form-input" type="date" id="nc-start-date"></div>
     <div class="form-group"><label class="form-label">Próximo pago</label><input class="form-input" type="date" id="nc-payment-date"></div>
     <div class="form-group"><label class="form-label">Monto ($)</label><input class="form-input" type="number" id="nc-payment-amount" placeholder="0.00"></div>
@@ -487,7 +516,15 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 <div class="modal-overlay" id="modal-edit-payment">
   <div class="modal">
     <span class="modal-close" onclick="closeModal('modal-edit-payment')">×</span>
-    <div class="modal-title">Editar pago</div>
+    <div class="modal-title">Editar cliente</div>
+    <div class="form-group"><label class="form-label">Tipo de cliente</label>
+      <select class="form-select" id="ep-client-type">
+        <option value="">Sin especificar</option>
+        <option value="Virtual">Virtual (V)</option>
+        <option value="Híbrido">Híbrido (H)</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Fecha de inicio</label><input class="form-input" type="date" id="ep-start-date"></div>
     <div class="form-group"><label class="form-label">Próximo pago</label><input class="form-input" type="date" id="ep-date"></div>
     <div class="form-group"><label class="form-label">Monto ($)</label><input class="form-input" type="number" id="ep-amount" placeholder="0.00"></div>
     <button class="btn-primary" onclick="updatePayment()">Guardar</button>
@@ -688,9 +725,45 @@ async function initClient() {
   document.getElementById('c-profile-username').textContent = '@'+currentUser.username;
   document.getElementById('c-profile-days').textContent = cd?.days_trained||0;
   document.getElementById('c-profile-week').textContent = clientWeek;
+  loadGoalDisplay(cd?.goal_text);
   updateClientWeekUI();
   loadClientDayStrip();
   loadClientPlans();
+}
+
+function loadGoalDisplay(goalText) {
+  const display = document.getElementById('c-goal-display');
+  const textEl = document.getElementById('c-goal-text');
+  if(goalText) {
+    textEl.innerHTML = `"Mi meta es <span>${goalText}</span> y por esto voy a dar mi 100% sin excusas."`;
+    textEl.style.color = 'var(--black)';
+    textEl.style.fontStyle = 'normal';
+  } else {
+    textEl.textContent = 'Toca para agregar tu meta...';
+    textEl.style.color = 'var(--gray4)';
+    textEl.style.fontStyle = 'italic';
+  }
+}
+
+function showGoalEdit() {
+  document.getElementById('c-goal-edit').style.display='block';
+  document.getElementById('c-goal-display').querySelector('.goal-edit-btn').style.display='none';
+  const currentGoal = currentClient?.goal_text||'';
+  document.getElementById('c-goal-input').value = currentGoal;
+  document.getElementById('c-goal-preview').textContent = currentGoal||'___';
+  document.getElementById('c-goal-input').addEventListener('input', function(){
+    document.getElementById('c-goal-preview').textContent = this.value||'___';
+  });
+}
+
+async function saveGoal() {
+  const goal = document.getElementById('c-goal-input').value.trim();
+  await sb.from('clients').update({goal_text:goal||null}).eq('id',currentClient.id);
+  currentClient.goal_text = goal;
+  document.getElementById('c-goal-edit').style.display='none';
+  document.getElementById('c-goal-display').querySelector('.goal-edit-btn').style.display='inline-block';
+  loadGoalDisplay(goal);
+  showToast('✅ Meta guardada 💪');
 }
 
 function updateClientWeekUI() {
@@ -797,10 +870,18 @@ function openExDetail(ex) {
   if(ex.video_url){vl.style.display='flex';vl.href=ex.video_url;}else{vl.style.display='none';}
   const c=document.getElementById('sets-log-container');
   c.innerHTML='';
+  // Weight unit toggle
+  c.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+    <span style="font-size:12px;color:var(--gray5);font-weight:600;">Unidad de peso:</span>
+    <div style="display:flex;gap:4px;">
+      <button id="unit-kg" class="diff-btn easy selected" onclick="setWeightUnit('kg')" style="padding:5px 12px;font-size:12px;font-weight:700;">kg</button>
+      <button id="unit-lb" class="diff-btn" onclick="setWeightUnit('lb')" style="padding:5px 12px;font-size:12px;font-weight:700;">lb</button>
+    </div>
+  </div>`;
   for(let i=1;i<=ex.sets;i++){
     c.innerHTML+=`<div class="set-row">
       <div class="set-num">Set ${i}</div>
-      <input class="set-input" type="number" placeholder="kg" id="log-w-${i}" min="0" step="0.5">
+      <input class="set-input" type="number" placeholder="peso" id="log-w-${i}" min="0" step="0.5">
       <input class="set-input" type="number" placeholder="reps" id="log-r-${i}" min="0">
       <div class="diff-btns">
         <button class="diff-btn easy" onclick="toggleDiff(this,'easy')">😊</button>
@@ -816,13 +897,14 @@ function toggleDiff(btn,type) { const row=btn.closest('.set-row'); row.querySele
 
 async function saveLog() {
   if(!currentClient||!currentExercise)return;
+  const weightUnit = document.getElementById('unit-lb')?.classList.contains('selected') ? 'lb' : 'kg';
   const logs=[];
   for(let i=1;i<=currentExercise.sets;i++){
     const w=document.getElementById('log-w-'+i)?.value;
     const r=document.getElementById('log-r-'+i)?.value;
-    const db=document.querySelector(`.set-row:nth-child(${i}) .diff-btn.selected`);
+    const db=document.querySelector(`.set-row:nth-child(${i+1}) .diff-btn.selected`);
     const diff=db?(db.classList.contains('easy')?'facil':'dificil'):null;
-    logs.push({exercise_id:currentExercise.id,client_id:currentClient.id,week_number:clientWeek,set_number:i,weight:w||null,reps_done:r||null,difficulty:diff});
+    logs.push({exercise_id:currentExercise.id,client_id:currentClient.id,week_number:clientWeek,set_number:i,weight:w||null,weight_unit:weightUnit,reps_done:r||null,difficulty:diff});
   }
   await sb.from('exercise_logs').insert(logs);
   const today = new Date().toISOString().split('T')[0];
@@ -838,6 +920,15 @@ async function saveLog() {
   document.getElementById('c-profile-days').textContent=newDays;
   showToast('✅ ¡Registro guardado!');
   setTimeout(()=>showScreen('screen-client-home'),800);
+}
+
+let currentWeightUnit = 'kg';
+function setWeightUnit(unit) {
+  currentWeightUnit = unit;
+  document.getElementById('unit-kg').classList.toggle('selected', unit==='kg');
+  document.getElementById('unit-lb').classList.toggle('selected', unit==='lb');
+  // Update placeholder labels
+  document.querySelectorAll('#sets-log-container .set-input[id^="log-w-"]').forEach(inp=>inp.placeholder=unit);
 }
 
 async function loadClientPlans() {
@@ -911,10 +1002,11 @@ function renderCoachClients(clients) {
     const badgeClass = getPaymentBadgeClass(d);
     const badgeText = getPaymentBadgeText(d);
     const startDateStr = c.start_date ? formatDate(c.start_date) : (c.created_at ? new Date(c.created_at).toLocaleDateString('es-CR',{day:'numeric',month:'short',year:'numeric'}) : null);
+    const typeTag = c.client_type ? `<span class="client-type-tag">${c.client_type==='Virtual'?'V':'H'}</span>` : '';
     return `<div class="client-card fade-up" onclick="openCoachClient('${c.id}')">
       <div class="client-avatar">${getInitials(c.name)}</div>
       <div class="client-info">
-        <div class="client-name">${c.name}</div>
+        <div class="client-name" style="display:flex;align-items:center;gap:6px;">${c.name}${typeTag}</div>
         <div class="client-meta">@${c.username} · ${c.days_trained||0} días${startDateStr?` · Inicio: ${startDateStr}`:''}</div>
       </div>
       <div class="payment-badge ${badgeClass}"><div style="font-size:8px;opacity:0.7;margin-bottom:1px;">PAGO</div>${badgeText}</div>
@@ -931,11 +1023,12 @@ async function openCoachClient(clientId) {
   const {data:c} = await sb.from('clients').select('*').eq('id',clientId).single();
   currentClient=c;
   const startDateStr = c.start_date ? formatDate(c.start_date) : null;
+  const typeTag = c.client_type ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:10px;font-weight:800;background:var(--orange-light);color:var(--orange);border:1.5px solid var(--orange-mid);font-family:'DM Mono',monospace;margin-left:6px;">${c.client_type==='Virtual'?'V':'H'}</span>` : '';
   document.getElementById('coach-profile-header').innerHTML=`
     <div class="profile-avatar-lg">${getInitials(c.name)}</div>
     <div>
-      <div class="profile-name">${c.name}</div>
-      <div class="profile-username">@${c.username}</div>
+      <div class="profile-name" style="display:flex;align-items:center;">${c.name}${typeTag}</div>
+      <div class="profile-username">@${c.username}${c.client_type?' · '+c.client_type:''}</div>
       ${startDateStr?`<div style="font-size:11px;color:var(--orange);margin-top:2px;">📅 Inicio: ${startDateStr}</div>`:''}
     </div>`;
   const d=daysUntil(c.next_payment_date);
@@ -944,9 +1037,13 @@ async function openCoachClient(clientId) {
     <div class="payment-row"><span class="payment-key">Próximo pago</span><span class="payment-val">${c.next_payment_date?formatDate(c.next_payment_date):'—'}</span></div>
     <div class="payment-row"><span class="payment-key">Monto</span><span class="payment-val">$${c.payment_amount||'—'}</span></div>
     <div class="payment-row"><span class="payment-key">Días restantes</span><span class="payment-val" style="color:${dColor}">${d!==null?d+' días':'—'}</span></div>
-    ${startDateStr?`<div class="payment-row"><span class="payment-key">Fecha de inicio</span><span class="payment-val">${startDateStr}</span></div>`:''}`;
+    ${startDateStr?`<div class="payment-row"><span class="payment-key">Fecha de inicio</span><span class="payment-val">${startDateStr}</span></div>`:''}
+    ${c.client_type?`<div class="payment-row"><span class="payment-key">Tipo</span><span class="payment-val">${c.client_type}</span></div>`:''}`;
+  // Populate edit modal fields
   document.getElementById('ep-date').value=c.next_payment_date||'';
   document.getElementById('ep-amount').value=c.payment_amount||'';
+  document.getElementById('ep-start-date').value=c.start_date||'';
+  document.getElementById('ep-client-type').value=c.client_type||'';
   document.getElementById('coach-c-days').textContent=c.days_trained||0;
   loadWeekTrainedCount(c.id);
   loadCoachClientDetail(clientId);
@@ -1229,6 +1326,7 @@ async function addClient() {
   const name=document.getElementById('nc-name').value.trim();
   const username=document.getElementById('nc-username').value.trim().toLowerCase().replace('@','');
   const pass=document.getElementById('nc-password').value;
+  const clientType=document.getElementById('nc-client-type').value;
   const startDate=document.getElementById('nc-start-date').value;
   const payDate=document.getElementById('nc-payment-date').value;
   const payAmount=document.getElementById('nc-payment-amount').value;
@@ -1237,10 +1335,11 @@ async function addClient() {
   if(exists){showToast('⚠️ Ese usuario ya existe');return;}
   const {data:user,error:ue} = await sb.from('users').insert([{name,username,password:pass,role:'client'}]).select().single();
   if(ue){showToast('❌ '+ue.message);return;}
-  const {error:ce} = await sb.from('clients').insert([{coach_id:currentUser.id,name,username,start_date:startDate||null,next_payment_date:payDate||null,payment_amount:payAmount||null,days_trained:0}]);
+  const {error:ce} = await sb.from('clients').insert([{coach_id:currentUser.id,name,username,client_type:clientType||null,start_date:startDate||null,next_payment_date:payDate||null,payment_amount:payAmount||null,days_trained:0}]);
   if(ce){showToast('❌ '+ce.message);return;}
   closeModal('modal-add-client');
   ['nc-name','nc-username','nc-password','nc-start-date','nc-payment-date','nc-payment-amount'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('nc-client-type').value='';
   showToast('✅ Cliente creado');
   loadCoachClients();
 }
@@ -1248,9 +1347,11 @@ async function addClient() {
 async function updatePayment() {
   const date=document.getElementById('ep-date').value;
   const amount=document.getElementById('ep-amount').value;
-  await sb.from('clients').update({next_payment_date:date||null,payment_amount:amount||null}).eq('id',currentClient.id);
+  const startDate=document.getElementById('ep-start-date').value;
+  const clientType=document.getElementById('ep-client-type').value;
+  await sb.from('clients').update({next_payment_date:date||null,payment_amount:amount||null,start_date:startDate||null,client_type:clientType||null}).eq('id',currentClient.id);
   closeModal('modal-edit-payment');
-  showToast('✅ Pago actualizado');
+  showToast('✅ Cliente actualizado');
   openCoachClient(currentClient.id);
 }
 
@@ -1358,7 +1459,7 @@ async function loadClientLogs() {
       ${g.sets.map(s => `
         <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--gray2);font-size:12px;">
           <span style="color:var(--gray4);font-family:'DM Mono',monospace;width:42px;">Set ${s.set_number}</span>
-          <span style="font-weight:600;">${s.weight ? s.weight+'kg' : '—'}</span>
+          <span style="font-weight:600;">${s.weight ? s.weight+(s.weight_unit||'kg') : '—'}</span>
           <span style="color:var(--gray4);">·</span>
           <span style="font-weight:600;">${s.reps_done ? s.reps_done+' reps' : '—'}</span>
           ${s.difficulty ? `<span style="margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:${s.difficulty==='facil'?'var(--green-light)':'var(--red-light)'};color:${s.difficulty==='facil'?'var(--green)':'var(--red)'};">${s.difficulty==='facil'?'Fácil 😊':'Difícil 🔥'}</span>` : ''}
