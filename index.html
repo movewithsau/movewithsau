@@ -5,121 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Move With Sau</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-async function saveOneToLibrary(id) {
-  const name = document.getElementById('bn-'+id)?.value.trim();
-  const tag = document.getElementById('bt-'+id)?.value;
-  const mSel = document.getElementById('bm-'+id)?.value;
-  const muscle = mSel==='custom'?document.getElementById('bmc-input-'+id)?.value:(mSel||null);
-  const video = document.getElementById('bv-'+id)?.value.trim()||null;
-  if(!name){showToast('⚠️ Escribe el nombre primero');return;}
-  if(!currentUser){showToast('❌ No hay sesión activa');return;}
-  const {data:exists} = await sb.from('exercise_library').select('id').eq('coach_id',currentUser.id).eq('name',name).maybeSingle();
-  if(exists){
-    await sb.from('exercise_library').update({tag:tag||'Peso Libre',muscle_group:muscle,video_url:video}).eq('id',exists.id);
-    showToast('📚 Biblioteca actualizada');return;
-  }
-  const {error} = await sb.from('exercise_library').insert([{coach_id:currentUser.id,name,tag:tag||'Peso Libre',muscle_group:muscle,video_url:video}]);
-  if(error){showToast('❌ Error: '+error.message);return;}
-  showToast('✅ Guardado en biblioteca');
-}
-
-// ===== EXERCISE LIBRARY =====
-async function saveExerciseToLibrary(name, tag, muscle, video) {
-  if(!name||!currentUser)return;
-  try {
-    const {data:exists} = await sb.from('exercise_library').select('id').eq('coach_id',currentUser.id).eq('name',name).maybeSingle();
-    if(!exists){ 
-      await sb.from('exercise_library').insert([{coach_id:currentUser.id,name,tag:tag||'Peso Libre',muscle_group:muscle||null,video_url:video||null}]); 
-    } else {
-      // Update video if provided and not already saved
-      if(video) await sb.from('exercise_library').update({video_url:video,tag:tag||'Peso Libre',muscle_group:muscle||null}).eq('id',exists.id);
-    }
-  } catch(e) { console.error('Library save error:',e); }
-}
-
-async function openLibrary() {
-  showModal('modal-ex-library');
-  await loadLibrary();
-}
-
-async function loadLibrary() {
-  const {data:exs} = await sb.from('exercise_library').select('*').eq('coach_id',currentUser.id).order('name');
-  const list = document.getElementById('library-list');
-  if(!exs||exs.length===0){list.innerHTML='<div class="empty-state"><div class="empty-icon">📚</div><div class="empty-text">Sin ejercicios guardados aún.<br>Los ejercicios que crees se guardan automáticamente aquí.</div></div>';return;}
-  list.innerHTML = exs.map(ex=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--gray2);" id="lib-item-${ex.id}">
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:600;">${ex.name}</div>
-        <div style="display:flex;gap:5px;margin-top:3px;flex-wrap:wrap;">
-          <span class="ex-tag ${getTagClass(ex.tag)}" style="font-size:8px;">${ex.tag}</span>
-          ${ex.muscle_group?`<span class="muscle-tag" style="font-size:8px;">${ex.muscle_group}</span>`:''}
-        </div>
-      </div>
-      <div style="display:flex;gap:4px;flex-shrink:0;">
-        <button onclick="addFromLibrary(${JSON.stringify(ex).replace(/"/g,'&quot;')})" style="background:var(--orange);color:white;border:none;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Usar</button>
-        <button onclick="editLibraryEx('${ex.id}','${ex.name}','${ex.tag}','${ex.muscle_group||''}','${ex.video_url||''}')" style="background:var(--orange-light);color:var(--orange);border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✏️</button>
-        <button onclick="deleteLibraryEx('${ex.id}')" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>
-      </div>
-    </div>`).join('');
-}
-
-function editLibraryEx(id, name, tag, muscle, video) {
-  const item = document.getElementById('lib-item-'+id);
-  item.innerHTML = `
-    <div style="flex:1;min-width:0;">
-      <input id="lib-edit-name-${id}" value="${name}" style="width:100%;padding:7px 10px;border:1.5px solid var(--orange);border-radius:6px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:5px;">
-      <div style="display:flex;gap:5px;margin-bottom:5px;">
-        <select id="lib-edit-tag-${id}" style="flex:1;padding:6px 8px;border:1.5px solid var(--gray2);border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;">
-          <option value="Peso Libre"${tag==='Peso Libre'?' selected':''}>Peso Libre</option>
-          <option value="Máquina"${tag==='Máquina'?' selected':''}>Máquina</option>
-          <option value="Peso Corporal"${tag==='Peso Corporal'?' selected':''}>Peso Corporal</option>
-        </select>
-        <input id="lib-edit-muscle-${id}" value="${muscle}" placeholder="Músculo" style="flex:1;padding:6px 8px;border:1.5px solid var(--gray2);border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;">
-      </div>
-      <input id="lib-edit-video-${id}" value="${video||''}" placeholder="URL del video (opcional)" style="width:100%;padding:6px 8px;border:1.5px solid var(--gray2);border-radius:6px;font-size:11px;font-family:'DM Sans',sans-serif;outline:none;color:var(--orange);">
-    </div>
-    <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px;align-self:flex-start;margin-top:4px;">
-      <button onclick="saveLibraryEdit('${id}')" style="background:var(--green);color:white;border:none;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✓</button>
-      <button onclick="loadLibrary()" style="background:var(--gray2);color:var(--gray5);border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>
-    </div>`;
-}
-
-async function saveLibraryEdit(id) {
-  const name = document.getElementById('lib-edit-name-'+id)?.value.trim();
-  const tag = document.getElementById('lib-edit-tag-'+id)?.value;
-  const muscle = document.getElementById('lib-edit-muscle-'+id)?.value.trim();
-  const video = document.getElementById('lib-edit-video-'+id)?.value.trim();
-  if(!name){showToast('⚠️ El nombre no puede estar vacío');return;}
-  const {error} = await sb.from('exercise_library').update({name,tag,muscle_group:muscle||null,video_url:video||null}).eq('id',id);
-  if(error){showToast('❌ '+error.message);return;}
-  showToast('✅ Ejercicio actualizado');
-  loadLibrary();
-}
-
-async function deleteLibraryEx(id) {
-  if(!confirm('¿Eliminar este ejercicio de la biblioteca?'))return;
-  await sb.from('exercise_library').delete().eq('id',id);
-  showToast('🗑️ Eliminado');
-  loadLibrary();
-}
-
-function filterLibrary() {
-  const q = document.getElementById('library-search').value.toLowerCase();
-  document.querySelectorAll('#library-list > div').forEach(el=>{
-    const name = el.querySelector('div > div')?.textContent.toLowerCase()||'';
-    el.style.display = name.includes(q)?'flex':'none';
-  });
-}
-
-function addFromLibrary(ex) {
-  addExerciseForm({name:ex.name,tag:ex.tag,muscle_group:ex.muscle_group,sets:'',reps_range:'',rest_seconds:60,video_url:ex.video_url||'',notes:'',superset_group:null});
-  closeModal('modal-ex-library');
-}
-
-
-
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --orange: #F75A0E;
@@ -134,6 +20,8 @@ function addFromLibrary(ex) {
   --white: #ffffff;
   --green: #27ae60;
   --green-light: rgba(39,174,96,0.1);
+  --yellow: #f39c12;
+  --yellow-light: rgba(243,156,18,0.12);
   --red: #e74c3c;
   --red-light: rgba(231,76,60,0.1);
   --blue: #2980b9;
@@ -231,7 +119,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 .tag-peso-corporal { background:var(--green-light); color:var(--green); }
 .ex-name { font-size:14px; font-weight:600; color:var(--black); flex:1; }
 .ex-chevron { color:var(--gray3); font-size:18px; }
-.ex-specs-row { font-size:11px; color:var(--gray4); margin-top:4px; padding-left:0; }
+.ex-specs-row { font-size:11px; color:var(--gray4); margin-top:4px; }
 .muscle-tag { display:inline-block; font-size:9px; font-weight:600; background:var(--purple-light); color:var(--purple); padding:2px 7px; border-radius:4px; margin-top:5px; }
 
 /* SUPERSET */
@@ -277,9 +165,11 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 .client-info { flex:1; min-width:0; }
 .client-name { font-size:15px; font-weight:600; color:var(--black); margin-bottom:2px; }
 .client-meta { font-size:11px; color:var(--gray4); }
-.payment-badge { font-size:10px; font-weight:700; padding:4px 8px; border-radius:6px; background:var(--orange-light); color:var(--orange); text-align:center; flex-shrink:0; }
-.payment-badge.soon { background:var(--red-light); color:var(--red); }
-.payment-badge.ok { background:var(--green-light); color:var(--green); }
+/* Payment badge - green/yellow/red */
+.payment-badge { font-size:10px; font-weight:700; padding:4px 8px; border-radius:6px; text-align:center; flex-shrink:0; }
+.payment-badge.green { background:var(--green-light); color:var(--green); }
+.payment-badge.yellow { background:var(--yellow-light); color:var(--yellow); }
+.payment-badge.red { background:var(--red-light); color:var(--red); }
 
 /* COACH CLIENT DETAIL */
 .profile-header { background:var(--white); padding:18px 20px; border-bottom:1px solid var(--gray2); display:flex; align-items:center; gap:14px; }
@@ -300,10 +190,21 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 .week-tab.has-data { border-color:var(--orange); color:var(--orange); }
 .week-tab.has-data.active { background:var(--orange); color:white; }
 
+/* COACH PLAN OVERVIEW - collapsed by default, expand on day click */
 .day-plan-card { background:var(--white); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow); margin-bottom:10px; }
 .day-plan-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
 .day-plan-name { font-size:14px; font-weight:700; }
 .day-plan-count { font-size:11px; color:var(--gray4); }
+
+/* Day accordion inside plan card */
+.plan-day-row { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--gray2); cursor:pointer; }
+.plan-day-row:last-child { border-bottom:none; }
+.plan-day-label { font-size:12px; font-weight:700; color:var(--black); flex:1; }
+.plan-day-count { font-size:11px; color:var(--gray4); }
+.plan-day-chevron { font-size:14px; color:var(--gray3); transition:transform 0.2s; }
+.plan-day-chevron.open { transform:rotate(90deg); }
+.plan-day-exercises { display:none; padding:8px 0 4px; }
+.plan-day-exercises.open { display:block; }
 
 /* EXERCISE BUILDER CARD */
 .builder-ex-card { background:var(--gray1); border-radius:var(--radius-sm); padding:12px; margin-bottom:8px; border:1.5px solid var(--gray2); }
@@ -352,6 +253,18 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 .upload-area { border:2px dashed var(--gray3); border-radius:var(--radius); padding:22px; text-align:center; cursor:pointer; margin-bottom:10px; }
 .upload-area:hover { border-color:var(--orange); }
 .upload-text { font-size:13px; color:var(--gray4); margin-top:6px; }
+
+/* LIBRARY FILTER CHIPS */
+.filter-chips { display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; padding-bottom:4px; margin-bottom:10px; }
+.filter-chips::-webkit-scrollbar { display:none; }
+.filter-chip { flex-shrink:0; padding:5px 12px; border-radius:20px; font-size:11px; font-weight:600; background:var(--gray1); color:var(--gray5); border:1.5px solid var(--gray2); cursor:pointer; transition:all 0.15s; font-family:'DM Sans',sans-serif; }
+.filter-chip.active { background:var(--orange); color:white; border-color:var(--orange); }
+
+/* CLIENT SORT BAR */
+.sort-bar { display:flex; gap:6px; margin-bottom:12px; overflow-x:auto; scrollbar-width:none; }
+.sort-bar::-webkit-scrollbar { display:none; }
+.sort-chip { flex-shrink:0; padding:6px 12px; border-radius:20px; font-size:11px; font-weight:600; background:var(--white); color:var(--gray5); border:1.5px solid var(--gray2); cursor:pointer; transition:all 0.15s; font-family:'DM Sans',sans-serif; }
+.sort-chip.active { background:var(--orange-light); color:var(--orange); border-color:var(--orange); }
 
 /* EDIT EX MODAL */
 .edit-ex-section { margin-bottom:12px; }
@@ -487,6 +400,13 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;" id="coach-name-display">—</div>
     </div>
     <div class="section-header"><div class="section-title">Mis clientes</div><div class="section-action" id="coach-count"></div></div>
+    <!-- Sort bar -->
+    <div class="sort-bar" id="client-sort-bar">
+      <div class="sort-chip active" onclick="setSortClients('name',this)">A–Z</div>
+      <div class="sort-chip" onclick="setSortClients('payment_asc',this)">Pago próximo ↑</div>
+      <div class="sort-chip" onclick="setSortClients('payment_desc',this)">Pago lejano ↓</div>
+      <div class="sort-chip" onclick="setSortClients('start_date',this)">Fecha inicio</div>
+    </div>
     <div id="coach-clients-list"><div class="spinner"></div></div>
   </div>
   <div class="bottom-nav">
@@ -524,9 +444,9 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div class="section-header"><div class="section-title">Ejercicios</div></div>
     <div id="builder-exercises-list"></div>
     <div style="display:flex;gap:8px;margin-top:6px;">
-    <button class="add-ex-btn" style="flex:1;margin-top:0;" onclick="addExerciseForm()">+ Nuevo ejercicio</button>
-    <button class="add-ex-btn" style="flex:1;margin-top:0;background:var(--orange-light);" onclick="openLibrary()">📚 Biblioteca</button>
-  </div>
+      <button class="add-ex-btn" style="flex:1;margin-top:0;" onclick="addExerciseForm()">+ Nuevo ejercicio</button>
+      <button class="add-ex-btn" style="flex:1;margin-top:0;background:var(--orange-light);" onclick="openLibrary()">📚 Biblioteca</button>
+    </div>
     <button class="btn-primary" style="margin-top:10px;" onclick="savePlanDay()">Guardar día</button>
   </div>
 </div>
@@ -556,6 +476,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" id="nc-name" placeholder="Nombre"></div>
     <div class="form-group"><label class="form-label">Usuario</label><input class="form-input" id="nc-username" placeholder="@usuario" autocapitalize="none"></div>
     <div class="form-group"><label class="form-label">Contraseña inicial</label><input class="form-input" type="password" id="nc-password" placeholder="••••••••"></div>
+    <div class="form-group"><label class="form-label">Fecha de inicio</label><input class="form-input" type="date" id="nc-start-date"></div>
     <div class="form-group"><label class="form-label">Próximo pago</label><input class="form-input" type="date" id="nc-payment-date"></div>
     <div class="form-group"><label class="form-label">Monto ($)</label><input class="form-input" type="number" id="nc-payment-amount" placeholder="0.00"></div>
     <button class="btn-primary" onclick="addClient()">Crear cliente</button>
@@ -613,13 +534,41 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
         <option value="Pecho">Pecho</option><option value="Espalda">Espalda</option><option value="Hombros">Hombros</option>
         <option value="Bíceps">Bíceps</option><option value="Tríceps">Tríceps</option><option value="Cuádriceps">Cuádriceps</option>
         <option value="Isquiotibiales">Isquiotibiales</option><option value="Glúteos">Glúteos</option><option value="Core">Core</option>
-        <option value="Pantorrillas">Pantorrillas</option><option value="Movilidad">Movilidad</option><option value="Cardio">Cardio</option><option value="custom">Otro...</option>
+        <option value="Pantorrillas">Pantorrillas</option><option value="Movilidad">Movilidad</option><option value="Cardio">Cardio</option>
+        <option value="Performance">Performance</option><option value="custom">Otro...</option>
       </select>
     </div>
     <div class="form-group" id="edit-custom-muscle-group" style="display:none;"><input class="form-input" id="edit-custom-muscle" placeholder="Escribe el grupo muscular"></div>
     <div class="form-group"><label class="form-label">URL video</label><input class="form-input" id="edit-ex-video" placeholder="https://..."></div>
     <div class="form-group"><label class="form-label">Notas del coach</label><textarea class="form-textarea" id="edit-ex-notes" rows="3" placeholder="Instrucciones, cues, etc."></textarea></div>
     <button class="btn-primary" onclick="saveEditedExercise()">Guardar cambios</button>
+  </div>
+</div>
+
+<!-- Exercise Library Modal -->
+<div class="modal-overlay" id="modal-ex-library">
+  <div class="modal">
+    <span class="modal-close" onclick="closeModal('modal-ex-library')">×</span>
+    <div class="modal-title">Biblioteca de ejercicios</div>
+    <input class="form-input" id="library-search" placeholder="Buscar ejercicio..." oninput="filterLibrary()" style="margin-bottom:8px;">
+    <!-- Category filter chips -->
+    <div class="filter-chips" id="library-filter-chips">
+      <div class="filter-chip active" onclick="setLibraryFilter('',this)">Todos</div>
+      <div class="filter-chip" onclick="setLibraryFilter('Pecho',this)">Pecho</div>
+      <div class="filter-chip" onclick="setLibraryFilter('Espalda',this)">Espalda</div>
+      <div class="filter-chip" onclick="setLibraryFilter('Hombros',this)">Hombros</div>
+      <div class="filter-chip" onclick="setLibraryFilter('Bíceps',this)">Bíceps</div>
+      <div class="filter-chip" onclick="setLibraryFilter('Tríceps',this)">Tríceps</div>
+      <div class="filter-chip" onclick="setLibraryFilter('Cuádriceps',this)">Cuádriceps</div>
+      <div class="filter-chip" onclick="setLibraryFilter('Isquiotibiales',this)">Isquiotibiales</div>
+      <div class="filter-chip" onclick="setLibraryFilter('Glúteos',this)">Glúteos</div>
+      <div class="filter-chip" onclick="setLibraryFilter('Core',this)">Core</div>
+      <div class="filter-chip" onclick="setLibraryFilter('Pantorrillas',this)">Pantorrillas</div>
+      <div class="filter-chip" onclick="setLibraryFilter('Cardio',this)">Cardio</div>
+      <div class="filter-chip" onclick="setLibraryFilter('Movilidad',this)">Movilidad</div>
+      <div class="filter-chip" onclick="setLibraryFilter('Performance',this)">Performance</div>
+    </div>
+    <div id="library-list" style="max-height:50vh;overflow-y:auto;"></div>
   </div>
 </div>
 
@@ -636,97 +585,50 @@ let clientWeek = 1, clientDay = null;
 let builderWeek = 1, builderDay = null;
 let exFormCount = 0;
 let selectedPdfFile = null;
+let clientSortMode = 'name';
+let libraryFilterCategory = '';
+let allLibraryExercises = [];
 
 const DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const MUSCLES = ['Pecho','Espalda','Hombros','Bíceps','Tríceps','Cuádriceps','Isquiotibiales','Glúteos','Core','Pantorrillas','Movilidad','Cardio','Performance'];
 
-// CLIENT LOGS
-let logsVisible = false;
-async function toggleLogs() {
-  const container = document.getElementById('coach-client-logs');
-  logsVisible = !logsVisible;
-  container.style.display = logsVisible ? 'block' : 'none';
-  if(logsVisible) await loadClientLogs();
+// ===== UTILS =====
+function showScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
+function showToast(msg,dur=2500) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),dur); }
+function showModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function getInitials(n) { if(!n)return'??'; return n.split(' ').map(x=>x[0]).join('').substring(0,2).toUpperCase(); }
+function getTagClass(tag) { return tag==='Peso Libre'?'tag-peso-libre':tag==='Máquina'?'tag-maquina':'tag-peso-corporal'; }
+
+function daysUntil(d) {
+  if(!d) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(d+'T00:00:00'); target.setHours(0,0,0,0);
+  return Math.round((target - today) / 86400000);
 }
 
-async function loadClientLogs() {
-  const container = document.getElementById('coach-client-logs');
-  container.innerHTML = '<div class="spinner"></div>';
-  if(!currentClient) return;
-
-  const {data:logs} = await sb
-    .from('exercise_logs')
-    .select('*, exercises(name, reps_range, sets)')
-    .eq('client_id', currentClient.id)
-    .order('logged_at', {ascending: false})
-    .limit(50);
-
-  if(!logs || logs.length === 0) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">Sin registros aún.</div></div>';
-    return;
-  }
-
-  // Group by date + exercise
-  const grouped = {};
-  logs.forEach(log => {
-    const date = log.logged_at.split('T')[0];
-    const exName = log.exercises?.name || 'Ejercicio';
-    const key = date + '|||' + exName;
-    if(!grouped[key]) grouped[key] = {date, exName, reps_range: log.exercises?.reps_range, sets:[]};
-    grouped[key].sets.push(log);
-  });
-
-  container.innerHTML = Object.values(grouped).map(g => `
-    <div class="card" style="margin-bottom:8px;cursor:default;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <div style="font-size:13px;font-weight:700;">${g.exName}</div>
-        <div style="font-size:10px;color:var(--gray4);font-family:'DM Mono',monospace;">${new Date(g.date+'T12:00:00').toLocaleDateString('es-CR')}</div>
-      </div>
-      ${g.sets.map(s => `
-        <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--gray2);font-size:12px;">
-          <span style="color:var(--gray4);font-family:'DM Mono',monospace;width:42px;">Set ${s.set_number}</span>
-          <span style="font-weight:600;">${s.weight ? s.weight+'kg' : '—'}</span>
-          <span style="color:var(--gray4);">·</span>
-          <span style="font-weight:600;">${s.reps_done ? s.reps_done+' reps' : '—'}</span>
-          ${s.difficulty ? `<span style="margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:${s.difficulty==='facil'?'var(--green-light)':'var(--red-light)'};color:${s.difficulty==='facil'?'var(--green)':'var(--red)'};">${s.difficulty==='facil'?'Fácil 😊':'Difícil 🔥'}</span>` : ''}
-        </div>`).join('')}
-    </div>`).join('');
+function getPaymentBadgeClass(d) {
+  if(d === null) return 'green';
+  if(d > 2) return 'green';
+  if(d >= -1) return 'yellow'; // 2 days before AND up to 1 day after
+  return 'red'; // 2+ days past due
 }
 
-// WEEK TRAINING COUNT
-async function loadWeekTrainedCount(clientId) {
-  if(!clientId) return;
-  const weekStart = getWeekStart();
-  const {data:logs} = await sb.from('exercise_logs').select('logged_at').eq('client_id',clientId).gte('logged_at',weekStart);
-  if(!logs) return;
-  // Count unique days this week
-  const uniqueDays = new Set(logs.map(l => l.logged_at.split('T')[0]));
-  document.getElementById('coach-c-week-trained').textContent = uniqueDays.size;
+function getPaymentBadgeText(d) {
+  if(d === null) return '—';
+  if(d < 0) return 'Vencido';
+  if(d === 0) return 'Hoy';
+  return d+'d';
 }
 
-async function loadClientWeekCount(clientId) {
-  if(!clientId) return;
-  const weekStart = getWeekStart();
-  const {data:logs} = await sb.from('exercise_logs').select('logged_at').eq('client_id',clientId).gte('logged_at',weekStart);
-  if(!logs) return;
-  const uniqueDays = new Set(logs.map(l => l.logged_at.split('T')[0]));
-  document.getElementById('c-week-num').textContent = clientWeek;
-  document.getElementById('c-profile-week').textContent = clientWeek;
-  // Update stat card label to show week trained
-  const weekCard = document.querySelector('#screen-client-home .stat-row .stat-card:last-child .stat-num');
-  if(weekCard) weekCard.textContent = uniqueDays.size;
-  const weekCardCoach = document.querySelector('#screen-client-home .stat-row .stat-card:last-child .stat-label');
-  if(weekCardCoach) weekCardCoach.textContent = 'Esta semana';
+function getTodayName() { const d=new Date().getDay(); return DAYS[d===0?6:d-1]; }
+
+function formatDate(dateStr) {
+  if(!dateStr) return '—';
+  return new Date(dateStr+'T12:00:00').toLocaleDateString('es-CR', {day:'numeric', month:'short', year:'numeric'});
 }
 
-function getWeekStart() {
-  const now = new Date();
-  const day = now.getDay();
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(now.setDate(diff));
-  return monday.toISOString().split('T')[0]+'T00:00:00';
-}
-
-// AUTO LOGIN
+// ===== AUTO LOGIN =====
 window.addEventListener('DOMContentLoaded', async () => {
   const saved = localStorage.getItem('mws_user');
   if(saved){
@@ -737,24 +639,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     } catch(e){ localStorage.removeItem('mws_user'); }
   }
 });
-const MUSCLES = ['Pecho','Espalda','Hombros','Bíceps','Tríceps','Cuádriceps','Isquiotibiales','Glúteos','Core','Pantorrillas','Movilidad','Cardio'];
 
-// UTILS
-function showScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
-function showToast(msg,dur=2500) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),dur); }
-function showModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-function getInitials(n) { if(!n)return'??'; return n.split(' ').map(x=>x[0]).join('').substring(0,2).toUpperCase(); }
-function getTagClass(tag) { return tag==='Peso Libre'?'tag-peso-libre':tag==='Máquina'?'tag-maquina':'tag-peso-corporal'; }
-function daysUntil(d) { if(!d)return null; return Math.ceil((new Date(d)-new Date())/86400000); }
-function getTodayName() { const d=new Date().getDay(); return DAYS[d===0?6:d-1]; }
-function getWeekNumber() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 1);
-  return Math.ceil(((now-start)/86400000+start.getDay()+1)/7);
-}
-
-// AUTH
+// ===== AUTH =====
 async function handleLogin() {
   const username = document.getElementById('login-username').value.trim().toLowerCase();
   const pass = document.getElementById('login-password').value;
@@ -797,7 +683,6 @@ async function initClient() {
   document.getElementById('c-greeting-name').textContent = firstName;
   document.getElementById('c-days-trained').textContent = cd?.days_trained||0;
   document.getElementById('c-week-num').textContent = clientWeek;
-  loadClientWeekCount(cd?.id);
   document.getElementById('c-profile-initials').textContent = getInitials(cd?.name||currentUser.name);
   document.getElementById('c-profile-name').textContent = cd?.name||currentUser.name;
   document.getElementById('c-profile-username').textContent = '@'+currentUser.username;
@@ -857,13 +742,8 @@ async function loadClientExercises() {
   const {data:exs} = await sb.from('exercises').select('*').eq('plan_day_id',planDay.id).order('order_index');
   if(!exs||exs.length===0){list.innerHTML='<div class="empty-state"><div class="empty-icon">😴</div><div class="empty-text">Sin ejercicios para este día.</div></div>';return;}
 
-  // Group by superset
   const groups = {};
-  const singles = [];
-  exs.forEach(ex=>{
-    if(ex.superset_group){ if(!groups[ex.superset_group])groups[ex.superset_group]=[]; groups[ex.superset_group].push(ex); }
-    else singles.push(ex);
-  });
+  exs.forEach(ex=>{ if(ex.superset_group){ if(!groups[ex.superset_group])groups[ex.superset_group]=[]; groups[ex.superset_group].push(ex); } });
 
   let html = '';
   exs.forEach(ex=>{
@@ -896,7 +776,6 @@ async function loadClientExercises() {
   });
   list.innerHTML = html;
 
-  // Muscle summary
   const muscles = [...new Set(exs.filter(e=>e.muscle_group).map(e=>e.muscle_group))];
   if(muscles.length>0){
     summary.innerHTML=`<div class="muscle-summary fade-up"><div class="muscle-summary-title">Músculos trabajados hoy</div><div class="muscle-tags-row">${muscles.map(m=>`<span class="muscle-tag" style="font-size:10px;">${m}</span>`).join('')}</div></div>`;
@@ -916,7 +795,6 @@ function openExDetail(ex) {
   if(ex.notes){nb.style.display='block';document.getElementById('detail-notes').textContent=ex.notes;}else{nb.style.display='none';}
   const vl=document.getElementById('detail-video');
   if(ex.video_url){vl.style.display='flex';vl.href=ex.video_url;}else{vl.style.display='none';}
-  // Build set logs
   const c=document.getElementById('sets-log-container');
   c.innerHTML='';
   for(let i=1;i<=ex.sets;i++){
@@ -947,7 +825,6 @@ async function saveLog() {
     logs.push({exercise_id:currentExercise.id,client_id:currentClient.id,week_number:clientWeek,set_number:i,weight:w||null,reps_done:r||null,difficulty:diff});
   }
   await sb.from('exercise_logs').insert(logs);
-  // Only count as a new day if not already trained today
   const today = new Date().toISOString().split('T')[0];
   const lastTrained = currentClient.last_trained_date;
   let newDays = currentClient.days_trained||0;
@@ -972,6 +849,8 @@ async function loadClientPlans() {
 }
 
 function clientNav(tab,el) {
+  document.querySelectorAll('#screen-client-home .nav-item,#screen-client-plan .nav-item,#screen-client-profile .nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
   if(tab==='home'){showScreen('screen-client-home');loadClientDayStrip();}
   else if(tab==='plan'){showScreen('screen-client-plan');loadClientPlans();}
   else if(tab==='profile'){showScreen('screen-client-profile');}
@@ -984,34 +863,88 @@ async function initCoach() {
   loadCoachClients();
 }
 
-async function loadCoachClients() {
-  const {data:clients} = await sb.from('clients').select('*').eq('coach_id',currentUser.id).order('name');
-  const list=document.getElementById('coach-clients-list');
+// Sort clients
+function setSortClients(mode, el) {
+  clientSortMode = mode;
+  document.querySelectorAll('.sort-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderCoachClients(window._cachedClients || []);
+}
+
+function renderCoachClients(clients) {
+  window._cachedClients = clients;
+  const list = document.getElementById('coach-clients-list');
   document.getElementById('coach-count').textContent=(clients?.length||0)+' clientes';
   if(!clients||clients.length===0){list.innerHTML='<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-text">Sin clientes aún.<br>Toca + Cliente para agregar.</div></div>';return;}
-  list.innerHTML=clients.map(c=>{
-    const d=daysUntil(c.next_payment_date);
-    const bc=d!==null&&d<=5?'soon':d!==null&&d>5?'ok':'';
-    const bt=d!==null?(d<0?'Vencido':d===0?'Hoy':d+'d'):'—';
+
+  let sorted = [...clients];
+  if(clientSortMode==='name') {
+    sorted.sort((a,b)=>a.name.localeCompare(b.name));
+  } else if(clientSortMode==='payment_asc') {
+    sorted.sort((a,b)=>{
+      const da = daysUntil(a.next_payment_date);
+      const db = daysUntil(b.next_payment_date);
+      if(da===null&&db===null)return 0;
+      if(da===null)return 1;
+      if(db===null)return-1;
+      return da-db;
+    });
+  } else if(clientSortMode==='payment_desc') {
+    sorted.sort((a,b)=>{
+      const da = daysUntil(a.next_payment_date);
+      const db = daysUntil(b.next_payment_date);
+      if(da===null&&db===null)return 0;
+      if(da===null)return-1;
+      if(db===null)return 1;
+      return db-da;
+    });
+  } else if(clientSortMode==='start_date') {
+    sorted.sort((a,b)=>{
+      const da = a.start_date||a.created_at||'';
+      const db = b.start_date||b.created_at||'';
+      return da.localeCompare(db);
+    });
+  }
+
+  list.innerHTML = sorted.map(c=>{
+    const d = daysUntil(c.next_payment_date);
+    const badgeClass = getPaymentBadgeClass(d);
+    const badgeText = getPaymentBadgeText(d);
+    const startDateStr = c.start_date ? formatDate(c.start_date) : (c.created_at ? new Date(c.created_at).toLocaleDateString('es-CR',{day:'numeric',month:'short',year:'numeric'}) : null);
     return `<div class="client-card fade-up" onclick="openCoachClient('${c.id}')">
       <div class="client-avatar">${getInitials(c.name)}</div>
-      <div class="client-info"><div class="client-name">${c.name}</div><div class="client-meta">@${c.username} · ${c.days_trained||0} días</div></div>
-      <div class="payment-badge ${bc}"><div style="font-size:8px;opacity:0.7;margin-bottom:1px;">PAGO</div>${bt}</div>
+      <div class="client-info">
+        <div class="client-name">${c.name}</div>
+        <div class="client-meta">@${c.username} · ${c.days_trained||0} días${startDateStr?` · Inicio: ${startDateStr}`:''}</div>
+      </div>
+      <div class="payment-badge ${badgeClass}"><div style="font-size:8px;opacity:0.7;margin-bottom:1px;">PAGO</div>${badgeText}</div>
     </div>`;
   }).join('');
+}
+
+async function loadCoachClients() {
+  const {data:clients} = await sb.from('clients').select('*').eq('coach_id',currentUser.id);
+  renderCoachClients(clients||[]);
 }
 
 async function openCoachClient(clientId) {
   const {data:c} = await sb.from('clients').select('*').eq('id',clientId).single();
   currentClient=c;
+  const startDateStr = c.start_date ? formatDate(c.start_date) : null;
   document.getElementById('coach-profile-header').innerHTML=`
     <div class="profile-avatar-lg">${getInitials(c.name)}</div>
-    <div><div class="profile-name">${c.name}</div><div class="profile-username">@${c.username}</div></div>`;
+    <div>
+      <div class="profile-name">${c.name}</div>
+      <div class="profile-username">@${c.username}</div>
+      ${startDateStr?`<div style="font-size:11px;color:var(--orange);margin-top:2px;">📅 Inicio: ${startDateStr}</div>`:''}
+    </div>`;
   const d=daysUntil(c.next_payment_date);
+  const dColor = d!==null&&d<=2?'var(--red)':d!==null&&d<=5?'var(--yellow)':'var(--black)';
   document.getElementById('coach-payment-card').innerHTML=`
-    <div class="payment-row"><span class="payment-key">Próximo pago</span><span class="payment-val">${c.next_payment_date?new Date(c.next_payment_date+'T12:00:00').toLocaleDateString('es-CR'):'—'}</span></div>
+    <div class="payment-row"><span class="payment-key">Próximo pago</span><span class="payment-val">${c.next_payment_date?formatDate(c.next_payment_date):'—'}</span></div>
     <div class="payment-row"><span class="payment-key">Monto</span><span class="payment-val">$${c.payment_amount||'—'}</span></div>
-    <div class="payment-row"><span class="payment-key">Días restantes</span><span class="payment-val" style="color:${d!==null&&d<=5?'var(--red)':'var(--black)'}">${d!==null?d+' días':'—'}</span></div>`;
+    <div class="payment-row"><span class="payment-key">Días restantes</span><span class="payment-val" style="color:${dColor}">${d!==null?d+' días':'—'}</span></div>
+    ${startDateStr?`<div class="payment-row"><span class="payment-key">Fecha de inicio</span><span class="payment-val">${startDateStr}</span></div>`:''}`;
   document.getElementById('ep-date').value=c.next_payment_date||'';
   document.getElementById('ep-amount').value=c.payment_amount||'';
   document.getElementById('coach-c-days').textContent=c.days_trained||0;
@@ -1021,49 +954,77 @@ async function openCoachClient(clientId) {
   showScreen('screen-coach-client');
 }
 
+function getWeekStart() {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(now.getFullYear(), now.getMonth(), diff);
+  return monday.toISOString().split('T')[0]+'T00:00:00';
+}
+
+async function loadWeekTrainedCount(clientId) {
+  if(!clientId) return;
+  const weekStart = getWeekStart();
+  const {data:logs} = await sb.from('exercise_logs').select('logged_at').eq('client_id',clientId).gte('logged_at',weekStart);
+  if(!logs) return;
+  const uniqueDays = new Set(logs.map(l => l.logged_at.split('T')[0]));
+  document.getElementById('coach-c-week-trained').textContent = uniqueDays.size;
+}
+
+// ===== COACH PLAN OVERVIEW — collapsed, expand on day click =====
 async function loadCoachClientDetail(clientId) {
   const {data:plans} = await sb.from('monthly_plans').select('*').eq('client_id',clientId).order('week_number').order('day_of_week');
   const container=document.getElementById('coach-plan-overview');
   if(!plans||plans.length===0){container.innerHTML='<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Sin plan mensual aún.<br>Toca + Plan para crear.</div></div>';return;}
+
   // Group by week
   const weeks={};
   plans.forEach(p=>{if(!weeks[p.week_number])weeks[p.week_number]=[];weeks[p.week_number].push(p);});
+
   container.innerHTML=Object.entries(weeks).map(([w,days])=>`
     <div class="day-plan-card">
       <div class="day-plan-header">
         <div class="day-plan-name">Semana ${w}</div>
-        <div style="display:flex;gap:6px;">
-          <button onclick="openBuilderForWeek(${w})" style="background:var(--orange-light);color:var(--orange);border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Editar</button>
-        </div>
+        <button onclick="openBuilderForWeek(${w})" style="background:var(--orange-light);color:var(--orange);border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Editar</button>
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:5px;">
-        ${days.map(d=>`<span style="font-size:11px;font-weight:600;background:var(--orange-light);color:var(--orange);padding:3px 9px;border-radius:10px;">${d.day_of_week.substring(0,3)}</span>`).join('')}
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;">
+        ${days.map(d=>`<span class="plan-day-chip" style="font-size:11px;font-weight:600;background:var(--orange-light);color:var(--orange);padding:3px 9px;border-radius:10px;cursor:pointer;" onclick="togglePlanDay('${d.id}',this)">${d.day_of_week.substring(0,3)} ›</span>`).join('')}
       </div>
-      <div style="margin-top:10px;">
-        ${days.map(d=>`<div style="margin-bottom:6px;" id="coach-day-exs-${d.id}"><div style="font-size:11px;font-weight:700;color:var(--gray5);margin-bottom:3px;">${d.day_of_week}</div><div class="spinner" style="width:14px;height:14px;margin:0;"></div></div>`).join('')}
-      </div>
+      ${days.map(d=>`
+        <div id="day-exs-container-${d.id}" style="display:none;">
+          <div style="font-size:11px;font-weight:700;color:var(--gray5);margin-bottom:4px;padding-top:4px;border-top:1px solid var(--gray2);">${d.day_of_week}</div>
+          <div id="coach-day-exs-${d.id}"><div class="spinner" style="width:14px;height:14px;margin:6px auto;"></div></div>
+        </div>`).join('')}
     </div>`).join('');
-  // Load exercises for each day
-  for(const [w,days] of Object.entries(weeks)){
-    for(const d of days){
-      const {data:exs} = await sb.from('exercises').select('*').eq('plan_day_id',d.id).order('order_index');
-      const el=document.getElementById('coach-day-exs-'+d.id);
-      if(el){
-        if(!exs||exs.length===0){el.querySelector('.spinner').remove();continue;}
-        el.querySelector('.spinner').remove();
-        el.innerHTML+=exs.map(ex=>`
-          <div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--gray2);">
-            <span class="ex-tag ${getTagClass(ex.tag)}" style="font-size:8px;">${ex.tag}</span>
-            <span style="font-size:12px;font-weight:500;flex:1;">${ex.name}</span>
-            <span style="font-size:10px;color:var(--gray4);">${ex.sets}×${ex.reps_range}</span>
-            <button onclick="openEditEx(${JSON.stringify(ex).replace(/"/g,'&quot;')})" style="background:none;border:none;color:var(--orange);font-size:11px;font-weight:700;cursor:pointer;padding:2px 4px;">Editar</button>
-          </div>`).join('');
-      }
-    }
+}
+
+async function togglePlanDay(planDayId, chipEl) {
+  const container = document.getElementById('day-exs-container-'+planDayId);
+  const isOpen = container.style.display !== 'none';
+  if(isOpen){
+    container.style.display='none';
+    chipEl.textContent = chipEl.textContent.replace(' ↓',' ›');
+    return;
+  }
+  container.style.display='block';
+  chipEl.textContent = chipEl.textContent.replace(' ›',' ↓');
+
+  const exList = document.getElementById('coach-day-exs-'+planDayId);
+  // Only load if not already loaded
+  if(exList.querySelector('.spinner')){
+    const {data:exs} = await sb.from('exercises').select('*').eq('plan_day_id',planDayId).order('order_index');
+    if(!exs||exs.length===0){exList.innerHTML='<div style="font-size:12px;color:var(--gray4);padding:4px 0;">Sin ejercicios</div>';return;}
+    exList.innerHTML=exs.map(ex=>`
+      <div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--gray2);">
+        <span class="ex-tag ${getTagClass(ex.tag)}" style="font-size:8px;">${ex.tag}</span>
+        <span style="font-size:12px;font-weight:500;flex:1;">${ex.name}</span>
+        <span style="font-size:10px;color:var(--gray4);">${ex.sets}×${ex.reps_range}</span>
+        <button onclick="openEditEx(${JSON.stringify(ex).replace(/"/g,'&quot;')})" style="background:none;border:none;color:var(--orange);font-size:11px;font-weight:700;cursor:pointer;padding:2px 4px;">Editar</button>
+      </div>`).join('');
   }
 }
 
-// Edit exercise inline
+// Edit exercise
 function openEditEx(ex) {
   document.getElementById('edit-ex-id').value=ex.id;
   document.getElementById('edit-ex-name').value=ex.name;
@@ -1073,7 +1034,6 @@ function openEditEx(ex) {
   document.getElementById('edit-ex-tag').value=ex.tag;
   document.getElementById('edit-ex-video').value=ex.video_url||'';
   document.getElementById('edit-ex-notes').value=ex.notes||'';
-  // Muscle
   const mSel=document.getElementById('edit-ex-muscle');
   if(MUSCLES.includes(ex.muscle_group)){mSel.value=ex.muscle_group;document.getElementById('edit-custom-muscle-group').style.display='none';}
   else if(ex.muscle_group){mSel.value='custom';document.getElementById('edit-custom-muscle').value=ex.muscle_group;document.getElementById('edit-custom-muscle-group').style.display='block';}
@@ -1081,10 +1041,9 @@ function openEditEx(ex) {
   showModal('modal-edit-ex');
 }
 
-function toggleCustomMuscle(sel, inputId) {
-  const group = sel.id==='edit-ex-muscle'?'edit-custom-muscle-group':sel.id+'-group';
-  const el = document.getElementById(group)||document.getElementById('edit-custom-muscle-group');
-  if(el) el.style.display = sel.value==='custom'?'block':'none';
+function toggleCustomMuscle(sel) {
+  const group = document.getElementById('edit-custom-muscle-group');
+  if(group) group.style.display = sel.value==='custom'?'block':'none';
 }
 
 async function saveEditedExercise() {
@@ -1107,7 +1066,7 @@ async function saveEditedExercise() {
   loadCoachClientDetail(currentClient.id);
 }
 
-// PLAN BUILDER
+// ===== PLAN BUILDER =====
 async function showPlanBuilder() {
   builderWeek=1; builderDay=DAYS[0]; exFormCount=0;
   showScreen('screen-plan-builder');
@@ -1154,7 +1113,6 @@ async function buildDayStrip() {
 async function switchBuilderDay(day) {
   builderDay=day;
   buildDayStrip();
-  // Load existing exercises for this day
   const {data:pd} = await sb.from('monthly_plans').select('*').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',day).single();
   const builderList=document.getElementById('builder-exercises-list');
   builderList.innerHTML=''; exFormCount=0;
@@ -1236,14 +1194,12 @@ async function savePlanDay() {
     exercises.push({name,sets:parseInt(sets),reps_range:reps,rest_seconds:parseInt(rest)||60,tag,muscle_group:muscle||null,video_url:video||null,notes:notes||null,superset_group:ssCheck&&ssGroup?ssGroup:null,order_index:idx});
   });
   if(!valid){showToast('⚠️ Completa nombre, series y reps');return;}
-  // Delete existing and recreate
   const {data:existPd} = await sb.from('monthly_plans').select('id').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',builderDay).single();
   if(existPd){ await sb.from('exercises').delete().eq('plan_day_id',existPd.id); await sb.from('monthly_plans').delete().eq('id',existPd.id); }
   const {data:pd,error} = await sb.from('monthly_plans').insert([{client_id:currentClient.id,week_number:builderWeek,day_of_week:builderDay}]).select().single();
   if(error){showToast('❌ '+error.message);return;}
   const exData=exercises.map(e=>({...e,plan_day_id:pd.id}));
   await sb.from('exercises').insert(exData);
-  // Save to library
   for(const e of exercises){ await saveExerciseToLibrary(e.name,e.tag,e.muscle_group,e.video_url); }
   showToast('✅ Día guardado');
   await buildWeekTabs(); await buildDayStrip();
@@ -1268,11 +1224,12 @@ async function copyWeekFromPrevious() {
   buildWeekTabs(); buildDayStrip(); switchBuilderDay(builderDay);
 }
 
-// COACH CLIENTS
+// ===== COACH CLIENT MANAGEMENT =====
 async function addClient() {
   const name=document.getElementById('nc-name').value.trim();
   const username=document.getElementById('nc-username').value.trim().toLowerCase().replace('@','');
   const pass=document.getElementById('nc-password').value;
+  const startDate=document.getElementById('nc-start-date').value;
   const payDate=document.getElementById('nc-payment-date').value;
   const payAmount=document.getElementById('nc-payment-amount').value;
   if(!name||!username||!pass){showToast('⚠️ Completa nombre, usuario y contraseña');return;}
@@ -1280,10 +1237,10 @@ async function addClient() {
   if(exists){showToast('⚠️ Ese usuario ya existe');return;}
   const {data:user,error:ue} = await sb.from('users').insert([{name,username,password:pass,role:'client'}]).select().single();
   if(ue){showToast('❌ '+ue.message);return;}
-  const {error:ce} = await sb.from('clients').insert([{coach_id:currentUser.id,name,username,next_payment_date:payDate||null,payment_amount:payAmount||null,days_trained:0}]);
+  const {error:ce} = await sb.from('clients').insert([{coach_id:currentUser.id,name,username,start_date:startDate||null,next_payment_date:payDate||null,payment_amount:payAmount||null,days_trained:0}]);
   if(ce){showToast('❌ '+ce.message);return;}
   closeModal('modal-add-client');
-  ['nc-name','nc-username','nc-password','nc-payment-date','nc-payment-amount'].forEach(id=>document.getElementById(id).value='');
+  ['nc-name','nc-username','nc-password','nc-start-date','nc-payment-date','nc-payment-amount'].forEach(id=>document.getElementById(id).value='');
   showToast('✅ Cliente creado');
   loadCoachClients();
 }
@@ -1297,7 +1254,7 @@ async function updatePayment() {
   openCoachClient(currentClient.id);
 }
 
-// PDF
+// ===== PDF =====
 async function loadCoachPlans() {
   if(!currentClient)return;
   const {data:plans} = await sb.from('plans').select('*').eq('client_id',currentClient.id).order('uploaded_at',{ascending:false});
@@ -1323,7 +1280,7 @@ async function uploadPdf() {
   document.getElementById('pdf-selected').textContent='';
 }
 
-// SETTINGS
+// ===== SETTINGS =====
 async function loadSettings() {
   const {data:clients} = await sb.from('clients').select('*').eq('coach_id',currentUser.id).order('name');
   const list=document.getElementById('settings-list');
@@ -1360,8 +1317,63 @@ async function deleteClient(clientId,clientName) {
 }
 
 function coachNav(tab,el) {
+  document.querySelectorAll('#screen-coach-home .nav-item,#screen-coach-settings .nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
   if(tab==='clients'){showScreen('screen-coach-home');loadCoachClients();}
   if(tab==='settings'){showScreen('screen-coach-settings');loadSettings();}
+}
+
+// ===== CLIENT LOGS =====
+let logsVisible = false;
+async function toggleLogs() {
+  const container = document.getElementById('coach-client-logs');
+  logsVisible = !logsVisible;
+  container.style.display = logsVisible ? 'block' : 'none';
+  if(logsVisible) await loadClientLogs();
+}
+
+async function loadClientLogs() {
+  const container = document.getElementById('coach-client-logs');
+  container.innerHTML = '<div class="spinner"></div>';
+  if(!currentClient) return;
+  const {data:logs} = await sb.from('exercise_logs').select('*, exercises(name, reps_range, sets)').eq('client_id', currentClient.id).order('logged_at', {ascending: false}).limit(50);
+  if(!logs || logs.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">Sin registros aún.</div></div>';
+    return;
+  }
+  const grouped = {};
+  logs.forEach(log => {
+    const date = log.logged_at.split('T')[0];
+    const exName = log.exercises?.name || 'Ejercicio';
+    const key = date + '|||' + exName;
+    if(!grouped[key]) grouped[key] = {date, exName, sets:[]};
+    grouped[key].sets.push(log);
+  });
+  container.innerHTML = Object.values(grouped).map(g => `
+    <div class="card" style="margin-bottom:8px;cursor:default;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-size:13px;font-weight:700;">${g.exName}</div>
+        <div style="font-size:10px;color:var(--gray4);font-family:'DM Mono',monospace;">${new Date(g.date+'T12:00:00').toLocaleDateString('es-CR')}</div>
+      </div>
+      ${g.sets.map(s => `
+        <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--gray2);font-size:12px;">
+          <span style="color:var(--gray4);font-family:'DM Mono',monospace;width:42px;">Set ${s.set_number}</span>
+          <span style="font-weight:600;">${s.weight ? s.weight+'kg' : '—'}</span>
+          <span style="color:var(--gray4);">·</span>
+          <span style="font-weight:600;">${s.reps_done ? s.reps_done+' reps' : '—'}</span>
+          ${s.difficulty ? `<span style="margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:${s.difficulty==='facil'?'var(--green-light)':'var(--red-light)'};color:${s.difficulty==='facil'?'var(--green)':'var(--red)'};">${s.difficulty==='facil'?'Fácil 😊':'Difícil 🔥'}</span>` : ''}
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+// ===== EXERCISE LIBRARY =====
+async function saveExerciseToLibrary(name, tag, muscle, video) {
+  if(!name||!currentUser)return;
+  try {
+    const {data:exists} = await sb.from('exercise_library').select('id').eq('coach_id',currentUser.id).eq('name',name).maybeSingle();
+    if(!exists){ await sb.from('exercise_library').insert([{coach_id:currentUser.id,name,tag:tag||'Peso Libre',muscle_group:muscle||null,video_url:video||null}]); }
+    else { if(video) await sb.from('exercise_library').update({video_url:video,tag:tag||'Peso Libre',muscle_group:muscle||null}).eq('id',exists.id); }
+  } catch(e) { console.error('Library save error:',e); }
 }
 
 async function saveOneToLibrary(id) {
@@ -1371,7 +1383,6 @@ async function saveOneToLibrary(id) {
   const muscle = mSel==='custom'?document.getElementById('bmc-input-'+id)?.value:(mSel||null);
   const video = document.getElementById('bv-'+id)?.value.trim()||null;
   if(!name){showToast('⚠️ Escribe el nombre primero');return;}
-  if(!currentUser){showToast('❌ No hay sesión activa');return;}
   const {data:exists} = await sb.from('exercise_library').select('id').eq('coach_id',currentUser.id).eq('name',name).maybeSingle();
   if(exists){
     await sb.from('exercise_library').update({tag:tag||'Peso Libre',muscle_group:muscle,video_url:video}).eq('id',exists.id);
@@ -1382,30 +1393,42 @@ async function saveOneToLibrary(id) {
   showToast('✅ Guardado en biblioteca');
 }
 
-// ===== EXERCISE LIBRARY =====
-async function saveExerciseToLibrary(name, tag, muscle, video) {
-  if(!name||!currentUser)return;
-  try {
-    const {data:exists} = await sb.from('exercise_library').select('id').eq('coach_id',currentUser.id).eq('name',name).maybeSingle();
-    if(!exists){ 
-      await sb.from('exercise_library').insert([{coach_id:currentUser.id,name,tag:tag||'Peso Libre',muscle_group:muscle||null,video_url:video||null}]); 
-    } else {
-      // Update video if provided and not already saved
-      if(video) await sb.from('exercise_library').update({video_url:video,tag:tag||'Peso Libre',muscle_group:muscle||null}).eq('id',exists.id);
-    }
-  } catch(e) { console.error('Library save error:',e); }
-}
-
 async function openLibrary() {
+  libraryFilterCategory = '';
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  document.querySelector('.filter-chip').classList.add('active');
   showModal('modal-ex-library');
   await loadLibrary();
 }
 
 async function loadLibrary() {
   const {data:exs} = await sb.from('exercise_library').select('*').eq('coach_id',currentUser.id).order('name');
+  allLibraryExercises = exs || [];
+  renderLibrary();
+}
+
+function setLibraryFilter(category, el) {
+  libraryFilterCategory = category;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderLibrary();
+}
+
+function renderLibrary() {
   const list = document.getElementById('library-list');
-  if(!exs||exs.length===0){list.innerHTML='<div class="empty-state"><div class="empty-icon">📚</div><div class="empty-text">Sin ejercicios guardados aún.<br>Los ejercicios que crees se guardan automáticamente aquí.</div></div>';return;}
-  list.innerHTML = exs.map(ex=>`
+  const searchQ = document.getElementById('library-search')?.value.toLowerCase() || '';
+  let filtered = allLibraryExercises;
+  if(libraryFilterCategory) {
+    filtered = filtered.filter(ex => ex.muscle_group === libraryFilterCategory);
+  }
+  if(searchQ) {
+    filtered = filtered.filter(ex => ex.name.toLowerCase().includes(searchQ));
+  }
+  if(filtered.length===0){
+    list.innerHTML='<div class="empty-state"><div class="empty-icon">📚</div><div class="empty-text">Sin ejercicios encontrados.</div></div>';
+    return;
+  }
+  list.innerHTML = filtered.map(ex=>`
     <div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--gray2);" id="lib-item-${ex.id}">
       <div style="flex:1;min-width:0;">
         <div style="font-size:13px;font-weight:600;">${ex.name}</div>
@@ -1421,6 +1444,8 @@ async function loadLibrary() {
       </div>
     </div>`).join('');
 }
+
+function filterLibrary() { renderLibrary(); }
 
 function editLibraryEx(id, name, tag, muscle, video) {
   const item = document.getElementById('lib-item-'+id);
@@ -1462,31 +1487,10 @@ async function deleteLibraryEx(id) {
   loadLibrary();
 }
 
-function filterLibrary() {
-  const q = document.getElementById('library-search').value.toLowerCase();
-  document.querySelectorAll('#library-list > div').forEach(el=>{
-    const name = el.querySelector('div > div')?.textContent.toLowerCase()||'';
-    el.style.display = name.includes(q)?'flex':'none';
-  });
-}
-
 function addFromLibrary(ex) {
   addExerciseForm({name:ex.name,tag:ex.tag,muscle_group:ex.muscle_group,sets:'',reps_range:'',rest_seconds:60,video_url:ex.video_url||'',notes:'',superset_group:null});
   closeModal('modal-ex-library');
 }
-
-
-
 </script>
-
-<!-- Exercise Library Modal -->
-<div class="modal-overlay" id="modal-ex-library">
-  <div class="modal">
-    <span class="modal-close" onclick="closeModal('modal-ex-library')">×</span>
-    <div class="modal-title">Biblioteca de ejercicios</div>
-    <input class="form-input" id="library-search" placeholder="Buscar ejercicio..." oninput="filterLibrary()" style="margin-bottom:12px;">
-    <div id="library-list" style="max-height:55vh;overflow-y:auto;"></div>
-  </div>
-</div>
 </body>
 </html>
