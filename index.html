@@ -847,7 +847,28 @@ async function loadClientExercises() {
       </div>`;
     }
   });
-  list.innerHTML = html;
+  // Warmup banner — before first exercise
+  const warmupBanner = `<div class="fade-up" style="background:linear-gradient(135deg,#fff8f5,#fff3ee);border:1.5px solid var(--orange-mid);border-radius:var(--radius);padding:13px 15px;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px;">
+    <div style="font-size:22px;flex-shrink:0;">🔥</div>
+    <div style="flex:1;">
+      <div style="font-size:13px;font-weight:700;color:var(--black);margin-bottom:3px;">Recuerda calentar por 5 minutos antes de empezar con la rutina.</div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px;">
+        <a href="https://youtube.com/shorts/GnBbaPlj6Ls?si=Ie-UQwwa8OpIkn-x" target="_blank" style="font-size:11px;font-weight:700;color:var(--orange);text-decoration:none;background:var(--orange-light);padding:3px 9px;border-radius:20px;">▶ Video guía</a>
+        <span style="font-size:11px;color:var(--gray4);">+ 5 minutos del Cardio que prefieras</span>
+      </div>
+    </div>
+  </div>`;
+
+  // Cooldown banner — after last exercise
+  const cooldownBanner = `<div class="fade-up" style="background:linear-gradient(135deg,#f5faff,#eef5fb);border:1.5px solid var(--blue-light);border-radius:var(--radius);padding:13px 15px;margin-top:4px;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px;">
+    <div style="font-size:22px;flex-shrink:0;">🧊</div>
+    <div style="flex:1;">
+      <div style="font-size:13px;font-weight:700;color:var(--black);margin-bottom:3px;">Recuerda estirar por 5–10 minutos luego de terminar con todos los ejercicios.</div>
+      <a href="https://youtube.com/shorts/rrM_wtKObK4?si=xA6v3gRrLhrCbwjU" target="_blank" style="font-size:11px;font-weight:700;color:var(--blue);text-decoration:none;background:var(--blue-light);padding:3px 9px;border-radius:20px;display:inline-block;margin-top:4px;">▶ Video guía</a>
+    </div>
+  </div>`;
+
+  list.innerHTML = warmupBanner + html + cooldownBanner;
 
   const muscles = [...new Set(exs.filter(e=>e.muscle_group).map(e=>e.muscle_group))];
   if(muscles.length>0){
