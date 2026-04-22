@@ -297,22 +297,27 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <label for="remember-me" style="font-size:13px;color:var(--gray5);cursor:pointer;">Recordar mi sesión</label>
     </div>
     <button class="btn-primary" onclick="handleLogin()">Entrar</button>
-    <button class="btn-secondary" style="margin-top:10px;" onclick="showScreen('screen-register')">Crear cuenta</button>
+    <button class="btn-secondary" style="margin-top:10px;" onclick="showScreen('screen-register')">¿No tenés acceso? Solicítalo aquí</button>
   </div>
 </div>
 
-<!-- ===== REGISTER ===== -->
+<!-- ===== REGISTER — REPLACED WITH EXCLUSIVE ACCESS ===== -->
 <div class="screen" id="screen-register">
-  <div style="width:100%;padding:40px 32px;">
-    <div style="margin-bottom:28px;"><div class="login-logo">Move With Sau</div><div class="login-title" style="font-size:30px;">Crear<br>cuenta</div></div>
-    <div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" id="reg-name" placeholder="Tu nombre"></div>
-    <div class="form-group"><label class="form-label">Usuario</label><input class="form-input" id="reg-username" placeholder="@usuario" autocapitalize="none"></div>
-    <div class="form-group"><label class="form-label">Contraseña</label><input class="form-input" type="password" id="reg-password" placeholder="••••••••"></div>
-    <div class="form-group"><label class="form-label">Tipo de cuenta</label>
-      <select class="form-select" id="reg-role"><option value="client">Cliente</option><option value="coach">Coach</option></select>
+  <div style="width:100%;padding:40px 32px;text-align:center;">
+    <div style="margin-bottom:32px;">
+      <div class="login-logo">Move With Sau</div>
+      <div class="login-title" style="font-size:32px;">Acceso<br><span>Exclusivo</span></div>
+      <div class="login-sub" style="margin-top:10px;">Move With Sau es una plataforma privada.<br>El acceso es solo por invitación del coach.</div>
     </div>
-    <button class="btn-primary" onclick="handleRegister()">Crear cuenta</button>
-    <button class="btn-secondary" style="margin-top:10px;" onclick="showScreen('screen-login')">Ya tengo cuenta</button>
+    <div style="background:var(--orange-light);border:1.5px solid var(--orange-mid);border-radius:var(--radius);padding:20px;margin-bottom:28px;">
+      <div style="font-size:28px;margin-bottom:8px;">📲</div>
+      <div style="font-size:14px;font-weight:600;color:var(--black);margin-bottom:6px;">¿Querés entrenar con Sau?</div>
+      <div style="font-size:13px;color:var(--gray5);margin-bottom:16px;line-height:1.5;">Enviame un DM en Instagram con el mensaje <strong style="color:var(--orange);">"APP"</strong> y te agrego personalmente.</div>
+      <a href="https://www.instagram.com/movewithsau" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:var(--orange);color:white;border-radius:var(--radius-sm);padding:13px 24px;font-size:14px;font-weight:700;text-decoration:none;font-family:'DM Sans',sans-serif;">
+        <span style="font-size:18px;">📸</span> Solicita tu acceso — Envía APP por DM
+      </a>
+    </div>
+    <button class="btn-secondary" onclick="showScreen('screen-login')">← Volver al login</button>
   </div>
 </div>
 
