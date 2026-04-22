@@ -351,6 +351,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div style="margin-bottom:18px;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Tu programa</div><div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;">Tu Plan MOVE</div></div>
     <div id="c-plans-list"><div class="spinner"></div></div>
   </div>
+  <a href="https://wa.me/50672083564" target="_blank" style="position:fixed;bottom:80px;right:16px;width:50px;height:50px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,211,102,0.4);z-index:99;text-decoration:none;font-size:26px;">💬</a>
   <div class="bottom-nav">
     <div class="nav-item" onclick="clientNav('home',this)"><div class="nav-icon">🏋️</div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
     <div class="nav-item active" onclick="clientNav('plan',this)"><div class="nav-icon">📋</div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
@@ -362,8 +363,10 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 <div class="screen" id="screen-client-profile">
   <div class="topbar"><div class="topbar-logo">Move With Sau</div><div class="topbar-action" onclick="handleLogout()">Salir</div></div>
   <div class="scroll-body">
-    <div style="text-align:center;padding:20px 0 28px;">
-      <div style="width:76px;height:76px;border-radius:50%;background:var(--orange-light);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--orange);" id="c-profile-initials">--</div>
+    <div style="text-align:center;padding:20px 0 16px;">
+      <!-- Avatar clickable -->
+      <div id="c-profile-avatar" onclick="showAvatarPicker()" style="width:76px;height:76px;border-radius:50%;background:var(--orange-light);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--orange);cursor:pointer;transition:transform 0.15s;" id="c-profile-initials">--</div>
+      <div style="font-size:11px;color:var(--orange);font-weight:600;margin-bottom:10px;cursor:pointer;" onclick="showAvatarPicker()">✏️ Cambiar avatar</div>
       <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;" id="c-profile-name">—</div>
       <div style="font-size:12px;color:var(--gray4);margin-top:3px;" id="c-profile-username">—</div>
     </div>
@@ -424,6 +427,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     </div>
     <button class="btn-secondary" onclick="handleLogout()" style="margin-top:4px;">Cerrar sesión</button>
   </div>
+  <a href="https://wa.me/50672083564" target="_blank" style="position:fixed;bottom:80px;right:16px;width:50px;height:50px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,211,102,0.4);z-index:99;text-decoration:none;font-size:26px;">💬</a>
   <div class="bottom-nav">
     <div class="nav-item" onclick="clientNav('home',this)"><div class="nav-icon">🏋️</div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon">📋</div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
@@ -671,8 +675,125 @@ let workoutTimerStarted = false;
 const DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 const MUSCLES = ['Pecho','Espalda','Hombros','Bíceps','Tríceps','Cuádriceps','Isquiotibiales','Glúteos','Core','Pantorrillas','Movilidad','Cardio','Performance'];
 
-// ===== UTILS =====
-function showScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
+// ===== SCREEN HISTORY & SWIPE BACK =====
+let screenHistory = [];
+
+function showScreen(id) {
+  const current = document.querySelector('.screen.active');
+  if(current && current.id !== id) screenHistory.push(current.id);
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function goBack() {
+  if(screenHistory.length === 0) return;
+  const prev = screenHistory.pop();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(prev)?.classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// Swipe detection
+(function() {
+  let touchStartX = 0, touchStartY = 0;
+  document.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, {passive:true});
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
+    // Swipe right (dx > 60) from left edge (startX < 40) and mostly horizontal
+    if(dx > 60 && touchStartX < 40 && dy < 80) {
+      goBack();
+    }
+  }, {passive:true});
+})();
+
+// ===== AVATAR =====
+let avatarBgPref = 'orange'; // 'orange' or 'black'
+let avatarTypePref = 'initials'; // 'initials' | emoji string
+
+function getAvatarStyle(bg) {
+  if(bg === 'black') return 'background:#111111;color:var(--orange);';
+  return 'background:var(--orange-light);color:var(--orange);';
+}
+
+function renderAvatar(el, initials, avatarType, avatarBg) {
+  if(!el) return;
+  const bgStyle = avatarBg === 'black'
+    ? 'background:#111111;color:var(--orange);'
+    : 'background:var(--orange-light);color:var(--orange);';
+  if(!avatarType || avatarType === 'initials') {
+    el.style.cssText += bgStyle;
+    el.style.fontSize = '26px';
+    el.textContent = initials;
+  } else {
+    el.style.cssText += bgStyle;
+    el.style.fontSize = '34px';
+    el.textContent = avatarType;
+  }
+}
+
+function showAvatarPicker() {
+  // Set current state
+  avatarBgPref = currentClient?.avatar_bg || 'orange';
+  avatarTypePref = currentClient?.avatar_type || 'initials';
+  updateAvatarModalPreview();
+  // Highlight current selections
+  ['bg-orange','bg-black'].forEach(id=>document.getElementById(id)?.style.setProperty('border-width','2px'));
+  document.getElementById(avatarBgPref==='black'?'bg-black':'bg-orange').style.borderWidth='3px';
+  showModal('modal-avatar-picker');
+}
+
+function selectAvatarBg(bg) {
+  avatarBgPref = bg;
+  document.getElementById('bg-orange').style.borderWidth = bg==='orange'?'3px':'2px';
+  document.getElementById('bg-black').style.borderWidth = bg==='black'?'3px':'2px';
+  updateAvatarModalPreview();
+}
+
+function selectAvatarType(type) {
+  avatarTypePref = type;
+  ['av-initials','av-skull','av-ninja','av-gorilla','av-tiger'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.style.borderColor = 'var(--gray2)';
+  });
+  const map = {'initials':'av-initials','💀':'av-skull','🥷🏻':'av-ninja','🦍':'av-gorilla','🐅':'av-tiger'};
+  const sel = document.getElementById(map[type]);
+  if(sel) sel.style.borderColor = 'var(--orange)';
+  updateAvatarModalPreview();
+}
+
+function updateAvatarModalPreview() {
+  const prev = document.getElementById('avatar-modal-preview');
+  if(!prev) return;
+  const initials = getInitials(currentClient?.name||currentUser?.name||'');
+  const bgStyle = avatarBgPref==='black' ? 'background:#111111;' : 'background:var(--orange-light);';
+  prev.style.cssText = `width:76px;height:76px;border-radius:50%;${bgStyle}display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-weight:700;color:var(--orange);border:2px solid var(--gray2);font-size:${avatarTypePref==='initials'?'26':'34'}px;`;
+  prev.textContent = avatarTypePref==='initials' ? initials : avatarTypePref;
+}
+
+async function saveAvatar() {
+  await sb.from('clients').update({avatar_bg:avatarBgPref, avatar_type:avatarTypePref}).eq('id',currentClient.id);
+  currentClient.avatar_bg = avatarBgPref;
+  currentClient.avatar_type = avatarTypePref;
+  applyAvatarToProfile();
+  closeModal('modal-avatar-picker');
+  showToast('✅ Avatar actualizado');
+}
+
+function applyAvatarToProfile() {
+  const el = document.getElementById('c-profile-avatar');
+  if(!el) return;
+  const initials = getInitials(currentClient?.name||currentUser?.name||'');
+  const bg = currentClient?.avatar_bg || 'orange';
+  const type = currentClient?.avatar_type || 'initials';
+  const bgStyle = bg==='black' ? 'background:#111111;' : 'background:var(--orange-light);';
+  el.style.cssText = `width:76px;height:76px;border-radius:50%;${bgStyle}display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-weight:700;color:var(--orange);cursor:pointer;transition:transform 0.15s;font-size:${type==='initials'?'26':'34'}px;margin:0 auto 8px;`;
+  el.textContent = type==='initials' ? initials : type;
+}
 function showToast(msg,dur=2500) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),dur); }
 function showModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -750,7 +871,7 @@ async function handleRegister() {
   else initClient();
 }
 
-function handleLogout() { currentUser=null;currentClient=null;clientWeek=1;clientDay=null; localStorage.removeItem('mws_user'); showScreen('screen-login'); }
+function handleLogout() { currentUser=null;currentClient=null;clientWeek=1;clientDay=null;screenHistory=[]; localStorage.removeItem('mws_user'); showScreen('screen-login'); }
 
 // ===== CLIENT =====
 async function initClient() {
@@ -765,6 +886,8 @@ async function initClient() {
   document.getElementById('c-profile-initials').textContent = getInitials(cd?.name||currentUser.name);
   document.getElementById('c-profile-name').textContent = cd?.name||currentUser.name;
   document.getElementById('c-profile-username').textContent = '@'+currentUser.username;
+  // Apply avatar
+  applyAvatarToProfile();
   document.getElementById('c-profile-days').textContent = cd?.days_trained||0;
   document.getElementById('c-profile-week').textContent = clientWeek;
   // Weight
@@ -963,7 +1086,7 @@ function openExDetail(ex) {
   showScreen('screen-ex-detail');
 }
 
-function goBackFromDetail() { stopWorkoutTimer(); showScreen('screen-client-home'); }
+function goBackFromDetail() { stopWorkoutTimer(); goBack(); }
 function toggleDiff(btn,type) { const row=btn.closest('.set-row'); row.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); }
 
 // ===== WORKOUT TIMER =====
@@ -1810,5 +1933,30 @@ function addFromLibrary(ex) {
   closeModal('modal-ex-library');
 }
 </script>
+<!-- Avatar Picker Modal -->
+<div class="modal-overlay" id="modal-avatar-picker">
+  <div class="modal">
+    <span class="modal-close" onclick="closeModal('modal-avatar-picker')">×</span>
+    <div class="modal-title">Personalizar avatar</div>
+    <div class="notes-label" style="margin-bottom:10px;">Fondo</div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <div id="bg-orange" onclick="selectAvatarBg('orange')" style="flex:1;height:44px;border-radius:10px;background:var(--orange-light);border:2px solid var(--orange);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--orange);">Naranja</div>
+      <div id="bg-black" onclick="selectAvatarBg('black')" style="flex:1;height:44px;border-radius:10px;background:#111;border:2px solid #333;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--orange);">Negro</div>
+    </div>
+    <div class="notes-label" style="margin-bottom:10px;">Avatar — Iniciales o emoji</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+      <div id="av-initials" onclick="selectAvatarType('initials')" style="width:56px;height:56px;border-radius:50%;background:var(--orange-light);border:2px solid var(--orange);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--orange);" id="avatar-preview-initials">AA</div>
+      <div id="av-skull" onclick="selectAvatarType('💀')" style="width:56px;height:56px;border-radius:50%;background:var(--gray1);border:2px solid var(--gray2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:28px;">💀</div>
+      <div id="av-ninja" onclick="selectAvatarType('🥷🏻')" style="width:56px;height:56px;border-radius:50%;background:var(--gray1);border:2px solid var(--gray2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:28px;">🥷🏻</div>
+      <div id="av-gorilla" onclick="selectAvatarType('🦍')" style="width:56px;height:56px;border-radius:50%;background:var(--gray1);border:2px solid var(--gray2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:28px;">🦍</div>
+      <div id="av-tiger" onclick="selectAvatarType('🐅')" style="width:56px;height:56px;border-radius:50%;background:var(--gray1);border:2px solid var(--gray2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:28px;">🐅</div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+      <div id="avatar-modal-preview" style="width:76px;height:76px;border-radius:50%;background:var(--orange-light);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--orange);border:2px solid var(--gray2);">AA</div>
+    </div>
+    <button class="btn-primary" onclick="saveAvatar()">Guardar avatar</button>
+  </div>
+</div>
+
 </body>
 </html>
