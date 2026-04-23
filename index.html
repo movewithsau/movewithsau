@@ -580,6 +580,31 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   </div>
 </div>
 
+<!-- ===== EX INFO POPUP (for circuit exercises) ===== -->
+<div id="modal-ex-info" style="display:none;position:fixed;inset:0;z-index:300;align-items:flex-end;justify-content:center;">
+  <div onclick="closeExInfo()" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);"></div>
+  <div style="position:relative;width:100%;max-width:480px;background:var(--white);border-radius:24px 24px 0 0;overflow:hidden;max-height:80vh;overflow-y:auto;">
+    <div id="ex-info-header" style="background:var(--orange);padding:18px 20px 14px;color:white;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+        <div>
+          <div id="ex-info-tag" style="font-size:10px;font-weight:700;letter-spacing:0.12em;opacity:0.8;text-transform:uppercase;margin-bottom:4px;"></div>
+          <div id="ex-info-name" style="font-family:'Playfair Display',serif;font-size:22px;font-weight:900;line-height:1.1;"></div>
+          <div id="ex-info-muscle" style="font-size:11px;opacity:0.8;margin-top:4px;"></div>
+        </div>
+        <div onclick="closeExInfo()" style="width:30px;height:30px;background:rgba(255,255,255,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;flex-shrink:0;margin-left:10px;">×</div>
+      </div>
+    </div>
+    <div style="padding:14px 16px 32px;">
+      <div id="ex-info-specs" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;"></div>
+      <div id="ex-info-notes" style="display:none;background:var(--gray1);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;color:var(--gray4);text-transform:uppercase;margin-bottom:6px;">Notas del coach</div>
+        <div id="ex-info-notes-text" style="font-size:13px;line-height:1.55;color:var(--black);"></div>
+      </div>
+      <a id="ex-info-video" href="#" target="_blank" style="display:none;align-items:center;gap:10px;background:var(--orange-light);border:1.5px solid var(--orange-mid);border-radius:var(--radius-sm);padding:12px 14px;text-decoration:none;color:var(--orange);font-weight:600;font-size:14px;">▶ Ver video del ejercicio</a>
+    </div>
+  </div>
+</div>
+
 <!-- ===== STRONGFLOW POPUP ===== -->
 <div id="modal-strongflow" style="display:none;position:fixed;inset:0;z-index:300;align-items:flex-end;justify-content:center;">
   <!-- backdrop -->
@@ -1141,6 +1166,10 @@ async function loadClientExercises() {
   exs.forEach(ex=>{ if(ex.superset_group){ if(!groups[ex.superset_group])groups[ex.superset_group]=[]; groups[ex.superset_group].push(ex); } });
 
   const done = getCompletedExercises();
+  // Load saved circuit logs from localStorage
+  const circuitLogsKey = `mws_clogs_${currentClient.id}_w${clientWeek}_${clientDay}`;
+  let circuitLogs = {};
+  try { circuitLogs = JSON.parse(localStorage.getItem(circuitLogsKey)||'{}'); } catch{}
 
   // ===== WORKOUT START BUTTON (before warmup banner) =====
   const workoutStarted = isWorkoutStarted();
@@ -1167,28 +1196,93 @@ async function loadClientExercises() {
   </div>`;
 
   let exHtml = '';
+  const renderedGroups = new Set();
+
   exs.forEach(ex=>{
-    const isDone = !!done[ex.id];
-    if(ex.superset_group && groups[ex.superset_group] && groups[ex.superset_group][0]===ex){
+    if(ex.superset_group && groups[ex.superset_group] && groups[ex.superset_group][0]===ex && !renderedGroups.has(ex.superset_group)){
+      renderedGroups.add(ex.superset_group);
       const g = groups[ex.superset_group];
-      exHtml+=`<div class="superset-group fade-up"><div class="superset-label">Superset ${ex.superset_group}</div>`;
-      g.forEach(se=>{
-        const seDone = !!done[se.id];
-        exHtml+=`<div class="superset-ex${seDone?' completed':''}" onclick="openExDetail(${JSON.stringify(se).replace(/"/g,'&quot;')})">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span class="ex-tag ${getTagClass(se.tag)}">${se.tag}</span>
-            <span style="font-size:13px;font-weight:600;${seDone?'text-decoration:line-through;color:var(--gray4);':''}">${se.name}</span>
-            <span style="margin-left:auto;display:flex;align-items:center;gap:6px;">
-              ${seDone?'<span style="color:var(--green);font-size:14px;">✓</span>':''}
-              <span style="color:var(--gray3);font-size:16px;">›</span>
-            </span>
+      const rounds = g[0].sets || 3;
+      const restSecs = g[0].rest_seconds || 60;
+      const restText = restSecs >= 60 ? `${Math.floor(restSecs/60)}min${restSecs%60>0?' '+restSecs%60+'s':''}` : `${restSecs}s`;
+      const colW = Math.floor(100 / g.length);
+
+      // Build column headers (exercise names as links)
+      let headerCols = g.map(se=>`
+        <th style="padding:6px 4px;font-size:11px;font-weight:700;color:var(--black);text-align:center;border-bottom:2px solid var(--gray2);min-width:80px;">
+          <span onclick="openExInfo(${JSON.stringify(se).replace(/"/g,'&quot;')})" style="color:var(--orange);text-decoration:underline;cursor:pointer;font-size:11px;">${se.name}</span>
+          <div style="font-size:9px;color:var(--gray4);font-weight:400;margin-top:1px;">${se.reps_range} reps</div>
+        </th>`).join('');
+
+      // Build rows for each round
+      let rows = '';
+      for(let r=1;r<=rounds;r++){
+        let cells = g.map(se=>{
+          const logKey = `${se.id}_r${r}`;
+          const saved = circuitLogs[logKey] || {};
+          const wVal = saved.w||'';
+          const rVal = saved.r||'';
+          const isDone = saved.w && saved.r;
+          return `<td style="padding:4px;text-align:center;border-bottom:1px solid var(--gray2);">
+            <div style="display:flex;gap:3px;justify-content:center;align-items:center;">
+              <input type="number" inputmode="decimal" placeholder="kg" value="${wVal}"
+                style="width:46px;padding:5px 4px;border:1.5px solid ${isDone?'var(--green)':'var(--gray2)'};border-radius:6px;font-size:12px;text-align:center;font-family:'DM Sans',sans-serif;outline:none;background:${isDone?'var(--green-light)':'var(--white)'};color:var(--black);"
+                id="clog-w-${se.id}-r${r}"
+                onchange="saveCircuitLog('${se.id}',${r},'${circuitLogsKey}')"
+                onfocus="this.style.borderColor='var(--orange)'">
+              <input type="number" inputmode="numeric" placeholder="reps" value="${rVal}"
+                style="width:46px;padding:5px 4px;border:1.5px solid ${isDone?'var(--green)':'var(--gray2)'};border-radius:6px;font-size:12px;text-align:center;font-family:'DM Sans',sans-serif;outline:none;background:${isDone?'var(--green-light)':'var(--white)'};color:var(--black);"
+                id="clog-r-${se.id}-r${r}"
+                onchange="saveCircuitLog('${se.id}',${r},'${circuitLogsKey}')"
+                onfocus="this.style.borderColor='var(--orange)'">
+            </div>
+          </td>`;
+        }).join('');
+
+        rows += `<tr>
+          <td style="padding:6px 6px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:var(--orange);white-space:nowrap;border-bottom:1px solid var(--gray2);">R${r}</td>
+          ${cells}
+        </tr>`;
+
+        // Descanso row between rounds (not after last)
+        if(r < rounds){
+          rows += `<tr>
+            <td colspan="${g.length+1}" style="text-align:center;padding:5px 0;border-bottom:1px solid var(--gray2);">
+              <span style="font-size:10px;color:var(--gray4);font-family:'DM Mono',monospace;letter-spacing:0.05em;">— Descanso ${restText} —</span>
+            </td>
+          </tr>`;
+        }
+      }
+
+      exHtml += `<div class="fade-up" style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;border-left:3px solid var(--orange);">
+        <div style="padding:10px 14px 8px;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--orange);text-transform:uppercase;font-weight:700;">Circuito ${ex.superset_group}</div>
+            <div style="font-size:11px;color:var(--gray4);margin-top:1px;">${rounds} rounds · ${restText} descanso</div>
           </div>
-          <div style="font-size:11px;color:var(--gray4);margin-top:3px;">${se.sets} series × ${se.reps_range} reps · ${se.rest_seconds}s</div>
-          ${se.muscle_group?`<span class="muscle-tag">${se.muscle_group}</span>`:''}
-        </div>`;
-      });
-      exHtml+='</div>';
+          <div id="unit-toggle-${ex.superset_group}" style="display:flex;gap:3px;">
+            <button onclick="setCircuitUnit('${ex.superset_group}','kg',this)" class="unit-btn selected" style="padding:4px 10px;font-size:11px;">kg</button>
+            <button onclick="setCircuitUnit('${ex.superset_group}','lb',this)" class="unit-btn" style="padding:4px 10px;font-size:11px;">lb</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;min-width:${g.length*100+60}px;">
+            <thead>
+              <tr>
+                <th style="padding:6px;width:36px;border-bottom:2px solid var(--gray2);"></th>
+                ${headerCols}
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <div style="padding:8px 14px;">
+          <button onclick="saveCircuitToSupabase('${ex.superset_group}','${circuitLogsKey}',[${g.map(se=>`'${se.id}'`).join(',')}],${rounds})" style="width:100%;padding:10px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Guardar Circuito ${ex.superset_group} ✓</button>
+        </div>
+      </div>`;
+
     } else if(!ex.superset_group) {
+      const isDone = !!done[ex.id];
       exHtml+=`<div class="ex-card fade-up${isDone?' completed':''}" onclick="openExDetail(${JSON.stringify(ex).replace(/"/g,'&quot;')})">
         <div class="ex-card-top">
           <span class="ex-tag ${getTagClass(ex.tag)}">${ex.tag}</span>
@@ -1752,7 +1846,7 @@ function addExerciseForm(prefill=null) {
     <div class="form-group"><textarea class="form-textarea" placeholder="Notas del coach (opcional)" id="bno-${id}" rows="2">${prefill&&prefill.notes?prefill.notes:''}</textarea></div>
     <div class="superset-toggle">
       <input type="checkbox" id="bss-${id}" ${prefill&&prefill.superset_group?'checked':''} onchange="toggleSupersetInput(${id})">
-      <label for="bss-${id}">Superset</label>
+      <label for="bss-${id}">Parte de un Circuito</label>
       <input class="superset-group-input" id="bssg-${id}" placeholder="Ej: A" style="display:${prefill&&prefill.superset_group?'inline-block':'none'};" value="${prefill&&prefill.superset_group?prefill.superset_group:''}">
     </div>`;
   document.getElementById('builder-exercises-list').appendChild(div);
@@ -2380,6 +2474,79 @@ async function saveMacros() {
   Object.assign(currentClient, updates);
   showToast('✅ Macros guardados');
 }
+// ===== CIRCUIT LOG FUNCTIONS =====
+function saveCircuitLog(exId, round, logsKey) {
+  const w = document.getElementById(`clog-w-${exId}-r${round}`)?.value;
+  const r = document.getElementById(`clog-r-${exId}-r${round}`)?.value;
+  let logs = {};
+  try { logs = JSON.parse(localStorage.getItem(logsKey)||'{}'); } catch{}
+  const key = `${exId}_r${round}`;
+  logs[key] = {w, r};
+  localStorage.setItem(logsKey, JSON.stringify(logs));
+  // Visual feedback — green border when filled
+  const wEl = document.getElementById(`clog-w-${exId}-r${round}`);
+  const rEl = document.getElementById(`clog-r-${exId}-r${round}`);
+  const filled = w && r;
+  if(wEl){ wEl.style.borderColor = filled?'var(--green)':'var(--gray2)'; wEl.style.background = filled?'var(--green-light)':'var(--white)'; }
+  if(rEl){ rEl.style.borderColor = filled?'var(--green)':'var(--gray2)'; rEl.style.background = filled?'var(--green-light)':'var(--white)'; }
+}
+
+async function saveCircuitToSupabase(groupName, logsKey, exIds, rounds) {
+  if(!currentClient) return;
+  let logs = {};
+  try { logs = JSON.parse(localStorage.getItem(logsKey)||'{}'); } catch{}
+  const weightUnit = currentWeightUnit;
+  const inserts = [];
+  for(const exId of exIds){
+    for(let r=1;r<=rounds;r++){
+      const saved = logs[`${exId}_r${r}`]||{};
+      const w = parseFloat(saved.w)||null;
+      const reps = parseInt(saved.r)||null;
+      if(w||reps){
+        inserts.push({exercise_id:exId, client_id:currentClient.id, week_number:clientWeek, set_number:r, weight:w, weight_unit:weightUnit, reps_done:reps, difficulty:null});
+        markExerciseDone(exId);
+      }
+    }
+  }
+  if(inserts.length === 0){ showToast('⚠️ Completa al menos un round'); return; }
+  const {error} = await sb.from('exercise_logs').insert(inserts);
+  if(error){ showToast('❌ '+error.message); return; }
+  showToast(`✅ Circuito ${groupName} guardado 💪`);
+}
+
+function setCircuitUnit(groupName, unit, btn) {
+  currentWeightUnit = unit;
+  const container = document.getElementById(`unit-toggle-${groupName}`);
+  if(container){
+    container.querySelectorAll('.unit-btn').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+  // Update all placeholders in this circuit
+  document.querySelectorAll(`[id^="clog-w-"]`).forEach(inp=>inp.placeholder=unit);
+}
+
+// ===== EX INFO POPUP =====
+function openExInfo(ex) {
+  document.getElementById('ex-info-tag').textContent = ex.tag;
+  document.getElementById('ex-info-name').textContent = ex.name;
+  document.getElementById('ex-info-muscle').textContent = ex.muscle_group ? '💪 '+ex.muscle_group : '';
+  document.getElementById('ex-info-specs').innerHTML = `
+    <div class="spec-box"><div class="spec-val">${ex.sets}</div><div class="spec-lbl">Rounds</div></div>
+    <div class="spec-box"><div class="spec-val">${ex.reps_range}</div><div class="spec-lbl">Reps</div></div>
+    <div class="spec-box"><div class="spec-val">${ex.rest_seconds}s</div><div class="spec-lbl">Descanso</div></div>`;
+  const notesBox = document.getElementById('ex-info-notes');
+  if(ex.notes){ notesBox.style.display='block'; document.getElementById('ex-info-notes-text').textContent=ex.notes; }
+  else { notesBox.style.display='none'; }
+  const videoLink = document.getElementById('ex-info-video');
+  if(ex.video_url){ videoLink.style.display='flex'; videoLink.href=ex.video_url; }
+  else { videoLink.style.display='none'; }
+  document.getElementById('modal-ex-info').style.display = 'flex';
+}
+
+function closeExInfo() {
+  document.getElementById('modal-ex-info').style.display = 'none';
+}
+
 // ===== STRONGFLOW CHAT =====
 const STRONGFLOW_SYSTEM_PROMPT = `Vos sos StrongFlow Coach — el asistente de entrenamiento de Move With Sau. No sos un bot genérico de fitness. Sos alguien que vive el método, que entiende que el cuerpo necesita fuerza Y movilidad, y que entrena desde la consciencia, no desde el ego.
 
