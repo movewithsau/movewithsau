@@ -283,6 +283,8 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 /* EDIT EX MODAL */
 .edit-ex-section { margin-bottom:12px; }
 
+@keyframes bounce { 0%,60%,100%{transform:translateY(0);} 30%{transform:translateY(-6px);} }
+
 /* WORKOUT START/FINISH BUTTON */
 .workout-action-btn { width:100%; padding:14px; border:none; border-radius:var(--radius-sm); font-size:14px; font-weight:700; font-family:'DM Sans',sans-serif; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:12px; transition:all 0.2s; }
 .workout-start-btn { background:var(--orange); color:white; }
@@ -354,12 +356,11 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   <a href="https://wa.me/50672083564" target="_blank" style="position:fixed;bottom:80px;right:16px;width:50px;height:50px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,211,102,0.4);z-index:99;text-decoration:none;font-size:26px;">💬</a>
   <div class="bottom-nav">
     <div class="nav-item active" onclick="clientNav('home',this)"><div class="nav-icon">🏋️</div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('food',this)"><div class="nav-icon">🥗</div><div class="nav-label">Food</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon">📋</div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="clientNav('profile',this)"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div><div class="nav-dot"></div></div>
   </div>
 </div>
-
-<!-- ===== CLIENT: PLAN MOVE ===== -->
 <div class="screen" id="screen-client-plan">
   <div class="topbar"><div class="topbar-logo">Move With Sau</div><div class="topbar-action" onclick="handleLogout()">Salir</div></div>
   <div class="scroll-body">
@@ -369,6 +370,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   <a href="https://wa.me/50672083564" target="_blank" style="position:fixed;bottom:80px;right:16px;width:50px;height:50px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,211,102,0.4);z-index:99;text-decoration:none;font-size:26px;">💬</a>
   <div class="bottom-nav">
     <div class="nav-item" onclick="clientNav('home',this)"><div class="nav-icon">🏋️</div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('food',this)"><div class="nav-icon">🥗</div><div class="nav-label">Food</div><div class="nav-dot"></div></div>
     <div class="nav-item active" onclick="clientNav('plan',this)"><div class="nav-icon">📋</div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="clientNav('profile',this)"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div><div class="nav-dot"></div></div>
   </div>
@@ -448,8 +450,24 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   <a href="https://wa.me/50672083564" target="_blank" style="position:fixed;bottom:80px;right:16px;width:50px;height:50px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,211,102,0.4);z-index:99;text-decoration:none;font-size:26px;">💬</a>
   <div class="bottom-nav">
     <div class="nav-item" onclick="clientNav('home',this)"><div class="nav-icon">🏋️</div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('food',this)"><div class="nav-icon">🥗</div><div class="nav-label">Food</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon">📋</div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
     <div class="nav-item active" onclick="clientNav('profile',this)"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div><div class="nav-dot"></div></div>
+  </div>
+</div>
+
+<!-- ===== CLIENT: FOOD ===== -->
+<div class="screen" id="screen-client-food">
+  <div class="topbar"><div class="topbar-logo">Move With Sau</div><div class="topbar-action" onclick="handleLogout()">Salir</div></div>
+  <div class="scroll-body" id="food-screen-body">
+    <!-- Content rendered by JS depending on food_access -->
+  </div>
+  <a href="https://wa.me/50672083564" target="_blank" style="position:fixed;bottom:80px;right:16px;width:50px;height:50px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,211,102,0.4);z-index:99;text-decoration:none;font-size:26px;">💬</a>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="clientNav('home',this)"><div class="nav-icon">🏋️</div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
+    <div class="nav-item active" onclick="clientNav('food',this)"><div class="nav-icon">🥗</div><div class="nav-label">Food</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon">📋</div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('profile',this)"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div><div class="nav-dot"></div></div>
   </div>
 </div>
 
@@ -519,6 +537,8 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div id="coach-client-logs" style="display:none;"></div>
     <div class="section-header"><div class="section-title">Tu Plan MOVE</div><div class="section-action" onclick="showModal('modal-upload-pdf')">+ PDF</div></div>
     <div id="coach-plans-list"></div>
+    <div class="section-header"><div class="section-title">Módulo Food</div><div class="section-action" id="food-access-toggle" onclick="toggleFoodAccess()">—</div></div>
+    <div id="coach-food-panel"></div>
   </div>
 </div>
 
@@ -1390,9 +1410,10 @@ async function loadClientPlans() {
 }
 
 function clientNav(tab,el) {
-  document.querySelectorAll('#screen-client-home .nav-item,#screen-client-plan .nav-item,#screen-client-profile .nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('#screen-client-home .nav-item,#screen-client-plan .nav-item,#screen-client-profile .nav-item,#screen-client-food .nav-item').forEach(n=>n.classList.remove('active'));
   el.classList.add('active');
   if(tab==='home'){showScreen('screen-client-home');loadClientDayStrip();}
+  else if(tab==='food'){showScreen('screen-client-food');loadFoodScreen();}
   else if(tab==='plan'){showScreen('screen-client-plan');loadClientPlans();}
   else if(tab==='profile'){showScreen('screen-client-profile');}
 }
@@ -1491,6 +1512,7 @@ async function openCoachClient(clientId) {
   loadWeekTrainedCount(c.id);
   loadCoachClientDetail(clientId);
   loadCoachPlans();
+  loadCoachFoodPanel();
   showScreen('screen-coach-client');
 }
 
@@ -1988,7 +2010,333 @@ function setLogsFilter(date) {
   loadClientLogs();
 }
 
-// ===== EXERCISE LIBRARY =====
+// ===== NUTRIFLEX FOOD MODULE =====
+
+const NUTRIFLEX_SYSTEM_PROMPT = `Vos sos NutriFlex — el asistente de nutrición de Move With Sau. No sos un bot genérico. Sos alguien que genuinamente le importa el bienestar de la persona que tiene enfrente. Sabés de hábitos, de comida, de cómo la mente afecta el cuerpo. Y sabés escuchar.
+
+Tu misión está basada en la filosofía MOVE: consciencia, identidad, nutrición simple y hábitos sostenibles.
+
+PERSONALIDAD:
+- Directo, sin rodeos, pero sin frialdad
+- Humor ligero cuando viene al caso — nunca forzado
+- Energía MOVE: claridad, momentum, autocuidado real
+- No juzgás. Nunca.
+- Te importa la salud física y emocional de la persona, no solo sus macros
+
+LENGUAJE:
+- Usá "tú / te / tu / contigo"
+- Apodos neutros cuando sientan natural: crack, champ, máquina, mente fuerte
+- Cero apodos masculinos, cero lenguaje agresivo
+
+SEGURIDAD — Nunca sugerís: dietas extremas, ayunos prolongados, restricción agresiva, eliminar grupos alimenticios, compensar comida con ejercicio, lenguaje que genere culpa o miedo.
+Siempre promovés: autocuidado real no perfecto, flexibilidad, hábitos suaves y sostenibles, relación sana con la comida.
+
+VOZ — Principios clave:
+- No todas las respuestas son igual de largas. A veces una sola frase es suficiente.
+- Variá el ritmo. Una corta. Luego una que explique más. Luego otra corta.
+- Si la persona hizo una pregunta simple, no le des un ensayo.
+- Tenés criterio. Usalo. No todo es "depende".
+- Antes de dar información, respondé a lo que la persona acaba de decir. Reconocé primero.
+- La calidez real viene de tomarte en serio lo que dice la persona, no de exclamar sobre ello.
+- No anunciás lo que vas a decir antes de decirlo. Simplemente decilo.
+- No terminás cada respuesta con un mantra motivacional.
+- Si algo se puede decir en un párrafo natural, decilo así. No todo necesita bullets.
+- Confiás en que la persona entiende. No sobreexplicás lo obvio.
+
+TABLA DE ALIMENTOS OFICIALES (usá estos valores exactos cuando la persona mencione estos alimentos):
+Avena 80g: P=11g CHO=54g G=6g 295kcal
+ISO100 Protein 1 scoop: P=25g CHO=2g G=1g 110kcal
+Claras 4: P=14g CHO=1g G=0.2g 68kcal
+Arroz 100g: P=2.7g CHO=28g G=3g 130kcal
+Frijoles 50g: P=7.5g CHO=30g G=0.6g 122kcal
+Banano 1: P=1.3g CHO=24g G=0.4g 105kcal
+Tortiricas Tortillas 1: P=1g CHO=7g G=0.2g 30kcal
+Huevos 1: P=5.5g CHO=0.4g G=4.4g 63kcal
+Pan Blanco Cuadrado 2 tajadas: P=6g CHO=25g G=1g 130kcal
+Miel/Jalea 10g: CHO=8g 33kcal
+Yogurt G Plus 2Pinos 200ml: P=25g CHO=10g G=1.5g 154kcal
+Fresas 200g: P=1.4g CHO=19g G=0.6g 66kcal
+Pechuga de Pollo 280g: P=83g CHO=0g G=21.8g 552kcal
+Plátano Maduro 250g: P=2.8g CHO=87.5g G=0.5g 362kcal
+Aguacate 30g: P=0.6g CHO=4.6g G=4.4g 48kcal
+Papa/Camote 100g: P=2g CHO=20g G=0g 77kcal
+Lentejas 200g: P=18g CHO=24g G=0.8g 230kcal
+Chuleta Ahumada 300g: P=81g CHO=27g G=15g 540kcal
+Carne de Cerdo 100g: P=20g CHO=0g G=7g 143kcal
+Piña 250g: P=1.4g CHO=30g G=0.2g 125kcal
+Carne de Res 250g: P=70g CHO=0g G=17.5g 450kcal
+Manzana 1: P=0.3g CHO=25g G=0.3g 122kcal
+Mantequilla de Maní 10g: P=2.2g CHO=3.1g G=4.7g 56kcal
+Galletas Sweet Well 4: P=2g CHO=1g G=7g 90kcal
+Cereal 40g: P=1.5g CHO=27g G=0g 112kcal
+Tilapia 275g: P=71g CHO=0g G=7g 352kcal
+Spaghetti 180g: P=23g CHO=121g G=3g 655kcal
+Tortilla de Trigo 3: P=18g CHO=114g G=16.5g 660kcal
+Atún en Agua 110g: P=32g CHO=0g G=2g 140kcal`;
+
+let foodChatHistory = [];
+let nutritionData = null;
+
+async function loadFoodScreen() {
+  const body = document.getElementById('food-screen-body');
+  if(!currentClient) return;
+
+  // Check access
+  if(!currentClient.food_access) {
+    body.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;padding:32px;text-align:center;">
+        <div style="font-size:52px;margin-bottom:16px;">🔒</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.18em;color:var(--orange);text-transform:uppercase;margin-bottom:8px;">Módulo exclusivo</div>
+        <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;line-height:1.1;margin-bottom:14px;"><span style="color:var(--orange);">FOOD</span> es para<br>MOVERs con programa<br>de alimentación.</div>
+        <div style="font-size:14px;color:var(--gray5);line-height:1.6;margin-bottom:28px;">Adquiere el tuyo hoy y<br>transforma también tu cocina.</div>
+        <a href="https://wa.me/50672083564?text=Hola%20Sau!%20Quiero%20saber%20sobre%20el%20programa%20de%20alimentaci%C3%B3n%20FOOD%20🥗" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:var(--orange);color:white;border-radius:var(--radius-sm);padding:14px 28px;font-size:14px;font-weight:700;text-decoration:none;font-family:'DM Sans',sans-serif;">
+          📲 Quiero mi programa FOOD
+        </a>
+      </div>`;
+    return;
+  }
+
+  // Load nutrition data
+  const {data:nd} = await sb.from('nutrition_data').select('*').eq('client_id',currentClient.id).maybeSingle();
+  nutritionData = nd;
+
+  // Load chat history
+  const {data:chatHistory} = await sb.from('nutrition_chats').select('*').eq('client_id',currentClient.id).order('created_at',{ascending:true}).limit(60);
+  foodChatHistory = (chatHistory||[]).map(m=>({role:m.role,content:m.content}));
+
+  renderFoodScreen();
+}
+
+function renderFoodScreen() {
+  const nd = nutritionData;
+  const hasInBody = nd && (nd.weight || nd.body_fat_pct || nd.muscle_mass);
+  const hasMacros = currentClient.macros_calorias;
+
+  const inBodyHtml = hasInBody ? `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;">
+      ${nd.weight?`<div class="spec-box"><div class="spec-val" style="font-size:16px;">${nd.weight}kg</div><div class="spec-lbl">Peso</div></div>`:''}
+      ${nd.body_fat_pct?`<div class="spec-box"><div class="spec-val" style="font-size:16px;">${nd.body_fat_pct}%</div><div class="spec-lbl">Grasa</div></div>`:''}
+      ${nd.muscle_mass?`<div class="spec-box"><div class="spec-val" style="font-size:16px;">${nd.muscle_mass}kg</div><div class="spec-lbl">Músculo</div></div>`:''}
+      ${nd.bmr?`<div class="spec-box"><div class="spec-val" style="font-size:16px;">${nd.bmr}</div><div class="spec-lbl">BMR</div></div>`:''}
+      ${nd.visceral_fat?`<div class="spec-box"><div class="spec-val" style="font-size:16px;">${nd.visceral_fat}</div><div class="spec-lbl">Gr. Visceral</div></div>`:''}
+      ${nd.body_fat_mass?`<div class="spec-box"><div class="spec-val" style="font-size:16px;">${nd.body_fat_mass}kg</div><div class="spec-lbl">Masa Grasa</div></div>`:''}
+    </div>` : '';
+
+  const macrosHtml = hasMacros ? `
+    <div style="background:var(--orange);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;color:white;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.12em;opacity:0.8;text-transform:uppercase;margin-bottom:8px;">Tus macros diarios</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center;">
+        <div><div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:900;">${currentClient.macros_calorias}</div><div style="font-size:9px;opacity:0.8;">KCAL</div></div>
+        <div><div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:900;">${currentClient.macros_proteina||'—'}</div><div style="font-size:9px;opacity:0.8;">PROT</div></div>
+        <div><div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:900;">${currentClient.macros_carbs||'—'}</div><div style="font-size:9px;opacity:0.8;">CARBS</div></div>
+        <div><div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:900;">${currentClient.macros_grasas||'—'}</div><div style="font-size:9px;opacity:0.8;">GRASAS</div></div>
+      </div>
+      ${currentClient.macros_notas?`<div style="font-size:11px;opacity:0.85;margin-top:8px;line-height:1.4;">${currentClient.macros_notas}</div>`:''}
+    </div>` : '';
+
+  // Chat messages
+  const messagesHtml = foodChatHistory.length === 0
+    ? `<div style="text-align:center;padding:24px 16px;color:var(--gray4);">
+        <div style="font-size:32px;margin-bottom:8px;">🥗</div>
+        <div style="font-size:13px;line-height:1.6;">Hola, soy <strong style="color:var(--orange);">NutriFlex</strong> — tu asistente de nutrición de Move With Sau.<br>Preguntame lo que sea sobre tu alimentación.</div>
+      </div>`
+    : foodChatHistory.map(m => renderFoodMessage(m)).join('');
+
+  const body = document.getElementById('food-screen-body');
+  body.innerHTML = `
+    <div style="margin-bottom:14px;">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Move With Sau</div>
+      <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;">NutriFlex 🥗</div>
+    </div>
+    ${hasInBody||hasMacros ? `
+    <div class="card" style="margin-bottom:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div class="notes-label" style="margin-bottom:0;">Tu perfil nutricional</div>
+        ${nd?.updated_at?`<div style="font-size:10px;color:var(--gray4);">Actualizado ${new Date(nd.updated_at).toLocaleDateString('es-CR',{day:'numeric',month:'short'})}</div>`:''}
+      </div>
+      ${macrosHtml}${inBodyHtml}
+    </div>` : ''}
+    <div id="food-chat-messages" style="margin-bottom:10px;">${messagesHtml}</div>
+    <div style="background:var(--white);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow);margin-bottom:8px;">
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <textarea id="food-input" placeholder="Preguntale a NutriFlex..." rows="2" style="flex:1;padding:10px 12px;border:1.5px solid var(--gray2);border-radius:var(--radius-sm);font-size:14px;font-family:'DM Sans',sans-serif;color:var(--black);background:var(--gray1);outline:none;resize:none;line-height:1.4;" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendFoodMessage();}"></textarea>
+        <button onclick="sendFoodMessage()" style="background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);padding:12px 16px;font-size:18px;cursor:pointer;flex-shrink:0;align-self:flex-end;">↑</button>
+      </div>
+    </div>`;
+
+  scrollFoodChat();
+}
+
+function renderFoodMessage(m) {
+  const isUser = m.role === 'user';
+  return `<div style="display:flex;justify-content:${isUser?'flex-end':'flex-start'};margin-bottom:10px;">
+    <div style="max-width:82%;background:${isUser?'var(--orange)':'var(--white)'};color:${isUser?'white':'var(--black)'};border-radius:${isUser?'16px 16px 4px 16px':'16px 16px 16px 4px'};padding:11px 14px;box-shadow:var(--shadow);font-size:13px;line-height:1.55;white-space:pre-wrap;">${m.content}</div>
+  </div>`;
+}
+
+function scrollFoodChat() {
+  setTimeout(()=>{
+    const msgs = document.getElementById('food-chat-messages');
+    if(msgs) msgs.scrollIntoView({behavior:'smooth',block:'end'});
+  }, 100);
+}
+
+async function sendFoodMessage() {
+  const input = document.getElementById('food-input');
+  if(!input) return;
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+
+  // Add user message
+  const userMsg = {role:'user', content:text};
+  foodChatHistory.push(userMsg);
+  await sb.from('nutrition_chats').insert([{client_id:currentClient.id, role:'user', content:text}]);
+
+  // Re-render with user message
+  const msgs = document.getElementById('food-chat-messages');
+  if(msgs) msgs.innerHTML += renderFoodMessage(userMsg);
+
+  // Typing indicator
+  const typingId = 'typing-'+Date.now();
+  if(msgs) msgs.innerHTML += `<div id="${typingId}" style="display:flex;justify-content:flex-start;margin-bottom:10px;">
+    <div style="background:var(--white);border-radius:16px 16px 16px 4px;padding:11px 18px;box-shadow:var(--shadow);">
+      <div style="display:flex;gap:4px;align-items:center;">
+        <div style="width:6px;height:6px;border-radius:50%;background:var(--orange);animation:bounce 1s infinite;"></div>
+        <div style="width:6px;height:6px;border-radius:50%;background:var(--orange);animation:bounce 1s infinite 0.2s;"></div>
+        <div style="width:6px;height:6px;border-radius:50%;background:var(--orange);animation:bounce 1s infinite 0.4s;"></div>
+      </div>
+    </div>
+  </div>`;
+  scrollFoodChat();
+
+  // Build context string from client data
+  const nd = nutritionData;
+  const clientContext = `
+DATOS DEL CLIENTE:
+Nombre: ${currentClient.name}
+${nd?.weight ? `Peso: ${nd.weight}kg` : ''}
+${nd?.body_fat_pct ? `% Grasa corporal: ${nd.body_fat_pct}%` : ''}
+${nd?.muscle_mass ? `Masa muscular: ${nd.muscle_mass}kg` : ''}
+${nd?.body_fat_mass ? `Masa grasa: ${nd.body_fat_mass}kg` : ''}
+${nd?.bmr ? `Metabolismo basal (BMR): ${nd.bmr} kcal` : ''}
+${nd?.visceral_fat ? `Grasa visceral: ${nd.visceral_fat}` : ''}
+${currentClient.macros_calorias ? `Calorías asignadas: ${currentClient.macros_calorias} kcal` : ''}
+${currentClient.macros_proteina ? `Proteína asignada: ${currentClient.macros_proteina}g` : ''}
+${currentClient.macros_carbs ? `Carbohidratos asignados: ${currentClient.macros_carbs}g` : ''}
+${currentClient.macros_grasas ? `Grasas asignadas: ${currentClient.macros_grasas}g` : ''}
+${currentClient.macros_notas ? `Notas del coach: ${currentClient.macros_notas}` : ''}`.trim();
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: NUTRIFLEX_SYSTEM_PROMPT + '\n\n' + clientContext,
+        messages: foodChatHistory.slice(-20) // last 20 messages for context
+      })
+    });
+    const data = await response.json();
+    const reply = data.content?.[0]?.text || 'Hubo un error, intentá de nuevo.';
+
+    // Remove typing indicator
+    document.getElementById(typingId)?.remove();
+
+    // Add assistant message
+    const assistantMsg = {role:'assistant', content:reply};
+    foodChatHistory.push(assistantMsg);
+    await sb.from('nutrition_chats').insert([{client_id:currentClient.id, role:'assistant', content:reply}]);
+
+    const msgsEl = document.getElementById('food-chat-messages');
+    if(msgsEl) msgsEl.innerHTML += renderFoodMessage(assistantMsg);
+    scrollFoodChat();
+
+  } catch(e) {
+    document.getElementById(typingId)?.remove();
+    showToast('❌ Error conectando con NutriFlex');
+  }
+}
+
+// ===== COACH: FOOD ACCESS & NUTRITION DATA =====
+async function loadCoachFoodPanel() {
+  const panel = document.getElementById('coach-food-panel');
+  const toggle = document.getElementById('food-access-toggle');
+  if(!panel||!toggle||!currentClient) return;
+
+  const hasAccess = currentClient.food_access;
+  toggle.textContent = hasAccess ? '✅ Activo' : '❌ Sin acceso';
+  toggle.style.color = hasAccess ? 'var(--green)' : 'var(--red)';
+
+  const {data:nd} = await sb.from('nutrition_data').select('*').eq('client_id',currentClient.id).maybeSingle();
+
+  panel.innerHTML = `
+    <div class="card" style="margin-bottom:10px;">
+      <div class="notes-label" style="margin-bottom:12px;">InBody</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+        <div><label class="form-label">Peso (kg)</label><input class="form-input" type="number" id="nd-weight" value="${nd?.weight||''}" placeholder="72.5" step="0.1" style="font-size:13px;padding:9px 12px;"></div>
+        <div><label class="form-label">% Grasa</label><input class="form-input" type="number" id="nd-fat-pct" value="${nd?.body_fat_pct||''}" placeholder="18.5" step="0.1" style="font-size:13px;padding:9px 12px;"></div>
+        <div><label class="form-label">Masa Muscular (kg)</label><input class="form-input" type="number" id="nd-muscle" value="${nd?.muscle_mass||''}" placeholder="35" step="0.1" style="font-size:13px;padding:9px 12px;"></div>
+        <div><label class="form-label">Masa Grasa (kg)</label><input class="form-input" type="number" id="nd-fat-mass" value="${nd?.body_fat_mass||''}" placeholder="14" step="0.1" style="font-size:13px;padding:9px 12px;"></div>
+        <div><label class="form-label">BMR (kcal)</label><input class="form-input" type="number" id="nd-bmr" value="${nd?.bmr||''}" placeholder="1650" style="font-size:13px;padding:9px 12px;"></div>
+        <div><label class="form-label">Grasa Visceral</label><input class="form-input" type="number" id="nd-visceral" value="${nd?.visceral_fat||''}" placeholder="5" style="font-size:13px;padding:9px 12px;"></div>
+      </div>
+      <button onclick="saveNutritionData()" class="btn-primary" style="padding:11px;">Guardar InBody</button>
+    </div>
+    <div class="card" style="margin-bottom:10px;">
+      <div class="notes-label" style="margin-bottom:12px;">Macros asignados</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+        <div><label class="form-label">Calorías</label><input class="form-input" type="number" id="mac-kcal" value="${currentClient.macros_calorias||''}" placeholder="2000" style="font-size:13px;padding:9px 12px;"></div>
+        <div><label class="form-label">Proteína (g)</label><input class="form-input" type="number" id="mac-prot" value="${currentClient.macros_proteina||''}" placeholder="160" style="font-size:13px;padding:9px 12px;"></div>
+        <div><label class="form-label">Carbs (g)</label><input class="form-input" type="number" id="mac-carbs" value="${currentClient.macros_carbs||''}" placeholder="220" style="font-size:13px;padding:9px 12px;"></div>
+        <div><label class="form-label">Grasas (g)</label><input class="form-input" type="number" id="mac-fat" value="${currentClient.macros_grasas||''}" placeholder="65" style="font-size:13px;padding:9px 12px;"></div>
+      </div>
+      <div><label class="form-label">Notas para el cliente</label><textarea class="form-textarea" id="mac-notas" rows="2" placeholder="ej: Estos macros son para días de entreno...">${currentClient.macros_notas||''}</textarea></div>
+      <button onclick="saveMacros()" class="btn-primary" style="padding:11px;margin-top:10px;">Guardar macros</button>
+    </div>`;
+}
+
+async function toggleFoodAccess() {
+  if(!currentClient) return;
+  const newAccess = !currentClient.food_access;
+  await sb.from('clients').update({food_access:newAccess}).eq('id',currentClient.id);
+  currentClient.food_access = newAccess;
+  showToast(newAccess ? '✅ Acceso FOOD activado' : '🔒 Acceso FOOD desactivado');
+  loadCoachFoodPanel();
+}
+
+async function saveNutritionData() {
+  if(!currentClient) return;
+  const payload = {
+    client_id: currentClient.id,
+    weight: parseFloat(document.getElementById('nd-weight').value)||null,
+    body_fat_pct: parseFloat(document.getElementById('nd-fat-pct').value)||null,
+    muscle_mass: parseFloat(document.getElementById('nd-muscle').value)||null,
+    body_fat_mass: parseFloat(document.getElementById('nd-fat-mass').value)||null,
+    bmr: parseInt(document.getElementById('nd-bmr').value)||null,
+    visceral_fat: parseInt(document.getElementById('nd-visceral').value)||null,
+    updated_at: new Date().toISOString()
+  };
+  const {error} = await sb.from('nutrition_data').upsert([payload],{onConflict:'client_id'});
+  if(error){showToast('❌ '+error.message);return;}
+  showToast('✅ InBody guardado');
+}
+
+async function saveMacros() {
+  if(!currentClient) return;
+  const updates = {
+    macros_calorias: parseInt(document.getElementById('mac-kcal').value)||null,
+    macros_proteina: parseInt(document.getElementById('mac-prot').value)||null,
+    macros_carbs: parseInt(document.getElementById('mac-carbs').value)||null,
+    macros_grasas: parseInt(document.getElementById('mac-fat').value)||null,
+    macros_notas: document.getElementById('mac-notas').value.trim()||null
+  };
+  await sb.from('clients').update(updates).eq('id',currentClient.id);
+  Object.assign(currentClient, updates);
+  showToast('✅ Macros guardados');
+}
 async function saveExerciseToLibrary(name, tag, muscle, video) {
   if(!name||!currentUser)return;
   try {
