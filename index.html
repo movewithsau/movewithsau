@@ -537,7 +537,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div id="coach-client-logs" style="display:none;"></div>
     <div class="section-header"><div class="section-title">Tu Plan MOVE</div><div class="section-action" onclick="showModal('modal-upload-pdf')">+ PDF</div></div>
     <div id="coach-plans-list"></div>
-    <div class="section-header"><div class="section-title">Módulo Food</div><div class="section-action" id="food-access-toggle" onclick="toggleFoodAccess()">—</div></div>
+    <div class="section-header"><div class="section-title">Módulo Food</div></div>
     <div id="coach-food-panel"></div>
   </div>
 </div>
@@ -2263,16 +2263,22 @@ ${currentClient.macros_notas ? `Notas del coach: ${currentClient.macros_notas}` 
 // ===== COACH: FOOD ACCESS & NUTRITION DATA =====
 async function loadCoachFoodPanel() {
   const panel = document.getElementById('coach-food-panel');
-  const toggle = document.getElementById('food-access-toggle');
-  if(!panel||!toggle||!currentClient) return;
+  if(!panel||!currentClient) return;
 
   const hasAccess = currentClient.food_access;
-  toggle.textContent = hasAccess ? '✅ Activo' : '❌ Sin acceso';
-  toggle.style.color = hasAccess ? 'var(--green)' : 'var(--red)';
-
   const {data:nd} = await sb.from('nutrition_data').select('*').eq('client_id',currentClient.id).maybeSingle();
 
   panel.innerHTML = `
+    <!-- Access toggle — prominent -->
+    <div style="background:${hasAccess?'var(--green-light)':'var(--red-light)'};border:1.5px solid ${hasAccess?'var(--green)':'var(--red)'};border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:${hasAccess?'var(--green)':'var(--red)'};">${hasAccess?'✅ Acceso FOOD activo':'❌ Sin acceso FOOD'}</div>
+        <div style="font-size:11px;color:var(--gray5);margin-top:2px;">${hasAccess?'El cliente puede usar NutriFlex':'El cliente ve la pantalla de bloqueo'}</div>
+      </div>
+      <button onclick="toggleFoodAccess()" style="background:${hasAccess?'var(--red)':'var(--green)'};color:white;border:none;border-radius:var(--radius-sm);padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">
+        ${hasAccess?'Desactivar':'Dar acceso'}
+      </button>
+    </div>
     <div class="card" style="margin-bottom:10px;">
       <div class="notes-label" style="margin-bottom:12px;">InBody</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
