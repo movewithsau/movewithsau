@@ -111,7 +111,8 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 .day-chip.has-workout.active { background:var(--orange); color:white; }
 
 /* EXERCISE CARD - CLIENT */
-.ex-card { background:var(--white); border-radius:var(--radius); padding:14px 16px; margin-bottom:8px; box-shadow:var(--shadow); cursor:pointer; }
+.ex-card { background:var(--white); border-radius:var(--radius); padding:14px 16px; margin-bottom:8px; box-shadow:var(--shadow); cursor:pointer; transition:opacity 0.2s; }
+.ex-card.completed { opacity:0.55; }
 .ex-card-top { display:flex; align-items:center; gap:10px; }
 .ex-tag { font-size:9px; font-weight:700; letter-spacing:0.08em; padding:3px 8px; border-radius:4px; white-space:nowrap; flex-shrink:0; }
 .tag-peso-libre { background:var(--orange-light); color:var(--orange); }
@@ -121,6 +122,10 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 .ex-chevron { color:var(--gray3); font-size:18px; }
 .ex-specs-row { font-size:11px; color:var(--gray4); margin-top:4px; }
 .muscle-tag { display:inline-block; font-size:9px; font-weight:600; background:var(--purple-light); color:var(--purple); padding:2px 7px; border-radius:4px; margin-top:5px; }
+
+/* CHECK BADGE */
+.ex-check-badge { width:24px; height:24px; border-radius:50%; border:2px solid var(--gray3); display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; transition:all 0.2s; }
+.ex-check-badge.done { background:var(--green); border-color:var(--green); color:white; }
 
 /* SUPERSET */
 .superset-group { background:var(--white); border-radius:var(--radius); padding:12px; margin-bottom:8px; box-shadow:var(--shadow); border-left:3px solid var(--orange); }
@@ -157,6 +162,9 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 .diff-btn { padding:6px 8px; border-radius:6px; border:1.5px solid var(--gray2); font-size:11px; cursor:pointer; background:var(--gray1); color:var(--gray4); font-family:'DM Sans',sans-serif; }
 .diff-btn.easy.selected { background:var(--green-light); border-color:var(--green); color:var(--green); }
 .diff-btn.hard.selected { background:var(--red-light); border-color:var(--red); color:var(--red); }
+/* Unit button selected state matches orange style */
+.unit-btn { padding:5px 12px; border-radius:6px; border:1.5px solid var(--gray2); font-size:12px; font-weight:700; cursor:pointer; background:var(--gray1); color:var(--gray4); font-family:'DM Sans',sans-serif; transition:all 0.15s; }
+.unit-btn.selected { background:var(--white); border-color:var(--orange); color:var(--orange); }
 .save-log-btn { width:100%; padding:13px; background:var(--orange); color:white; border:none; border-radius:var(--radius-sm); font-size:14px; font-weight:700; font-family:'DM Sans',sans-serif; cursor:pointer; margin-top:10px; }
 
 /* CLIENT LIST */
@@ -165,7 +173,6 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 .client-info { flex:1; min-width:0; }
 .client-name { font-size:15px; font-weight:600; color:var(--black); margin-bottom:2px; }
 .client-meta { font-size:11px; color:var(--gray4); }
-/* Payment badge - green/yellow/red */
 .payment-badge { font-size:10px; font-weight:700; padding:4px 8px; border-radius:6px; text-align:center; flex-shrink:0; }
 .payment-badge.green { background:var(--green-light); color:var(--green); }
 .payment-badge.yellow { background:var(--yellow-light); color:var(--yellow); }
@@ -190,13 +197,11 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 .week-tab.has-data { border-color:var(--orange); color:var(--orange); }
 .week-tab.has-data.active { background:var(--orange); color:white; }
 
-/* COACH PLAN OVERVIEW - collapsed by default, expand on day click */
 .day-plan-card { background:var(--white); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow); margin-bottom:10px; }
 .day-plan-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
 .day-plan-name { font-size:14px; font-weight:700; }
 .day-plan-count { font-size:11px; color:var(--gray4); }
 
-/* Day accordion inside plan card */
 .plan-day-row { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--gray2); cursor:pointer; }
 .plan-day-row:last-child { border-bottom:none; }
 .plan-day-label { font-size:12px; font-weight:700; color:var(--black); flex:1; }
@@ -277,6 +282,11 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 
 /* EDIT EX MODAL */
 .edit-ex-section { margin-bottom:12px; }
+
+/* WORKOUT START/FINISH BUTTON */
+.workout-action-btn { width:100%; padding:14px; border:none; border-radius:var(--radius-sm); font-size:14px; font-weight:700; font-family:'DM Sans',sans-serif; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:12px; transition:all 0.2s; }
+.workout-start-btn { background:var(--orange); color:white; }
+.workout-finish-btn { background:#111; color:white; }
 </style>
 </head>
 <body>
@@ -301,7 +311,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   </div>
 </div>
 
-<!-- ===== REGISTER — REPLACED WITH EXCLUSIVE ACCESS ===== -->
+<!-- ===== REGISTER ===== -->
 <div class="screen" id="screen-register">
   <div style="width:100%;padding:40px 32px;text-align:center;">
     <div style="margin-bottom:32px;">
@@ -369,13 +379,11 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   <div class="topbar"><div class="topbar-logo">Move With Sau</div><div class="topbar-action" onclick="handleLogout()">Salir</div></div>
   <div class="scroll-body">
     <div style="text-align:center;padding:20px 0 16px;">
-      <!-- Avatar clickable -->
       <div id="c-profile-avatar" onclick="showAvatarPicker()" style="width:76px;height:76px;border-radius:50%;background:var(--orange-light);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--orange);cursor:pointer;transition:transform 0.15s;">--</div>
       <div style="font-size:11px;color:var(--orange);font-weight:600;margin-bottom:10px;cursor:pointer;" onclick="showAvatarPicker()">✏️ Cambiar avatar</div>
       <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;" id="c-profile-name">—</div>
       <div style="font-size:12px;color:var(--gray4);margin-top:3px;" id="c-profile-username">—</div>
     </div>
-    <!-- Goal card -->
     <div class="goal-card" id="c-goal-card">
       <div class="notes-label" style="margin-bottom:6px;">Mi motivación</div>
       <div id="c-goal-display">
@@ -392,7 +400,6 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <div class="stat-card"><div class="stat-num" id="c-profile-days">0</div><div class="stat-label">Días entrenados</div></div>
       <div class="stat-card"><div class="stat-num" id="c-profile-week">1</div><div class="stat-label">Semana actual</div></div>
     </div>
-    <!-- Weight cards -->
     <div class="stat-row" style="margin-top:0;">
       <div class="stat-card" style="position:relative;">
         <div class="stat-num" style="font-size:22px;" id="c-initial-weight">—</div>
@@ -415,7 +422,9 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     </div>
     <!-- Daily workout rating -->
     <div class="card" style="margin-bottom:16px;">
-      <div class="notes-label" style="margin-bottom:10px;">¿Cómo estuvo tu entreno hoy?</div>
+      <div class="notes-label" style="margin-bottom:4px;">¿Cómo estuvo tu entreno hoy?</div>
+      <!-- "Calificalo" label -->
+      <div style="font-size:10px;color:var(--orange);font-weight:700;letter-spacing:0.08em;text-align:right;margin-bottom:8px;">CALIFICALO →</div>
       <div id="c-rating-display">
         <div style="display:flex;gap:10px;justify-content:center;">
           <button onclick="rateWorkout('😎')" id="rate-cool" style="font-size:28px;padding:10px 16px;border-radius:12px;border:2px solid var(--gray2);background:var(--gray1);cursor:pointer;transition:all 0.15s;">😎</button>
@@ -442,7 +451,11 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 
 <!-- ===== CLIENT: EXERCISE DETAIL ===== -->
 <div class="screen" id="screen-ex-detail">
-  <div class="topbar"><div class="back-btn" onclick="goBackFromDetail()">‹ Volver</div><div class="topbar-logo">Move With Sau</div><div id="workout-timer-display" style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--orange);display:none;">0:00</div></div>
+  <div class="topbar">
+    <div class="back-btn" onclick="goBackFromDetail()">‹ Volver</div>
+    <div class="topbar-logo">Move With Sau</div>
+    <div id="workout-timer-display" style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--orange);display:none;">0:00</div>
+  </div>
   <div class="detail-header" id="detail-header-bg">
     <div class="detail-tag-text" id="detail-tag">—</div>
     <div class="detail-name" id="detail-name">—</div>
@@ -453,7 +466,11 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div class="notes-box" id="detail-notes-box" style="display:none;"><div class="notes-label">Notas del coach</div><div class="notes-text" id="detail-notes" style="font-size:13px;line-height:1.55;color:var(--black);"></div></div>
     <a class="video-link" id="detail-video" href="#" target="_blank" style="display:none;">▶ Ver video del ejercicio</a>
     <div class="log-section">
-      <div class="notes-label" style="margin-bottom:10px;">Registrar entrenamiento</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div class="notes-label" style="margin-bottom:0;">Registrar entrenamiento</div>
+        <!-- "Calificalo" hint for set buttons -->
+        <div style="font-size:9px;color:var(--orange);font-weight:700;letter-spacing:0.06em;">😊🔥 CALIFICALO</div>
+      </div>
       <div id="sets-log-container"></div>
       <button class="save-log-btn" onclick="saveLog()">Guardar registro ✓</button>
     </div>
@@ -469,7 +486,6 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;" id="coach-name-display">—</div>
     </div>
     <div class="section-header"><div class="section-title">Mis clientes</div><div class="section-action" id="coach-count"></div></div>
-    <!-- Sort bar -->
     <div class="sort-bar" id="client-sort-bar">
       <div class="sort-chip active" onclick="setSortClients('name',this)">A–Z</div>
       <div class="sort-chip" onclick="setSortClients('payment_asc',this)">Pago próximo ↑</div>
@@ -537,7 +553,6 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 </div>
 
 <!-- ===== MODALS ===== -->
-<!-- Add Client -->
 <div class="modal-overlay" id="modal-add-client">
   <div class="modal">
     <span class="modal-close" onclick="closeModal('modal-add-client')">×</span>
@@ -559,7 +574,6 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   </div>
 </div>
 
-<!-- Edit Payment -->
 <div class="modal-overlay" id="modal-edit-payment">
   <div class="modal">
     <span class="modal-close" onclick="closeModal('modal-edit-payment')">×</span>
@@ -578,7 +592,6 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   </div>
 </div>
 
-<!-- Upload PDF -->
 <div class="modal-overlay" id="modal-upload-pdf">
   <div class="modal">
     <span class="modal-close" onclick="closeModal('modal-upload-pdf')">×</span>
@@ -593,7 +606,6 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   </div>
 </div>
 
-<!-- Edit Exercise Modal -->
 <div class="modal-overlay" id="modal-edit-ex">
   <div class="modal">
     <span class="modal-close" onclick="closeModal('modal-edit-ex')">×</span>
@@ -629,13 +641,11 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   </div>
 </div>
 
-<!-- Exercise Library Modal -->
 <div class="modal-overlay" id="modal-ex-library">
   <div class="modal">
     <span class="modal-close" onclick="closeModal('modal-ex-library')">×</span>
     <div class="modal-title">Biblioteca de ejercicios</div>
     <input class="form-input" id="library-search" placeholder="Buscar ejercicio..." oninput="filterLibrary()" style="margin-bottom:8px;">
-    <!-- Category filter chips -->
     <div class="filter-chips" id="library-filter-chips">
       <div class="filter-chip active" onclick="setLibraryFilter('',this)">Todos</div>
       <div class="filter-chip" onclick="setLibraryFilter('Pecho',this)">Pecho</div>
@@ -656,6 +666,31 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   </div>
 </div>
 
+<!-- Avatar Picker Modal -->
+<div class="modal-overlay" id="modal-avatar-picker">
+  <div class="modal">
+    <span class="modal-close" onclick="closeModal('modal-avatar-picker')">×</span>
+    <div class="modal-title">Personalizar avatar</div>
+    <div class="notes-label" style="margin-bottom:10px;">Fondo</div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <div id="bg-orange" onclick="selectAvatarBg('orange')" style="flex:1;height:44px;border-radius:10px;background:var(--orange-light);border:2px solid var(--orange);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--orange);">Naranja</div>
+      <div id="bg-black" onclick="selectAvatarBg('black')" style="flex:1;height:44px;border-radius:10px;background:#111;border:2px solid #333;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--orange);">Negro</div>
+    </div>
+    <div class="notes-label" style="margin-bottom:10px;">Avatar — Iniciales o emoji</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+      <div id="av-initials" onclick="selectAvatarType('initials')" style="width:56px;height:56px;border-radius:50%;background:var(--orange-light);border:2px solid var(--orange);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--orange);">AA</div>
+      <div id="av-skull" onclick="selectAvatarType('💀')" style="width:56px;height:56px;border-radius:50%;background:var(--gray1);border:2px solid var(--gray2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:28px;">💀</div>
+      <div id="av-ninja" onclick="selectAvatarType('🥷🏻')" style="width:56px;height:56px;border-radius:50%;background:var(--gray1);border:2px solid var(--gray2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:28px;">🥷🏻</div>
+      <div id="av-gorilla" onclick="selectAvatarType('🦍')" style="width:56px;height:56px;border-radius:50%;background:var(--gray1);border:2px solid var(--gray2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:28px;">🦍</div>
+      <div id="av-tiger" onclick="selectAvatarType('🐅')" style="width:56px;height:56px;border-radius:50%;background:var(--gray1);border:2px solid var(--gray2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:28px;">🐅</div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+      <div id="avatar-modal-preview" style="width:76px;height:76px;border-radius:50%;background:var(--orange-light);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--orange);border:2px solid var(--gray2);">AA</div>
+    </div>
+    <button class="btn-primary" onclick="saveAvatar()">Guardar avatar</button>
+  </div>
+</div>
+
 <script>
 const { createClient } = supabase;
 const sb = createClient(
@@ -672,10 +707,100 @@ let selectedPdfFile = null;
 let clientSortMode = 'name';
 let libraryFilterCategory = '';
 let allLibraryExercises = [];
-// Workout timer
-let workoutTimerInterval = null;
-let workoutStartTime = null;
-let workoutTimerStarted = false;
+let currentWeightUnit = 'kg';
+
+// ===== TIMER — uses localStorage + Date.now() so it survives screen lock =====
+// localStorage keys: 'mws_timer_start' (timestamp ms), 'mws_timer_running' ('1'/'0')
+let timerDisplayInterval = null;
+
+function timerKey() { return 'mws_timer_start'; }
+
+function startGlobalTimer() {
+  if(localStorage.getItem('mws_timer_running') === '1') return; // already running
+  localStorage.setItem('mws_timer_running', '1');
+  localStorage.setItem(timerKey(), Date.now().toString());
+  startTimerDisplay();
+}
+
+function startTimerDisplay() {
+  clearInterval(timerDisplayInterval);
+  timerDisplayInterval = setInterval(() => {
+    const el = document.getElementById('workout-timer-display');
+    if(!el) return;
+    const startMs = parseInt(localStorage.getItem(timerKey()) || '0');
+    if(!startMs) return;
+    const elapsed = Math.floor((Date.now() - startMs) / 1000);
+    const m = Math.floor(elapsed / 60);
+    const s = elapsed % 60;
+    el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    el.style.display = 'block';
+  }, 1000);
+}
+
+function stopGlobalTimer() {
+  clearInterval(timerDisplayInterval);
+  timerDisplayInterval = null;
+  const startMs = parseInt(localStorage.getItem(timerKey()) || '0');
+  const elapsedSeconds = startMs ? Math.floor((Date.now() - startMs) / 1000) : 0;
+  localStorage.removeItem('mws_timer_running');
+  localStorage.removeItem(timerKey());
+  const el = document.getElementById('workout-timer-display');
+  if(el) { el.style.display = 'none'; el.textContent = '0:00'; }
+  return elapsedSeconds;
+}
+
+function getElapsedSeconds() {
+  const startMs = parseInt(localStorage.getItem(timerKey()) || '0');
+  return startMs ? Math.floor((Date.now() - startMs) / 1000) : 0;
+}
+
+// Resume timer display if app comes back to foreground
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible' && localStorage.getItem('mws_timer_running') === '1') {
+    startTimerDisplay();
+  }
+});
+
+// ===== EXERCISE COMPLETION STATE (persisted per client+day) =====
+function completedKey() {
+  if(!currentClient || !clientDay) return null;
+  return `mws_done_${currentClient.id}_w${clientWeek}_${clientDay}`;
+}
+
+function getCompletedExercises() {
+  const key = completedKey();
+  if(!key) return {};
+  try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; }
+}
+
+function markExerciseDone(exId) {
+  const key = completedKey();
+  if(!key) return;
+  const done = getCompletedExercises();
+  done[exId] = true;
+  localStorage.setItem(key, JSON.stringify(done));
+}
+
+function isExerciseDone(exId) {
+  return !!getCompletedExercises()[exId];
+}
+
+// ===== WORKOUT STARTED STATE =====
+function workoutStartedKey() {
+  if(!currentClient || !clientDay) return null;
+  const today = new Date().toISOString().split('T')[0];
+  return `mws_wstarted_${currentClient.id}_${today}`;
+}
+
+function isWorkoutStarted() {
+  const key = workoutStartedKey();
+  return key ? localStorage.getItem(key) === '1' : false;
+}
+
+function setWorkoutStarted(val) {
+  const key = workoutStartedKey();
+  if(key) localStorage.setItem(key, val ? '1' : '0');
+}
 
 const DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 const MUSCLES = ['Pecho','Espalda','Hombros','Bíceps','Tríceps','Cuádriceps','Isquiotibiales','Glúteos','Core','Pantorrillas','Movilidad','Cardio','Performance'];
@@ -699,7 +824,6 @@ function goBack() {
   window.scrollTo(0,0);
 }
 
-// Swipe detection
 (function() {
   let touchStartX = 0, touchStartY = 0;
   document.addEventListener('touchstart', e => {
@@ -709,46 +833,18 @@ function goBack() {
   document.addEventListener('touchend', e => {
     const dx = e.changedTouches[0].clientX - touchStartX;
     const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
-    // Swipe right (dx > 60) from left edge (startX < 40) and mostly horizontal
-    if(dx > 60 && touchStartX < 40 && dy < 80) {
-      goBack();
-    }
+    if(dx > 60 && touchStartX < 40 && dy < 80) { goBack(); }
   }, {passive:true});
 })();
 
 // ===== AVATAR =====
-let avatarBgPref = 'orange'; // 'orange' or 'black'
-let avatarTypePref = 'initials'; // 'initials' | emoji string
-
-function getAvatarStyle(bg) {
-  if(bg === 'black') return 'background:#111111;color:var(--orange);';
-  return 'background:var(--orange-light);color:var(--orange);';
-}
-
-function renderAvatar(el, initials, avatarType, avatarBg) {
-  if(!el) return;
-  const bgStyle = avatarBg === 'black'
-    ? 'background:#111111;color:var(--orange);'
-    : 'background:var(--orange-light);color:var(--orange);';
-  if(!avatarType || avatarType === 'initials') {
-    el.style.cssText += bgStyle;
-    el.style.fontSize = '26px';
-    el.textContent = initials;
-  } else {
-    el.style.cssText += bgStyle;
-    el.style.fontSize = '34px';
-    el.textContent = avatarType;
-  }
-}
+let avatarBgPref = 'orange';
+let avatarTypePref = 'initials';
 
 function showAvatarPicker() {
-  // Set current state
   avatarBgPref = currentClient?.avatar_bg || 'orange';
   avatarTypePref = currentClient?.avatar_type || 'initials';
   updateAvatarModalPreview();
-  // Highlight current selections
-  ['bg-orange','bg-black'].forEach(id=>document.getElementById(id)?.style.setProperty('border-width','2px'));
-  document.getElementById(avatarBgPref==='black'?'bg-black':'bg-orange').style.borderWidth='3px';
   showModal('modal-avatar-picker');
 }
 
@@ -799,6 +895,7 @@ function applyAvatarToProfile() {
   el.style.cssText = `width:76px;height:76px;border-radius:50%;${bgStyle}display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-weight:700;color:var(--orange);cursor:pointer;transition:transform 0.15s;font-size:${type==='initials'?'26':'34'}px;margin:0 auto 8px;`;
   el.textContent = type==='initials' ? initials : type;
 }
+
 function showToast(msg,dur=2500) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),dur); }
 function showModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -815,8 +912,8 @@ function daysUntil(d) {
 function getPaymentBadgeClass(d) {
   if(d === null) return 'green';
   if(d > 2) return 'green';
-  if(d >= -1) return 'yellow'; // 2 days before AND up to 1 day after
-  return 'red'; // 2+ days past due
+  if(d >= -1) return 'yellow';
+  return 'red';
 }
 
 function getPaymentBadgeText(d) {
@@ -843,6 +940,10 @@ window.addEventListener('DOMContentLoaded', async () => {
       if(data){ currentUser=data; if(data.role==='coach') initCoach(); else initClient(); return; }
     } catch(e){ localStorage.removeItem('mws_user'); }
   }
+  // If timer was running before and we're back, resume display
+  if(localStorage.getItem('mws_timer_running') === '1') {
+    startTimerDisplay();
+  }
 });
 
 // ===== AUTH =====
@@ -860,23 +961,12 @@ async function handleLogin() {
   else initClient();
 }
 
-async function handleRegister() {
-  const name=document.getElementById('reg-name').value.trim();
-  const username=document.getElementById('reg-username').value.trim().toLowerCase().replace('@','');
-  const pass=document.getElementById('reg-password').value;
-  const role=document.getElementById('reg-role').value;
-  if(!name||!username||!pass){showToast('⚠️ Completa todos los campos');return;}
-  const {data:exists} = await sb.from('users').select('id').eq('username',username).single();
-  if(exists){showToast('⚠️ Ese usuario ya existe');return;}
-  const {data,error} = await sb.from('users').insert([{name,username,password:pass,role}]).select().single();
-  if(error){showToast('❌ '+error.message);return;}
-  currentUser=data;
-  showToast('✅ Cuenta creada');
-  if(role==='coach') initCoach();
-  else initClient();
+function handleLogout() {
+  currentUser=null; currentClient=null; clientWeek=1; clientDay=null; screenHistory=[];
+  stopGlobalTimer();
+  localStorage.removeItem('mws_user');
+  showScreen('screen-login');
 }
-
-function handleLogout() { currentUser=null;currentClient=null;clientWeek=1;clientDay=null;screenHistory=[]; localStorage.removeItem('mws_user'); showScreen('screen-login'); }
 
 // ===== CLIENT =====
 async function initClient() {
@@ -890,28 +980,24 @@ async function initClient() {
   document.getElementById('c-week-num').textContent = clientWeek;
   document.getElementById('c-profile-name').textContent = cd?.name||currentUser.name;
   document.getElementById('c-profile-username').textContent = '@'+currentUser.username;
-  // Apply avatar (also sets the initials/emoji content)
   applyAvatarToProfile();
   document.getElementById('c-profile-days').textContent = cd?.days_trained||0;
   document.getElementById('c-profile-week').textContent = clientWeek;
-  // Weight
   document.getElementById('c-initial-weight').textContent = cd?.initial_weight||'—';
   document.getElementById('c-current-weight').textContent = cd?.current_weight||'—';
-  // Total time
   const totalMin = cd?.total_training_minutes||0;
   document.getElementById('c-total-time').textContent = `${Math.floor(totalMin/60)}h ${totalMin%60}min`;
-  // Greeting sub — set immediately so banner is never blank
   document.getElementById('c-greeting-week').textContent = 'Semana 1 de tu plan mensual 💪';
   loadGoalDisplay(cd?.goal_text);
   updateClientWeekUI();
   loadClientDayStrip();
   loadClientPlans();
-  // Non-blocking — load rating after UI is ready
   loadTodayRating().catch(()=>{});
+  // Resume timer display if was running
+  if(localStorage.getItem('mws_timer_running') === '1') startTimerDisplay();
 }
 
 function loadGoalDisplay(goalText) {
-  const display = document.getElementById('c-goal-display');
   const textEl = document.getElementById('c-goal-text');
   if(goalText) {
     textEl.innerHTML = `"Mi meta es <span>${goalText}</span> y por esto voy a dar mi 100% sin excusas."`;
@@ -997,36 +1083,21 @@ async function loadClientExercises() {
   const groups = {};
   exs.forEach(ex=>{ if(ex.superset_group){ if(!groups[ex.superset_group])groups[ex.superset_group]=[]; groups[ex.superset_group].push(ex); } });
 
-  let html = '';
-  exs.forEach(ex=>{
-    if(ex.superset_group && groups[ex.superset_group]&&groups[ex.superset_group][0]===ex){
-      const g = groups[ex.superset_group];
-      html+=`<div class="superset-group fade-up"><div class="superset-label">Superset ${ex.superset_group}</div>`;
-      g.forEach(se=>{
-        html+=`<div class="superset-ex" onclick="openExDetail(${JSON.stringify(se).replace(/"/g,'&quot;')})">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span class="ex-tag ${getTagClass(se.tag)}">${se.tag}</span>
-            <span style="font-size:13px;font-weight:600;">${se.name}</span>
-            <span style="margin-left:auto;color:var(--gray3);font-size:16px;">›</span>
-          </div>
-          <div style="font-size:11px;color:var(--gray4);margin-top:3px;">${se.sets} series × ${se.reps_range} reps · ${se.rest_seconds}s</div>
-          ${se.muscle_group?`<span class="muscle-tag">${se.muscle_group}</span>`:''}
-        </div>`;
-      });
-      html+='</div>';
-    } else if(!ex.superset_group) {
-      html+=`<div class="ex-card fade-up" onclick="openExDetail(${JSON.stringify(ex).replace(/"/g,'&quot;')})">
-        <div class="ex-card-top">
-          <span class="ex-tag ${getTagClass(ex.tag)}">${ex.tag}</span>
-          <span class="ex-name">${ex.name}</span>
-          <span class="ex-chevron">›</span>
-        </div>
-        <div class="ex-specs-row">${ex.sets} series × ${ex.reps_range} reps · ${ex.rest_seconds}s descanso</div>
-        ${ex.muscle_group?`<span class="muscle-tag">${ex.muscle_group}</span>`:''}
+  const done = getCompletedExercises();
+
+  // ===== WORKOUT START BUTTON (before warmup banner) =====
+  const workoutStarted = isWorkoutStarted();
+  const startBtnHtml = !workoutStarted
+    ? `<button class="workout-action-btn workout-start-btn fade-up" onclick="handleStartWorkout()">
+        <span style="font-size:18px;">▶</span> Iniciar entreno
+      </button>`
+    : `<div class="fade-up" style="background:var(--green-light);border:1.5px solid var(--green);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:16px;">🟢</span>
+        <span style="font-size:13px;font-weight:700;color:var(--green);">Entreno en curso</span>
+        <span id="home-timer-badge" style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--green);margin-left:auto;"></span>
       </div>`;
-    }
-  });
-  // Warmup banner — before first exercise
+
+  // Warmup banner
   const warmupBanner = `<div class="fade-up" style="background:linear-gradient(135deg,#fff8f5,#fff3ee);border:1.5px solid var(--orange-mid);border-radius:var(--radius);padding:13px 15px;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px;">
     <div style="font-size:22px;flex-shrink:0;">🔥</div>
     <div style="flex:1;">
@@ -1038,7 +1109,52 @@ async function loadClientExercises() {
     </div>
   </div>`;
 
-  // Cooldown banner — after last exercise
+  let exHtml = '';
+  exs.forEach(ex=>{
+    const isDone = !!done[ex.id];
+    if(ex.superset_group && groups[ex.superset_group] && groups[ex.superset_group][0]===ex){
+      const g = groups[ex.superset_group];
+      exHtml+=`<div class="superset-group fade-up"><div class="superset-label">Superset ${ex.superset_group}</div>`;
+      g.forEach(se=>{
+        const seDone = !!done[se.id];
+        exHtml+=`<div class="superset-ex${seDone?' completed':''}" onclick="openExDetail(${JSON.stringify(se).replace(/"/g,'&quot;')})">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="ex-tag ${getTagClass(se.tag)}">${se.tag}</span>
+            <span style="font-size:13px;font-weight:600;${seDone?'text-decoration:line-through;color:var(--gray4);':''}">${se.name}</span>
+            <span style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+              ${seDone?'<span style="color:var(--green);font-size:14px;">✓</span>':''}
+              <span style="color:var(--gray3);font-size:16px;">›</span>
+            </span>
+          </div>
+          <div style="font-size:11px;color:var(--gray4);margin-top:3px;">${se.sets} series × ${se.reps_range} reps · ${se.rest_seconds}s</div>
+          ${se.muscle_group?`<span class="muscle-tag">${se.muscle_group}</span>`:''}
+        </div>`;
+      });
+      exHtml+='</div>';
+    } else if(!ex.superset_group) {
+      exHtml+=`<div class="ex-card fade-up${isDone?' completed':''}" onclick="openExDetail(${JSON.stringify(ex).replace(/"/g,'&quot;')})">
+        <div class="ex-card-top">
+          <span class="ex-tag ${getTagClass(ex.tag)}">${ex.tag}</span>
+          <span class="ex-name" style="${isDone?'text-decoration:line-through;color:var(--gray4);':''}">${ex.name}</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            ${isDone?`<div class="ex-check-badge done">✓</div>`:`<div class="ex-check-badge"></div>`}
+            <span class="ex-chevron">›</span>
+          </div>
+        </div>
+        <div class="ex-specs-row">${ex.sets} series × ${ex.reps_range} reps · ${ex.rest_seconds}s descanso</div>
+        ${ex.muscle_group?`<span class="muscle-tag">${ex.muscle_group}</span>`:''}
+      </div>`;
+    }
+  });
+
+  // ===== WORKOUT FINISH BUTTON (before cooldown banner) =====
+  const finishBtnHtml = workoutStarted
+    ? `<button class="workout-action-btn workout-finish-btn fade-up" onclick="handleFinishWorkout()">
+        <span style="font-size:18px;">🏁</span> Finalizar entreno
+      </button>`
+    : '';
+
+  // Cooldown banner
   const cooldownBanner = `<div class="fade-up" style="background:linear-gradient(135deg,#f5faff,#eef5fb);border:1.5px solid var(--blue-light);border-radius:var(--radius);padding:13px 15px;margin-top:4px;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px;">
     <div style="font-size:22px;flex-shrink:0;">🧊</div>
     <div style="flex:1;">
@@ -1047,12 +1163,65 @@ async function loadClientExercises() {
     </div>
   </div>`;
 
-  list.innerHTML = warmupBanner + html + cooldownBanner;
+  list.innerHTML = startBtnHtml + warmupBanner + exHtml + finishBtnHtml + cooldownBanner;
+
+  // Update home timer badge if workout started
+  if(workoutStarted) updateHomeBadge();
 
   const muscles = [...new Set(exs.filter(e=>e.muscle_group).map(e=>e.muscle_group))];
   if(muscles.length>0){
     summary.innerHTML=`<div class="muscle-summary fade-up"><div class="muscle-summary-title">Trabajo de hoy</div><div class="muscle-tags-row">${muscles.map(m=>`<span class="muscle-tag" style="font-size:10px;">${m}</span>`).join('')}</div></div>`;
   }
+}
+
+function updateHomeBadge() {
+  const badge = document.getElementById('home-timer-badge');
+  if(!badge) return;
+  const elapsed = getElapsedSeconds();
+  const m = Math.floor(elapsed/60);
+  const s = elapsed%60;
+  badge.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  setTimeout(updateHomeBadge, 1000);
+}
+
+function handleStartWorkout() {
+  setWorkoutStarted(true);
+  startGlobalTimer();
+  loadClientExercises(); // re-render with started state
+  showToast('🏃 ¡Entreno iniciado! Dale con todo 💪');
+}
+
+async function handleFinishWorkout() {
+  const elapsedSeconds = stopGlobalTimer();
+  setWorkoutStarted(false);
+  // Save training time
+  const addedMin = Math.round(elapsedSeconds / 60);
+  if(addedMin > 0 && currentClient) {
+    const newTotal = (currentClient.total_training_minutes||0) + addedMin;
+    const today = new Date().toISOString().split('T')[0];
+    const lastTrained = currentClient.last_trained_date;
+    let newDays = currentClient.days_trained||0;
+    const updates = {total_training_minutes: newTotal};
+    if(lastTrained !== today) {
+      newDays = newDays + 1;
+      updates.days_trained = newDays;
+      updates.last_trained_date = today;
+      currentClient.days_trained = newDays;
+      currentClient.last_trained_date = today;
+    }
+    await sb.from('clients').update(updates).eq('id',currentClient.id);
+    currentClient.total_training_minutes = newTotal;
+    document.getElementById('c-days-trained').textContent = newDays;
+    document.getElementById('c-profile-days').textContent = newDays;
+    document.getElementById('c-total-time').textContent = `${Math.floor(newTotal/60)}h ${newTotal%60}min`;
+    const h = Math.floor(elapsedSeconds/3600);
+    const m2 = Math.floor((elapsedSeconds%3600)/60);
+    const timeStr = h>0?`${h}h ${m2}min`:`${m2}min`;
+    showToast(`🏁 ¡Entreno finalizado! ${timeStr} registrados 🔥`, 4000);
+  } else {
+    showToast('🏁 ¡Entreno finalizado!');
+  }
+  loadClientExercises(); // re-render without started state
 }
 
 function openExDetail(ex) {
@@ -1070,56 +1239,36 @@ function openExDetail(ex) {
   if(ex.video_url){vl.style.display='flex';vl.href=ex.video_url;}else{vl.style.display='none';}
   const c=document.getElementById('sets-log-container');
   c.innerHTML='';
-  // Weight unit toggle
+  // Weight unit toggle — using new .unit-btn class that colors both equally
   c.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
     <span style="font-size:12px;color:var(--gray5);font-weight:600;">Unidad de peso:</span>
     <div style="display:flex;gap:4px;">
-      <button id="unit-kg" class="diff-btn easy selected" onclick="setWeightUnit('kg')" style="padding:5px 12px;font-size:12px;font-weight:700;">kg</button>
-      <button id="unit-lb" class="diff-btn" onclick="setWeightUnit('lb')" style="padding:5px 12px;font-size:12px;font-weight:700;">lb</button>
+      <button id="unit-kg" class="unit-btn selected" onclick="setWeightUnit('kg')">kg</button>
+      <button id="unit-lb" class="unit-btn" onclick="setWeightUnit('lb')">lb</button>
     </div>
   </div>`;
   for(let i=1;i<=ex.sets;i++){
     c.innerHTML+=`<div class="set-row">
       <div class="set-num">Set ${i}</div>
-      <input class="set-input" type="number" placeholder="peso" id="log-w-${i}" min="0" step="0.5" oninput="startWorkoutTimerIfNeeded()">
-      <input class="set-input" type="number" placeholder="reps" id="log-r-${i}" min="0" oninput="startWorkoutTimerIfNeeded()">
+      <input class="set-input" type="number" placeholder="kg" id="log-w-${i}" min="0" step="0.5">
+      <input class="set-input" type="number" placeholder="reps" id="log-r-${i}" min="0">
       <div class="diff-btns">
         <button class="diff-btn easy" onclick="toggleDiff(this,'easy')">😊</button>
         <button class="diff-btn hard" onclick="toggleDiff(this,'hard')">🔥</button>
       </div>
     </div>`;
   }
+  // Show timer display if workout is running
+  const timerEl = document.getElementById('workout-timer-display');
+  if(localStorage.getItem('mws_timer_running') === '1') {
+    timerEl.style.display = 'block';
+    startTimerDisplay();
+  }
   showScreen('screen-ex-detail');
 }
 
-function goBackFromDetail() { stopWorkoutTimer(); goBack(); }
+function goBackFromDetail() { goBack(); }
 function toggleDiff(btn,type) { const row=btn.closest('.set-row'); row.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); }
-
-// ===== WORKOUT TIMER =====
-function startWorkoutTimerIfNeeded() {
-  if(workoutTimerStarted) return;
-  workoutTimerStarted = true;
-  workoutStartTime = Date.now();
-  const timerEl = document.getElementById('workout-timer-display');
-  if(timerEl) timerEl.style.display = 'block';
-  workoutTimerInterval = setInterval(()=>{
-    const elapsed = Math.floor((Date.now() - workoutStartTime) / 1000);
-    const m = Math.floor(elapsed/60);
-    const s = elapsed%60;
-    if(timerEl) timerEl.textContent = `${m}:${s.toString().padStart(2,'0')}`;
-  }, 1000);
-}
-
-function stopWorkoutTimer() {
-  clearInterval(workoutTimerInterval);
-  workoutTimerInterval = null;
-  workoutTimerStarted = false;
-  const timerEl = document.getElementById('workout-timer-display');
-  if(timerEl){ timerEl.style.display='none'; timerEl.textContent='0:00'; }
-  const elapsed = workoutStartTime ? Math.floor((Date.now() - workoutStartTime) / 1000) : 0;
-  workoutStartTime = null;
-  return elapsed; // return seconds
-}
 
 // ===== BODY WEIGHT =====
 function showCurrentWeightEdit() {
@@ -1169,39 +1318,23 @@ function applyRatingUI(emoji) {
 
 async function saveLog() {
   if(!currentClient||!currentExercise)return;
-  const elapsedSeconds = stopWorkoutTimer();
-  const weightUnit = document.getElementById('unit-lb')?.classList.contains('selected') ? 'lb' : 'kg';
+  const weightUnit = currentWeightUnit;
   const logs=[];
   let totalWeight = 0;
   for(let i=1;i<=currentExercise.sets;i++){
     const w=parseFloat(document.getElementById('log-w-'+i)?.value)||0;
     const r=parseInt(document.getElementById('log-r-'+i)?.value)||0;
-    const db=document.querySelector(`#sets-log-container .set-row:nth-child(${i+1}) .diff-btn.selected`);
-    const diff=db?(db.classList.contains('easy')?'facil':'dificil'):null;
+    const setRows = document.querySelectorAll('#sets-log-container .set-row');
+    const setRow = setRows[i-1];
+    const diffBtn = setRow ? setRow.querySelector('.diff-btn.selected') : null;
+    const diff=diffBtn?(diffBtn.classList.contains('easy')?'facil':'dificil'):null;
     if(w>0&&r>0) totalWeight += w * r;
     logs.push({exercise_id:currentExercise.id,client_id:currentClient.id,week_number:clientWeek,set_number:i,weight:w||null,weight_unit:weightUnit,reps_done:r||null,difficulty:diff});
   }
   await sb.from('exercise_logs').insert(logs);
-  // Save training time
-  const addedMin = Math.round(elapsedSeconds/60);
-  const newTotal = (currentClient.total_training_minutes||0) + addedMin;
-  // Update days and time
-  const today = new Date().toISOString().split('T')[0];
-  const lastTrained = currentClient.last_trained_date;
-  let newDays = currentClient.days_trained||0;
-  const updates = {total_training_minutes: newTotal};
-  if(lastTrained !== today) {
-    newDays = newDays + 1;
-    updates.days_trained = newDays;
-    updates.last_trained_date = today;
-    currentClient.days_trained = newDays;
-    currentClient.last_trained_date = today;
-  }
-  await sb.from('clients').update(updates).eq('id',currentClient.id);
-  currentClient.total_training_minutes = newTotal;
-  document.getElementById('c-days-trained').textContent=newDays;
-  document.getElementById('c-profile-days').textContent=newDays;
-  document.getElementById('c-total-time').textContent=`${Math.floor(newTotal/60)}h ${newTotal%60}min`;
+
+  // Mark exercise as completed in session state
+  markExerciseDone(currentExercise.id);
 
   // Total weight lifted summary
   const OBJECTS = [
@@ -1222,19 +1355,25 @@ async function saveLog() {
     let closest = OBJECTS[0];
     for(const obj of OBJECTS) { if(totalWeight >= obj.w) closest = obj; else break; }
     const times = Math.round(totalWeight / closest.w);
-    showToast(`🏋️ ¡Levantaste ${totalWeight.toFixed(0)}${weightUnit}! ≈ ${times}x ${closest.label}`, 5000);
+    showToast(`🏋️ ¡${totalWeight.toFixed(0)}${weightUnit} levantados! ≈ ${times}x ${closest.label}`, 4500);
   } else {
     showToast('✅ ¡Registro guardado!');
   }
-  setTimeout(()=>showScreen('screen-client-home'),800);
+
+  setTimeout(()=>{
+    goBack();
+    // Refresh exercises list to show checkmark
+    loadClientExercises();
+  }, 600);
 }
 
-let currentWeightUnit = 'kg';
 function setWeightUnit(unit) {
   currentWeightUnit = unit;
-  document.getElementById('unit-kg').classList.toggle('selected', unit==='kg');
-  document.getElementById('unit-lb').classList.toggle('selected', unit==='lb');
-  // Update placeholder labels
+  const kgBtn = document.getElementById('unit-kg');
+  const lbBtn = document.getElementById('unit-lb');
+  if(kgBtn) { kgBtn.classList.toggle('selected', unit==='kg'); }
+  if(lbBtn) { lbBtn.classList.toggle('selected', unit==='lb'); }
+  // Update input placeholders
   document.querySelectorAll('#sets-log-container .set-input[id^="log-w-"]').forEach(inp=>inp.placeholder=unit);
 }
 
@@ -1261,7 +1400,6 @@ async function initCoach() {
   loadCoachClients();
 }
 
-// Sort clients
 function setSortClients(mode, el) {
   clientSortMode = mode;
   document.querySelectorAll('.sort-chip').forEach(c=>c.classList.remove('active'));
@@ -1279,29 +1417,11 @@ function renderCoachClients(clients) {
   if(clientSortMode==='name') {
     sorted.sort((a,b)=>a.name.localeCompare(b.name));
   } else if(clientSortMode==='payment_asc') {
-    sorted.sort((a,b)=>{
-      const da = daysUntil(a.next_payment_date);
-      const db = daysUntil(b.next_payment_date);
-      if(da===null&&db===null)return 0;
-      if(da===null)return 1;
-      if(db===null)return-1;
-      return da-db;
-    });
+    sorted.sort((a,b)=>{const da=daysUntil(a.next_payment_date),db=daysUntil(b.next_payment_date);if(da===null&&db===null)return 0;if(da===null)return 1;if(db===null)return-1;return da-db;});
   } else if(clientSortMode==='payment_desc') {
-    sorted.sort((a,b)=>{
-      const da = daysUntil(a.next_payment_date);
-      const db = daysUntil(b.next_payment_date);
-      if(da===null&&db===null)return 0;
-      if(da===null)return-1;
-      if(db===null)return 1;
-      return db-da;
-    });
+    sorted.sort((a,b)=>{const da=daysUntil(a.next_payment_date),db=daysUntil(b.next_payment_date);if(da===null&&db===null)return 0;if(da===null)return-1;if(db===null)return 1;return db-da;});
   } else if(clientSortMode==='start_date') {
-    sorted.sort((a,b)=>{
-      const da = a.start_date||a.created_at||'';
-      const db = b.start_date||b.created_at||'';
-      return da.localeCompare(db);
-    });
+    sorted.sort((a,b)=>{const da=a.start_date||a.created_at||'',db=b.start_date||b.created_at||'';return da.localeCompare(db);});
   }
 
   list.innerHTML = sorted.map(c=>{
@@ -1356,7 +1476,6 @@ async function openCoachClient(clientId) {
     </div>
     <div class="payment-row"><span class="payment-key">Peso actual</span><span class="payment-val">${c.current_weight?c.current_weight+'kg':'—'}</span></div>
     <div class="payment-row"><span class="payment-key">Tiempo entrenado</span><span class="payment-val">${Math.floor((c.total_training_minutes||0)/60)}h ${(c.total_training_minutes||0)%60}min</span></div>`;
-  // Populate edit modal fields
   document.getElementById('ep-date').value=c.next_payment_date||'';
   document.getElementById('ep-amount').value=c.payment_amount||'';
   document.getElementById('ep-start-date').value=c.start_date||'';
@@ -1385,13 +1504,11 @@ async function loadWeekTrainedCount(clientId) {
   document.getElementById('coach-c-week-trained').textContent = uniqueDays.size;
 }
 
-// ===== COACH PLAN OVERVIEW — collapsed, expand on day click =====
 async function loadCoachClientDetail(clientId) {
   const {data:plans} = await sb.from('monthly_plans').select('*').eq('client_id',clientId).order('week_number').order('day_of_week');
   const container=document.getElementById('coach-plan-overview');
   if(!plans||plans.length===0){container.innerHTML='<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Sin plan mensual aún.<br>Toca + Plan para crear.</div></div>';return;}
 
-  // Group by week
   const weeks={};
   plans.forEach(p=>{if(!weeks[p.week_number])weeks[p.week_number]=[];weeks[p.week_number].push(p);});
 
@@ -1415,16 +1532,10 @@ async function loadCoachClientDetail(clientId) {
 async function togglePlanDay(planDayId, chipEl) {
   const container = document.getElementById('day-exs-container-'+planDayId);
   const isOpen = container.style.display !== 'none';
-  if(isOpen){
-    container.style.display='none';
-    chipEl.textContent = chipEl.textContent.replace(' ↓',' ›');
-    return;
-  }
+  if(isOpen){container.style.display='none';chipEl.textContent=chipEl.textContent.replace(' ↓',' ›');return;}
   container.style.display='block';
-  chipEl.textContent = chipEl.textContent.replace(' ›',' ↓');
-
+  chipEl.textContent=chipEl.textContent.replace(' ›',' ↓');
   const exList = document.getElementById('coach-day-exs-'+planDayId);
-  // Only load if not already loaded
   if(exList.querySelector('.spinner')){
     const {data:exs} = await sb.from('exercises').select('*').eq('plan_day_id',planDayId).order('order_index');
     if(!exs||exs.length===0){exList.innerHTML='<div style="font-size:12px;color:var(--gray4);padding:4px 0;">Sin ejercicios</div>';return;}
@@ -1438,7 +1549,6 @@ async function togglePlanDay(planDayId, chipEl) {
   }
 }
 
-// Edit exercise
 function openEditEx(ex) {
   document.getElementById('edit-ex-id').value=ex.id;
   document.getElementById('edit-ex-name').value=ex.name;
@@ -1771,7 +1881,6 @@ async function loadClientLogs() {
     return;
   }
 
-  // Ratings section
   let ratingsHtml = '';
   if(ratings&&ratings.length>0){
     ratingsHtml = `<div class="card" style="margin-bottom:10px;cursor:default;">
@@ -1865,16 +1974,9 @@ function renderLibrary() {
   const list = document.getElementById('library-list');
   const searchQ = document.getElementById('library-search')?.value.toLowerCase() || '';
   let filtered = allLibraryExercises;
-  if(libraryFilterCategory) {
-    filtered = filtered.filter(ex => ex.muscle_group === libraryFilterCategory);
-  }
-  if(searchQ) {
-    filtered = filtered.filter(ex => ex.name.toLowerCase().includes(searchQ));
-  }
-  if(filtered.length===0){
-    list.innerHTML='<div class="empty-state"><div class="empty-icon">📚</div><div class="empty-text">Sin ejercicios encontrados.</div></div>';
-    return;
-  }
+  if(libraryFilterCategory) filtered = filtered.filter(ex => ex.muscle_group === libraryFilterCategory);
+  if(searchQ) filtered = filtered.filter(ex => ex.name.toLowerCase().includes(searchQ));
+  if(filtered.length===0){list.innerHTML='<div class="empty-state"><div class="empty-icon">📚</div><div class="empty-text">Sin ejercicios encontrados.</div></div>';return;}
   list.innerHTML = filtered.map(ex=>`
     <div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--gray2);" id="lib-item-${ex.id}">
       <div style="flex:1;min-width:0;">
@@ -1939,30 +2041,5 @@ function addFromLibrary(ex) {
   closeModal('modal-ex-library');
 }
 </script>
-<!-- Avatar Picker Modal -->
-<div class="modal-overlay" id="modal-avatar-picker">
-  <div class="modal">
-    <span class="modal-close" onclick="closeModal('modal-avatar-picker')">×</span>
-    <div class="modal-title">Personalizar avatar</div>
-    <div class="notes-label" style="margin-bottom:10px;">Fondo</div>
-    <div style="display:flex;gap:8px;margin-bottom:16px;">
-      <div id="bg-orange" onclick="selectAvatarBg('orange')" style="flex:1;height:44px;border-radius:10px;background:var(--orange-light);border:2px solid var(--orange);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--orange);">Naranja</div>
-      <div id="bg-black" onclick="selectAvatarBg('black')" style="flex:1;height:44px;border-radius:10px;background:#111;border:2px solid #333;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--orange);">Negro</div>
-    </div>
-    <div class="notes-label" style="margin-bottom:10px;">Avatar — Iniciales o emoji</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
-      <div id="av-initials" onclick="selectAvatarType('initials')" style="width:56px;height:56px;border-radius:50%;background:var(--orange-light);border:2px solid var(--orange);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--orange);" id="avatar-preview-initials">AA</div>
-      <div id="av-skull" onclick="selectAvatarType('💀')" style="width:56px;height:56px;border-radius:50%;background:var(--gray1);border:2px solid var(--gray2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:28px;">💀</div>
-      <div id="av-ninja" onclick="selectAvatarType('🥷🏻')" style="width:56px;height:56px;border-radius:50%;background:var(--gray1);border:2px solid var(--gray2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:28px;">🥷🏻</div>
-      <div id="av-gorilla" onclick="selectAvatarType('🦍')" style="width:56px;height:56px;border-radius:50%;background:var(--gray1);border:2px solid var(--gray2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:28px;">🦍</div>
-      <div id="av-tiger" onclick="selectAvatarType('🐅')" style="width:56px;height:56px;border-radius:50%;background:var(--gray1);border:2px solid var(--gray2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:28px;">🐅</div>
-    </div>
-    <div style="display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
-      <div id="avatar-modal-preview" style="width:76px;height:76px;border-radius:50%;background:var(--orange-light);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--orange);border:2px solid var(--gray2);">AA</div>
-    </div>
-    <button class="btn-primary" onclick="saveAvatar()">Guardar avatar</button>
-  </div>
-</div>
-
 </body>
 </html>
