@@ -354,6 +354,10 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div id="c-muscle-summary"></div>
   </div>
   <a href="https://wa.me/50672083564" target="_blank" style="position:fixed;bottom:80px;right:16px;width:50px;height:50px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,211,102,0.4);z-index:99;text-decoration:none;font-size:26px;">💬</a>
+  <!-- StrongFlow button — only on Hoy screen, grows when workout running -->
+  <div id="strongflow-btn" onclick="openStrongFlow()" style="position:fixed;bottom:140px;right:16px;width:50px;height:50px;background:#111111;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,0.35);z-index:99;cursor:pointer;transition:all 0.3s;border:2px solid var(--orange);">
+    <span style="font-size:22px;font-weight:900;color:var(--orange);font-family:'Playfair Display',serif;line-height:1;">?</span>
+  </div>
   <div class="bottom-nav">
     <div class="nav-item active" onclick="clientNav('home',this)"><div class="nav-icon">🏋️</div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="clientNav('food',this)"><div class="nav-icon">🥗</div><div class="nav-label">Food</div><div class="nav-dot"></div></div>
@@ -573,6 +577,35 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   <div class="bottom-nav">
     <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
     <div class="nav-item active" onclick="coachNav('settings',this)"><div class="nav-icon">⚙️</div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
+  </div>
+</div>
+
+<!-- ===== STRONGFLOW POPUP ===== -->
+<div id="modal-strongflow" style="display:none;position:fixed;inset:0;z-index:300;align-items:flex-end;justify-content:center;">
+  <!-- backdrop -->
+  <div onclick="closeStrongFlow()" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);"></div>
+  <!-- panel -->
+  <div style="position:relative;width:100%;max-width:480px;height:82vh;background:var(--white);border-radius:24px 24px 0 0;display:flex;flex-direction:column;overflow:hidden;">
+    <!-- header -->
+    <div style="background:#111111;padding:16px 20px 14px;display:flex;align-items:center;gap:12px;flex-shrink:0;">
+      <div style="width:36px;height:36px;background:#111;border:2px solid var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <span style="font-size:18px;font-weight:900;color:var(--orange);font-family:'Playfair Display',serif;line-height:1;">?</span>
+      </div>
+      <div style="flex:1;">
+        <div style="font-family:'Playfair Display',serif;font-size:17px;font-weight:900;color:white;">StrongFlow</div>
+        <div style="font-size:10px;color:var(--orange);font-family:'DM Mono',monospace;letter-spacing:0.1em;text-transform:uppercase;">Soporte técnico · Move With Sau</div>
+      </div>
+      <div onclick="closeStrongFlow()" style="width:30px;height:30px;background:rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:white;">×</div>
+    </div>
+    <!-- messages -->
+    <div id="sf-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;"></div>
+    <!-- input -->
+    <div style="padding:12px 16px 20px;background:var(--white);border-top:1px solid var(--gray2);flex-shrink:0;">
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <textarea id="sf-input" placeholder="Preguntale a StrongFlow..." rows="2" style="flex:1;padding:10px 12px;border:1.5px solid var(--gray2);border-radius:var(--radius-sm);font-size:14px;font-family:'DM Sans',sans-serif;color:var(--black);background:var(--gray1);outline:none;resize:none;line-height:1.4;" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendStrongFlowMessage();}"></textarea>
+        <button onclick="sendStrongFlowMessage()" style="background:#111111;color:var(--orange);border:2px solid var(--orange);border-radius:var(--radius-sm);padding:12px 16px;font-size:18px;cursor:pointer;flex-shrink:0;align-self:flex-end;">↑</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1017,8 +1050,8 @@ async function initClient() {
   loadClientDayStrip();
   loadClientPlans();
   loadTodayRating().catch(()=>{});
-  // Resume timer display if was running
   if(localStorage.getItem('mws_timer_running') === '1') startTimerDisplay();
+  updateStrongFlowBtn();
 }
 
 function loadGoalDisplay(goalText) {
@@ -1211,7 +1244,8 @@ function updateHomeBadge() {
 function handleStartWorkout() {
   setWorkoutStarted(true);
   startGlobalTimer();
-  loadClientExercises(); // re-render with started state
+  loadClientExercises();
+  updateStrongFlowBtn();
   showToast('🏃 ¡Entreno iniciado! Dale con todo 💪');
 }
 
@@ -1245,7 +1279,8 @@ async function handleFinishWorkout() {
   } else {
     showToast('🏁 ¡Entreno finalizado!');
   }
-  loadClientExercises(); // re-render without started state
+  loadClientExercises();
+  updateStrongFlowBtn();
 }
 
 function openExDetail(ex) {
@@ -2345,6 +2380,173 @@ async function saveMacros() {
   Object.assign(currentClient, updates);
   showToast('✅ Macros guardados');
 }
+// ===== STRONGFLOW CHAT =====
+const STRONGFLOW_SYSTEM_PROMPT = `Vos sos StrongFlow Coach — el asistente de entrenamiento de Move With Sau. No sos un bot genérico de fitness. Sos alguien que vive el método, que entiende que el cuerpo necesita fuerza Y movilidad, y que entrena desde la consciencia, no desde el ego.
+
+ROL PRINCIPAL — MUY IMPORTANTE:
+Sos un asistente de soporte técnico durante el entrenamiento. Tu función es:
+- Dar cues de técnica claros y precisos
+- Explicar sensaciones correctas ("deberías sentir tensión en el glúteo, no en la lumbar")
+- Sugerir rutinas de calentamiento o estiramiento específicas
+- Ayudar a sustituir un ejercicio si algo duele — pero SIEMPRE preguntando contexto primero
+- Nunca armás programas completos. Respondés dudas puntuales del entreno de hoy.
+
+ANTE DOLOR O MOLESTIA — PROTOCOLO OBLIGATORIO:
+1. Primero preguntás: ¿dónde exactamente? ¿durante el movimiento o después? ¿es dolor agudo o molestia?
+2. Con ese contexto, adaptás o sugerís alternativa
+3. Si es dolor agudo: referís al coach o profesional, sin excepción
+4. Nunca diagnosticás. Nunca recomendás aguantar el dolor.
+
+FILOSOFÍA MOVE:
+- Estética: viene del trabajo consistente y consciente
+- Fuerza: patrones funcionales, no solo máquinas
+- Movilidad: el rango de movimiento es fuerza en otro ángulo
+- Longevidad: entrenar para los próximos 40 años, no solo para el verano
+
+MÉTODO STRONG FLOW:
+- La posición es el ejercicio. Sostener una pose con intención ES trabajo real.
+- Fuerza + movilidad no se separan.
+- El yoga no es el calentamiento. Es parte del entrenamiento.
+- La respiración diafragmática es la base.
+- Isométrico primero, excéntrico después, concéntrico al final — especialmente en zonas sensibles.
+- El core estabiliza la columna y la pelvis. No son solo los abdominales.
+
+CONOCIMIENTO:
+- Técnica de ejercicios de gym: cues, tempo, patrones de movimiento
+- Yoga aplicado: Dandasana, Navasana, Pigeon, Lizard, Dragon, Butterfly, 90/90, Child's Pose, Locust, Tall Kneeling, Half-Kneeling
+- Movilidad articular: CARs de cadera, rotación torácica, movilidad escapular
+- Patrones funcionales: hip hinge, empuje, jalón, sentadilla, carga unilateral, anti-rotación
+- Lesiones comunes: pubalgia, lumbalgia, tendinopatías — adaptás sin eliminar
+- Cadenas musculares, no músculos aislados
+
+VOZ:
+- Reaccionás antes de dar información. Reconocés primero.
+- Directo sin ser frío. Criterio sin ser arrogante.
+- No hacés listas innecesarias.
+- Usá "tú / te / tu / contigo". Apodos neutros si sientan natural: crack, champ.
+- Humor ligero cuando viene natural. Nunca forzado.
+- No terminás con mantras motivacionales de relleno.`;
+
+let sfChatHistory = [];
+let sfOpen = false;
+
+function openStrongFlow() {
+  sfOpen = true;
+  const modal = document.getElementById('modal-strongflow');
+  modal.style.display = 'flex';
+  if(sfChatHistory.length === 0) loadStrongFlowHistory();
+  setTimeout(()=>{ document.getElementById('sf-input')?.focus(); }, 300);
+}
+
+function closeStrongFlow() {
+  sfOpen = false;
+  document.getElementById('modal-strongflow').style.display = 'none';
+}
+
+async function loadStrongFlowHistory() {
+  const msgs = document.getElementById('sf-messages');
+  if(!currentClient) { msgs.innerHTML = renderSFWelcome(); return; }
+  const {data:history} = await sb.from('training_chats').select('*').eq('client_id',currentClient.id).order('created_at',{ascending:true}).limit(40);
+  sfChatHistory = (history||[]).map(m=>({role:m.role,content:m.content}));
+  msgs.innerHTML = sfChatHistory.length === 0 ? renderSFWelcome() : sfChatHistory.map(m=>renderSFMessage(m)).join('');
+  scrollSFChat();
+}
+
+function renderSFWelcome() {
+  return `<div style="text-align:center;padding:20px 10px;">
+    <div style="width:52px;height:52px;background:#111;border:2px solid var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+      <span style="font-size:24px;font-weight:900;color:var(--orange);font-family:'Playfair Display',serif;">?</span>
+    </div>
+    <div style="font-size:13px;line-height:1.7;color:var(--gray5);">Hola, soy <strong style="color:var(--black);">StrongFlow</strong>.<br>Preguntame sobre técnica, sensaciones,<br>calentamiento — o si algo te está molestando.</div>
+  </div>`;
+}
+
+function renderSFMessage(m) {
+  const isUser = m.role === 'user';
+  return `<div style="display:flex;justify-content:${isUser?'flex-end':'flex-start'};">
+    <div style="max-width:84%;background:${isUser?'#111111':'var(--gray1)'};color:${isUser?'white':'var(--black)'};border-radius:${isUser?'16px 16px 4px 16px':'16px 16px 16px 4px'};padding:10px 13px;font-size:13px;line-height:1.55;white-space:pre-wrap;${isUser?'':'border:1px solid var(--gray2);'}">${m.content}</div>
+  </div>`;
+}
+
+function scrollSFChat() {
+  setTimeout(()=>{ const m=document.getElementById('sf-messages'); if(m) m.scrollTop=m.scrollHeight; }, 80);
+}
+
+async function sendStrongFlowMessage() {
+  const input = document.getElementById('sf-input');
+  if(!input) return;
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+
+  const workoutRunning = localStorage.getItem('mws_timer_running') === '1';
+  const userMsg = {role:'user', content:text};
+  sfChatHistory.push(userMsg);
+  if(currentClient) await sb.from('training_chats').insert([{client_id:currentClient.id, role:'user', content:text}]);
+
+  const msgs = document.getElementById('sf-messages');
+  const welcome = msgs.querySelector('div[style*="text-align:center"]');
+  if(welcome) welcome.remove();
+  msgs.innerHTML += renderSFMessage(userMsg);
+
+  const typingId = 'sf-typing-'+Date.now();
+  msgs.innerHTML += `<div id="${typingId}" style="display:flex;justify-content:flex-start;">
+    <div style="background:var(--gray1);border:1px solid var(--gray2);border-radius:16px 16px 16px 4px;padding:10px 16px;">
+      <div style="display:flex;gap:4px;align-items:center;">
+        <div style="width:6px;height:6px;border-radius:50%;background:#111;animation:bounce 1s infinite;"></div>
+        <div style="width:6px;height:6px;border-radius:50%;background:#111;animation:bounce 1s infinite 0.2s;"></div>
+        <div style="width:6px;height:6px;border-radius:50%;background:#111;animation:bounce 1s infinite 0.4s;"></div>
+      </div>
+    </div>
+  </div>`;
+  scrollSFChat();
+
+  const clientCtx = `\nNOMBRE DEL CLIENTE: ${currentClient?.name||'Cliente'}\nENTRENO ACTIVO: ${workoutRunning?'Sí — el cliente está entrenando ahora mismo. Sé concreto y práctico.':'No'}`;
+
+  try {
+    const response = await fetch('/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        max_tokens:800,
+        messages:[
+          {role:'system', content:STRONGFLOW_SYSTEM_PROMPT+clientCtx},
+          ...sfChatHistory.slice(-16)
+        ]
+      })
+    });
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content || 'Hubo un error, intentá de nuevo.';
+    document.getElementById(typingId)?.remove();
+    const assistantMsg = {role:'assistant', content:reply};
+    sfChatHistory.push(assistantMsg);
+    if(currentClient) await sb.from('training_chats').insert([{client_id:currentClient.id, role:'assistant', content:reply}]);
+    msgs.innerHTML += renderSFMessage(assistantMsg);
+    scrollSFChat();
+  } catch(e) {
+    document.getElementById(typingId)?.remove();
+    showToast('❌ Error conectando con StrongFlow');
+  }
+}
+
+function updateStrongFlowBtn() {
+  const btn = document.getElementById('strongflow-btn');
+  if(!btn) return;
+  const running = localStorage.getItem('mws_timer_running') === '1';
+  if(running) {
+    btn.style.width = '62px';
+    btn.style.height = '62px';
+    btn.style.boxShadow = '0 0 0 5px rgba(247,90,14,0.2), 0 4px 20px rgba(0,0,0,0.4)';
+    btn.querySelector('span').style.fontSize = '28px';
+  } else {
+    btn.style.width = '50px';
+    btn.style.height = '50px';
+    btn.style.boxShadow = '0 4px 16px rgba(0,0,0,0.35)';
+    btn.querySelector('span').style.fontSize = '22px';
+  }
+}
+
 async function saveExerciseToLibrary(name, tag, muscle, video) {
   if(!name||!currentUser)return;
   try {
