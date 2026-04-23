@@ -2229,39 +2229,20 @@ ${currentClient.macros_grasas ? `Grasas asignadas: ${currentClient.macros_grasas
 ${currentClient.macros_notas ? `Notas del coach: ${currentClient.macros_notas}` : ''}`.trim();
 
   try {
-    const response = await fetch('/api/chat, {
-
-  method: 'POST',
-
-  headers: {
-
-    'Content-Type': 'application/json',
-
-
-
-  },
-
-  body: JSON.stringify({
-
-    model: 'llama-3.3-70b-versatile',
-
-    max_tokens: 1000,
-
-    messages: [
-
-      {role: 'system', content: NUTRIFLEX_SYSTEM_PROMPT + '\n\n' + clientContext},
-
-      ...foodChatHistory.slice(-20)
-
-    ]
-
-  })
-
-});
-
-const data = await response.json();
-
-const reply = data.choices?.[0]?.message?.content || 'Hubo un error, intentá de nuevo.';
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 1000,
+        messages: [
+          {role: 'system', content: NUTRIFLEX_SYSTEM_PROMPT + '\n\n' + clientContext},
+          ...foodChatHistory.slice(-20)
+        ]
+      })
+    });
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content || 'Hubo un error, intentá de nuevo.';
 
     // Remove typing indicator
     document.getElementById(typingId)?.remove();
