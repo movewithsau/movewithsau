@@ -1255,12 +1255,13 @@ async function loadClientExercises() {
       }
 
       exHtml += `<div class="fade-up" style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;border-left:3px solid var(--orange);">
-        <div style="padding:10px 14px 8px;display:flex;align-items:center;justify-content:space-between;">
-          <div>
+        <div style="padding:10px 14px 8px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+          <div style="flex:1;">
             <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--orange);text-transform:uppercase;font-weight:700;">Circuito ${ex.superset_group}</div>
             <div style="font-size:11px;color:var(--gray4);margin-top:1px;">${rounds} rounds · ${restText} descanso</div>
+            ${g[0].circuit_notes ? `<div style="font-size:12px;color:var(--gray5);margin-top:5px;line-height:1.45;padding:6px 8px;background:var(--gray1);border-radius:6px;">${g[0].circuit_notes}</div>` : ''}
           </div>
-          <div id="unit-toggle-${ex.superset_group}" style="display:flex;gap:3px;">
+          <div id="unit-toggle-${ex.superset_group}" style="display:flex;gap:3px;flex-shrink:0;">
             <button onclick="setCircuitUnit('${ex.superset_group}','kg',this)" class="unit-btn selected" style="padding:4px 10px;font-size:11px;">kg</button>
             <button onclick="setCircuitUnit('${ex.superset_group}','lb',this)" class="unit-btn" style="padding:4px 10px;font-size:11px;">lb</button>
           </div>
@@ -1283,17 +1284,21 @@ async function loadClientExercises() {
 
     } else if(!ex.superset_group) {
       const isDone = !!done[ex.id];
-      exHtml+=`<div class="ex-card fade-up${isDone?' completed':''}" onclick="openExDetail(${JSON.stringify(ex).replace(/"/g,'&quot;')})">
-        <div class="ex-card-top">
-          <span class="ex-tag ${getTagClass(ex.tag)}">${ex.tag}</span>
-          <span class="ex-name" style="${isDone?'text-decoration:line-through;color:var(--gray4);':''}">${ex.name}</span>
-          <div style="display:flex;align-items:center;gap:6px;">
+      exHtml+=`<div class="fade-up" style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;">
+        <div style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="openExDetail(${JSON.stringify(ex).replace(/"/g,'&quot;')})">
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <span class="ex-tag ${getTagClass(ex.tag)}">${ex.tag}</span>
+              <span style="font-size:14px;font-weight:700;color:${isDone?'var(--gray4)':'var(--black)'};${isDone?'text-decoration:line-through;':''}">${ex.name}</span>
+            </div>
+            <div style="font-size:11px;color:var(--gray4);">${ex.sets} series × ${ex.reps_range} reps · ${ex.rest_seconds}s descanso</div>
+            ${ex.muscle_group?`<span class="muscle-tag" style="margin-top:4px;display:inline-block;">${ex.muscle_group}</span>`:''}
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:10px;">
             ${isDone?`<div class="ex-check-badge done">✓</div>`:`<div class="ex-check-badge"></div>`}
-            <span class="ex-chevron">›</span>
+            <span style="color:var(--gray3);font-size:18px;">›</span>
           </div>
         </div>
-        <div class="ex-specs-row">${ex.sets} series × ${ex.reps_range} reps · ${ex.rest_seconds}s descanso</div>
-        ${ex.muscle_group?`<span class="muscle-tag">${ex.muscle_group}</span>`:''}
       </div>`;
     }
   });
@@ -1848,12 +1853,19 @@ function addExerciseForm(prefill=null) {
       <input type="checkbox" id="bss-${id}" ${prefill&&prefill.superset_group?'checked':''} onchange="toggleSupersetInput(${id})">
       <label for="bss-${id}">Parte de un Circuito</label>
       <input class="superset-group-input" id="bssg-${id}" placeholder="Ej: A" style="display:${prefill&&prefill.superset_group?'inline-block':'none'};" value="${prefill&&prefill.superset_group?prefill.superset_group:''}">
+    </div>
+    <div id="bcn-${id}" style="display:${prefill&&prefill.superset_group?'block':'none'};margin-top:6px;">
+      <textarea class="form-textarea" id="bcn-input-${id}" rows="2" placeholder="Notas del circuito (ej: Mantener tempo, sin descanso entre ejercicios)">${prefill&&prefill.circuit_notes?prefill.circuit_notes:''}</textarea>
     </div>`;
   document.getElementById('builder-exercises-list').appendChild(div);
 }
 
 function toggleCustomMuscleBuilder(sel,id) { document.getElementById('bmc-'+id).style.display=sel.value==='custom'?'block':'none'; }
-function toggleSupersetInput(id) { const cb=document.getElementById('bss-'+id); document.getElementById('bssg-'+id).style.display=cb.checked?'inline-block':'none'; }
+function toggleSupersetInput(id) {
+  const cb = document.getElementById('bss-'+id);
+  document.getElementById('bssg-'+id).style.display = cb.checked ? 'inline-block' : 'none';
+  document.getElementById('bcn-'+id).style.display = cb.checked ? 'block' : 'none';
+}
 
 function moveExForm(formId, direction) {
   const el = document.getElementById(formId);
@@ -1889,8 +1901,9 @@ async function savePlanDay() {
     const notes=document.getElementById('bno-'+fid)?.value.trim();
     const ssCheck=document.getElementById('bss-'+fid)?.checked;
     const ssGroup=document.getElementById('bssg-'+fid)?.value.trim();
+    const circuitNotes=document.getElementById('bcn-input-'+fid)?.value.trim()||null;
     if(!name||!sets||!reps){valid=false;return;}
-    exercises.push({name,sets:parseInt(sets),reps_range:reps,rest_seconds:parseInt(rest)||60,tag,muscle_group:muscle||null,video_url:video||null,notes:notes||null,superset_group:ssCheck&&ssGroup?ssGroup:null,order_index:idx});
+    exercises.push({name,sets:parseInt(sets),reps_range:reps,rest_seconds:parseInt(rest)||60,tag,muscle_group:muscle||null,video_url:video||null,notes:notes||null,circuit_notes:ssCheck&&ssGroup?circuitNotes:null,superset_group:ssCheck&&ssGroup?ssGroup:null,order_index:idx});
   });
   if(!valid){showToast('⚠️ Completa nombre, series y reps');return;}
   const {data:existPd} = await sb.from('monthly_plans').select('id').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',builderDay).single();
@@ -1915,7 +1928,7 @@ async function copyWeekFromPrevious() {
     if(existPd){await sb.from('exercises').delete().eq('plan_day_id',existPd.id);await sb.from('monthly_plans').delete().eq('id',existPd.id);}
     const {data:newPd} = await sb.from('monthly_plans').insert([{client_id:currentClient.id,week_number:builderWeek,day_of_week:pd.day_of_week}]).select().single();
     if(exs&&newPd){
-      const newExs=exs.map(e=>({plan_day_id:newPd.id,name:e.name,sets:e.sets,reps_range:e.reps_range,rest_seconds:e.rest_seconds,tag:e.tag,muscle_group:e.muscle_group,video_url:e.video_url,notes:e.notes,superset_group:e.superset_group,order_index:e.order_index}));
+      const newExs=exs.map(e=>({plan_day_id:newPd.id,name:e.name,sets:e.sets,reps_range:e.reps_range,rest_seconds:e.rest_seconds,tag:e.tag,muscle_group:e.muscle_group,video_url:e.video_url,notes:e.notes,circuit_notes:e.circuit_notes||null,superset_group:e.superset_group,order_index:e.order_index}));
       await sb.from('exercises').insert(newExs);
     }
   }
