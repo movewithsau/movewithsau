@@ -2229,7 +2229,7 @@ ${currentClient.macros_grasas ? `Grasas asignadas: ${currentClient.macros_grasas
 ${currentClient.macros_notas ? `Notas del coach: ${currentClient.macros_notas}` : ''}`.trim();
 
   try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const response = await fetch('/api/chat, {
 
   method: 'POST',
 
@@ -2237,7 +2237,7 @@ ${currentClient.macros_notas ? `Notas del coach: ${currentClient.macros_notas}` 
 
     'Content-Type': 'application/json',
 
-    'Authorization': 'Bearer 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'
+
 
   },
 
