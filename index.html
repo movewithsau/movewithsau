@@ -384,6 +384,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;" id="c-profile-name">—</div>
       <div style="font-size:12px;color:var(--gray4);margin-top:3px;" id="c-profile-username">—</div>
     </div>
+    <!-- 1. Meta -->
     <div class="goal-card" id="c-goal-card">
       <div class="notes-label" style="margin-bottom:6px;">Mi motivación</div>
       <div id="c-goal-display">
@@ -396,10 +397,32 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
         <button class="btn-primary" style="padding:11px;" onclick="saveGoal()">Guardar meta</button>
       </div>
     </div>
+    <!-- 2. Rating del día -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div class="notes-label" style="margin-bottom:0;">¿Cómo estuvo tu entreno hoy?</div>
+        <div style="font-size:10px;color:var(--orange);font-weight:700;letter-spacing:0.08em;">CALIFICALO →</div>
+      </div>
+      <div id="c-rating-display">
+        <div style="display:flex;gap:10px;justify-content:center;">
+          <button onclick="rateWorkout('😎')" id="rate-cool" style="font-size:28px;padding:10px 16px;border-radius:12px;border:2px solid var(--gray2);background:var(--gray1);cursor:pointer;transition:all 0.15s;">😎</button>
+          <button onclick="rateWorkout('🥵')" id="rate-hot" style="font-size:28px;padding:10px 16px;border-radius:12px;border:2px solid var(--gray2);background:var(--gray1);cursor:pointer;transition:all 0.15s;">🥵</button>
+          <button onclick="rateWorkout('😵‍💫')" id="rate-dead" style="font-size:28px;padding:10px 16px;border-radius:12px;border:2px solid var(--gray2);background:var(--gray1);cursor:pointer;transition:all 0.15s;">😵‍💫</button>
+        </div>
+        <div id="c-rating-saved" style="text-align:center;margin-top:8px;font-size:12px;color:var(--gray4);"></div>
+      </div>
+    </div>
+    <!-- 3. Tiempo total entrenado -->
+    <div class="card" style="margin-bottom:16px;text-align:center;">
+      <div class="notes-label" style="margin-bottom:4px;">Tiempo total entrenado</div>
+      <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:var(--orange);" id="c-total-time">0h 0min</div>
+    </div>
+    <!-- 4. Stats días / semana -->
     <div class="stat-row">
       <div class="stat-card"><div class="stat-num" id="c-profile-days">0</div><div class="stat-label">Días entrenados</div></div>
       <div class="stat-card"><div class="stat-num" id="c-profile-week">1</div><div class="stat-label">Semana actual</div></div>
     </div>
+    <!-- 5. Pesos -->
     <div class="stat-row" style="margin-top:0;">
       <div class="stat-card" style="position:relative;">
         <div class="stat-num" style="font-size:22px;" id="c-initial-weight">—</div>
@@ -419,25 +442,6 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
         <span style="font-size:13px;color:var(--gray5);font-weight:600;">kg</span>
         <button onclick="saveCurrentWeight()" style="background:var(--orange);color:white;border:none;border-radius:8px;padding:12px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Guardar</button>
       </div>
-    </div>
-    <!-- Daily workout rating -->
-    <div class="card" style="margin-bottom:16px;">
-      <div class="notes-label" style="margin-bottom:4px;">¿Cómo estuvo tu entreno hoy?</div>
-      <!-- "Calificalo" label -->
-      <div style="font-size:10px;color:var(--orange);font-weight:700;letter-spacing:0.08em;text-align:right;margin-bottom:8px;">CALIFICALO →</div>
-      <div id="c-rating-display">
-        <div style="display:flex;gap:10px;justify-content:center;">
-          <button onclick="rateWorkout('😎')" id="rate-cool" style="font-size:28px;padding:10px 16px;border-radius:12px;border:2px solid var(--gray2);background:var(--gray1);cursor:pointer;transition:all 0.15s;">😎</button>
-          <button onclick="rateWorkout('🥵')" id="rate-hot" style="font-size:28px;padding:10px 16px;border-radius:12px;border:2px solid var(--gray2);background:var(--gray1);cursor:pointer;transition:all 0.15s;">🥵</button>
-          <button onclick="rateWorkout('😵‍💫')" id="rate-dead" style="font-size:28px;padding:10px 16px;border-radius:12px;border:2px solid var(--gray2);background:var(--gray1);cursor:pointer;transition:all 0.15s;">😵‍💫</button>
-        </div>
-        <div id="c-rating-saved" style="text-align:center;margin-top:8px;font-size:12px;color:var(--gray4);"></div>
-      </div>
-    </div>
-    <!-- Total training time -->
-    <div class="card" style="margin-bottom:16px;text-align:center;">
-      <div class="notes-label" style="margin-bottom:4px;">Tiempo total entrenado</div>
-      <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:var(--orange);" id="c-total-time">0h 0min</div>
     </div>
     <button class="btn-secondary" onclick="handleLogout()" style="margin-top:4px;">Cerrar sesión</button>
   </div>
@@ -1480,6 +1484,9 @@ async function openCoachClient(clientId) {
   document.getElementById('ep-amount').value=c.payment_amount||'';
   document.getElementById('ep-start-date').value=c.start_date||'';
   document.getElementById('ep-client-type').value=c.client_type||'';
+  logsVisible = false;
+  logsFilterDate = null;
+  document.getElementById('coach-client-logs').style.display = 'none';
   document.getElementById('coach-c-days').textContent=c.days_trained||0;
   loadWeekTrainedCount(c.id);
   loadCoachClientDetail(clientId);
@@ -1656,7 +1663,9 @@ function addExerciseForm(prefill=null) {
   div.innerHTML=`
     <div class="builder-ex-header">
       <span class="builder-ex-num">Ejercicio ${id}</span>
-      <div style="display:flex;gap:4px;">
+      <div style="display:flex;gap:4px;align-items:center;">
+        <button onclick="moveExForm('ex-form-${id}',-1)" title="Subir" style="background:var(--gray1);color:var(--gray5);border:1.5px solid var(--gray2);border-radius:6px;padding:4px 8px;font-size:13px;cursor:pointer;line-height:1;">↑</button>
+        <button onclick="moveExForm('ex-form-${id}',1)" title="Bajar" style="background:var(--gray1);color:var(--gray5);border:1.5px solid var(--gray2);border-radius:6px;padding:4px 8px;font-size:13px;cursor:pointer;line-height:1;">↓</button>
         <button onclick="saveOneToLibrary(${id})" style="background:var(--green-light);color:var(--green);border:none;border-radius:6px;padding:5px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">📚 Guardar</button>
         <button class="remove-btn" onclick="document.getElementById('ex-form-${id}').remove()">✕</button>
       </div>
@@ -1694,6 +1703,21 @@ function addExerciseForm(prefill=null) {
 
 function toggleCustomMuscleBuilder(sel,id) { document.getElementById('bmc-'+id).style.display=sel.value==='custom'?'block':'none'; }
 function toggleSupersetInput(id) { const cb=document.getElementById('bss-'+id); document.getElementById('bssg-'+id).style.display=cb.checked?'inline-block':'none'; }
+
+function moveExForm(formId, direction) {
+  const el = document.getElementById(formId);
+  if(!el) return;
+  const parent = el.parentNode;
+  const forms = [...parent.querySelectorAll('[id^="ex-form-"]')];
+  const idx = forms.indexOf(el);
+  const targetIdx = idx + direction;
+  if(targetIdx < 0 || targetIdx >= forms.length) return;
+  if(direction === -1) {
+    parent.insertBefore(el, forms[targetIdx]);
+  } else {
+    parent.insertBefore(forms[targetIdx], el);
+  }
+}
 
 async function savePlanDay() {
   if(!builderDay){showToast('⚠️ Selecciona un día');return;}
@@ -1862,6 +1886,8 @@ function coachNav(tab,el) {
 
 // ===== CLIENT LOGS =====
 let logsVisible = false;
+let logsFilterDate = null; // null = all
+
 async function toggleLogs() {
   const container = document.getElementById('coach-client-logs');
   logsVisible = !logsVisible;
@@ -1873,29 +1899,43 @@ async function loadClientLogs() {
   const container = document.getElementById('coach-client-logs');
   container.innerHTML = '<div class="spinner"></div>';
   if(!currentClient) return;
-  const {data:logs} = await sb.from('exercise_logs').select('*, exercises(name, reps_range, sets)').eq('client_id', currentClient.id).order('logged_at', {ascending: false}).limit(50);
-  const {data:ratings} = await sb.from('workout_ratings').select('*').eq('client_id', currentClient.id).order('date',{ascending:false}).limit(30);
+  const {data:logs} = await sb.from('exercise_logs').select('*, exercises(name, reps_range, sets)').eq('client_id', currentClient.id).order('logged_at', {ascending: false}).limit(200);
+  const {data:ratings} = await sb.from('workout_ratings').select('*').eq('client_id', currentClient.id).order('date',{ascending:false}).limit(60);
 
   if((!logs || logs.length === 0) && (!ratings||ratings.length===0)) {
     container.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">Sin registros aún.</div></div>';
     return;
   }
 
-  let ratingsHtml = '';
-  if(ratings&&ratings.length>0){
-    ratingsHtml = `<div class="card" style="margin-bottom:10px;cursor:default;">
-      <div class="notes-label" style="margin-bottom:8px;">Sensaciones por día</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;">
-        ${ratings.map(r=>`<div style="display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--gray1);border-radius:8px;padding:6px 10px;">
-          <span style="font-size:20px;">${r.rating}</span>
-          <span style="font-size:9px;color:var(--gray4);font-family:'DM Mono',monospace;">${new Date(r.date+'T12:00:00').toLocaleDateString('es-CR',{day:'numeric',month:'short'})}</span>
-        </div>`).join('')}
-      </div>
-    </div>`;
-  }
+  // Build ratings map by date
+  const ratingsMap = {};
+  (ratings||[]).forEach(r => { ratingsMap[r.date] = r.rating; });
 
+  // Get all unique dates from logs
+  const allDates = [...new Set((logs||[]).map(l => l.logged_at.split('T')[0]))].sort((a,b)=>b.localeCompare(a));
+
+  // If no filter set yet, default to most recent day
+  if(!logsFilterDate && allDates.length > 0) logsFilterDate = allDates[0];
+
+  // Date filter chips
+  const dateChipsHtml = `
+    <div style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;margin-bottom:12px;">
+      <div class="sort-chip${logsFilterDate===null?' active':''}" onclick="setLogsFilter(null)" style="flex-shrink:0;">Todos</div>
+      ${allDates.map(d=>{
+        const label = new Date(d+'T12:00:00').toLocaleDateString('es-CR',{weekday:'short',day:'numeric',month:'short'});
+        const rating = ratingsMap[d] ? ' '+ratingsMap[d] : '';
+        return `<div class="sort-chip${logsFilterDate===d?' active':''}" onclick="setLogsFilter('${d}')" style="flex-shrink:0;">${label}${rating}</div>`;
+      }).join('')}
+    </div>`;
+
+  // Filter logs by selected date
+  const filteredLogs = logsFilterDate
+    ? (logs||[]).filter(l => l.logged_at.split('T')[0] === logsFilterDate)
+    : (logs||[]);
+
+  // Group by date + exercise
   const grouped = {};
-  (logs||[]).forEach(log => {
+  filteredLogs.forEach(log => {
     const date = log.logged_at.split('T')[0];
     const exName = log.exercises?.name || 'Ejercicio';
     const key = date + '|||' + exName;
@@ -1903,23 +1943,49 @@ async function loadClientLogs() {
     grouped[key].sets.push(log);
   });
 
-  const logsHtml = Object.values(grouped).map(g => `
-    <div class="card" style="margin-bottom:8px;cursor:default;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <div style="font-size:13px;font-weight:700;">${g.exName}</div>
-        <div style="font-size:10px;color:var(--gray4);font-family:'DM Mono',monospace;">${new Date(g.date+'T12:00:00').toLocaleDateString('es-CR')}</div>
-      </div>
-      ${g.sets.map(s => `
-        <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--gray2);font-size:12px;">
-          <span style="color:var(--gray4);font-family:'DM Mono',monospace;width:42px;">Set ${s.set_number}</span>
-          <span style="font-weight:600;">${s.weight ? s.weight+(s.weight_unit||'kg') : '—'}</span>
-          <span style="color:var(--gray4);">·</span>
-          <span style="font-weight:600;">${s.reps_done ? s.reps_done+' reps' : '—'}</span>
-          ${s.difficulty ? `<span style="margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:${s.difficulty==='facil'?'var(--green-light)':'var(--red-light)'};color:${s.difficulty==='facil'?'var(--green)':'var(--red)'};">${s.difficulty==='facil'?'Fácil 😊':'Difícil 🔥'}</span>` : ''}
-        </div>`).join('')}
-    </div>`).join('');
+  // Group by date for rendering with rating header per day
+  const byDate = {};
+  Object.values(grouped).forEach(g => {
+    if(!byDate[g.date]) byDate[g.date] = [];
+    byDate[g.date].push(g);
+  });
 
-  container.innerHTML = ratingsHtml + logsHtml;
+  const logsHtml = Object.entries(byDate).sort((a,b)=>b[0].localeCompare(a[0])).map(([date, exercises]) => {
+    const dayLabel = new Date(date+'T12:00:00').toLocaleDateString('es-CR',{weekday:'long',day:'numeric',month:'long'});
+    const dayRating = ratingsMap[date];
+    return `
+      <div style="margin-bottom:16px;">
+        <!-- Day header with rating -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:8px 12px;background:var(--gray1);border-radius:var(--radius-sm);">
+          <div style="flex:1;">
+            <div style="font-size:11px;font-weight:700;color:var(--black);text-transform:capitalize;">${dayLabel}</div>
+          </div>
+          ${dayRating ? `<div style="display:flex;align-items:center;gap:4px;background:var(--white);border:1.5px solid var(--orange-mid);border-radius:8px;padding:4px 10px;">
+            <span style="font-size:18px;">${dayRating}</span>
+            <span style="font-size:10px;font-weight:700;color:var(--orange);">${dayRating==='😎'?'Estuvo bien':dayRating==='🥵'?'Estuvo fuerte':'Estuvo duro'}</span>
+          </div>` : '<div style="font-size:10px;color:var(--gray3);">Sin calificación</div>'}
+        </div>
+        ${exercises.map(g => `
+          <div class="card" style="margin-bottom:8px;cursor:default;">
+            <div style="font-size:13px;font-weight:700;margin-bottom:8px;">${g.exName}</div>
+            ${g.sets.sort((a,b)=>a.set_number-b.set_number).map(s => `
+              <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--gray2);font-size:12px;">
+                <span style="color:var(--gray4);font-family:'DM Mono',monospace;width:42px;">Set ${s.set_number}</span>
+                <span style="font-weight:600;">${s.weight ? s.weight+(s.weight_unit||'kg') : '—'}</span>
+                <span style="color:var(--gray4);">·</span>
+                <span style="font-weight:600;">${s.reps_done ? s.reps_done+' reps' : '—'}</span>
+                ${s.difficulty ? `<span style="margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:${s.difficulty==='facil'?'var(--green-light)':'var(--red-light)'};color:${s.difficulty==='facil'?'var(--green)':'var(--red)'};">${s.difficulty==='facil'?'Fácil 😊':'Difícil 🔥'}</span>` : ''}
+              </div>`).join('')}
+          </div>`).join('')}
+      </div>`;
+  }).join('');
+
+  container.innerHTML = dateChipsHtml + (logsHtml || '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">Sin registros para este día.</div></div>');
+}
+
+function setLogsFilter(date) {
+  logsFilterDate = date;
+  loadClientLogs();
 }
 
 // ===== EXERCISE LIBRARY =====
