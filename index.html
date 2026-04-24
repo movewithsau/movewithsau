@@ -2324,20 +2324,24 @@ async function loadClientLogs() {
 
   // Group by date + exercise
   const grouped = {};
-  filteredLogs.forEach(log => {
-    const date = log.logged_at.split('T')[0];
-    const exName = log.exercises?.name || 'Ejercicio';
-    const key = date + '|||' + exName;
-    if(!grouped[key]) grouped[key] = {date, exName, sets:[]};
-    grouped[key].sets.push(log);
-  });
+const groupOrder = {}; // para mantener orden de aparición
+filteredLogs.forEach(log => {
+  const date = log.logged_at.split('T')[0];
+  const exName = log.exercises?.name || 'Ejercicio';
+  const key = date + '|||' + exName;
+  if(!grouped[key]) {
+    grouped[key] = {date, exName, sets:[], firstSeen: log.logged_at};
+    if(!groupOrder[date]) groupOrder[date] = [];
+    groupOrder[date].push(key);
+  }
+  grouped[key].sets.push(log);
+});
 
   // Group by date for rendering with rating header per day
   const byDate = {};
-  Object.values(grouped).forEach(g => {
-    if(!byDate[g.date]) byDate[g.date] = [];
-    byDate[g.date].push(g);
-  });
+Object.entries(groupOrder).forEach(([date, keys]) => {
+  byDate[date] = keys.map(k => grouped[k]);
+});
 
   const logsHtml = Object.entries(byDate).sort((a,b)=>b[0].localeCompare(a[0])).map(([date, exercises]) => {
     const dayLabel = new Date(date+'T12:00:00').toLocaleDateString('es-CR',{weekday:'long',day:'numeric',month:'long'});
