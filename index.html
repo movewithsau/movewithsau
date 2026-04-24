@@ -2164,7 +2164,13 @@ function coachNav(tab,el) {
   if(tab==='data'){showScreen('screen-coach-data');loadDataScreen();}
   if(tab==='settings'){showScreen('screen-coach-settings');loadSettings();}
 }
-
+function formatClientShortName(fullName) {
+  const parts = fullName.trim().split(' ');
+  if(parts.length === 1) return parts[0];
+  const initial = parts[0][0].toUpperCase() + '.';
+  const lastName = parts[parts.length - 1];
+  return initial + lastName;
+}
 async function loadDataScreen() {
   const container = document.getElementById('engagement-chart-container');
   const legend = document.getElementById('engagement-legend');
@@ -2200,7 +2206,7 @@ async function loadDataScreen() {
 
   // Count training days per client per day
   const clientData = {};
-  clients.forEach(c=>{ clientData[c.id] = {name:c.name.split(' ')[0], days:new Array(7).fill(0)}; });
+  clients.forEach(c=>{ clientData[c.id] = {name:formatClientShortName(c.name), days:new Array(7).fill(0)}; });
   (logs||[]).forEach(log=>{
     const dateStr = log.logged_at.split('T')[0];
     const idx = days7.indexOf(dateStr);
