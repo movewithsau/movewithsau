@@ -522,6 +522,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   </div>
   <div class="bottom-nav">
     <div class="nav-item active" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('data',this)"><div class="nav-icon">📊</div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon">⚙️</div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
   </div>
 </div>
@@ -576,7 +577,30 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   </div>
   <div class="bottom-nav">
     <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('data',this)"><div class="nav-icon">📊</div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
     <div class="nav-item active" onclick="coachNav('settings',this)"><div class="nav-icon">⚙️</div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
+  </div>
+</div>
+
+<!-- ===== COACH: DATA ===== -->
+<div class="screen" id="screen-coach-data">
+  <div class="topbar"><div class="topbar-logo">Move With Sau</div><div class="topbar-action" onclick="handleLogout()">Salir</div></div>
+  <div class="scroll-body">
+    <div style="margin-bottom:18px;">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Analytics</div>
+      <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;">Data</div>
+    </div>
+    <div class="section-header"><div class="section-title">Engagement esta semana</div></div>
+    <div class="card" style="margin-bottom:16px;">
+      <div style="font-size:12px;color:var(--gray5);margin-bottom:14px;line-height:1.5;">Días entrenados por cliente en los últimos 7 días</div>
+      <div id="engagement-chart-container" style="position:relative;height:220px;"><div class="spinner"></div></div>
+      <div id="engagement-legend" style="margin-top:12px;display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
+    <div class="nav-item active" onclick="coachNav('data',this)"><div class="nav-icon">📊</div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon">⚙️</div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
   </div>
 </div>
 
@@ -1706,15 +1730,33 @@ async function loadWeekTrainedCount(clientId) {
   if(!logs) return;
   const uniqueDays = new Set(logs.map(l => l.logged_at.split('T')[0]));
   document.getElementById('coach-c-week-trained').textContent = uniqueDays.size;
+
+  // Also fix total days trained using all logs (not the stored counter)
+  const {data:allLogs} = await sb.from('exercise_logs').select('logged_at').eq('client_id',clientId);
+  if(allLogs) {
+    const allUniqueDays = new Set(allLogs.map(l => l.logged_at.split('T')[0]));
+    const realTotal = allUniqueDays.size;
+    document.getElementById('coach-c-days').textContent = realTotal;
+    // Sync the stored value if it's off
+    if(realTotal !== (currentClient?.days_trained||0)) {
+      await sb.from('clients').update({days_trained: realTotal}).eq('id', clientId);
+      if(currentClient) currentClient.days_trained = realTotal;
+    }
+  }
 }
 
 async function loadCoachClientDetail(clientId) {
-  const {data:plans} = await sb.from('monthly_plans').select('*').eq('client_id',clientId).order('week_number').order('day_of_week');
+  const {data:plans} = await sb.from('monthly_plans').select('*').eq('client_id',clientId).order('week_number');
   const container=document.getElementById('coach-plan-overview');
   if(!plans||plans.length===0){container.innerHTML='<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Sin plan mensual aún.<br>Toca + Plan para crear.</div></div>';return;}
 
   const weeks={};
   plans.forEach(p=>{if(!weeks[p.week_number])weeks[p.week_number]=[];weeks[p.week_number].push(p);});
+
+  // Sort days within each week by actual day order (Lunes=0 ... Domingo=6)
+  Object.values(weeks).forEach(days=>{
+    days.sort((a,b)=>DAYS.indexOf(a.day_of_week)-DAYS.indexOf(b.day_of_week));
+  });
 
   container.innerHTML=Object.entries(weeks).map(([w,days])=>`
     <div class="day-plan-card">
@@ -1872,7 +1914,13 @@ function addExerciseForm(prefill=null) {
     <div id="bs-wrap-${id}" style="flex:1;transition:opacity 0.2s;${prefill&&prefill.superset_group?'display:none;':''}">
         <input class="builder-input" type="number" placeholder="Series" id="bs-${id}" min="1" value="${prefill&&!prefill.superset_group?prefill.sets:prefill?prefill.sets:''}" style="width:100%;">
       </div>
-      <input class="builder-input" placeholder="Reps (ej: 8-12)" id="br-${id}" value="${prefill?prefill.reps_range||prefill.reps||'':''}">
+      <div style="flex:1;display:flex;flex-direction:column;gap:3px;">
+        <div style="display:flex;gap:3px;">
+          <button id="reps-mode-${id}" onclick="setRepMode(${id},'reps')" class="unit-btn selected" style="font-size:10px;padding:4px 8px;">Reps</button>
+          <button id="time-mode-${id}" onclick="setRepMode(${id},'time')" class="unit-btn" style="font-size:10px;padding:4px 8px;">Tiempo</button>
+        </div>
+        <input class="builder-input" id="br-${id}" placeholder="ej: 8-12" value="${prefill?prefill.reps_range||prefill.reps||'':''}">
+      </div>
       <input class="builder-input" type="number" placeholder="Descanso (seg)" id="bd-${id}" value="${prefill?prefill.rest_seconds:'60'}">
     </div>
     <div class="builder-row">
@@ -1908,6 +1956,21 @@ function addExerciseForm(prefill=null) {
 }
 
 function toggleCustomMuscleBuilder(sel,id) { document.getElementById('bmc-'+id).style.display=sel.value==='custom'?'block':'none'; }
+
+function setRepMode(id, mode) {
+  const repsBtn = document.getElementById(`reps-mode-${id}`);
+  const timeBtn = document.getElementById(`time-mode-${id}`);
+  const input = document.getElementById(`br-${id}`);
+  if(mode==='reps'){
+    repsBtn.classList.add('selected'); timeBtn.classList.remove('selected');
+    input.placeholder='ej: 8-12';
+    input.value = input.value.includes('s')||input.value.includes('min') ? '' : input.value;
+  } else {
+    timeBtn.classList.add('selected'); repsBtn.classList.remove('selected');
+    input.placeholder='ej: 30s ó 1min';
+    input.value = input.value && !isNaN(input.value) ? input.value+'s' : input.value;
+  }
+}
 function toggleSupersetInput(id) {
   const cb = document.getElementById('bss-'+id);
   document.getElementById('bssg-'+id).style.display = cb.checked ? 'inline-block' : 'none';
@@ -2095,10 +2158,113 @@ async function deleteClient(clientId,clientName) {
 }
 
 function coachNav(tab,el) {
-  document.querySelectorAll('#screen-coach-home .nav-item,#screen-coach-settings .nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('#screen-coach-home .nav-item,#screen-coach-settings .nav-item,#screen-coach-data .nav-item').forEach(n=>n.classList.remove('active'));
   el.classList.add('active');
   if(tab==='clients'){showScreen('screen-coach-home');loadCoachClients();}
+  if(tab==='data'){showScreen('screen-coach-data');loadDataScreen();}
   if(tab==='settings'){showScreen('screen-coach-settings');loadSettings();}
+}
+
+async function loadDataScreen() {
+  const container = document.getElementById('engagement-chart-container');
+  const legend = document.getElementById('engagement-legend');
+  container.innerHTML = '<div class="spinner"></div>';
+  legend.innerHTML = '';
+
+  // Get all clients for this coach
+  const {data:clients} = await sb.from('clients').select('id,name,days_trained').eq('coach_id',currentUser.id);
+  if(!clients||clients.length===0){
+    container.innerHTML='<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">Sin clientes aún.</div></div>';
+    return;
+  }
+
+  // Get logs from last 7 days for all clients
+  const since = new Date();
+  since.setDate(since.getDate()-6);
+  since.setHours(0,0,0,0);
+  const sinceStr = since.toISOString();
+
+  const {data:logs} = await sb.from('exercise_logs')
+    .select('client_id,logged_at')
+    .in('client_id', clients.map(c=>c.id))
+    .gte('logged_at', sinceStr);
+
+  // Build 7-day labels
+  const days7 = [];
+  for(let i=6;i>=0;i--){
+    const d = new Date();
+    d.setDate(d.getDate()-i);
+    days7.push(d.toISOString().split('T')[0]);
+  }
+  const dayLabels = days7.map(d=>new Date(d+'T12:00:00').toLocaleDateString('es-CR',{weekday:'short',day:'numeric'}));
+
+  // Count training days per client per day
+  const clientData = {};
+  clients.forEach(c=>{ clientData[c.id] = {name:c.name.split(' ')[0], days:new Array(7).fill(0)}; });
+  (logs||[]).forEach(log=>{
+    const dateStr = log.logged_at.split('T')[0];
+    const idx = days7.indexOf(dateStr);
+    if(idx>=0 && clientData[log.client_id]){
+      clientData[log.client_id].days[idx] = 1; // 1 = trained that day
+    }
+  });
+
+  // Calculate totals for sorting
+  const sorted = Object.values(clientData).sort((a,b)=>b.days.reduce((s,v)=>s+v,0)-a.days.reduce((s,v)=>s+v,0));
+
+  // Draw SVG chart
+  const w = 400, h = 180, padL = 28, padR = 16, padT = 16, padB = 28;
+  const chartW = w-padL-padR, chartH = h-padT-padB;
+  const xStep = chartW / (days7.length-1);
+  const colors = ['#F75A0E','#27ae60','#2980b9','#8e44ad','#f39c12','#e74c3c','#16a085','#d35400'];
+
+  // Grid lines
+  let gridLines = '';
+  for(let i=0;i<=1;i++){
+    const y = padT + chartH * (1-i);
+    gridLines += `<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" stroke="#edeae4" stroke-width="1"/>`;
+    gridLines += `<text x="${padL-4}" y="${y+4}" text-anchor="end" font-size="9" fill="#9e9a93">${i}</text>`;
+  }
+
+  // X axis labels
+  let xLabels = '';
+  days7.forEach((d,i)=>{
+    const x = padL + i*xStep;
+    const label = new Date(d+'T12:00:00').toLocaleDateString('es-CR',{weekday:'short'});
+    xLabels += `<text x="${x}" y="${h-4}" text-anchor="middle" font-size="9" fill="#9e9a93">${label}</text>`;
+  });
+
+  // Lines per client
+  let lines = '';
+  sorted.forEach((cd,ci)=>{
+    const color = colors[ci%colors.length];
+    const pts = cd.days.map((v,i)=>`${padL+i*xStep},${padT+chartH*(1-v)}`).join(' ');
+    lines += `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" opacity="0.9"/>`;
+    cd.days.forEach((v,i)=>{
+      if(v>0){
+        lines += `<circle cx="${padL+i*xStep}" cy="${padT+chartH*(1-v)}" r="4" fill="${color}" stroke="white" stroke-width="1.5"/>`;
+      }
+    });
+  });
+
+  container.innerHTML = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" style="overflow:visible;">
+    ${gridLines}${xLabels}${lines}
+  </svg>`;
+
+  // Legend sorted by total days
+  legend.innerHTML = sorted.map((cd,ci)=>{
+    const total = cd.days.reduce((s,v)=>s+v,0);
+    const color = colors[ci%colors.length];
+    const pct = Math.round((total/7)*100);
+    return `<div style="display:flex;align-items:center;gap:8px;">
+      <div style="width:20px;height:3px;background:${color};border-radius:2px;flex-shrink:0;"></div>
+      <div style="flex:1;font-size:12px;font-weight:600;">${cd.name}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gray5);">${total}/7 días</div>
+      <div style="width:60px;height:6px;background:var(--gray2);border-radius:3px;overflow:hidden;">
+        <div style="width:${pct}%;height:100%;background:${color};border-radius:3px;"></div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ===== CLIENT LOGS =====
