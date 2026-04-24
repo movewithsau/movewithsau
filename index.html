@@ -1292,20 +1292,61 @@ async function loadClientExercises() {
 
     } else if(!ex.superset_group) {
       const isDone = !!done[ex.id];
-      exHtml+=`<div class="fade-up" style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;">
-        <div style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="openExDetail(${JSON.stringify(ex).replace(/"/g,'&quot;')})">
-          <div style="flex:1;min-width:0;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-              <span class="ex-tag ${getTagClass(ex.tag)}">${ex.tag}</span>
-              <span style="font-size:14px;font-weight:700;color:${isDone?'var(--gray4)':'var(--black)'};${isDone?'text-decoration:line-through;':''}">${ex.name}</span>
+      const soloLogsKey = `mws_slogs_${currentClient.id}_w${clientWeek}_${clientDay}`;
+      let soloLogs = {};
+      try { soloLogs = JSON.parse(localStorage.getItem(soloLogsKey)||'{}'); } catch{}
+
+      // Build set rows inline
+      let setRows = '';
+      for(let s=1; s<=ex.sets; s++){
+        const logKey = `${ex.id}_s${s}`;
+        const saved = soloLogs[logKey]||{};
+        const wVal = saved.w||'';
+        const rVal = saved.r||'';
+        const filled = saved.w && saved.r;
+        setRows += `<tr>
+          <td style="padding:5px 6px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:var(--gray4);white-space:nowrap;border-bottom:1px solid var(--gray2);">Set ${s}</td>
+          <td style="padding:4px;border-bottom:1px solid var(--gray2);">
+            <div style="display:flex;gap:3px;align-items:center;">
+              <input type="number" inputmode="decimal" placeholder="${currentWeightUnit}" value="${wVal}"
+                style="width:52px;padding:5px 4px;border:1.5px solid ${filled?'var(--green)':'var(--gray2)'};border-radius:6px;font-size:12px;text-align:center;font-family:'DM Sans',sans-serif;outline:none;background:${filled?'var(--green-light)':'var(--white)'};color:var(--black);"
+                id="slog-w-${ex.id}-s${s}"
+                onchange="saveSoloLog('${ex.id}',${s},'${soloLogsKey}')"
+                onfocus="this.style.borderColor='var(--orange)'">
+              <input type="number" inputmode="numeric" placeholder="reps" value="${rVal}"
+                style="width:52px;padding:5px 4px;border:1.5px solid ${filled?'var(--green)':'var(--gray2)'};border-radius:6px;font-size:12px;text-align:center;font-family:'DM Sans',sans-serif;outline:none;background:${filled?'var(--green-light)':'var(--white)'};color:var(--black);"
+                id="slog-r-${ex.id}-s${s}"
+                onchange="saveSoloLog('${ex.id}',${s},'${soloLogsKey}')"
+                onfocus="this.style.borderColor='var(--orange)'">
             </div>
-            <div style="font-size:11px;color:var(--gray4);">${ex.sets} series × ${ex.reps_range} reps · ${ex.rest_seconds}s descanso</div>
-            ${ex.muscle_group?`<span class="muscle-tag" style="margin-top:4px;display:inline-block;">${ex.muscle_group}</span>`:''}
+          </td>
+        </tr>`;
+      }
+
+      const unitToggleId = `unit-solo-${ex.id}`;
+      exHtml+=`<div class="fade-up" style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;${isDone?'opacity:0.7;':''}">
+        <!-- Header -->
+        <div style="padding:10px 14px 8px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;">
+              <span class="ex-tag ${getTagClass(ex.tag)}">${ex.tag}</span>
+              <span onclick="openExInfo(${JSON.stringify(ex).replace(/"/g,'&quot;')})" style="font-size:13px;font-weight:700;color:var(--orange);text-decoration:underline;cursor:pointer;">${ex.name}</span>
+              ${isDone?'<span style="color:var(--green);font-size:13px;">✓</span>':''}
+            </div>
+            <div style="font-size:11px;color:var(--gray4);">${ex.sets} series · ${ex.reps_range} reps · ${ex.rest_seconds}s descanso</div>
+            ${ex.muscle_group?`<span class="muscle-tag" style="margin-top:3px;display:inline-block;">${ex.muscle_group}</span>`:''}
           </div>
-          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:10px;">
-            ${isDone?`<div class="ex-check-badge done">✓</div>`:`<div class="ex-check-badge"></div>`}
-            <span style="color:var(--gray3);font-size:18px;">›</span>
+          <div id="${unitToggleId}" style="display:flex;gap:3px;flex-shrink:0;">
+            <button onclick="setSoloUnit('${ex.id}','kg',this)" class="unit-btn selected" style="padding:4px 9px;font-size:11px;">kg</button>
+            <button onclick="setSoloUnit('${ex.id}','lb',this)" class="unit-btn" style="padding:4px 9px;font-size:11px;">lb</button>
           </div>
+        </div>
+        <!-- Inline table -->
+        <table style="width:100%;border-collapse:collapse;">
+          <tbody>${setRows}</tbody>
+        </table>
+        <div style="padding:8px 14px;">
+          <button onclick="saveSoloToSupabase('${ex.id}','${soloLogsKey}',${ex.sets})" style="width:100%;padding:10px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Guardar ✓</button>
         </div>
       </div>`;
     }
@@ -2507,6 +2548,58 @@ async function saveMacros() {
   Object.assign(currentClient, updates);
   showToast('✅ Macros guardados');
 }
+// ===== SOLO EXERCISE LOG FUNCTIONS =====
+function saveSoloLog(exId, setNum, logsKey) {
+  const w = document.getElementById(`slog-w-${exId}-s${setNum}`)?.value;
+  const r = document.getElementById(`slog-r-${exId}-s${setNum}`)?.value;
+  let logs = {};
+  try { logs = JSON.parse(localStorage.getItem(logsKey)||'{}'); } catch{}
+  logs[`${exId}_s${setNum}`] = {w, r};
+  localStorage.setItem(logsKey, JSON.stringify(logs));
+  const filled = w && r;
+  const wEl = document.getElementById(`slog-w-${exId}-s${setNum}`);
+  const rEl = document.getElementById(`slog-r-${exId}-s${setNum}`);
+  if(wEl){ wEl.style.borderColor=filled?'var(--green)':'var(--gray2)'; wEl.style.background=filled?'var(--green-light)':'var(--white)'; }
+  if(rEl){ rEl.style.borderColor=filled?'var(--green)':'var(--gray2)'; rEl.style.background=filled?'var(--green-light)':'var(--white)'; }
+}
+
+async function saveSoloToSupabase(exId, logsKey, sets) {
+  if(!currentClient) return;
+  let logs = {};
+  try { logs = JSON.parse(localStorage.getItem(logsKey)||'{}'); } catch{}
+  const inserts = [];
+  let totalWeight = 0;
+  for(let s=1; s<=sets; s++){
+    const saved = logs[`${exId}_s${s}`]||{};
+    const w = parseFloat(saved.w)||null;
+    const r = parseInt(saved.r)||null;
+    if(w||r){
+      inserts.push({exercise_id:exId, client_id:currentClient.id, week_number:clientWeek, set_number:s, weight:w, weight_unit:currentWeightUnit, reps_done:r, difficulty:null});
+      if(w&&r) totalWeight += w*r;
+    }
+  }
+  if(inserts.length === 0){ showToast('⚠️ Completa al menos un set'); return; }
+  const {error} = await sb.from('exercise_logs').insert(inserts);
+  if(error){ showToast('❌ '+error.message); return; }
+  markExerciseDone(exId);
+  if(totalWeight > 0){
+    const OBJECTS = [{w:0.4,label:'una lata 🥤'},{w:7,label:'un gato 🐱'},{w:15,label:'un perro 🐕'},{w:80,label:'una persona 🙋'},{w:300,label:'un piano 🎹'},{w:1000,label:'un carro 🚗'}];
+    let closest = OBJECTS[0];
+    for(const obj of OBJECTS){ if(totalWeight>=obj.w) closest=obj; else break; }
+    showToast(`🏋️ ¡${totalWeight.toFixed(0)}${currentWeightUnit} levantados!`, 3500);
+  } else {
+    showToast('✅ ¡Guardado!');
+  }
+  loadClientExercises();
+}
+
+function setSoloUnit(exId, unit, btn) {
+  currentWeightUnit = unit;
+  const container = document.getElementById(`unit-solo-${exId}`);
+  if(container){ container.querySelectorAll('.unit-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); }
+  document.querySelectorAll(`[id^="slog-w-${exId}-"]`).forEach(inp=>inp.placeholder=unit);
+}
+
 // ===== CIRCUIT LOG FUNCTIONS =====
 function saveCircuitLog(exId, round, logsKey) {
   const w = document.getElementById(`clog-w-${exId}-r${round}`)?.value;
