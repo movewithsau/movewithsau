@@ -1244,18 +1244,10 @@ async function loadClientExercises() {
           ${cells}
         </tr>`;
 
-        // Between rounds: "Cambio de ejercicio"
+        // Between rounds: show rest
         if(r < rounds){
           rows += `<tr>
-            <td colspan="${g.length+1}" style="text-align:center;padding:4px 0;border-bottom:1px solid var(--gray2);">
-              <span style="font-size:10px;color:var(--gray3);font-family:'DM Mono',monospace;letter-spacing:0.04em;">— Cambio de ejercicio —</span>
-            </td>
-          </tr>`;
-        }
-        // After last round: show rest
-        if(r === rounds){
-          rows += `<tr>
-            <td colspan="${g.length+1}" style="text-align:center;padding:5px 0;">
+            <td colspan="${g.length+1}" style="text-align:center;padding:5px 0;border-bottom:1px solid var(--gray2);">
               <span style="font-size:10px;color:var(--orange);font-weight:700;font-family:'DM Mono',monospace;letter-spacing:0.05em;">— Descanso ${restText} —</span>
             </td>
           </tr>`;
