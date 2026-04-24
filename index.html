@@ -1190,7 +1190,7 @@ async function loadClientExercises() {
       <div style="font-size:13px;font-weight:700;color:var(--black);margin-bottom:3px;">Recuerda calentar por 5 minutos antes de empezar con la rutina.</div>
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px;">
         <a href="https://youtube.com/shorts/GnBbaPlj6Ls?si=Ie-UQwwa8OpIkn-x" target="_blank" style="font-size:11px;font-weight:700;color:var(--orange);text-decoration:none;background:var(--orange-light);padding:3px 9px;border-radius:20px;">▶ Video guía</a>
-        <span style="font-size:11px;color:var(--gray4);">+ 5 minutos del Cardio que prefieras</span>
+        <span style="font-size:11px;color:var(--gray5);">+ 5 minutos del Cardio que prefieras</span>
       </div>
     </div>
   </div>`;
@@ -1202,7 +1202,7 @@ async function loadClientExercises() {
     if(ex.superset_group && groups[ex.superset_group] && groups[ex.superset_group][0]===ex && !renderedGroups.has(ex.superset_group)){
       renderedGroups.add(ex.superset_group);
       const g = groups[ex.superset_group];
-      const rounds = g[0].circuit_rounds || g[0].sets || 3;
+      const rounds = g[0].circuit_rounds || g[0].sets || 1;
       const restSecs = g[0].rest_seconds || 60;
       const restText = restSecs >= 60 ? `${Math.floor(restSecs/60)}min${restSecs%60>0?' '+restSecs%60+'s':''}` : `${restSecs}s`;
       const colW = Math.floor(100 / g.length);
@@ -1836,7 +1836,9 @@ function addExerciseForm(prefill=null) {
     </div>
     <div class="form-group"><input class="builder-input" style="width:100%;" placeholder="Nombre del ejercicio" id="bn-${id}" value="${prefill?prefill.name:''}"></div>
     <div class="builder-row">
-      <input class="builder-input" type="number" placeholder="Series" id="bs-${id}" min="1" value="${prefill?prefill.sets:''}">
+    <div id="bs-wrap-${id}" style="flex:1;transition:opacity 0.2s;${prefill&&prefill.superset_group?'display:none;':''}">
+        <input class="builder-input" type="number" placeholder="Series" id="bs-${id}" min="1" value="${prefill&&!prefill.superset_group?prefill.sets:prefill?prefill.sets:''}" style="width:100%;">
+      </div>
       <input class="builder-input" placeholder="Reps (ej: 8-12)" id="br-${id}" value="${prefill?prefill.reps_range||prefill.reps||'':''}">
       <input class="builder-input" type="number" placeholder="Descanso (seg)" id="bd-${id}" value="${prefill?prefill.rest_seconds:'60'}">
     </div>
@@ -1877,6 +1879,11 @@ function toggleSupersetInput(id) {
   const cb = document.getElementById('bss-'+id);
   document.getElementById('bssg-'+id).style.display = cb.checked ? 'inline-block' : 'none';
   document.getElementById('bcn-'+id).style.display = cb.checked ? 'block' : 'none';
+  // Hide Series field when it's a circuit — rounds control that instead
+  const wrap = document.getElementById('bs-wrap-'+id);
+  if(wrap) {
+    wrap.style.display = cb.checked ? 'none' : 'block';
+  }
 }
 
 function moveExForm(formId, direction) {
