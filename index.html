@@ -1922,8 +1922,8 @@ async function savePlanDay() {
     const ssGroup=document.getElementById('bssg-'+fid)?.value.trim();
     const circuitNotes=document.getElementById('bcn-input-'+fid)?.value.trim()||null;
     const circuitRounds=parseInt(document.getElementById('bcr-'+fid)?.value)||null;
-    if(!name||!sets||!reps){valid=false;return;}
-    exercises.push({name,sets:parseInt(sets),reps_range:reps,rest_seconds:parseInt(rest)||60,tag,muscle_group:muscle||null,video_url:video||null,notes:notes||null,circuit_notes:ssCheck&&ssGroup?circuitNotes:null,circuit_rounds:ssCheck&&ssGroup?circuitRounds:null,superset_group:ssCheck&&ssGroup?ssGroup:null,order_index:idx});
+    if(!name||(!ssCheck&&!sets)||!reps){valid=false;return;}
+    exercises.push({name,sets:ssCheck?1:parseInt(sets),reps_range:reps,rest_seconds:parseInt(rest)||60,tag,muscle_group:muscle||null,video_url:video||null,notes:notes||null,circuit_notes:ssCheck&&ssGroup?circuitNotes:null,circuit_rounds:ssCheck&&ssGroup?circuitRounds:null,superset_group:ssCheck&&ssGroup?ssGroup:null,order_index:idx});
   });
   if(!valid){showToast('⚠️ Completa nombre, series y reps');return;}
   const {data:existPd} = await sb.from('monthly_plans').select('id').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',builderDay).single();
