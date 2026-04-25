@@ -611,7 +611,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 <div class="screen" id="screen-ai-builder">
   <div class="topbar">
     <div class="topbar-logo">Move With Sau</div>
-    <div class="topbar-title" style="font-size:15px;">✨ Builder</div>
+    <div class="topbar-title" style="font-size:15px;">👨🏻‍🔬 Builder</div>
     <div style="width:60px;"></div>
   </div>
   <div class="scroll-body">
@@ -627,7 +627,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     </select>
     <div class="section-header">
       <div class="section-title">Biblioteca</div>
-      <div id="ai-lib-badge" class="ai-lib-badge empty">—</div>
+     <div id="ai-lib-badge" class="ai-lib-badge empty" style="cursor:default;">—</div>
     </div>
     <div class="section-header">
       <div class="section-title">Semana del plan</div>
@@ -650,12 +650,24 @@ Jumping jack 25
 
 ejercicio individual
 press plano mancuerna 3 sets, 8-10 reps"></textarea>
-    <button class="btn-primary" id="ai-gen-btn" onclick="aiGeneratePlan()" style="margin-top:10px;">✨ Generar con IA</button>
-    <div id="ai-result-area" style="margin-top:16px;"></div>
+    <button class="btn-primary" id="ai-gen-btn" onclick="aiGeneratePlan()" style="margin-top:10px;">👨🏻‍🔬 Generar con IA</button>
+    <div class="section-header" style="margin-top:14px;">
+  <div class="section-title">Día</div>
+</div>
+<div style="display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none;">
+  <div class="day-chip active" onclick="setAiDay('Lunes',this)">Lun</div>
+  <div class="day-chip" onclick="setAiDay('Martes',this)">Mar</div>
+  <div class="day-chip" onclick="setAiDay('Miércoles',this)">Mié</div>
+  <div class="day-chip" onclick="setAiDay('Jueves',this)">Jue</div>
+  <div class="day-chip" onclick="setAiDay('Viernes',this)">Vie</div>
+  <div class="day-chip" onclick="setAiDay('Sábado',this)">Sáb</div>
+  <div class="day-chip" onclick="setAiDay('Domingo',this)">Dom</div>
+</div>
+<div id="ai-result-area" style="margin-top:16px;"></div>
   </div>
   <div class="bottom-nav">
     <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
-    <div class="nav-item active" onclick="coachNav('builder',this)"><div class="nav-icon">✨</div><div class="nav-label">Builder</div><div class="nav-dot"></div></div>
+    <div class="nav-item active" onclick="coachNav('builder',this)"><div class="nav-icon">👨🏻‍🔬</div><div class="nav-label">Builder</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('data',this)"><div class="nav-icon">📊</div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon">⚙️</div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
   </div>
@@ -3235,6 +3247,7 @@ function setAiWeek(w, el) {
   document.querySelectorAll('.ai-week-chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
 }
+  
 
 async function loadAiBuilderScreen() {
   const { data: clients } = await sb.from('clients').select('id,name').eq('coach_id', currentUser.id).order('name');
@@ -3303,7 +3316,7 @@ async function aiGeneratePlan() {
   if (!progText) { showToast('⚠️ Describe el programa primero'); return; }
   if (!clientId) { showToast('⚠️ Selecciona un cliente'); return; }
   const btn = document.getElementById('ai-gen-btn');
-  btn.disabled = true; btn.textContent = '✨ Generando...';
+  btn.disabled = true; btn.textContent = '👨🏻‍🔬 Generando...';
   document.getElementById('ai-result-area').innerHTML = `
     <div class="ai-loading">
       <div class="ai-dot-loader" style="margin-bottom:10px;"><span></span><span></span><span></span></div>
@@ -3441,9 +3454,9 @@ async function aiApprovePlan() {
   try {
     for (const day of aiGeneratedPlan.days) {
       if (day.type === 'rest' || !day.groups || day.groups.length === 0) continue;
-      const { data: existPd } = await sb.from('monthly_plans').select('id').eq('client_id', clientId).eq('week_number', aiBuilderWeek).eq('day_of_week', day.day).maybeSingle();
+      const { data: existPd } = await sb.from('monthly_plans').select('id').eq('client_id', clientId).eq('week_number', aiBuilderWeek).eq(day_of_week: aiBuilderDay).maybeSingle();
       if (existPd) { await sb.from('exercises').delete().eq('plan_day_id', existPd.id); await sb.from('monthly_plans').delete().eq('id', existPd.id); }
-      const { data: pd, error: pdErr } = await sb.from('monthly_plans').insert([{ client_id: clientId, week_number: aiBuilderWeek, day_of_week: day.day }]).select().single();
+      const { data: pd, error: pdErr } = await sb.from('monthly_plans').insert([{ client_id: clientId, week_number: aiBuilderWeek, day_of_week: aiBuilderDay}]).select().single();
       if (pdErr) throw pdErr;
       let orderIdx = 0;
       const toInsert = [];
