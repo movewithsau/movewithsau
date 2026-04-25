@@ -331,6 +331,35 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 .ai-week-chip{flex-shrink:0;padding:7px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--white);color:var(--gray4);border:1.5px solid var(--gray2);cursor:pointer;}
 .ai-week-chip.active{background:var(--orange);color:white;border-color:var(--orange);}
 .ai-preview-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.14em;color:var(--orange);text-transform:uppercase;font-weight:600;margin-bottom:10px;}
+
+/* ===== CONTRACT STYLES ===== */
+.contract-status-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700; font-family:'DM Mono',monospace; letter-spacing:0.06em; text-transform:uppercase; }
+.contract-status-badge.pendiente { background:var(--yellow-light); color:var(--yellow); }
+.contract-status-badge.firmado { background:var(--green-light); color:var(--green); }
+.contract-signed-banner { background:var(--green-light); border:1.5px solid rgba(39,174,96,0.25); border-radius:var(--radius); padding:14px 16px; margin-bottom:12px; }
+.contract-body { font-size:13px; line-height:1.7; color:var(--black); }
+.contract-body h2 { font-family:'Playfair Display',serif; font-size:16px; font-weight:700; margin:20px 0 8px; color:var(--black); }
+.contract-body h3 { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--orange); margin:14px 0 5px; font-weight:600; }
+.contract-body p { margin-bottom:8px; }
+.contract-body ul { padding-left:18px; margin-bottom:8px; }
+.contract-body ul li { margin-bottom:3px; }
+.contract-highlight { background:var(--orange-light); border-left:3px solid var(--orange); border-radius:0 var(--radius-sm) var(--radius-sm) 0; padding:12px 14px; margin-bottom:12px; }
+.contract-highlight-row { display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid var(--orange-mid); }
+.contract-highlight-row:last-child { border-bottom:none; }
+.contract-highlight-key { font-size:11px; color:var(--gray5); font-weight:600; }
+.contract-highlight-val { font-size:13px; font-weight:700; color:var(--black); }
+.installment-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.installment-row input { flex:1; padding:10px 12px; border:1.5px solid var(--gray2); border-radius:var(--radius-sm); font-size:14px; font-family:'DM Sans',sans-serif; color:var(--black); background:var(--gray1); outline:none; }
+.installment-row input:focus { border-color:var(--orange); background:var(--white); }
+.installment-row .remove-btn { width:32px; height:32px; border-radius:50%; border:1.5px solid var(--red); background:var(--red-light); color:var(--red); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; line-height:1; }
+.add-installment-btn { display:flex; align-items:center; gap:6px; background:none; border:1.5px dashed var(--orange-mid); border-radius:var(--radius-sm); color:var(--orange); font-size:13px; font-weight:600; font-family:'DM Sans',sans-serif; padding:10px 14px; cursor:pointer; width:100%; justify-content:center; margin-top:2px; }
+.contract-sign-btn { width:100%; padding:18px; background:var(--orange); color:white; border:none; border-radius:var(--radius-sm); font-size:16px; font-weight:700; font-family:'DM Sans',sans-serif; cursor:pointer; letter-spacing:0.04em; transition:opacity 0.2s,transform 0.1s; margin-top:8px; }
+.contract-sign-btn:active { transform:scale(0.98); opacity:0.9; }
+.installment-table { width:100%; border-collapse:collapse; margin-top:8px; }
+.installment-table th { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.12em; color:var(--gray4); text-transform:uppercase; font-weight:600; text-align:left; padding:0 0 6px; }
+.installment-table td { font-size:13px; padding:6px 0; border-bottom:1px solid var(--gray2); color:var(--black); }
+.installment-table tr:last-child td { border-bottom:none; }
+.installment-table td:last-child { font-weight:700; color:var(--orange); text-align:right; }
 </style>
 </head>
 <body>
@@ -491,7 +520,12 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
         <button onclick="saveCurrentWeight()" style="background:var(--orange);color:white;border:none;border-radius:8px;padding:12px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Guardar</button>
       </div>
     </div>
-    <button class="btn-secondary" onclick="handleLogout()" style="margin-top:4px;">Cerrar sesión</button>
+    <!-- CONTRACT SECTION (client view) -->
+    <div class="section-header" style="margin-top:16px;">
+      <div class="section-title">Mi contrato</div>
+    </div>
+    <div id="client-contract-panel"><div class="spinner"></div></div>
+    <button class="btn-secondary" onclick="handleLogout()" style="margin-top:16px;">Cerrar sesión</button>
   </div>
   <a href="https://wa.me/50672083564" target="_blank" style="position:fixed;bottom:80px;right:16px;width:50px;height:50px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,211,102,0.4);z-index:99;text-decoration:none;font-size:26px;">💬</a>
   <div class="bottom-nav">
@@ -587,6 +621,12 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div id="coach-plans-list"></div>
     <div class="section-header"><div class="section-title">Módulo Food</div></div>
     <div id="coach-food-panel"></div>
+    <!-- CONTRACT SECTION (coach view) -->
+    <div class="section-header" style="margin-top:8px;">
+      <div class="section-title">Contrato</div>
+      <div class="section-action" id="coach-contract-action" onclick="openContractEditor()">+ Crear</div>
+    </div>
+    <div id="coach-contract-panel"></div>
   </div>
 </div>
 
@@ -1724,7 +1764,7 @@ function clientNav(tab,el) {
   if(tab==='home'){showScreen('screen-client-home');loadClientDayStrip();}
   else if(tab==='food'){showScreen('screen-client-food');loadFoodScreen();}
   else if(tab==='plan'){showScreen('screen-client-plan');loadClientPlans();}
-  else if(tab==='profile'){showScreen('screen-client-profile');}
+  else if(tab==='profile'){showScreen('screen-client-profile');loadClientContractPanel();}
 }
 
 // ===== COACH =====
@@ -1822,6 +1862,7 @@ async function openCoachClient(clientId) {
   loadCoachClientDetail(clientId);
   loadCoachPlans();
   loadCoachFoodPanel();
+  loadCoachContractPanel();
   showScreen('screen-coach-client');
 }
 
@@ -3490,6 +3531,281 @@ async function showAiBuilder() {
   showScreen('screen-ai-builder');
   await loadAiBuilderScreen();
 }
+
+// ===== CONTRACT SYSTEM =====
+let contractEditorMode = 'create'; // 'create' | 'edit'
+let currentContractId = null;
+
+// --- SQL to run once in Supabase ---
+// create table contracts (
+//   id uuid default gen_random_uuid() primary key,
+//   client_id uuid references clients(id) on delete cascade,
+//   program text,
+//   duration text,
+//   total_amount numeric,
+//   payment_method text,
+//   installments jsonb,
+//   status text default 'pendiente',
+//   signed_at timestamptz,
+//   signed_by text,
+//   created_at timestamptz default now()
+// );
+
+// ---- COACH: load contract panel inside client detail ----
+async function loadCoachContractPanel() {
+  const panel = document.getElementById('coach-contract-panel');
+  if (!panel || !currentClient) return;
+  panel.innerHTML = '<div class="spinner" style="width:18px;height:18px;margin:8px auto;"></div>';
+  const { data: contract } = await sb.from('contracts').select('*').eq('client_id', currentClient.id).maybeSingle();
+  const actionBtn = document.getElementById('coach-contract-action');
+  if (!contract) {
+    if (actionBtn) actionBtn.textContent = '+ Crear';
+    panel.innerHTML = `<div class="card" style="text-align:center;padding:20px 16px;">
+      <div style="font-size:28px;margin-bottom:6px;">📄</div>
+      <div style="font-size:13px;color:var(--gray4);">Este cliente aún no tiene contrato.</div>
+      <button onclick="openContractEditor()" style="margin-top:12px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Crear contrato</button>
+    </div>`;
+    return;
+  }
+  if (actionBtn) actionBtn.textContent = 'Editar';
+  const signedHtml = contract.status === 'firmado'
+    ? `<div class="contract-signed-banner" style="margin-bottom:0;"><div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:2px;">✅ Firmado</div><div style="font-size:11px;color:var(--gray5);">Por ${contract.signed_by} · ${new Date(contract.signed_at).toLocaleDateString('es-CR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div></div>`
+    : `<div style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:var(--yellow-light);color:var(--yellow);font-size:11px;font-weight:700;font-family:'DM Mono',monospace;letter-spacing:0.06em;text-transform:uppercase;">⏳ Pendiente de firma</div>`;
+  const installHtml = (contract.installments || []).map((inst, i) => `
+    <tr><td>${inst.label || 'Cuota '+(i+1)}</td><td>${inst.date}</td><td>$${inst.amount}</td></tr>`).join('');
+  panel.innerHTML = `<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+      <div>
+        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;">${contract.program}</div>
+        <div style="font-size:12px;color:var(--gray4);margin-top:2px;">${contract.duration} · ${contract.payment_method}</div>
+      </div>
+      ${signedHtml}
+    </div>
+    <div class="contract-highlight" style="margin-bottom:10px;">
+      <div class="contract-highlight-row"><span class="contract-highlight-key">Total</span><span class="contract-highlight-val">$${contract.total_amount}</span></div>
+      <div class="contract-highlight-row" style="border:none;padding-bottom:0;"><span class="contract-highlight-key">Cuotas</span><span class="contract-highlight-val">${(contract.installments||[]).length}</span></div>
+    </div>
+    ${installHtml ? `<table class="installment-table"><thead><tr><th>Cuota</th><th>Fecha</th><th style="text-align:right;">Monto</th></tr></thead><tbody>${installHtml}</tbody></table>` : ''}
+    <button onclick="openContractEditor()" style="margin-top:14px;width:100%;padding:11px;background:transparent;color:var(--orange);border:1.5px solid var(--orange);border-radius:var(--radius-sm);font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;">✏️ Editar contrato</button>
+  </div>`;
+}
+
+// ---- COACH: open editor modal ----
+async function openContractEditor() {
+  const { data: existing } = await sb.from('contracts').select('*').eq('client_id', currentClient.id).maybeSingle();
+  currentContractId = existing?.id || null;
+  contractEditorMode = existing ? 'edit' : 'create';
+
+  // Build modal HTML dynamically and inject into page
+  let modal = document.getElementById('modal-contract-editor');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'modal-contract-editor';
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `<div class="modal" style="max-height:85vh;overflow-y:auto;">
+    <span class="modal-close" onclick="closeModal('modal-contract-editor')">×</span>
+    <div class="modal-title">${contractEditorMode==='edit'?'Editar':'Nuevo'} Contrato — ${currentClient.name.split(' ')[0]}</div>
+    <div class="form-group">
+      <label class="form-label">Programa</label>
+      <select class="form-select" id="ce-program">
+        <option value="StrongFlow">StrongFlow</option>
+        <option value="StrongFlow + NutriFlex">StrongFlow + NutriFlex</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Duración</label>
+      <select class="form-select" id="ce-duration">
+        <option value="Trimestral">Trimestral (3 meses)</option>
+        <option value="Semestral">Semestral (6 meses)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Monto total (USD)</label>
+      <input class="form-input" type="number" id="ce-total" placeholder="ej: 600" step="0.01">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Método de pago</label>
+      <input class="form-input" id="ce-payment-method" placeholder="ej: SINPE Móvil, Tarjeta...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Cuotas de pago</label>
+      <div id="ce-installments-list"></div>
+      <button class="add-installment-btn" onclick="addInstallmentRow()">+ Agregar cuota</button>
+    </div>
+    <button class="btn-primary" onclick="saveContract()" style="margin-top:6px;">Guardar contrato</button>
+    ${contractEditorMode==='edit' ? '<button class="btn-danger" onclick="deleteContract()">Eliminar contrato</button>' : ''}
+  </div>`;
+  showModal('modal-contract-editor');
+
+  // Pre-fill if editing
+  if (existing) {
+    document.getElementById('ce-program').value = existing.program || 'StrongFlow';
+    document.getElementById('ce-duration').value = existing.duration || 'Trimestral';
+    document.getElementById('ce-total').value = existing.total_amount || '';
+    document.getElementById('ce-payment-method').value = existing.payment_method || '';
+    (existing.installments || []).forEach((inst, i) => addInstallmentRow(inst));
+  } else {
+    addInstallmentRow(); // start with one empty row
+  }
+}
+
+function addInstallmentRow(data = {}) {
+  const list = document.getElementById('ce-installments-list');
+  if (!list) return;
+  const idx = list.children.length + 1;
+  const row = document.createElement('div');
+  row.className = 'installment-row';
+  row.innerHTML = `
+    <input type="date" placeholder="Fecha" value="${data.date||''}" style="flex:1.2;">
+    <input type="number" placeholder="$0" step="0.01" value="${data.amount||''}" style="flex:0.8;">
+    <button class="remove-btn" onclick="this.parentElement.remove()">×</button>`;
+  list.appendChild(row);
+}
+
+function getInstallmentsFromForm() {
+  const rows = document.querySelectorAll('#ce-installments-list .installment-row');
+  const result = [];
+  rows.forEach((row, i) => {
+    const inputs = row.querySelectorAll('input');
+    const date = inputs[0].value;
+    const amount = parseFloat(inputs[1].value);
+    if (date && !isNaN(amount)) result.push({ label: 'Cuota '+(i+1), date, amount });
+  });
+  return result;
+}
+
+async function saveContract() {
+  const program = document.getElementById('ce-program').value;
+  const duration = document.getElementById('ce-duration').value;
+  const total_amount = parseFloat(document.getElementById('ce-total').value);
+  const payment_method = document.getElementById('ce-payment-method').value.trim();
+  const installments = getInstallmentsFromForm();
+  if (!program || !duration || isNaN(total_amount) || !payment_method) { showToast('⚠️ Completá todos los campos'); return; }
+  const payload = { client_id: currentClient.id, program, duration, total_amount, payment_method, installments };
+  let error;
+  if (currentContractId) {
+    ({ error } = await sb.from('contracts').update(payload).eq('id', currentContractId));
+  } else {
+    ({ error } = await sb.from('contracts').insert([{ ...payload, status: 'pendiente' }]));
+  }
+  if (error) { showToast('❌ '+error.message); return; }
+  closeModal('modal-contract-editor');
+  showToast('✅ Contrato guardado');
+  loadCoachContractPanel();
+}
+
+async function deleteContract() {
+  if (!currentContractId) return;
+  if (!confirm('¿Eliminar este contrato? Esta acción no se puede deshacer.')) return;
+  await sb.from('contracts').delete().eq('id', currentContractId);
+  closeModal('modal-contract-editor');
+  showToast('🗑️ Contrato eliminado');
+  loadCoachContractPanel();
+}
+
+// ---- CLIENT: load contract view in profile tab ----
+async function loadClientContractPanel() {
+  const panel = document.getElementById('client-contract-panel');
+  if (!panel || !currentClient) return;
+  const { data: contract } = await sb.from('contracts').select('*').eq('client_id', currentClient.id).maybeSingle();
+  if (!contract) {
+    panel.innerHTML = `<div class="card" style="text-align:center;padding:20px 16px;"><div style="font-size:28px;margin-bottom:6px;">📄</div><div style="font-size:13px;color:var(--gray4);">Tu coach aún no ha generado tu contrato.</div></div>`;
+    return;
+  }
+  // Already signed
+  if (contract.status === 'firmado') {
+    panel.innerHTML = `<div class="card">
+      <div class="contract-signed-banner">
+        <div style="font-size:14px;font-weight:700;color:var(--green);margin-bottom:3px;">✅ Contrato firmado</div>
+        <div style="font-size:12px;color:var(--gray5);">Confirmado por ${contract.signed_by}</div>
+        <div style="font-size:11px;color:var(--gray4);margin-top:2px;">${new Date(contract.signed_at).toLocaleDateString('es-CR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+      <div style="margin-top:12px;">
+        ${renderContractBody(contract)}
+      </div>
+    </div>`;
+    return;
+  }
+  // Pending signature
+  panel.innerHTML = `<div class="card">
+    <div style="background:var(--yellow-light);border:1.5px solid rgba(243,156,18,0.3);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--yellow);">⏳ Pendiente de tu firma</div>
+      <div style="font-size:11px;color:var(--gray5);margin-top:2px;">Lee el contrato completo y confirma tu aceptación.</div>
+    </div>
+    ${renderContractBody(contract)}
+    <div style="margin-top:20px;padding-top:16px;border-top:2px solid var(--gray2);">
+      <div style="font-size:12px;color:var(--gray5);margin-bottom:10px;line-height:1.5;">Al presionar el botón declarás haber leído, comprendido y aceptado todos los términos del presente contrato.</div>
+      <button class="contract-sign-btn" onclick="signContract('${contract.id}')">✍️ Confirmo que acepto este contrato</button>
+    </div>
+  </div>`;
+}
+
+function renderContractBody(contract) {
+  const clientName = currentClient?.name || '—';
+  const installHtml = (contract.installments || []).map((inst, i) =>
+    `<tr><td style="padding:6px 0;border-bottom:1px solid var(--gray2);font-size:13px;">${inst.label||'Cuota '+(i+1)}</td><td style="padding:6px 0;border-bottom:1px solid var(--gray2);font-size:13px;">${inst.date}</td><td style="padding:6px 0;border-bottom:1px solid var(--gray2);font-size:13px;font-weight:700;color:var(--orange);text-align:right;">$${inst.amount}</td></tr>`
+  ).join('');
+
+  return `<div class="contract-body">
+    <h2>Contrato de Membresía y Acuerdo de Pago</h2>
+    <h3>Programa StrongFlow — MOVE</h3>
+    <div class="contract-highlight">
+      <div class="contract-highlight-row"><span class="contract-highlight-key">Cliente</span><span class="contract-highlight-val">${clientName}</span></div>
+      <div class="contract-highlight-row"><span class="contract-highlight-key">Programa</span><span class="contract-highlight-val">${contract.program}</span></div>
+      <div class="contract-highlight-row"><span class="contract-highlight-key">Duración</span><span class="contract-highlight-val">${contract.duration}</span></div>
+      <div class="contract-highlight-row"><span class="contract-highlight-key">Total</span><span class="contract-highlight-val">$${contract.total_amount} USD</span></div>
+      <div class="contract-highlight-row" style="border:none;padding-bottom:0;"><span class="contract-highlight-key">Método de pago</span><span class="contract-highlight-val">${contract.payment_method}</span></div>
+    </div>
+    ${installHtml ? `<h3>Plan de pagos</h3><table style="width:100%;border-collapse:collapse;"><thead><tr><th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;color:var(--gray4);text-transform:uppercase;text-align:left;padding-bottom:6px;">Cuota</th><th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;color:var(--gray4);text-transform:uppercase;text-align:left;padding-bottom:6px;">Fecha</th><th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;color:var(--gray4);text-transform:uppercase;text-align:right;padding-bottom:6px;">Monto</th></tr></thead><tbody>${installHtml}</tbody></table>` : ''}
+    <h2>Términos de Pago</h2>
+    <p>El Cliente se compromete a realizar el pago completo de la membresía adquirida. El pago deberá realizarse dentro de un plazo máximo de <strong>5 días</strong> siguientes a la fecha estipulada. En caso de incumplimiento, el Proveedor podrá suspender el acceso o rescindir el contrato.</p>
+    <p>El Cliente no podrá renunciar a la obligación de pago incluso si no utiliza el servicio.</p>
+    <h2>Compromisos del Cliente</h2>
+    <ul>
+      <li>Seguir el programa con consistencia, completando al menos el 80% de los entrenamientos mensuales.</li>
+      <li>Reportar cualquier cambio en su estado de salud, lesión o molestia antes de continuar entrenando.</li>
+      <li>Enviar su check-in semanal cada sábado por WhatsApp.</li>
+      <li>Comunicar dudas de manera oportuna en lugar de abandonar el proceso sin aviso.</li>
+    </ul>
+    <h2>Compromisos de MOVE</h2>
+    <ul>
+      <li>Diseñar un programa personalizado basado en los objetivos y estado de salud del cliente.</li>
+      <li>Actualizar el plan semanalmente con base en el check-in recibido.</li>
+      <li>Estar disponible para consultas por WhatsApp en horarios razonables.</li>
+      <li>Mantener confidencialidad absoluta sobre la información del cliente.</li>
+    </ul>
+    <h2>Términos y Condiciones</h2>
+    <p><strong>Sin reembolso:</strong> No se otorgan reembolsos. Si no se alcanzan los objetivos al final de la membresía, se ofrecerá el mismo programa sin costo adicional.</p>
+    <p><strong>Confidencialidad:</strong> El cliente se compromete a mantener en secreto toda la información confidencial de MOVE, incluyendo programas y metodologías.</p>
+    <p><strong>Derechos de autor:</strong> Todo el material del programa StrongFlow está protegido por derechos de autor y no puede divulgarse sin permiso expreso de MOVE.</p>
+    <p><strong>Aviso médico:</strong> Este programa no sustituye el consejo médico profesional. Consultá con un médico antes de iniciar, especialmente si tenés condiciones preexistentes.</p>
+    <p><strong>Riesgos:</strong> Reconocés que la actividad física implica riesgos inherentes y asumís voluntariamente todos los riesgos asociados a tu participación.</p>
+    <p><strong>Resultados:</strong> Los resultados pueden variar. No se garantizan resultados específicos en pérdida de peso, ganancia muscular o rendimiento.</p>
+    <p><strong>Resolución:</strong> Cualquiera de las partes puede rescindir con 30 días de aviso previo.</p>
+  </div>`;
+}
+
+async function signContract(contractId) {
+  const btn = document.querySelector('.contract-sign-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Procesando...'; }
+  const signedAt = new Date().toISOString();
+  const signedBy = currentClient?.name || currentUser?.name || 'Cliente';
+  const { error } = await sb.from('contracts').update({
+    status: 'firmado',
+    signed_at: signedAt,
+    signed_by: signedBy
+  }).eq('id', contractId);
+  if (error) {
+    showToast('❌ Error al firmar: ' + error.message);
+    if (btn) { btn.disabled = false; btn.textContent = '✍️ Confirmo que acepto este contrato'; }
+    return;
+  }
+  showToast('✅ Contrato firmado correctamente');
+  loadClientContractPanel();
+}
+
 </script>
 </body>
 </html>
