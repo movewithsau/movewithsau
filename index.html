@@ -289,6 +289,48 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 .workout-action-btn { width:100%; padding:14px; border:none; border-radius:var(--radius-sm); font-size:14px; font-weight:700; font-family:'DM Sans',sans-serif; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:12px; transition:all 0.2s; }
 .workout-start-btn { background:var(--orange); color:white; }
 .workout-finish-btn { background:#111; color:white; }
+  .ai-builder-input{width:100%;padding:14px;border:1.5px solid var(--gray2);border-radius:var(--radius-sm);font-size:13px;font-family:'DM Sans',sans-serif;color:var(--black);background:var(--white);outline:none;resize:vertical;line-height:1.65;min-height:190px;}
+.ai-builder-input:focus{border-color:var(--orange);}
+.ai-builder-input::placeholder{color:var(--gray4);}
+.ai-preview-card{background:var(--white);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);margin-bottom:10px;border-left:3px solid var(--orange);}
+.ai-preview-day{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--black);margin-bottom:10px;}
+.ai-circuit-block{background:var(--orange-light);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;}
+.ai-circuit-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;color:var(--orange);text-transform:uppercase;font-weight:700;margin-bottom:8px;}
+.ai-ex-row{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid rgba(247,90,14,0.12);}
+.ai-ex-row:last-child{border-bottom:none;padding-bottom:0;}
+.ai-straight-row{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--gray2);}
+.ai-straight-row:last-child{border-bottom:none;padding-bottom:0;}
+.ai-ex-tag{font-family:'DM Mono',monospace;font-size:9px;color:var(--orange);min-width:22px;padding-top:2px;font-weight:700;}
+.ai-ex-tag.gray{color:var(--gray4);}
+.ai-ex-name-link{font-size:13px;font-weight:600;color:var(--orange);text-decoration:underline;cursor:pointer;margin-bottom:3px;display:inline-block;}
+.ai-ex-name-plain{font-size:13px;font-weight:600;color:var(--black);margin-bottom:3px;}
+.ai-ex-chips{display:flex;flex-wrap:wrap;gap:4px;}
+.ai-chip{font-size:10px;background:var(--gray2);color:var(--gray5);border-radius:4px;padding:2px 7px;}
+.ai-chip.circuit{background:var(--orange-mid);color:var(--orange);font-weight:700;}
+.ai-dup-alert{background:var(--yellow-light);border:1px solid rgba(243,156,18,0.3);border-radius:var(--radius-sm);padding:8px 10px;margin-top:5px;}
+.ai-dup-msg{font-size:11px;color:var(--yellow);font-weight:600;margin-bottom:3px;}
+.ai-dup-name{font-size:12px;font-weight:700;color:var(--black);margin-bottom:6px;}
+.ai-dup-btns{display:flex;gap:5px;}
+.ai-dup-yes{flex:1;padding:5px 0;background:var(--orange);color:white;border:none;border-radius:5px;font-size:11px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.ai-dup-no{flex:1;padding:5px 0;background:var(--gray2);color:var(--gray5);border:none;border-radius:5px;font-size:11px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.ai-loading{text-align:center;padding:32px 20px;color:var(--gray4);}
+.ai-dot-loader span{display:inline-block;width:7px;height:7px;background:var(--orange);border-radius:50%;margin:0 3px;animation:aiDot 1.1s infinite ease-in-out both;}
+.ai-dot-loader span:nth-child(1){animation-delay:-0.32s;}
+.ai-dot-loader span:nth-child(2){animation-delay:-0.16s;}
+@keyframes aiDot{0%,80%,100%{transform:scale(0);opacity:.4}40%{transform:scale(1);opacity:1}}
+.ai-success{background:var(--green-light);color:var(--green);border-radius:var(--radius-sm);padding:12px 16px;font-size:13px;font-weight:700;text-align:center;margin-top:10px;}
+.ai-error{background:var(--red-light);color:var(--red);border-radius:var(--radius-sm);padding:12px 16px;font-size:13px;margin-top:10px;}
+.ai-approve-row{display:flex;gap:8px;margin-top:16px;}
+.ai-approve-btn{flex:2;padding:13px;background:var(--green);color:white;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:opacity 0.15s;}
+.ai-approve-btn:hover{opacity:0.88;}
+.ai-approve-btn:disabled{opacity:0.45;cursor:not-allowed;}
+.ai-regen-btn{flex:1;padding:13px;background:transparent;color:var(--black);border:1.5px solid var(--gray2);border-radius:var(--radius-sm);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.ai-regen-btn:hover{background:var(--gray1);}
+.ai-lib-badge{font-size:11px;color:var(--green);background:var(--green-light);border-radius:20px;padding:3px 10px;font-weight:600;}
+.ai-lib-badge.empty{color:var(--gray4);background:var(--gray2);}
+.ai-week-chip{flex-shrink:0;padding:7px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--white);color:var(--gray4);border:1.5px solid var(--gray2);cursor:pointer;}
+.ai-week-chip.active{background:var(--orange);color:white;border-color:var(--orange);}
+.ai-preview-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.14em;color:var(--orange);text-transform:uppercase;font-weight:600;margin-bottom:10px;}
 </style>
 </head>
 <body>
@@ -522,6 +564,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   </div>
   <div class="bottom-nav">
     <div class="nav-item active" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon">👨🏻‍🔬</div><div class="nav-label">Builder</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('data',this)"><div class="nav-icon">📊</div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon">⚙️</div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
   </div>
@@ -564,6 +607,59 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <button class="btn-primary" style="margin-top:10px;" onclick="savePlanDay()">Guardar día</button>
   </div>
 </div>
+  <!-- ===== AI BUILDER ===== -->
+<div class="screen" id="screen-ai-builder">
+  <div class="topbar">
+    <div class="topbar-logo">Move With Sau</div>
+    <div class="topbar-title" style="font-size:15px;">✨ Builder</div>
+    <div style="width:60px;"></div>
+  </div>
+  <div class="scroll-body">
+    <div style="margin-bottom:6px;">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Inteligencia Artificial</div>
+      <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;">Program Builder</div>
+    </div>
+    <div class="section-header" style="margin-top:12px;">
+      <div class="section-title">Cliente</div>
+    </div>
+    <select class="form-select" id="ai-client-select" onchange="onAiClientChange()" style="margin-bottom:14px;">
+      <option value="">Selecciona un cliente...</option>
+    </select>
+    <div class="section-header">
+      <div class="section-title">Biblioteca</div>
+      <div id="ai-lib-badge" class="ai-lib-badge empty">—</div>
+    </div>
+    <div class="section-header">
+      <div class="section-title">Semana del plan</div>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none;">
+      <div class="ai-week-chip active" onclick="setAiWeek(1,this)">Semana 1</div>
+      <div class="ai-week-chip" onclick="setAiWeek(2,this)">Semana 2</div>
+      <div class="ai-week-chip" onclick="setAiWeek(3,this)">Semana 3</div>
+      <div class="ai-week-chip" onclick="setAiWeek(4,this)">Semana 4</div>
+    </div>
+    <div class="section-header">
+      <div class="section-title">Describe el programa</div>
+    </div>
+    <textarea class="ai-builder-input" id="ai-prog-input" placeholder="Escríbelo natural, el agente entiende todo:
+
+circuito 1, 3 rounds, 1min descanso
+sprints 1min
+V toca puntas 10reps
+Jumping jack 25
+
+ejercicio individual
+press plano mancuerna 3 sets, 8-10 reps"></textarea>
+    <button class="btn-primary" id="ai-gen-btn" onclick="aiGeneratePlan()" style="margin-top:10px;">✨ Generar con IA</button>
+    <div id="ai-result-area" style="margin-top:16px;"></div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
+    <div class="nav-item active" onclick="coachNav('builder',this)"><div class="nav-icon">✨</div><div class="nav-label">Builder</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('data',this)"><div class="nav-icon">📊</div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon">⚙️</div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
+  </div>
+</div>
 
 <!-- ===== COACH: AJUSTES ===== -->
 <div class="screen" id="screen-coach-settings">
@@ -577,6 +673,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   </div>
   <div class="bottom-nav">
     <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon">👨🏻‍🔬</div><div class="nav-label">Builder</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('data',this)"><div class="nav-icon">📊</div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
     <div class="nav-item active" onclick="coachNav('settings',this)"><div class="nav-icon">⚙️</div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
   </div>
@@ -599,6 +696,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   </div>
   <div class="bottom-nav">
     <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon">👨🏻‍🔬</div><div class="nav-label">Builder</div><div class="nav-dot"></div></div>
     <div class="nav-item active" onclick="coachNav('data',this)"><div class="nav-icon">📊</div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon">⚙️</div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
   </div>
@@ -2158,9 +2256,10 @@ async function deleteClient(clientId,clientName) {
 }
 
 function coachNav(tab,el) {
-  document.querySelectorAll('#screen-coach-home .nav-item,#screen-coach-settings .nav-item,#screen-coach-data .nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('#screen-coach-home .nav-item,#screen-coach-settings .nav-item,#screen-coach-data .nav-item,#screen-ai-builder .nav-item').forEach(n=>n.classList.remove('active'));
   el.classList.add('active');
   if(tab==='clients'){showScreen('screen-coach-home');loadCoachClients();}
+  if(tab==='builder'){showScreen('screen-ai-builder');loadAiBuilderScreen();}
   if(tab==='data'){showScreen('screen-coach-data');loadDataScreen();}
   if(tab==='settings'){showScreen('screen-coach-settings');loadSettings();}
 }
@@ -3124,6 +3223,261 @@ async function deleteLibraryEx(id) {
 function addFromLibrary(ex) {
   addExerciseForm({name:ex.name,tag:ex.tag,muscle_group:ex.muscle_group,sets:'',reps_range:'',rest_seconds:60,video_url:ex.video_url||'',notes:'',superset_group:null});
   closeModal('modal-ex-library');
+}
+  // ===== AI BUILDER =====
+let aiBuilderWeek = 1;
+let aiGeneratedPlan = null;
+let aiLibraryExercises = [];
+let aiAllClients = [];
+
+function setAiWeek(w, el) {
+  aiBuilderWeek = w;
+  document.querySelectorAll('.ai-week-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+async function loadAiBuilderScreen() {
+  const { data: clients } = await sb.from('clients').select('id,name').eq('coach_id', currentUser.id).order('name');
+  aiAllClients = clients || [];
+  const sel = document.getElementById('ai-client-select');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Selecciona un cliente...</option>' +
+    aiAllClients.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  await loadAiLibrary();
+}
+
+async function onAiClientChange() {}
+
+async function loadAiLibrary() {
+  try {
+    const { data, error } = await sb.from('exercise_library').select('id,name,video_url,muscle_group,tag').eq('coach_id', currentUser.id).order('name');
+    if (error) throw error;
+    aiLibraryExercises = data || [];
+    const badge = document.getElementById('ai-lib-badge');
+    if (!badge) return;
+    if (aiLibraryExercises.length > 0) {
+      badge.className = 'ai-lib-badge';
+      badge.textContent = aiLibraryExercises.length + ' ejercicios';
+    } else {
+      badge.className = 'ai-lib-badge empty';
+      badge.textContent = 'Biblioteca vacía';
+    }
+  } catch(e) {
+    const badge = document.getElementById('ai-lib-badge');
+    if (badge) { badge.className = 'ai-lib-badge empty'; badge.textContent = 'Error'; }
+  }
+}
+
+function aiFindInLibrary(name) {
+  const n = name.toLowerCase().trim();
+  const exact = aiLibraryExercises.find(e => e.name.toLowerCase() === n);
+  if (exact) return { match: exact, type: 'exact' };
+  const partial = aiLibraryExercises.find(e => {
+    const en = e.name.toLowerCase();
+    return en.includes(n) || n.includes(en) || aiLevenSim(n, en) > 0.70;
+  });
+  if (partial) return { match: partial, type: 'similar' };
+  return null;
+}
+
+function aiLevenSim(a, b) {
+  if (a === b) return 1;
+  const longer = a.length > b.length ? a : b;
+  const shorter = a.length > b.length ? b : a;
+  if (longer.length === 0) return 1;
+  const costs = Array.from({length: longer.length + 1}, (_, i) => i);
+  for (let j = 1; j <= shorter.length; j++) {
+    let prev = j;
+    for (let i = 1; i <= longer.length; i++) {
+      const val = longer[i-1] === shorter[j-1] ? costs[i-1] : Math.min(costs[i-1]+1, prev+1, costs[i]+1);
+      costs[i-1] = prev; prev = val;
+    }
+    costs[longer.length] = prev;
+  }
+  return (longer.length - costs[longer.length]) / longer.length;
+}
+
+async function aiGeneratePlan() {
+  const progText = document.getElementById('ai-prog-input').value.trim();
+  const clientId = document.getElementById('ai-client-select').value;
+  if (!progText) { showToast('⚠️ Describe el programa primero'); return; }
+  if (!clientId) { showToast('⚠️ Selecciona un cliente'); return; }
+  const btn = document.getElementById('ai-gen-btn');
+  btn.disabled = true; btn.textContent = '✨ Generando...';
+  document.getElementById('ai-result-area').innerHTML = `
+    <div class="ai-loading">
+      <div class="ai-dot-loader" style="margin-bottom:10px;"><span></span><span></span><span></span></div>
+      <div style="font-size:13px;">El agente está armando el programa...</div>
+    </div>`;
+  const libCtx = aiLibraryExercises.length
+    ? `\n\nBiblioteca de ejercicios del coach (cuando el ejercicio coincida, usa el nombre EXACTO de la biblioteca):\n${aiLibraryExercises.map(e => `- "${e.name}"${e.muscle_group ? ' ['+e.muscle_group+']' : ''}`).join('\n')}`
+    : '';
+  const systemPrompt = `Eres un asistente experto en programas de entrenamiento. Conviertes descripciones en lenguaje natural a JSON estructurado para una app de coaching fitness.
+DEVUELVE SOLO JSON VÁLIDO. Sin markdown, sin texto adicional.
+ESTRUCTURA:
+{"days":[{"day":"Lunes","type":"training","rest_seconds_global":60,"groups":[{"type":"circuit","label":"A","rounds":3,"rest_between_rounds":60,"circuit_notes":"Sin descanso entre ejercicios","exercises":[{"name":"Nombre","reps_range":"1min","tag":"Peso Corporal","muscle_group":null}]},{"type":"straight","exercises":[{"name":"Nombre","sets":3,"reps_range":"8-10","rest_seconds":60,"tag":"Peso Libre","muscle_group":null}]}]},{"day":"Martes","type":"rest","groups":[]}]}
+REGLAS:
+1. type "circuit" para circuitos/supersets. type "straight" para ejercicios normales.
+2. En circuitos NO incluyas "sets". El label va en orden: "A","B","C"...
+3. tag exactamente: "Peso Libre", "Máquina" o "Peso Corporal"
+4. reps_range siempre string: "8-10", "1min", "30s", "25"
+5. Si no se menciona día, asigna en orden: Lunes, Miércoles, Jueves, Viernes
+6. rest_seconds_global es el descanso general del día
+7. Infiere muscle_group cuando sea obvio${libCtx}`;
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1200,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: `Convierte a JSON:\n\n${progText}` }]
+      })
+    });
+    const data = await resp.json();
+    const raw = data.content.map(b => b.text || '').join('').replace(/```json|```/g,'').trim();
+    const plan = JSON.parse(raw);
+    aiGeneratedPlan = plan;
+    aiGeneratedPlan._clientId = clientId;
+    aiGeneratedPlan._clientName = aiAllClients.find(c => c.id === clientId)?.name || '';
+    aiEnrichWithLibrary(plan);
+    aiRenderPlan(plan);
+  } catch(e) {
+    document.getElementById('ai-result-area').innerHTML = `<div class="ai-error">Error: ${e.message}. Intenta de nuevo.</div>`;
+  }
+  btn.disabled = false; btn.textContent = '✨ Generar con IA';
+}
+
+function aiEnrichWithLibrary(plan) {
+  plan.days.forEach(day => {
+    (day.groups || []).forEach(group => {
+      group.exercises.forEach(ex => {
+        const found = aiFindInLibrary(ex.name);
+        if (found) {
+          ex._lib = found;
+          if (found.type === 'exact' && !ex.video_url) ex.video_url = found.match.video_url || null;
+        }
+      });
+    });
+  });
+}
+
+function aiRenderPlan(plan) {
+  const trainDays = plan.days.filter(d => d.type !== 'rest').length;
+  const clientFirstName = (aiGeneratedPlan._clientName || '').split(' ')[0];
+  let html = `<div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.13em;color:var(--orange);text-transform:uppercase;margin-bottom:12px;">Semana ${aiBuilderWeek} · ${clientFirstName} · ${trainDays} día${trainDays!==1?'s':''} de entrenamiento</div>`;
+  plan.days.forEach((day, di) => {
+    if (day.type === 'rest') {
+      html += `<div class="ai-preview-card" style="opacity:0.4;border-left-color:var(--gray3);"><div class="ai-preview-day" style="font-size:14px;margin-bottom:0;">${day.day} — Descanso</div></div>`;
+      return;
+    }
+    const totalEx = (day.groups||[]).reduce((a,g)=>a+g.exercises.length,0);
+    html += `<div class="ai-preview-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--gray2);"><div class="ai-preview-day" style="margin-bottom:0;">${day.day}</div><div style="font-size:11px;color:var(--gray4);">${totalEx} ejercicio${totalEx!==1?'s':''}</div></div>`;
+    (day.groups||[]).forEach((group, gi) => {
+      if (group.type === 'circuit') {
+        const circuitName = `Circuito ${group.label || String.fromCharCode(65+gi)}`;
+        html += `<div class="ai-circuit-block"><div class="ai-circuit-label">${circuitName} · ${group.rounds||3} rounds · ${group.rest_between_rounds||60}s descanso entre rounds</div>`;
+        group.exercises.forEach((ex, ei) => { html += aiExRow(ex, `${di}-${gi}-${ei}`, true); });
+        html += `</div>`;
+      } else {
+        group.exercises.forEach((ex, ei) => { html += aiExRow(ex, `${di}-${gi}-${ei}`, false); });
+      }
+    });
+    html += `</div>`;
+  });
+  html += `<div class="ai-approve-row"><button class="ai-approve-btn" id="ai-approve-btn" onclick="aiApprovePlan()">✅ Aprobar y guardar semana ${aiBuilderWeek}</button><button class="ai-regen-btn" onclick="aiGeneratePlan()">Regenerar</button></div><div id="ai-approve-msg"></div>`;
+  document.getElementById('ai-result-area').innerHTML = html;
+}
+
+function aiExRow(ex, key, inCircuit) {
+  const isSimilar = ex._lib && ex._lib.type === 'similar';
+  const hasVideo = !!ex.video_url;
+  const tagCode = ex.tag==='Peso Corporal'?'PC':ex.tag==='Máquina'?'MQ':'PL';
+  const tagClass = inCircuit ? 'ai-ex-tag' : 'ai-ex-tag gray';
+  const namePart = hasVideo
+    ? `<div class="ai-ex-name-link">${ex.name}</div>`
+    : `<div class="ai-ex-name-plain">${ex.name}</div>`;
+  let chips = '';
+  if (!inCircuit) chips += `<span class="ai-chip">${ex.sets||3} series</span>`;
+  chips += `<span class="ai-chip">${ex.reps_range||'?'}</span>`;
+  if (!inCircuit) chips += `<span class="ai-chip">${ex.rest_seconds||60}s desc</span>`;
+  if (inCircuit) chips += `<span class="ai-chip circuit">circuito</span>`;
+  chips += `<span class="ai-chip">${ex.tag||'Peso Libre'}</span>`;
+  if (ex.muscle_group) chips += `<span class="ai-chip" style="background:var(--purple-light);color:var(--purple);">${ex.muscle_group}</span>`;
+  const dupHtml = isSimilar ? `
+    <div class="ai-dup-alert">
+      <div class="ai-dup-msg">Encontré esto en tu biblioteca:</div>
+      <div class="ai-dup-name">${ex._lib.match.name}</div>
+      <div class="ai-dup-btns">
+        <button class="ai-dup-yes" onclick="aiUseName('${key}','${ex._lib.match.name.replace(/'/g,"\\'")}')">Sí, usar ese</button>
+        <button class="ai-dup-no" onclick="aiDismissDup('${key}')">No, dejarlo así</button>
+      </div>
+    </div>` : '';
+  const rowClass = inCircuit ? 'ai-ex-row' : 'ai-straight-row';
+  return `<div class="${rowClass}" id="ai-er-${key}"><div class="${tagClass}">${tagCode}</div><div style="flex:1;min-width:0;">${namePart}<div class="ai-ex-chips">${chips}</div>${dupHtml}</div></div>`;
+}
+
+function aiUseName(key, libName) {
+  const [di, gi, ei] = key.split('-').map(Number);
+  const ex = aiGeneratedPlan.days[di].groups[gi].exercises[ei];
+  ex.name = libName;
+  const found = aiFindInLibrary(libName);
+  if (found) { ex._lib = { match: found.match, type: 'exact' }; ex.video_url = found.match.video_url || null; }
+  aiRenderPlan(aiGeneratedPlan);
+}
+
+function aiDismissDup(key) {
+  const [di, gi, ei] = key.split('-').map(Number);
+  aiGeneratedPlan.days[di].groups[gi].exercises[ei]._lib = null;
+  aiRenderPlan(aiGeneratedPlan);
+}
+
+async function aiApprovePlan() {
+  const btn = document.getElementById('ai-approve-btn');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  const clientId = aiGeneratedPlan._clientId;
+  const clientName = (aiGeneratedPlan._clientName || '').split(' ')[0];
+  try {
+    for (const day of aiGeneratedPlan.days) {
+      if (day.type === 'rest' || !day.groups || day.groups.length === 0) continue;
+      const { data: existPd } = await sb.from('monthly_plans').select('id').eq('client_id', clientId).eq('week_number', aiBuilderWeek).eq('day_of_week', day.day).maybeSingle();
+      if (existPd) { await sb.from('exercises').delete().eq('plan_day_id', existPd.id); await sb.from('monthly_plans').delete().eq('id', existPd.id); }
+      const { data: pd, error: pdErr } = await sb.from('monthly_plans').insert([{ client_id: clientId, week_number: aiBuilderWeek, day_of_week: day.day }]).select().single();
+      if (pdErr) throw pdErr;
+      let orderIdx = 0;
+      const toInsert = [];
+      let circuitLetter = 0;
+      for (const group of day.groups) {
+        if (group.type === 'circuit') {
+          const supersetGroup = group.label || String.fromCharCode(65 + circuitLetter++);
+          const circuitRounds = group.rounds || 3;
+          const circuitNotes = group.circuit_notes || `Descanso ${group.rest_between_rounds||60}s entre rounds.`;
+          for (const ex of group.exercises) {
+            toInsert.push({ plan_day_id: pd.id, name: ex.name, sets: 1, reps_range: ex.reps_range || '', rest_seconds: day.rest_seconds_global || 60, tag: ex.tag || 'Peso Corporal', muscle_group: ex.muscle_group || null, video_url: ex.video_url || null, notes: null, superset_group: supersetGroup, circuit_rounds: circuitRounds, circuit_notes: circuitNotes, order_index: orderIdx++ });
+            await saveExerciseToLibrary(ex.name, ex.tag || 'Peso Corporal', ex.muscle_group || null, ex.video_url || null);
+          }
+        } else {
+          for (const ex of group.exercises) {
+            toInsert.push({ plan_day_id: pd.id, name: ex.name, sets: ex.sets || 3, reps_range: ex.reps_range || '', rest_seconds: ex.rest_seconds || day.rest_seconds_global || 60, tag: ex.tag || 'Peso Libre', muscle_group: ex.muscle_group || null, video_url: ex.video_url || null, notes: null, superset_group: null, circuit_rounds: null, circuit_notes: null, order_index: orderIdx++ });
+            await saveExerciseToLibrary(ex.name, ex.tag || 'Peso Libre', ex.muscle_group || null, ex.video_url || null);
+          }
+        }
+      }
+      await sb.from('exercises').insert(toInsert);
+    }
+    const trainDays = aiGeneratedPlan.days.filter(d => d.type !== 'rest').length;
+    document.getElementById('ai-approve-msg').innerHTML = `<div class="ai-success">Semana ${aiBuilderWeek} guardada — ${trainDays} días para ${clientName}. <span style="cursor:pointer;text-decoration:underline;" onclick="openCoachClient('${clientId}')">Ver plan →</span></div>`;
+    btn.textContent = 'Guardado ✓';
+  } catch(e) {
+    document.getElementById('ai-approve-msg').innerHTML = `<div class="ai-error">Error: ${e.message}</div>`;
+    btn.disabled = false; btn.textContent = '✅ Aprobar y guardar';
+  }
+}
+
+async function showAiBuilder() {
+  showScreen('screen-ai-builder');
+  await loadAiBuilderScreen();
 }
 </script>
 </body>
