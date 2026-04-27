@@ -2275,7 +2275,22 @@ async function loadCoachPlans() {
   const {data:plans} = await sb.from('plans').select('*').eq('client_id',currentClient.id).order('uploaded_at',{ascending:false});
   const list=document.getElementById('coach-plans-list');
   if(!plans||plans.length===0){list.innerHTML='<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-text">Sin PDFs aún.</div></div>';return;}
-  list.innerHTML=plans.map(p=>`<div class="pdf-card fade-up"><div class="pdf-icon">📄</div><div style="flex:1;min-width:0;"><div class="pdf-name">${p.pdf_name}</div><div class="pdf-date">${new Date(p.uploaded_at).toLocaleDateString('es-CR')}</div></div><a class="pdf-open" href="${p.pdf_url}" target="_blank">Ver</a></div>`).join('');
+  list.innerHTML=plans.map(p=>`<div class="pdf-card fade-up"><div class="pdf-icon">📄</div><div style="flex:1;min-width:0;"><div class="pdf-name">${p.pdf_name}</div><div class="pdf-date">${new Date(p.uploaded_at).toLocaleDateString('es-CR')}</div></div><a class="pdf-open" href="${p.pdf_url}" target="_blank" style="margin-right:6px;">Ver</a><button onclick="deletePdf('${p.id}','${p.pdf_url}')" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;flex-shrink:0;">✕</button></div>`).join('');
+}
+
+async function deletePdf(planId, pdfUrl) {
+  if(!confirm('¿Eliminar este PDF?')) return;
+  try {
+    const urlParts = pdfUrl.split('/plans/');
+    if(urlParts.length > 1) {
+      const storagePath = decodeURIComponent(urlParts[1]);
+      await sb.storage.from('plans').remove([storagePath]);
+    }
+  } catch(e) { console.warn('Storage delete failed:', e); }
+  const {error} = await sb.from('plans').delete().eq('id', planId);
+  if(error){ showToast('❌ '+error.message); return; }
+  showToast('🗑️ PDF eliminado');
+  loadCoachPlans();
 }
 
 function handlePdfSelect(input) { selectedPdfFile=input.files[0]; if(selectedPdfFile)document.getElementById('pdf-selected').textContent='📄 '+selectedPdfFile.name; }
@@ -2772,7 +2787,8 @@ ${currentClient.macros_calorias ? `Calorías asignadas: ${currentClient.macros_c
 ${currentClient.macros_proteina ? `Proteína asignada: ${currentClient.macros_proteina}g` : ''}
 ${currentClient.macros_carbs ? `Carbohidratos asignados: ${currentClient.macros_carbs}g` : ''}
 ${currentClient.macros_grasas ? `Grasas asignadas: ${currentClient.macros_grasas}g` : ''}
-${currentClient.macros_notas ? `Notas del coach: ${currentClient.macros_notas}` : ''}`.trim();
+${currentClient.macros_notas ? `Notas del coach: ${currentClient.macros_notas}` : ''}
+${currentClient.macros_distribucion ? `\nDISTRIBUCIÓN DE MACROS POR COMIDA:\n${currentClient.macros_distribucion}` : ''}`.trim();
 
   try {
     const response = await fetch('/api/chat', {
@@ -2848,6 +2864,15 @@ async function loadCoachFoodPanel() {
         <div><label class="form-label">Grasas (g)</label><input class="form-input" type="number" id="mac-fat" value="${currentClient.macros_grasas||''}" placeholder="65" style="font-size:13px;padding:9px 12px;"></div>
       </div>
       <div><label class="form-label">Notas para el cliente</label><textarea class="form-textarea" id="mac-notas" rows="2" placeholder="ej: Estos macros son para días de entreno...">${currentClient.macros_notas||''}</textarea></div>
+      <div style="margin-top:8px;"><label class="form-label">Distribución por comida</label>
+        <textarea class="form-textarea" id="mac-dist" rows="6" placeholder="ej:
+Comida 1 (Desayuno): 400 kcal | P: 35g | C: 45g | G: 8g
+Comida 2 (Media mañana): 200 kcal | P: 20g | C: 20g | G: 4g
+Comida 3 (Almuerzo): 550 kcal | P: 50g | C: 55g | G: 12g
+Comida 4 (Post-entreno): 300 kcal | P: 40g | C: 30g | G: 2g
+Comida 5 (Cena): 350 kcal | P: 35g | C: 30g | G: 9g">${currentClient.macros_distribucion||''}</textarea>
+        <div style="font-size:10px;color:var(--gray4);margin-top:4px;">NutriFlex usará esto para responder "¿qué puedo comer en la comida X?"</div>
+      </div>
       <button onclick="saveMacros()" class="btn-primary" style="padding:11px;margin-top:10px;">Guardar macros</button>
     </div>`;
 }
@@ -2885,7 +2910,8 @@ async function saveMacros() {
     macros_proteina: parseInt(document.getElementById('mac-prot').value)||null,
     macros_carbs: parseInt(document.getElementById('mac-carbs').value)||null,
     macros_grasas: parseInt(document.getElementById('mac-fat').value)||null,
-    macros_notas: document.getElementById('mac-notas').value.trim()||null
+    macros_notas: document.getElementById('mac-notas').value.trim()||null,
+    macros_distribucion: document.getElementById('mac-dist').value.trim()||null
   };
   await sb.from('clients').update(updates).eq('id',currentClient.id);
   Object.assign(currentClient, updates);
