@@ -664,9 +664,10 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div class="day-strip" id="builder-day-strip"></div>
     <div class="section-header"><div class="section-title">Ejercicios</div></div>
     <div id="builder-exercises-list"></div>
-    <div style="display:flex;gap:8px;margin-top:6px;">
-      <button class="add-ex-btn" style="flex:1;margin-top:0;" onclick="addExerciseForm()">+ Nuevo ejercicio</button>
-      <button class="add-ex-btn" style="flex:1;margin-top:0;background:var(--orange-light);border-style:solid;" onclick="showCopyDayModal()">📋 Copiar día</button>
+    <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+      <button class="add-ex-btn" style="flex:1;min-width:120px;margin-top:0;" onclick="addExerciseForm()">+ Ejercicio</button>
+      <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:var(--orange-light);border-style:solid;" onclick="openLibrary()">📚 Biblioteca</button>
+      <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:var(--blue-light);border-color:var(--blue);color:var(--blue);border-style:solid;" onclick="showCopyDayModal()">📋 Copiar día</button>
     </div>
     <button class="btn-primary" style="margin-top:10px;" onclick="savePlanDay()">Guardar día</button>
   </div>
@@ -888,7 +889,7 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
         <div style="font-size:10px;color:var(--orange);font-family:'DM Mono',monospace;letter-spacing:0.1em;text-transform:uppercase;">Soporte técnico · Move With Sau</div>
       </div>
       <div style="display:flex;align-items:center;gap:6px;">
-        <div onclick="clearStrongFlowChat()" style="width:34px;height:34px;background:rgba(255,255,255,0.12);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;" title="Limpiar chat">🗑</div>
+        <div onclick="clearStrongFlowChat()" style="width:30px;height:30px;background:rgba(255,255,255,0.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:var(--gray4);" title="Limpiar chat">🗑</div>
         <div onclick="closeStrongFlow()" style="width:30px;height:30px;background:rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:white;">×</div>
       </div>
     </div>
@@ -2112,7 +2113,7 @@ async function buildWeekTabs() {
 }
 
 function switchBuilderWeek(w) {
-  builderWeek=w; builderDay=null;
+  builderWeek=w; builderDay=DAYS[0];
   buildWeekTabs(); buildDayStrip();
   document.getElementById('builder-exercises-list').innerHTML='';
   exFormCount=0;
@@ -2122,10 +2123,6 @@ async function buildDayStrip() {
   if(!currentClient)return;
   const {data:existing} = await sb.from('monthly_plans').select('day_of_week').eq('client_id',currentClient.id).eq('week_number',builderWeek);
   const hasDays=existing?existing.map(e=>e.day_of_week):[];
-  // Auto-select: keep current if valid, else first with data, else Lunes
-  if(!builderDay || !DAYS.includes(builderDay)) {
-    builderDay = hasDays.length>0 ? hasDays[0] : DAYS[0];
-  }
   const strip=document.getElementById('builder-day-strip');
   if(!strip)return;
   strip.innerHTML=DAYS.map(d=>`<div class="day-chip${d===builderDay?' active':''}${hasDays.includes(d)?' has-workout':''}" onclick="switchBuilderDay('${d}')">${d.substring(0,3)}</div>`).join('');
@@ -3452,6 +3449,15 @@ function addFromLibrary(ex) {
 }
   // ===== AI BUILDER =====
 let aiBuilderWeek = 1;
+let aiBuilderDay = 'Lunes';
+
+function setAiDay(day, el) {
+  aiBuilderDay = day;
+  document.querySelectorAll('#screen-ai-builder .day-chip').forEach(c => {
+    c.classList.remove('active');
+  });
+  el.classList.add('active');
+}
 let aiGeneratedPlan = null;
 let aiLibraryExercises = [];
 let aiAllClients = [];
@@ -3552,18 +3558,20 @@ REGLAS:
 6. rest_seconds_global es el descanso general del día
 7. Infiere muscle_group cuando sea obvio${libCtx}`;
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'llama-3.3-70b-versatile',
         max_tokens: 1200,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: `Convierte a JSON:\n\n${progText}` }]
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Convierte a JSON:\n\n${progText}` }
+        ]
       })
     });
     const data = await resp.json();
-    const raw = data.content.map(b => b.text || '').join('').replace(/```json|```/g,'').trim();
+    const raw = (data.choices?.[0]?.message?.content || data.content?.map(b=>b.text||'').join('') || '').replace(/```json|```/g,'').trim();
     const plan = JSON.parse(raw);
     aiGeneratedPlan = plan;
     aiGeneratedPlan._clientId = clientId;
@@ -4228,96 +4236,68 @@ function renumberForms() {
 
 // ===== COPY DAY MODAL =====
 let copyDaySourcePlanId = null;
+let copyTargetWeek = null, copyTargetDay = null;
 
 async function showCopyDayModal() {
-  // Get current day's plan_id
   const {data:pd} = await sb.from('monthly_plans').select('id').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',builderDay).single();
   if(!pd) { showToast('⚠️ Primero guardá ejercicios en este día'); return; }
   copyDaySourcePlanId = pd.id;
-
-  // Build modal content
   const {data:allClients} = await sb.from('clients').select('id,name').eq('coach_id',currentUser.id).order('name');
-
   const modalHtml = `
     <div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;display:flex;align-items:flex-end;justify-content:center;" id="copy-day-overlay" onclick="if(event.target===this)closeCopyDayModal()">
       <div style="background:var(--white);border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
           <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;">Copiar día</div>
-          <div onclick="closeCopyDayModal()" style="font-size:24px;color:var(--gray4);cursor:pointer;line-height:1;">×</div>
+          <div onclick="closeCopyDayModal()" style="font-size:24px;color:var(--gray4);cursor:pointer;">×</div>
         </div>
         <div style="font-size:12px;color:var(--gray5);margin-bottom:14px;">Copiando: Semana ${builderWeek} · ${builderDay}</div>
-
-        <div class="notes-label" style="margin-bottom:8px;">Destino — Semana</div>
+        <div class="notes-label" style="margin-bottom:8px;">Semana destino</div>
         <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
           ${[1,2,3,4].map(w=>`<button onclick="selectCopyWeek(${w},this)" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid var(--gray2);background:var(--gray1);color:var(--gray5);cursor:pointer;font-family:'DM Sans',sans-serif;" id="copy-w-${w}">Semana ${w}</button>`).join('')}
         </div>
-
-        <div class="notes-label" style="margin-bottom:8px;">Destino — Día</div>
+        <div class="notes-label" style="margin-bottom:8px;">Día destino</div>
         <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
-          ${DAYS.map(d=>`<button onclick="selectCopyDay('${d}',this)" style="padding:7px 13px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid var(--gray2);background:var(--gray1);color:var(--gray5);cursor:pointer;font-family:'DM Sans',sans-serif;" id="copy-d-${d}">${d.substring(0,3)}</button>`).join('')}
+          ${DAYS.map(d=>`<button onclick="selectCopyDay('${d}',this)" style="padding:7px 13px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid var(--gray2);background:var(--gray1);color:var(--gray5);cursor:pointer;font-family:'DM Sans',sans-serif;" id="copy-d-${d.replace('é','e').replace('á','a').replace('ó','o')}">${d.substring(0,3)}</button>`).join('')}
         </div>
-
-        <div class="notes-label" style="margin-bottom:8px;">Destino — Cliente</div>
+        <div class="notes-label" style="margin-bottom:8px;">Cliente destino</div>
         <select id="copy-client-sel" class="form-select" style="margin-bottom:18px;">
           <option value="${currentClient.id}">${currentClient.name} (actual)</option>
           ${(allClients||[]).filter(c=>c.id!==currentClient.id).map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}
         </select>
-
-        <button onclick="executeCopyDay()" class="btn-primary">Copiar aquí</button>
+        <button onclick="executeCopyDay()" class="btn-primary">📋 Copiar aquí</button>
       </div>
     </div>`;
-
   document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
-
-let copyTargetWeek = null, copyTargetDay = null;
 
 function selectCopyWeek(w, btn) {
   copyTargetWeek = w;
   document.querySelectorAll('[id^="copy-w-"]').forEach(b=>{b.style.background='var(--gray1)';b.style.color='var(--gray5)';b.style.borderColor='var(--gray2)';});
   btn.style.background='var(--orange)'; btn.style.color='white'; btn.style.borderColor='var(--orange)';
 }
-
 function selectCopyDay(d, btn) {
   copyTargetDay = d;
   document.querySelectorAll('[id^="copy-d-"]').forEach(b=>{b.style.background='var(--gray1)';b.style.color='var(--gray5)';b.style.borderColor='var(--gray2)';});
   btn.style.background='var(--orange)'; btn.style.color='white'; btn.style.borderColor='var(--orange)';
 }
-
 function closeCopyDayModal() {
   document.getElementById('copy-day-overlay')?.remove();
-  copyTargetWeek = null; copyTargetDay = null;
+  copyTargetWeek=null; copyTargetDay=null;
 }
-
 async function executeCopyDay() {
-  if(!copyTargetWeek) { showToast('⚠️ Seleccioná una semana destino'); return; }
-  if(!copyTargetDay) { showToast('⚠️ Seleccioná un día destino'); return; }
+  if(!copyTargetWeek){showToast('⚠️ Seleccioná semana destino');return;}
+  if(!copyTargetDay){showToast('⚠️ Seleccioná día destino');return;}
   const targetClientId = document.getElementById('copy-client-sel').value;
-
-  // Get source exercises
-  const {data:srcExs} = await sb.from('exercises').select('*').eq('plan_day_id', copyDaySourcePlanId).order('order_index');
-  if(!srcExs||srcExs.length===0) { showToast('⚠️ No hay ejercicios en el día origen'); return; }
-
-  // Delete existing plan_day at destination if exists
+  const {data:srcExs} = await sb.from('exercises').select('*').eq('plan_day_id',copyDaySourcePlanId).order('order_index');
+  if(!srcExs||srcExs.length===0){showToast('⚠️ No hay ejercicios en el día origen');return;}
   const {data:existPd} = await sb.from('monthly_plans').select('id').eq('client_id',targetClientId).eq('week_number',copyTargetWeek).eq('day_of_week',copyTargetDay).single();
-  if(existPd) { await sb.from('exercises').delete().eq('plan_day_id',existPd.id); await sb.from('monthly_plans').delete().eq('id',existPd.id); }
-
-  // Create new plan day
-  const {data:newPd, error} = await sb.from('monthly_plans').insert([{client_id:targetClientId,week_number:copyTargetWeek,day_of_week:copyTargetDay}]).select().single();
-  if(error) { showToast('❌ '+error.message); return; }
-
-  // Copy exercises with fresh order_index
-  const newExs = srcExs.map((e,i)=>({
-    plan_day_id:newPd.id, name:e.name, sets:e.sets, reps_range:e.reps_range,
-    rest_seconds:e.rest_seconds, tag:e.tag, muscle_group:e.muscle_group,
-    video_url:e.video_url, notes:e.notes, superset_group:e.superset_group,
-    circuit_rounds:e.circuit_rounds, circuit_notes:e.circuit_notes, order_index:i
-  }));
+  if(existPd){await sb.from('exercises').delete().eq('plan_day_id',existPd.id);await sb.from('monthly_plans').delete().eq('id',existPd.id);}
+  const {data:newPd,error} = await sb.from('monthly_plans').insert([{client_id:targetClientId,week_number:copyTargetWeek,day_of_week:copyTargetDay}]).select().single();
+  if(error){showToast('❌ '+error.message);return;}
+  const newExs = srcExs.map((e,i)=>({plan_day_id:newPd.id,name:e.name,sets:e.sets,reps_range:e.reps_range,rest_seconds:e.rest_seconds,tag:e.tag,muscle_group:e.muscle_group,video_url:e.video_url,notes:e.notes,superset_group:e.superset_group,circuit_rounds:e.circuit_rounds,circuit_notes:e.circuit_notes,order_index:i}));
   await sb.from('exercises').insert(newExs);
-
   closeCopyDayModal();
-  const destClientName = targetClientId===currentClient.id ? '' : ` → ${document.getElementById('copy-client-sel').options[document.getElementById('copy-client-sel').selectedIndex].text}`;
-  showToast(`✅ Copiado a Semana ${copyTargetWeek} · ${copyTargetDay}${destClientName} 🔥`);
+  showToast(`✅ Copiado a Semana ${copyTargetWeek} · ${copyTargetDay} 🔥`);
   await buildWeekTabs(); await buildDayStrip();
 }
 
