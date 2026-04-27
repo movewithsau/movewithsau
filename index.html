@@ -622,6 +622,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   <div class="bottom-nav">
     <div class="nav-item active" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon">👨🏻‍🔬</div><div class="nav-label">Builder</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('coaching',this)"><div class="nav-icon">🥗</div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('data',this)"><div class="nav-icon">📊</div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon">⚙️</div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
   </div>
@@ -731,6 +732,7 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
   <div class="bottom-nav">
     <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
     <div class="nav-item active" onclick="coachNav('builder',this)"><div class="nav-icon">👨🏻‍🔬</div><div class="nav-label">Builder</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('coaching',this)"><div class="nav-icon">🥗</div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('data',this)"><div class="nav-icon">📊</div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon">⚙️</div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
   </div>
@@ -749,6 +751,7 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
   <div class="bottom-nav">
     <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon">👨🏻‍🔬</div><div class="nav-label">Builder</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('coaching',this)"><div class="nav-icon">🥗</div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('data',this)"><div class="nav-icon">📊</div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
     <div class="nav-item active" onclick="coachNav('settings',this)"><div class="nav-icon">⚙️</div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
   </div>
@@ -772,7 +775,74 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
   <div class="bottom-nav">
     <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon">👨🏻‍🔬</div><div class="nav-label">Builder</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('coaching',this)"><div class="nav-icon">🥗</div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
     <div class="nav-item active" onclick="coachNav('data',this)"><div class="nav-icon">📊</div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon">⚙️</div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
+  </div>
+</div>
+
+<!-- ===== COACH: COACHING (Food Library) ===== -->
+<div class="screen" id="screen-coach-coaching">
+  <div class="topbar">
+    <div class="topbar-logo">Move With Sau</div>
+    <div class="topbar-action" id="coaching-topbar-btn" onclick="handleCoachingTopbarAction()">+ Alimento</div>
+  </div>
+  <div class="scroll-body" style="padding-top:0;">
+    <!-- Tab switcher -->
+    <div style="display:flex;margin:0 -20px 16px;border-bottom:2px solid var(--gray2);background:var(--white);position:sticky;top:0;z-index:10;">
+      <div id="ctab-nutrition" onclick="switchCoachingTab('nutrition')" style="flex:1;text-align:center;padding:14px 8px 12px;font-size:13px;font-weight:700;color:var(--orange);border-bottom:2px solid var(--orange);margin-bottom:-2px;cursor:pointer;">🥗 Nutrición</div>
+      <div id="ctab-exercises" onclick="switchCoachingTab('exercises')" style="flex:1;text-align:center;padding:14px 8px 12px;font-size:13px;font-weight:700;color:var(--gray4);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;">💪 Ejercicios</div>
+    </div>
+
+    <!-- NUTRICIÓN PANEL -->
+    <div id="coaching-panel-nutrition">
+      <div style="margin-bottom:14px;">
+        <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:900;">Librería de Alimentos</div>
+        <div style="font-size:11px;color:var(--gray4);margin-top:3px;">Global — disponible para todos los clientes con NutriFlex</div>
+      </div>
+      <input class="form-input" id="food-lib-search" placeholder="🔍 Buscar alimento..." oninput="renderFoodLibrary()" style="margin-bottom:10px;">
+      <div class="filter-chips" id="food-cat-chips">
+        <div class="filter-chip active" onclick="setFoodCatFilter('',this)">Todos</div>
+        <div class="filter-chip" onclick="setFoodCatFilter('Proteína',this)">Proteína</div>
+        <div class="filter-chip" onclick="setFoodCatFilter('Carbohidrato',this)">Carbs</div>
+        <div class="filter-chip" onclick="setFoodCatFilter('Grasa',this)">Grasas</div>
+        <div class="filter-chip" onclick="setFoodCatFilter('Fruta',this)">Frutas</div>
+        <div class="filter-chip" onclick="setFoodCatFilter('Lácteo',this)">Lácteos</div>
+        <div class="filter-chip" onclick="setFoodCatFilter('Suplemento',this)">Suplementos</div>
+      </div>
+      <div id="food-lib-list"><div class="spinner"></div></div>
+    </div>
+
+    <!-- EJERCICIOS PANEL -->
+    <div id="coaching-panel-exercises" style="display:none;">
+      <div style="margin-bottom:14px;">
+        <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:900;">Biblioteca de Ejercicios</div>
+        <div style="font-size:11px;color:var(--gray4);margin-top:3px;">Todos tus ejercicios guardados</div>
+      </div>
+      <input class="form-input" id="ex-coaching-search" placeholder="🔍 Buscar ejercicio..." oninput="renderExCoaching()" style="margin-bottom:10px;">
+      <div class="filter-chips" id="ex-coaching-chips">
+        <div class="filter-chip active" onclick="setExCoachingFilter('',this)">Todos</div>
+        <div class="filter-chip" onclick="setExCoachingFilter('Pecho',this)">Pecho</div>
+        <div class="filter-chip" onclick="setExCoachingFilter('Espalda',this)">Espalda</div>
+        <div class="filter-chip" onclick="setExCoachingFilter('Hombros',this)">Hombros</div>
+        <div class="filter-chip" onclick="setExCoachingFilter('Bíceps',this)">Bíceps</div>
+        <div class="filter-chip" onclick="setExCoachingFilter('Tríceps',this)">Tríceps</div>
+        <div class="filter-chip" onclick="setExCoachingFilter('Cuádriceps',this)">Cuádriceps</div>
+        <div class="filter-chip" onclick="setExCoachingFilter('Isquiotibiales',this)">Isquio</div>
+        <div class="filter-chip" onclick="setExCoachingFilter('Glúteos',this)">Glúteos</div>
+        <div class="filter-chip" onclick="setExCoachingFilter('Core',this)">Core</div>
+        <div class="filter-chip" onclick="setExCoachingFilter('Cardio',this)">Cardio</div>
+        <div class="filter-chip" onclick="setExCoachingFilter('Movilidad',this)">Movilidad</div>
+        <div class="filter-chip" onclick="setExCoachingFilter('Performance',this)">Performance</div>
+      </div>
+      <div id="ex-coaching-list"><div class="spinner"></div></div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon">👨🏻‍🔬</div><div class="nav-label">Builder</div><div class="nav-dot"></div></div>
+    <div class="nav-item active" onclick="coachNav('coaching',this)"><div class="nav-icon">🥗</div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('data',this)"><div class="nav-icon">📊</div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon">⚙️</div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
   </div>
 </div>
@@ -2349,13 +2419,46 @@ async function deleteClient(clientId,clientName) {
   loadSettings(); loadCoachClients();
 }
 
+let coachingActiveTab = 'nutrition';
+let foodCatFilter = '';
+let exCoachingFilter = '';
+let allExCoaching = [];
+
 function coachNav(tab,el) {
-  document.querySelectorAll('#screen-coach-home .nav-item,#screen-coach-settings .nav-item,#screen-coach-data .nav-item,#screen-ai-builder .nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('#screen-coach-home .nav-item,#screen-coach-settings .nav-item,#screen-coach-data .nav-item,#screen-ai-builder .nav-item,#screen-coach-coaching .nav-item').forEach(n=>n.classList.remove('active'));
   el.classList.add('active');
   if(tab==='clients'){showScreen('screen-coach-home');loadCoachClients();}
   if(tab==='builder'){showScreen('screen-ai-builder');loadAiBuilderScreen();}
+  if(tab==='coaching'){showScreen('screen-coach-coaching');loadFoodLibrary();switchCoachingTab(coachingActiveTab);}
   if(tab==='data'){showScreen('screen-coach-data');loadDataScreen();}
   if(tab==='settings'){showScreen('screen-coach-settings');loadSettings();}
+}
+
+function switchCoachingTab(tab) {
+  coachingActiveTab = tab;
+  const nTab = document.getElementById('ctab-nutrition');
+  const eTab = document.getElementById('ctab-exercises');
+  const nPanel = document.getElementById('coaching-panel-nutrition');
+  const ePanel = document.getElementById('coaching-panel-exercises');
+  const btn = document.getElementById('coaching-topbar-btn');
+  if(tab === 'nutrition') {
+    nTab.style.color='var(--orange)'; nTab.style.borderBottomColor='var(--orange)';
+    eTab.style.color='var(--gray4)'; eTab.style.borderBottomColor='transparent';
+    nPanel.style.display='block'; ePanel.style.display='none';
+    if(btn) btn.textContent='+ Alimento';
+    renderFoodLibrary();
+  } else {
+    eTab.style.color='var(--orange)'; eTab.style.borderBottomColor='var(--orange)';
+    nTab.style.color='var(--gray4)'; nTab.style.borderBottomColor='transparent';
+    ePanel.style.display='block'; nPanel.style.display='none';
+    if(btn) btn.textContent='+ Ejercicio';
+    loadExCoaching();
+  }
+}
+
+function handleCoachingTopbarAction() {
+  if(coachingActiveTab === 'nutrition') showAddFoodModal();
+  else showModal('modal-ex-library');
 }
 function formatClientShortName(fullName) {
   const parts = fullName.trim().split(' ');
@@ -2607,36 +2710,7 @@ VOZ — Principios clave:
 - Si algo se puede decir en un párrafo natural, decilo así. No todo necesita bullets.
 - Confiás en que la persona entiende. No sobreexplicás lo obvio.
 
-TABLA DE ALIMENTOS OFICIALES (usá estos valores exactos cuando la persona mencione estos alimentos):
-Avena 80g: P=11g CHO=54g G=6g 295kcal
-ISO100 Protein 1 scoop: P=25g CHO=2g G=1g 110kcal
-Claras 4: P=14g CHO=1g G=0.2g 68kcal
-Arroz 100g: P=2.7g CHO=28g G=3g 130kcal
-Frijoles 50g: P=7.5g CHO=30g G=0.6g 122kcal
-Banano 1: P=1.3g CHO=24g G=0.4g 105kcal
-Tortiricas Tortillas 1: P=1g CHO=7g G=0.2g 30kcal
-Huevos 1: P=5.5g CHO=0.4g G=4.4g 63kcal
-Pan Blanco Cuadrado 2 tajadas: P=6g CHO=25g G=1g 130kcal
-Miel/Jalea 10g: CHO=8g 33kcal
-Yogurt G Plus 2Pinos 200ml: P=25g CHO=10g G=1.5g 154kcal
-Fresas 200g: P=1.4g CHO=19g G=0.6g 66kcal
-Pechuga de Pollo 280g: P=83g CHO=0g G=21.8g 552kcal
-Plátano Maduro 250g: P=2.8g CHO=87.5g G=0.5g 362kcal
-Aguacate 30g: P=0.6g CHO=4.6g G=4.4g 48kcal
-Papa/Camote 100g: P=2g CHO=20g G=0g 77kcal
-Lentejas 200g: P=18g CHO=24g G=0.8g 230kcal
-Chuleta Ahumada 300g: P=81g CHO=27g G=15g 540kcal
-Carne de Cerdo 100g: P=20g CHO=0g G=7g 143kcal
-Piña 250g: P=1.4g CHO=30g G=0.2g 125kcal
-Carne de Res 250g: P=70g CHO=0g G=17.5g 450kcal
-Manzana 1: P=0.3g CHO=25g G=0.3g 122kcal
-Mantequilla de Maní 10g: P=2.2g CHO=3.1g G=4.7g 56kcal
-Galletas Sweet Well 4: P=2g CHO=1g G=7g 90kcal
-Cereal 40g: P=1.5g CHO=27g G=0g 112kcal
-Tilapia 275g: P=71g CHO=0g G=7g 352kcal
-Spaghetti 180g: P=23g CHO=121g G=3g 655kcal
-Tortilla de Trigo 3: P=18g CHO=114g G=16.5g 660kcal
-Atún en Agua 110g: P=32g CHO=0g G=2g 140kcal`;
+ALIMENTOS: Se te proveerá una lista actualizada de alimentos en cada sesión bajo "TABLA DE ALIMENTOS OFICIALES". Usá EXCLUSIVAMENTE esos valores. No inventes macros.`;
 
 let foodChatHistory = [];
 let nutritionData = null;
@@ -2663,6 +2737,15 @@ async function loadFoodScreen() {
   // Load nutrition data
   const {data:nd} = await sb.from('nutrition_data').select('*').eq('client_id',currentClient.id).maybeSingle();
   nutritionData = nd;
+
+  // Load food library for NutriFlex
+  const {data:foodLib} = await sb.from('food_library').select('*').order('name');
+  if(foodLib && foodLib.length > 0) {
+    window._foodLibraryContext = '\nTABLA DE ALIMENTOS OFICIALES (usá EXCLUSIVAMENTE estos valores, nunca inventes macros):\n' +
+      foodLib.map(f => `${f.name}: P=${f.proteina}g CHO=${f.carbs}g G=${f.grasas}g ${f.kcal}kcal`).join('\n');
+  } else {
+    window._foodLibraryContext = '';
+  }
 
   // Load chat history
   const {data:chatHistory} = await sb.from('nutrition_chats').select('*').eq('client_id',currentClient.id).order('created_at',{ascending:true}).limit(60);
@@ -2812,7 +2895,7 @@ ${currentClient.macros_notas ? `Notas del coach: ${currentClient.macros_notas}` 
         model: 'llama-3.3-70b-versatile',
         max_tokens: 1000,
         messages: [
-          {role: 'system', content: NUTRIFLEX_SYSTEM_PROMPT + '\n\n' + clientContext},
+          {role: 'system', content: NUTRIFLEX_SYSTEM_PROMPT + (window._foodLibraryContext||'') + '\n\n' + clientContext},
           ...foodChatHistory.slice(-20)
         ]
       })
@@ -3891,7 +3974,273 @@ async function signContract(contractId) {
   showToast('✅ Contrato firmado correctamente');
   loadClientContractPanel();
 }
+// ===== FOOD LIBRARY =====
+let allFoodItems = [];
+
+const FOOD_SEED = [
+  {name:'Avena 80g', proteina:11, carbs:54, grasas:6, kcal:295},
+  {name:'ISO100 Protein 1 scoop', proteina:25, carbs:2, grasas:1, kcal:110},
+  {name:'Claras 4', proteina:14, carbs:1, grasas:0.2, kcal:68},
+  {name:'Arroz 100g', proteina:2.7, carbs:28, grasas:3, kcal:130},
+  {name:'Frijoles 50g', proteina:7.5, carbs:30, grasas:0.6, kcal:122},
+  {name:'Banano 1', proteina:1.3, carbs:24, grasas:0.4, kcal:105},
+  {name:'Tortiricas Tortillas 1', proteina:1, carbs:7, grasas:0.2, kcal:30},
+  {name:'Huevos 1', proteina:5.5, carbs:0.4, grasas:4.4, kcal:63},
+  {name:'Pan Blanco Cuadrado 2 tajadas', proteina:6, carbs:25, grasas:1, kcal:130},
+  {name:'Miel/Jalea 10g', proteina:0, carbs:8, grasas:0, kcal:33},
+  {name:'Yogurt G Plus 2Pinos 200ml', proteina:25, carbs:10, grasas:1.5, kcal:154},
+  {name:'Fresas 200g', proteina:1.4, carbs:19, grasas:0.6, kcal:66},
+  {name:'Pechuga de Pollo 280g', proteina:83, carbs:0, grasas:21.8, kcal:552},
+  {name:'Platano Maduro 250g', proteina:2.8, carbs:87.5, grasas:0.5, kcal:362},
+  {name:'Aguacate 30g', proteina:0.6, carbs:4.6, grasas:4.4, kcal:48},
+  {name:'Papa/Camote 100g', proteina:2, carbs:20, grasas:0, kcal:77},
+  {name:'Lentejas 200g', proteina:18, carbs:24, grasas:0.8, kcal:230},
+  {name:'Chuleta Ahumada 300g', proteina:81, carbs:27, grasas:15, kcal:540},
+  {name:'Carne de Cerdo 100g', proteina:20, carbs:0, grasas:7, kcal:143},
+  {name:'Pina 250g', proteina:1.4, carbs:30, grasas:0.2, kcal:125},
+  {name:'Carne de Res 250g', proteina:70, carbs:0, grasas:17.5, kcal:450},
+  {name:'Manzana 1', proteina:0.3, carbs:25, grasas:0.3, kcal:122},
+  {name:'Mantequilla de Mani 10g', proteina:2.2, carbs:3.1, grasas:4.7, kcal:56},
+  {name:'Galletas Sweet Well 4', proteina:2, carbs:1, grasas:7, kcal:90},
+  {name:'Cereal 40g', proteina:1.5, carbs:27, grasas:0, kcal:112},
+  {name:'Tilapia 275g', proteina:71, carbs:0, grasas:7, kcal:352},
+  {name:'Spaghetti 180g', proteina:23, carbs:121, grasas:3, kcal:655},
+  {name:'Tortilla de Trigo 3', proteina:18, carbs:114, grasas:16.5, kcal:660},
+  {name:'Atun en Agua 110g', proteina:32, carbs:0, grasas:2, kcal:140},
+];
+
+async function loadFoodLibrary() {
+  const list = document.getElementById('food-lib-list');
+  if(list) list.innerHTML = '<div class="spinner"></div>';
+  const {data} = await sb.from('food_library').select('*').order('name');
+  if(!data || data.length === 0) {
+    await sb.from('food_library').insert(FOOD_SEED);
+    const {data:seeded} = await sb.from('food_library').select('*').order('name');
+    allFoodItems = seeded || [];
+  } else {
+    allFoodItems = data;
+  }
+  renderFoodLibrary();
+}
+
+function setFoodCatFilter(cat, el) {
+  foodCatFilter = cat;
+  document.querySelectorAll('#food-cat-chips .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderFoodLibrary();
+}
+
+function renderFoodLibrary() {
+  const list = document.getElementById('food-lib-list');
+  if(!list) return;
+  const q = (document.getElementById('food-lib-search')?.value || '').toLowerCase();
+  let filtered = allFoodItems;
+  if(foodCatFilter) filtered = filtered.filter(f => f.categoria === foodCatFilter);
+  if(q) filtered = filtered.filter(f => f.name.toLowerCase().includes(q));
+  if(filtered.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">🥗</div><div class="empty-text">Sin alimentos aún.<br>Toca + Alimento para agregar.</div></div>';
+    return;
+  }
+  const catColor = {'Proteína':'var(--orange)','Carbohidrato':'var(--blue)','Grasa':'var(--yellow)','Fruta':'var(--green)','Lácteo':'var(--purple)','Suplemento':'#e91e63'};
+  list.innerHTML = filtered.map(f => {
+    const col = catColor[f.categoria] || 'var(--gray4)';
+    return `<div class="card fade-up" style="margin-bottom:8px;padding:12px 14px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
+            <span style="font-size:13px;font-weight:700;">${f.name}</span>
+            ${f.categoria?`<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:${col}22;color:${col};">${f.categoria}</span>`:''}
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">
+            <div style="text-align:center;background:var(--orange-light);border-radius:6px;padding:4px 2px;">
+              <div style="font-family:'Playfair Display',serif;font-size:14px;font-weight:700;color:var(--orange);">${f.kcal}</div>
+              <div style="font-size:9px;color:var(--gray4);font-weight:600;">KCAL</div>
+            </div>
+            <div style="text-align:center;background:var(--blue-light);border-radius:6px;padding:4px 2px;">
+              <div style="font-family:'Playfair Display',serif;font-size:14px;font-weight:700;color:var(--blue);">${f.proteina}g</div>
+              <div style="font-size:9px;color:var(--gray4);font-weight:600;">PROT</div>
+            </div>
+            <div style="text-align:center;background:var(--green-light);border-radius:6px;padding:4px 2px;">
+              <div style="font-family:'Playfair Display',serif;font-size:14px;font-weight:700;color:var(--green);">${f.carbs}g</div>
+              <div style="font-size:9px;color:var(--gray4);font-weight:600;">CARBS</div>
+            </div>
+            <div style="text-align:center;background:var(--yellow-light);border-radius:6px;padding:4px 2px;">
+              <div style="font-family:'Playfair Display',serif;font-size:14px;font-weight:700;color:var(--yellow);">${f.grasas}g</div>
+              <div style="font-size:9px;color:var(--gray4);font-weight:600;">GRASAS</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
+          <button onclick="openEditFoodModal(${JSON.stringify(f).replace(/"/g,'&quot;')})" style="background:var(--orange-light);color:var(--orange);border:none;border-radius:6px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✏️</button>
+          <button onclick="deleteFoodItem('${f.id}')" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showAddFoodModal() {
+  document.getElementById('food-modal-title').textContent = 'Nuevo alimento';
+  document.getElementById('food-item-id').value = '';
+  ['fi-name','fi-p','fi-c','fi-g','fi-kcal'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('fi-cat').value = '';
+  showModal('modal-food-item');
+}
+
+function openEditFoodModal(f) {
+  document.getElementById('food-modal-title').textContent = 'Editar alimento';
+  document.getElementById('food-item-id').value = f.id;
+  document.getElementById('fi-name').value = f.name;
+  document.getElementById('fi-p').value = f.proteina;
+  document.getElementById('fi-c').value = f.carbs;
+  document.getElementById('fi-g').value = f.grasas;
+  document.getElementById('fi-kcal').value = f.kcal;
+  document.getElementById('fi-cat').value = f.categoria || '';
+  showModal('modal-food-item');
+}
+
+async function saveFoodItem() {
+  const id = document.getElementById('food-item-id').value;
+  const name = document.getElementById('fi-name').value.trim();
+  const proteina = parseFloat(document.getElementById('fi-p').value) || 0;
+  const carbs = parseFloat(document.getElementById('fi-c').value) || 0;
+  const grasas = parseFloat(document.getElementById('fi-g').value) || 0;
+  const kcal = parseFloat(document.getElementById('fi-kcal').value) || 0;
+  const categoria = document.getElementById('fi-cat').value || null;
+  if(!name) { showToast('Escribe el nombre del alimento'); return; }
+  if(id) {
+    const {error} = await sb.from('food_library').update({name, proteina, carbs, grasas, kcal, categoria}).eq('id', id);
+    if(error) { showToast('Error: '+error.message); return; }
+    showToast('✅ Alimento actualizado');
+  } else {
+    const {error} = await sb.from('food_library').insert([{name, proteina, carbs, grasas, kcal, categoria}]);
+    if(error) { showToast('Error: '+error.message); return; }
+    showToast('✅ Alimento agregado');
+  }
+  closeModal('modal-food-item');
+  loadFoodLibrary();
+}
+
+async function deleteFoodItem(id) {
+  if(!confirm('Eliminar este alimento de la libreria?')) return;
+  await sb.from('food_library').delete().eq('id', id);
+  showToast('🗑️ Alimento eliminado');
+  loadFoodLibrary();
+}
+
+// ===== EXERCISE LIBRARY — COACHING TAB =====
+async function loadExCoaching() {
+  const list = document.getElementById('ex-coaching-list');
+  if(list) list.innerHTML = '<div class="spinner"></div>';
+  const {data} = await sb.from('exercise_library').select('*').eq('coach_id',currentUser.id).order('name');
+  allExCoaching = data || [];
+  renderExCoaching();
+}
+
+function setExCoachingFilter(cat, el) {
+  exCoachingFilter = cat;
+  document.querySelectorAll('#ex-coaching-chips .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderExCoaching();
+}
+
+function renderExCoaching() {
+  const list = document.getElementById('ex-coaching-list');
+  if(!list) return;
+  const q = (document.getElementById('ex-coaching-search')?.value||'').toLowerCase();
+  let items = allExCoaching;
+  if(exCoachingFilter) items = items.filter(e=>e.muscle_group===exCoachingFilter);
+  if(q) items = items.filter(e=>e.name.toLowerCase().includes(q));
+  if(items.length===0){
+    list.innerHTML='<div class="empty-state"><div class="empty-icon">💪</div><div class="empty-text">Sin ejercicios aún.</div></div>';
+    return;
+  }
+  list.innerHTML = items.map(ex=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--gray2);" id="exc-${ex.id}">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:3px;">${ex.name}</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;">
+          <span class="ex-tag ${getTagClass(ex.tag)}" style="font-size:8px;">${ex.tag}</span>
+          ${ex.muscle_group?`<span class="muscle-tag" style="font-size:8px;">${ex.muscle_group}</span>`:''}
+        </div>
+      </div>
+      <div style="display:flex;gap:4px;flex-shrink:0;">
+        ${ex.video_url?`<a href="${ex.video_url}" target="_blank" style="background:var(--blue-light);color:var(--blue);border:none;border-radius:6px;padding:6px 9px;font-size:11px;font-weight:700;text-decoration:none;">▶</a>`:''}
+        <button onclick="editExCoaching('${ex.id}')" style="background:var(--orange-light);color:var(--orange);border:none;border-radius:6px;padding:6px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✏️</button>
+        <button onclick="deleteExCoaching('${ex.id}')" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:6px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function editExCoaching(id) {
+  const ex = allExCoaching.find(e=>e.id===id);
+  if(!ex) return;
+  document.getElementById('exc-'+id).innerHTML = `
+    <div style="flex:1;min-width:0;">
+      <input id="exc-n-${id}" value="${ex.name}" style="width:100%;padding:7px 10px;border:1.5px solid var(--orange);border-radius:6px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:5px;">
+      <div style="display:flex;gap:5px;margin-bottom:5px;">
+        <select id="exc-t-${id}" style="flex:1;padding:6px 8px;border:1.5px solid var(--gray2);border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;">
+          <option value="Peso Libre"${ex.tag==='Peso Libre'?' selected':''}>Peso Libre</option>
+          <option value="Máquina"${ex.tag==='Máquina'?' selected':''}>Máquina</option>
+          <option value="Peso Corporal"${ex.tag==='Peso Corporal'?' selected':''}>Peso Corporal</option>
+        </select>
+        <input id="exc-m-${id}" value="${ex.muscle_group||''}" placeholder="Músculo" style="flex:1;padding:6px 8px;border:1.5px solid var(--gray2);border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;">
+      </div>
+      <input id="exc-v-${id}" value="${ex.video_url||''}" placeholder="URL video" style="width:100%;padding:6px 8px;border:1.5px solid var(--gray2);border-radius:6px;font-size:11px;font-family:'DM Sans',sans-serif;outline:none;color:var(--orange);">
+    </div>
+    <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px;align-self:flex-start;margin-top:4px;">
+      <button onclick="saveExCoaching('${id}')" style="background:var(--green);color:white;border:none;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✓</button>
+      <button onclick="renderExCoaching()" style="background:var(--gray2);color:var(--gray5);border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>
+    </div>`;
+}
+
+async function saveExCoaching(id) {
+  const name = document.getElementById('exc-n-'+id)?.value.trim();
+  const tag = document.getElementById('exc-t-'+id)?.value;
+  const muscle = document.getElementById('exc-m-'+id)?.value.trim();
+  const video = document.getElementById('exc-v-'+id)?.value.trim();
+  if(!name){ showToast('⚠️ El nombre no puede estar vacío'); return; }
+  const {error} = await sb.from('exercise_library').update({name,tag,muscle_group:muscle||null,video_url:video||null}).eq('id',id);
+  if(error){ showToast('❌ '+error.message); return; }
+  showToast('✅ Ejercicio actualizado');
+  loadExCoaching();
+}
+
+async function deleteExCoaching(id) {
+  if(!confirm('¿Eliminar este ejercicio de la biblioteca?')) return;
+  await sb.from('exercise_library').delete().eq('id',id);
+  showToast('🗑️ Eliminado');
+  loadExCoaching();
+}
 
 </script>
+
+<!-- Add/Edit Food Modal -->
+<div class="modal-overlay" id="modal-food-item">
+  <div class="modal">
+    <span class="modal-close" onclick="closeModal('modal-food-item')">×</span>
+    <div class="modal-title" id="food-modal-title">Nuevo alimento</div>
+    <input type="hidden" id="food-item-id">
+    <div class="form-group"><label class="form-label">Nombre + porción</label><input class="form-input" id="fi-name" placeholder="ej: Avena 80g"></div>
+    <div class="form-group"><label class="form-label">Categoría</label>
+      <select class="form-select" id="fi-cat">
+        <option value="">Sin categoría</option>
+        <option value="Proteína">Proteína</option>
+        <option value="Carbohidrato">Carbohidrato</option>
+        <option value="Grasa">Grasa</option>
+        <option value="Fruta">Fruta</option>
+        <option value="Lácteo">Lácteo</option>
+        <option value="Suplemento">Suplemento</option>
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <div><label class="form-label">Proteína (g)</label><input class="form-input" type="number" id="fi-p" placeholder="0" step="0.1"></div>
+      <div><label class="form-label">Carbs (g)</label><input class="form-input" type="number" id="fi-c" placeholder="0" step="0.1"></div>
+      <div><label class="form-label">Grasas (g)</label><input class="form-input" type="number" id="fi-g" placeholder="0" step="0.1"></div>
+      <div><label class="form-label">Calorías (kcal)</label><input class="form-input" type="number" id="fi-kcal" placeholder="0"></div>
+    </div>
+    <button class="btn-primary" onclick="saveFoodItem()">Guardar</button>
+  </div>
+</div>
 </body>
 </html>
