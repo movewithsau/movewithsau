@@ -2705,9 +2705,12 @@ function renderFoodScreen() {
 
   const body = document.getElementById('food-screen-body');
   body.innerHTML = `
-    <div style="margin-bottom:14px;">
-      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Move With Sau</div>
-      <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;">NutriFlex 🥗</div>
+    <div style="margin-bottom:14px;display:flex;align-items:flex-start;justify-content:space-between;">
+      <div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Move With Sau</div>
+        <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;">NutriFlex 🥗</div>
+      </div>
+      <button onclick="clearFoodChat()" style="background:none;border:none;color:var(--gray4);font-size:11px;font-weight:600;cursor:pointer;padding:4px 8px;font-family:'DM Sans',sans-serif;margin-top:6px;">🗑 Limpiar chat</button>
     </div>
     ${hasInBody||hasMacros ? `
     <div class="card" style="margin-bottom:10px;">
@@ -2774,7 +2777,16 @@ async function sendFoodMessage() {
 
   // Build context string from client data
   const nd = nutritionData;
-  const clientContext = `
+  const mealDistBlock = currentClient.macros_distribucion ? `
+=== DISTRIBUCIÓN EXACTA DE MACROS POR COMIDA ===
+REGLA CRÍTICA: Cuando el cliente pregunte por una comida específica (ej: "comida 4", "qué como en el desayuno"), usá EXCLUSIVAMENTE los números que están acá abajo. NUNCA inventes ni redondees macros. Copiá los valores exactos tal como aparecen.
+
+${currentClient.macros_distribucion}
+
+=== FIN DISTRIBUCIÓN ===` : '';
+
+  const clientContext = `${mealDistBlock}
+
 DATOS DEL CLIENTE:
 Nombre: ${currentClient.name}
 ${nd?.weight ? `Peso: ${nd.weight}kg` : ''}
@@ -2783,12 +2795,11 @@ ${nd?.muscle_mass ? `Masa muscular: ${nd.muscle_mass}kg` : ''}
 ${nd?.body_fat_mass ? `Masa grasa: ${nd.body_fat_mass}kg` : ''}
 ${nd?.bmr ? `Metabolismo basal (BMR): ${nd.bmr} kcal` : ''}
 ${nd?.visceral_fat ? `Grasa visceral: ${nd.visceral_fat}` : ''}
-${currentClient.macros_calorias ? `Calorías asignadas: ${currentClient.macros_calorias} kcal` : ''}
-${currentClient.macros_proteina ? `Proteína asignada: ${currentClient.macros_proteina}g` : ''}
-${currentClient.macros_carbs ? `Carbohidratos asignados: ${currentClient.macros_carbs}g` : ''}
-${currentClient.macros_grasas ? `Grasas asignadas: ${currentClient.macros_grasas}g` : ''}
-${currentClient.macros_notas ? `Notas del coach: ${currentClient.macros_notas}` : ''}
-${currentClient.macros_distribucion ? `\nDISTRIBUCIÓN DE MACROS POR COMIDA:\n${currentClient.macros_distribucion}` : ''}`.trim();
+${currentClient.macros_calorias ? `Calorías totales del día: ${currentClient.macros_calorias} kcal` : ''}
+${currentClient.macros_proteina ? `Proteína total del día: ${currentClient.macros_proteina}g` : ''}
+${currentClient.macros_carbs ? `Carbohidratos totales del día: ${currentClient.macros_carbs}g` : ''}
+${currentClient.macros_grasas ? `Grasas totales del día: ${currentClient.macros_grasas}g` : ''}
+${currentClient.macros_notas ? `Notas del coach: ${currentClient.macros_notas}` : ''}`.trim();
 
   try {
     const response = await fetch('/api/chat', {
@@ -2822,6 +2833,19 @@ ${currentClient.macros_distribucion ? `\nDISTRIBUCIÓN DE MACROS POR COMIDA:\n${
     document.getElementById(typingId)?.remove();
     showToast('❌ Error conectando con NutriFlex');
   }
+}
+
+async function clearFoodChat() {
+  if(!currentClient) return;
+  if(!confirm('¿Limpiar el historial del chat de NutriFlex?')) return;
+  await sb.from('nutrition_chats').delete().eq('client_id', currentClient.id);
+  foodChatHistory = [];
+  const msgs = document.getElementById('food-chat-messages');
+  if(msgs) msgs.innerHTML = `<div style="text-align:center;padding:24px 16px;color:var(--gray4);">
+    <div style="font-size:32px;margin-bottom:8px;">🥗</div>
+    <div style="font-size:13px;line-height:1.6;">Chat limpiado. Preguntame lo que sea sobre tu alimentación.</div>
+  </div>`;
+  showToast('✅ Chat limpiado');
 }
 
 // ===== COACH: FOOD ACCESS & NUTRITION DATA =====
