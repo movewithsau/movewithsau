@@ -1011,7 +1011,7 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
 <div class="modal-overlay" id="modal-ex-library">
   <div class="modal">
     <span class="modal-close" onclick="closeModal('modal-ex-library')">×</span>
-    <div class="modal-title">Biblioteca de ejercicios</div>
+    <div class="modal-title" id="library-modal-title">Biblioteca de ejercicios</div>
     <input class="form-input" id="library-search" placeholder="Buscar ejercicio..." oninput="filterLibrary()" style="margin-bottom:8px;">
     <div class="filter-chips" id="library-filter-chips">
       <div class="filter-chip active" onclick="setLibraryFilter('',this)">Todos</div>
@@ -2238,6 +2238,7 @@ function addExerciseForm(prefill=null) {
         <button onclick="moveExForm('ex-form-${id}',-1)" title="Subir" style="background:var(--gray1);color:var(--gray5);border:1.5px solid var(--gray2);border-radius:6px;padding:4px 8px;font-size:13px;cursor:pointer;line-height:1;">↑</button>
         <button onclick="moveExForm('ex-form-${id}',1)" title="Bajar" style="background:var(--gray1);color:var(--gray5);border:1.5px solid var(--gray2);border-radius:6px;padding:4px 8px;font-size:13px;cursor:pointer;line-height:1;">↓</button>
         <button onclick="saveOneToLibrary(${id})" style="background:var(--green-light);color:var(--green);border:none;border-radius:6px;padding:5px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">📚 Guardar</button>
+        <button onclick="openLibrarySwap(${id})" style="background:var(--blue-light);color:var(--blue);border:1.5px solid var(--blue);border-radius:6px;padding:5px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">🔄 Cambiar</button>
         <button class="remove-btn" onclick="document.getElementById('ex-form-${id}').remove();renumberForms()">✕</button>
       </div>
     </div>
@@ -3466,10 +3467,26 @@ async function saveOneToLibrary(id) {
   showToast('✅ Guardado en biblioteca');
 }
 
+let librarySwapTargetId = null; // null = add mode, number = swap mode for that form id
+
 async function openLibrary() {
+  librarySwapTargetId = null;
   libraryFilterCategory = '';
   document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
   document.querySelector('.filter-chip').classList.add('active');
+  const title = document.getElementById('library-modal-title');
+  if(title) title.textContent = '📚 Biblioteca';
+  showModal('modal-ex-library');
+  await loadLibrary();
+}
+
+async function openLibrarySwap(formId) {
+  librarySwapTargetId = formId;
+  libraryFilterCategory = '';
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  document.querySelector('.filter-chip').classList.add('active');
+  const title = document.getElementById('library-modal-title');
+  if(title) title.textContent = '🔄 Cambiar ejercicio';
   showModal('modal-ex-library');
   await loadLibrary();
 }
@@ -3504,7 +3521,7 @@ function renderLibrary() {
         </div>
       </div>
       <div style="display:flex;gap:4px;flex-shrink:0;">
-        <button onclick="addFromLibrary(${JSON.stringify(ex).replace(/"/g,'&quot;')})" style="background:var(--orange);color:white;border:none;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Usar</button>
+        <button onclick="librarySwapTargetId!==null?swapExFromLibrary(librarySwapTargetId,${JSON.stringify(ex).replace(/"/g,'&quot;')}):addFromLibrary(${JSON.stringify(ex).replace(/"/g,'&quot;')})" style="background:var(--orange);color:white;border:none;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;" id="lib-use-${ex.id}">${librarySwapTargetId!==null?'🔄 Cambiar':'+ Usar'}</button>
         <button onclick="editLibraryEx('${ex.id}','${ex.name}','${ex.tag}','${ex.muscle_group||''}','${ex.video_url||''}')" style="background:var(--orange-light);color:var(--orange);border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✏️</button>
         <button onclick="deleteLibraryEx('${ex.id}')" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>
       </div>
@@ -3556,6 +3573,33 @@ async function deleteLibraryEx(id) {
 function addFromLibrary(ex) {
   addExerciseForm({name:ex.name,tag:ex.tag,muscle_group:ex.muscle_group,sets:'',reps_range:'',rest_seconds:60,video_url:ex.video_url||'',notes:'',superset_group:null});
   closeModal('modal-ex-library');
+}
+
+function swapExFromLibrary(formId, ex) {
+  // Replace only name, tag, muscle, video in the existing form — keep sets/reps/rest/notes intact
+  const nameEl = document.getElementById('bn-'+formId);
+  const tagEl = document.getElementById('bt-'+formId);
+  const muscleEl = document.getElementById('bm-'+formId);
+  const videoEl = document.getElementById('bv-'+formId);
+  if(nameEl) nameEl.value = ex.name;
+  if(tagEl) tagEl.value = ex.tag || 'Peso Libre';
+  if(muscleEl) {
+    if(MUSCLES.includes(ex.muscle_group)) {
+      muscleEl.value = ex.muscle_group;
+      const customDiv = document.getElementById('bmc-'+formId);
+      if(customDiv) customDiv.style.display = 'none';
+    } else if(ex.muscle_group) {
+      muscleEl.value = 'custom';
+      const customDiv = document.getElementById('bmc-'+formId);
+      const customInput = document.getElementById('bmc-input-'+formId);
+      if(customDiv) customDiv.style.display = 'block';
+      if(customInput) customInput.value = ex.muscle_group;
+    }
+  }
+  if(videoEl) videoEl.value = ex.video_url || '';
+  closeModal('modal-ex-library');
+  showToast('✅ Ejercicio cambiado');
+  librarySwapTargetId = null;
 }
   // ===== AI BUILDER =====
 let aiBuilderWeek = 1;
