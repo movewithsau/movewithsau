@@ -668,6 +668,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <button class="add-ex-btn" style="flex:1;min-width:120px;margin-top:0;" onclick="addExerciseForm()">+ Ejercicio</button>
       <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:var(--orange-light);border-style:solid;" onclick="openLibrary()">📚 Biblioteca</button>
       <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:var(--blue-light);border-color:var(--blue);color:var(--blue);border-style:solid;" onclick="showCopyDayModal()">📋 Copiar día</button>
+      <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:#fff0f0;border-color:#e53e3e;color:#e53e3e;border-style:solid;" onclick="deleteBuilderDay()">🗑️ Borrar día</button>
     </div>
     <button class="btn-primary" style="margin-top:10px;" onclick="savePlanDay()">Guardar día</button>
   </div>
@@ -704,6 +705,18 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <div class="ai-week-chip" onclick="setAiWeek(4,this)">Semana 4</div>
     </div>
     <div class="section-header">
+      <div class="section-title">Día</div>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none;">
+      <div class="day-chip active" onclick="setAiDay('Lunes',this)">Lun</div>
+      <div class="day-chip" onclick="setAiDay('Martes',this)">Mar</div>
+      <div class="day-chip" onclick="setAiDay('Miércoles',this)">Mié</div>
+      <div class="day-chip" onclick="setAiDay('Jueves',this)">Jue</div>
+      <div class="day-chip" onclick="setAiDay('Viernes',this)">Vie</div>
+      <div class="day-chip" onclick="setAiDay('Sábado',this)">Sáb</div>
+      <div class="day-chip" onclick="setAiDay('Domingo',this)">Dom</div>
+    </div>
+    <div class="section-header">
       <div class="section-title">Describe el programa</div>
     </div>
     <textarea class="ai-builder-input" id="ai-prog-input" placeholder="Escríbelo natural, el agente entiende todo:
@@ -716,18 +729,6 @@ Jumping jack 25
 ejercicio individual
 press plano mancuerna 3 sets, 8-10 reps"></textarea>
     <button class="btn-primary" id="ai-gen-btn" onclick="aiGeneratePlan()" style="margin-top:10px;">👨🏻‍🔬 Generar con IA</button>
-    <div class="section-header" style="margin-top:14px;">
-  <div class="section-title">Día</div>
-</div>
-<div style="display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none;">
-  <div class="day-chip active" onclick="setAiDay('Lunes',this)">Lun</div>
-  <div class="day-chip" onclick="setAiDay('Martes',this)">Mar</div>
-  <div class="day-chip" onclick="setAiDay('Miércoles',this)">Mié</div>
-  <div class="day-chip" onclick="setAiDay('Jueves',this)">Jue</div>
-  <div class="day-chip" onclick="setAiDay('Viernes',this)">Vie</div>
-  <div class="day-chip" onclick="setAiDay('Sábado',this)">Sáb</div>
-  <div class="day-chip" onclick="setAiDay('Domingo',this)">Dom</div>
-</div>
 <div id="ai-result-area" style="margin-top:16px;"></div>
   </div>
   <div class="bottom-nav">
@@ -1993,6 +1994,9 @@ async function loadWeekTrainedCount(clientId) {
   }
 }
 
+let planOverviewSelectedWeek = null;
+let planOverviewAllPlans = null;
+
 async function loadCoachClientDetail(clientId) {
   const {data:plans} = await sb.from('monthly_plans').select('*').eq('client_id',clientId).order('week_number');
   const container=document.getElementById('coach-plan-overview');
@@ -2000,27 +2004,48 @@ async function loadCoachClientDetail(clientId) {
 
   const weeks={};
   plans.forEach(p=>{if(!weeks[p.week_number])weeks[p.week_number]=[];weeks[p.week_number].push(p);});
-
-  // Sort days within each week by actual day order (Lunes=0 ... Domingo=6)
   Object.values(weeks).forEach(days=>{
     days.sort((a,b)=>DAYS.indexOf(a.day_of_week)-DAYS.indexOf(b.day_of_week));
   });
 
-  container.innerHTML=Object.entries(weeks).map(([w,days])=>`
-    <div class="day-plan-card">
-      <div class="day-plan-header">
-        <div class="day-plan-name">Semana ${w}</div>
-        <button onclick="openBuilderForWeek(${w})" style="background:var(--orange-light);color:var(--orange);border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Editar</button>
-      </div>
+  planOverviewAllPlans = weeks;
+  const weekNums = Object.keys(weeks).map(Number).sort();
+  if(!planOverviewSelectedWeek || !weeks[planOverviewSelectedWeek]) planOverviewSelectedWeek = weekNums[0];
+
+  renderPlanOverview();
+}
+
+function renderPlanOverview() {
+  const container = document.getElementById('coach-plan-overview');
+  const weeks = planOverviewAllPlans;
+  const weekNums = Object.keys(weeks).map(Number).sort();
+  const selectedDays = weeks[planOverviewSelectedWeek] || [];
+
+  container.innerHTML = `
+    <!-- Week selector chips -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+      ${weekNums.map(w=>`
+        <button onclick="selectPlanOverviewWeek(${w})" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid ${w===planOverviewSelectedWeek?'var(--orange)':'var(--gray2)'};background:${w===planOverviewSelectedWeek?'var(--orange)':'var(--gray1)'};color:${w===planOverviewSelectedWeek?'white':'var(--gray5)'};cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;">
+          Semana ${w}
+        </button>`).join('')}
+      <button onclick="openBuilderForWeek(${planOverviewSelectedWeek})" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid var(--orange);background:var(--orange-light);color:var(--orange);cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:auto;">Editar</button>
+    </div>
+    <!-- Days of selected week -->
+    <div class="day-plan-card" style="margin-bottom:0;">
       <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;">
-        ${days.map(d=>`<span class="plan-day-chip" style="font-size:11px;font-weight:600;background:var(--orange-light);color:var(--orange);padding:3px 9px;border-radius:10px;cursor:pointer;" onclick="togglePlanDay('${d.id}',this)">${d.day_of_week.substring(0,3)} ›</span>`).join('')}
+        ${selectedDays.map(d=>`<span class="plan-day-chip" style="font-size:11px;font-weight:600;background:var(--orange-light);color:var(--orange);padding:3px 9px;border-radius:10px;cursor:pointer;" onclick="togglePlanDay('${d.id}',this)">${d.day_of_week.substring(0,3)} ›</span>`).join('')}
       </div>
-      ${days.map(d=>`
+      ${selectedDays.map(d=>`
         <div id="day-exs-container-${d.id}" style="display:none;">
           <div style="font-size:11px;font-weight:700;color:var(--gray5);margin-bottom:4px;padding-top:4px;border-top:1px solid var(--gray2);">${d.day_of_week}</div>
           <div id="coach-day-exs-${d.id}"><div class="spinner" style="width:14px;height:14px;margin:6px auto;"></div></div>
         </div>`).join('')}
-    </div>`).join('');
+    </div>`;
+}
+
+function selectPlanOverviewWeek(w) {
+  planOverviewSelectedWeek = w;
+  renderPlanOverview();
 }
 
 async function togglePlanDay(planDayId, chipEl) {
@@ -2585,8 +2610,25 @@ async function loadClientLogs() {
   const container = document.getElementById('coach-client-logs');
   container.innerHTML = '<div class="spinner"></div>';
   if(!currentClient) return;
-  const {data:logs} = await sb.from('exercise_logs').select('*, exercises(name, reps_range, sets)').eq('client_id', currentClient.id).order('logged_at', {ascending: false}).limit(200);
+  const {data:logs} = await sb.from('exercise_logs').select('*, exercises(name, reps_range, sets)').eq('client_id', currentClient.id).order('logged_at', {ascending: false}).limit(400);
   const {data:ratings} = await sb.from('workout_ratings').select('*').eq('client_id', currentClient.id).order('date',{ascending:false}).limit(60);
+
+  // Build prevSessionMap: for each exercise, get sets from the session BEFORE the most recent one
+  const prevSessionMap = {};
+  if(logs) {
+    const byEx = {};
+    logs.forEach(l => {
+      const name = l.exercises?.name || 'Ejercicio';
+      if(!byEx[name]) byEx[name] = {};
+      const date = l.logged_at.split('T')[0];
+      if(!byEx[name][date]) byEx[name][date] = [];
+      byEx[name][date].push(l);
+    });
+    Object.entries(byEx).forEach(([name, dateMap]) => {
+      const dates = Object.keys(dateMap).sort((a,b)=>b.localeCompare(a));
+      prevSessionMap[name] = dates.length >= 2 ? dateMap[dates[1]].sort((a,b)=>a.set_number-b.set_number) : null;
+    });
+  }
 
   if((!logs || logs.length === 0) && (!ratings||ratings.length===0)) {
     container.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">Sin registros aún.</div></div>';
@@ -2655,9 +2697,15 @@ Object.entries(groupOrder).forEach(([date, keys]) => {
             <span style="font-size:10px;font-weight:700;color:var(--orange);">${dayRating==='😎'?'Estuvo bien':dayRating==='🥵'?'Estuvo fuerte':'Estuvo duro'}</span>
           </div>` : '<div style="font-size:10px;color:var(--gray3);">Sin calificación</div>'}
         </div>
-        ${exercises.map(g => `
+        ${exercises.map(g => {
+          const prev = prevSessionMap[g.exName];
+          return `
           <div class="card" style="margin-bottom:8px;cursor:default;">
-            <div style="font-size:13px;font-weight:700;margin-bottom:8px;">${g.exName}</div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:4px;">${g.exName}</div>
+            ${prev ? `<div style="font-size:10px;color:var(--gray4);margin-bottom:8px;padding:4px 8px;background:var(--gray1);border-radius:6px;">
+              <span style="font-weight:600;color:var(--gray5);">Sesión anterior:</span>
+              ${prev.map(p=>`Set ${p.set_number}: ${p.weight?p.weight+(p.weight_unit||'kg'):'—'} · ${p.reps_done?p.reps_done+' reps':'—'}`).join(' &nbsp;|&nbsp; ')}
+            </div>` : ''}
             ${g.sets.sort((a,b)=>a.set_number-b.set_number).map(s => `
               <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--gray2);font-size:12px;">
                 <span style="color:var(--gray4);font-family:'DM Mono',monospace;width:42px;">Set ${s.set_number}</span>
@@ -2666,7 +2714,8 @@ Object.entries(groupOrder).forEach(([date, keys]) => {
                 <span style="font-weight:600;">${s.reps_done ? s.reps_done+' reps' : '—'}</span>
                 ${s.difficulty ? `<span style="margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:${s.difficulty==='facil'?'var(--green-light)':'var(--red-light)'};color:${s.difficulty==='facil'?'var(--green)':'var(--red)'};">${s.difficulty==='facil'?'Fácil 😊':'Difícil 🔥'}</span>` : ''}
               </div>`).join('')}
-          </div>`).join('')}
+          </div>`;
+        }).join('')}
       </div>`;
   }).join('');
 
@@ -4232,6 +4281,19 @@ function renumberForms() {
     const numEl = f.querySelector('.builder-ex-num');
     if(numEl) numEl.textContent = 'Ejercicio ' + (idx + 1);
   });
+}
+
+// ===== DELETE DAY =====
+async function deleteBuilderDay() {
+  if(!confirm(`¿Borrar todos los ejercicios del ${builderDay} Semana ${builderWeek}? Esto no se puede deshacer.`)) return;
+  const {data:pd} = await sb.from('monthly_plans').select('id').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',builderDay).single();
+  if(!pd) { showToast('⚠️ Este día no tiene ejercicios guardados'); return; }
+  await sb.from('exercises').delete().eq('plan_day_id', pd.id);
+  await sb.from('monthly_plans').delete().eq('id', pd.id);
+  document.getElementById('builder-exercises-list').innerHTML = '';
+  showToast('🗑️ Día borrado');
+  await buildWeekTabs();
+  await buildDayStrip();
 }
 
 // ===== COPY DAY MODAL =====
