@@ -498,22 +498,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
         <button class="btn-primary" style="padding:11px;" onclick="saveGoal()">Guardar meta</button>
       </div>
     </div>
-    <!-- 2. Rating del día -->
-    <div class="card" style="margin-bottom:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-        <div class="notes-label" style="margin-bottom:0;">¿Cómo estuvo tu entreno hoy?</div>
-        <div style="font-size:10px;color:var(--orange);font-weight:700;letter-spacing:0.08em;">CALIFICALO →</div>
-      </div>
-      <div id="c-rating-display">
-        <div style="display:flex;gap:10px;justify-content:center;">
-          <button onclick="rateWorkout('😎')" id="rate-cool" style="font-size:28px;padding:10px 16px;border-radius:12px;border:2px solid var(--gray2);background:var(--gray1);cursor:pointer;transition:all 0.15s;">😎</button>
-          <button onclick="rateWorkout('🥵')" id="rate-hot" style="font-size:28px;padding:10px 16px;border-radius:12px;border:2px solid var(--gray2);background:var(--gray1);cursor:pointer;transition:all 0.15s;">🥵</button>
-          <button onclick="rateWorkout('😵‍💫')" id="rate-dead" style="font-size:28px;padding:10px 16px;border-radius:12px;border:2px solid var(--gray2);background:var(--gray1);cursor:pointer;transition:all 0.15s;">😵‍💫</button>
-        </div>
-        <div id="c-rating-saved" style="text-align:center;margin-top:8px;font-size:12px;color:var(--gray4);"></div>
-      </div>
-    </div>
-    <!-- 3. Tiempo total entrenado -->
+    <!-- 2. Tiempo total entrenado -->
     <div class="card" style="margin-bottom:16px;text-align:center;">
       <div class="notes-label" style="margin-bottom:4px;">Tiempo total entrenado</div>
       <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:var(--orange);" id="c-total-time">0h 0min</div>
@@ -1751,6 +1736,61 @@ async function handleFinishWorkout() {
   }
   loadClientExercises();
   updateStrongFlowBtn();
+  // Show rating modal after a short delay for toast to show
+  setTimeout(openRatingModal, 800);
+}
+
+function openRatingModal() {
+  const modal = document.getElementById('modal-workout-rating');
+  const sheet = document.getElementById('rating-modal-sheet');
+  modal.style.display = 'flex';
+  // Reset state
+  ['rate-btn-cool','rate-btn-hot','rate-btn-dead'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) { el.style.border='2.5px solid var(--gray2)'; el.style.background='var(--gray1)'; }
+  });
+  document.getElementById('rating-modal-saved').textContent = '';
+  document.getElementById('rating-close-btn').style.display = 'none';
+  // Check if already rated today
+  const today = new Date().toISOString().split('T')[0];
+  sb.from('workout_ratings').select('rating').eq('client_id',currentClient.id).eq('date',today).maybeSingle()
+    .then(({data}) => { if(data?.rating) applyRatingModalUI(data.rating, false); });
+  // Animate in
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => { sheet.style.transform = 'translateY(0)'; });
+  });
+}
+
+function closeRatingModal(e) {
+  if(e && e.target !== document.getElementById('modal-workout-rating')) return;
+  closeRatingModalBtn();
+}
+
+function closeRatingModalBtn() {
+  const modal = document.getElementById('modal-workout-rating');
+  const sheet = document.getElementById('rating-modal-sheet');
+  sheet.style.transform = 'translateY(100%)';
+  setTimeout(() => { modal.style.display = 'none'; }, 320);
+}
+
+async function rateWorkoutModal(emoji) {
+  const today = new Date().toISOString().split('T')[0];
+  await sb.from('workout_ratings').upsert([{client_id:currentClient.id,date:today,rating:emoji}],{onConflict:'client_id,date'});
+  applyRatingModalUI(emoji, true);
+}
+
+function applyRatingModalUI(emoji, showSaved) {
+  const map = {'😎':'rate-btn-cool','🥵':'rate-btn-hot','😵‍💫':'rate-btn-dead'};
+  ['rate-btn-cool','rate-btn-hot','rate-btn-dead'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) { el.style.border='2.5px solid var(--gray2)'; el.style.background='var(--gray1)'; }
+  });
+  const el = document.getElementById(map[emoji]);
+  if(el) { el.style.border='2.5px solid var(--orange)'; el.style.background='var(--orange-light)'; el.style.transform='scale(1.08)'; setTimeout(()=>{el.style.transform='scale(1)';},200); }
+  const savedEl = document.getElementById('rating-modal-saved');
+  if(savedEl) savedEl.textContent = showSaved ? '✅ ¡Guardado! Podés cambiarlo si querés.' : '';
+  const closeBtn = document.getElementById('rating-close-btn');
+  if(closeBtn) closeBtn.style.display = 'block';
 }
 
 function openExDetail(ex) {
@@ -4561,6 +4601,33 @@ async function executeCopyDay() {
       <div><label class="form-label">Calorías (kcal)</label><input class="form-input" type="number" id="fi-kcal" placeholder="0"></div>
     </div>
     <button class="btn-primary" onclick="saveFoodItem()">Guardar</button>
+  </div>
+</div>
+
+<!-- ===== WORKOUT RATING MODAL ===== -->
+<div id="modal-workout-rating" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;" onclick="closeRatingModal(event)">
+  <div style="background:var(--white);border-radius:24px 24px 0 0;padding:28px 24px 40px;width:100%;max-width:480px;transform:translateY(100%);transition:transform 0.35s cubic-bezier(.32,1.2,.48,1);" id="rating-modal-sheet">
+    <div style="width:36px;height:4px;background:var(--gray2);border-radius:2px;margin:0 auto 22px;"></div>
+    <div style="text-align:center;margin-bottom:6px;font-size:22px;">🏁</div>
+    <div style="text-align:center;font-family:'Playfair Display',serif;font-size:22px;font-weight:900;color:var(--black);margin-bottom:4px;">¡Entreno finalizado!</div>
+    <div style="text-align:center;font-size:13px;color:var(--gray5);margin-bottom:24px;">¿Cómo te fue hoy?</div>
+    <div style="display:flex;gap:12px;justify-content:center;margin-bottom:20px;">
+      <button onclick="rateWorkoutModal('😎')" id="rate-btn-cool" style="font-size:36px;padding:14px 20px;border-radius:16px;border:2.5px solid var(--gray2);background:var(--gray1);cursor:pointer;transition:all 0.18s;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        😎
+        <span style="font-size:10px;font-weight:700;color:var(--gray4);letter-spacing:0.04em;">BIEN</span>
+      </button>
+      <button onclick="rateWorkoutModal('🥵')" id="rate-btn-hot" style="font-size:36px;padding:14px 20px;border-radius:16px;border:2.5px solid var(--gray2);background:var(--gray1);cursor:pointer;transition:all 0.18s;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        🥵
+        <span style="font-size:10px;font-weight:700;color:var(--gray4);letter-spacing:0.04em;">FUERTE</span>
+      </button>
+      <button onclick="rateWorkoutModal('😵‍💫')" id="rate-btn-dead" style="font-size:36px;padding:14px 20px;border-radius:16px;border:2.5px solid var(--gray2);background:var(--gray1);cursor:pointer;transition:all 0.18s;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        😵‍💫
+        <span style="font-size:10px;font-weight:700;color:var(--gray4);letter-spacing:0.04em;">DURO</span>
+      </button>
+    </div>
+    <div id="rating-modal-saved" style="text-align:center;font-size:13px;color:var(--green);font-weight:700;min-height:18px;margin-bottom:16px;"></div>
+    <button onclick="closeRatingModalBtn()" id="rating-close-btn" style="display:none;width:100%;padding:14px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;">Listo 💪</button>
+    <button onclick="closeRatingModalBtn()" style="width:100%;padding:10px;background:transparent;color:var(--gray4);border:none;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:6px;">Saltar</button>
   </div>
 </div>
 </body>
