@@ -2123,8 +2123,29 @@ async function togglePlanDay(planDayId, chipEl) {
         <span style="font-size:12px;font-weight:500;flex:1;">${ex.name}</span>
         <span style="font-size:10px;color:var(--gray4);">${ex.sets}×${ex.reps_range}</span>
         <button onclick="openEditEx(${JSON.stringify(ex).replace(/"/g,'&quot;')})" style="background:none;border:none;color:var(--orange);font-size:11px;font-weight:700;cursor:pointer;padding:2px 4px;">Editar</button>
+        <button onclick="deleteExercise('${ex.id}','${planDayId}')" style="background:none;border:none;color:#e53935;font-size:11px;font-weight:700;cursor:pointer;padding:2px 4px;">🗑</button>
       </div>`).join('');
   }
+}
+
+async function deleteExercise(exId, planDayId) {
+  if(!confirm('¿Seguro que querés borrar este ejercicio?')) return;
+  const {error} = await sb.from('exercises').delete().eq('id', exId);
+  if(error){showToast('❌ '+error.message);return;}
+  showToast('🗑 Ejercicio eliminado');
+  // Force reload of this day's exercise list
+  const exList = document.getElementById('coach-day-exs-'+planDayId);
+  if(exList) exList.innerHTML='<div class="spinner" style="width:14px;height:14px;margin:6px auto;"></div>';
+  const {data:exs} = await sb.from('exercises').select('*').eq('plan_day_id',planDayId).order('order_index');
+  if(!exs||exs.length===0){exList.innerHTML='<div style="font-size:12px;color:var(--gray4);padding:4px 0;">Sin ejercicios</div>';return;}
+  exList.innerHTML=exs.map(ex=>`
+    <div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--gray2);">
+      <span class="ex-tag ${getTagClass(ex.tag)}" style="font-size:8px;">${ex.tag}</span>
+      <span style="font-size:12px;font-weight:500;flex:1;">${ex.name}</span>
+      <span style="font-size:10px;color:var(--gray4);">${ex.sets}×${ex.reps_range}</span>
+      <button onclick="openEditEx(${JSON.stringify(ex).replace(/"/g,'&quot;')})" style="background:none;border:none;color:var(--orange);font-size:11px;font-weight:700;cursor:pointer;padding:2px 4px;">Editar</button>
+      <button onclick="deleteExercise('${ex.id}','${planDayId}')" style="background:none;border:none;color:#e53935;font-size:11px;font-weight:700;cursor:pointer;padding:2px 4px;">🗑</button>
+    </div>`).join('');
 }
 
 function openEditEx(ex) {
