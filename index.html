@@ -437,7 +437,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <div class="stat-card"><div class="stat-num" id="c-week-num">1</div><div class="stat-label">Semana actual</div></div>
     </div>
     <div class="stat-row fade-up" style="margin-top:0;">
-      <div class="stat-card" style="cursor:pointer;" onclick="clientNav('food',document.querySelector('.nav-item:nth-child(2)'))">
+      <div class="stat-card" style="cursor:pointer;" onclick="clientNav('food',document.querySelectorAll('.nav-item')[1])">
         <div style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:.5px;margin-bottom:4px;">NUTRIFLEX 🥗</div>
         <div class="stat-num" id="c-nutriflex-count" style="font-size:28px;">0</div>
         <div class="stat-label" id="c-nutriflex-last" style="font-size:10px;">Sin sesiones</div>
@@ -1941,7 +1941,7 @@ function renderCoachClients(clients) {
       <div class="client-avatar">${getInitials(c.name)}</div>
       <div class="client-info">
         <div class="client-name" style="display:flex;align-items:center;gap:6px;">${c.name}${typeTag}</div>
-        <div class="client-meta">@${c.username} · ${c.days_trained||0} días${startDateStr?` · Inicio: ${startDateStr}`:''}${c.last_active?` · Sesión: ${new Date(c.last_active).toLocaleDateString('es-CR',{day:'numeric',month:'short'})}`:''}${clientSortMode==='last_active'&&!c.last_active?' · Sin sesión':''}</div>
+        <div class="client-meta">@${c.username} · ${c.days_trained||0} días${startDateStr?` · Inicio: ${startDateStr}`:''}${clientSortMode==='last_active'?(c.last_active?` · 🟢 ${new Date(c.last_active).toLocaleDateString('es-CR',{weekday:'short',day:'numeric',month:'short'})}`:' · ⚫ Sin sesión'):''}</div>
       </div>
       <div class="payment-badge ${badgeClass}"><div style="font-size:8px;opacity:0.7;margin-bottom:1px;">PAGO</div>${badgeText}</div>
     </div>`;
