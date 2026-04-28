@@ -436,6 +436,18 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <div class="stat-card"><div class="stat-num" id="c-days-trained">0</div><div class="stat-label">Días entrenados</div></div>
       <div class="stat-card"><div class="stat-num" id="c-week-num">1</div><div class="stat-label">Semana actual</div></div>
     </div>
+    <div class="stat-row fade-up" style="margin-top:0;">
+      <div class="stat-card" style="cursor:pointer;" onclick="clientNav('food',document.querySelector('.nav-item:nth-child(2)'))">
+        <div style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:.5px;margin-bottom:4px;">NUTRIFLEX 🥗</div>
+        <div class="stat-num" id="c-nutriflex-count" style="font-size:28px;">0</div>
+        <div class="stat-label" id="c-nutriflex-last" style="font-size:10px;">Sin sesiones</div>
+      </div>
+      <div class="stat-card" style="cursor:pointer;" onclick="openStrongFlow()">
+        <div style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:.5px;margin-bottom:4px;">STRONGFLOW 💪</div>
+        <div class="stat-num" id="c-strongflow-count" style="font-size:28px;">0</div>
+        <div class="stat-label" id="c-strongflow-last" style="font-size:10px;">Sin sesiones</div>
+      </div>
+    </div>
     <div class="week-nav">
       <button class="week-nav-btn" id="c-week-prev" onclick="changeClientWeek(-1)">‹</button>
       <div style="text-align:center;"><div class="week-nav-label" id="c-week-label">Semana 1</div><div class="week-nav-sub" id="c-week-sub">Activa</div></div>
@@ -614,8 +626,8 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div class="sort-bar" id="client-sort-bar">
       <div class="sort-chip active" onclick="setSortClients('name',this)">A–Z</div>
       <div class="sort-chip" onclick="setSortClients('payment_asc',this)">Pago próximo ↑</div>
-      <div class="sort-chip" onclick="setSortClients('payment_desc',this)">Pago lejano ↓</div>
       <div class="sort-chip" onclick="setSortClients('start_date',this)">Fecha inicio</div>
+      <div class="sort-chip" onclick="setSortClients('last_active',this)">Última sesión</div>
     </div>
     <div id="coach-clients-list"><div class="spinner"></div></div>
   </div>
@@ -1328,6 +1340,8 @@ async function initClient() {
   const {data:cd} = await sb.from('clients').select('*').eq('username',currentUser.username).single();
   currentClient = cd;
   clientWeek = 1;
+  // Track last_active silently
+  if(cd?.id) sb.from('clients').update({last_active: new Date().toISOString()}).eq('id',cd.id).then(()=>{});
   const firstName = (cd?.name||currentUser.name||'').split(' ')[0];
   document.getElementById('c-greeting-name').textContent = firstName;
   document.getElementById('c-days-trained').textContent = cd?.days_trained||0;
@@ -1349,6 +1363,27 @@ async function initClient() {
   loadTodayRating().catch(()=>{});
   if(localStorage.getItem('mws_timer_running') === '1') startTimerDisplay();
   updateStrongFlowBtn();
+  loadAICounts();
+}
+
+async function loadAICounts() {
+  if(!currentClient?.id) return;
+  // NutriFlex: count distinct days in nutrition_chats (user messages only)
+  const {data:nChats} = await sb.from('nutrition_chats').select('created_at').eq('client_id', currentClient.id).eq('role','user').order('created_at',{ascending:false});
+  if(nChats && nChats.length > 0) {
+    const nDays = new Set(nChats.map(r=>r.created_at.split('T')[0])).size;
+    document.getElementById('c-nutriflex-count').textContent = nDays;
+    const lastDate = new Date(nChats[0].created_at+'').toLocaleDateString('es-CR',{day:'numeric',month:'short',year:'numeric'});
+    document.getElementById('c-nutriflex-last').textContent = 'Último: '+lastDate;
+  }
+  // StrongFlow: count distinct days in training_chats (user messages only)
+  const {data:sChats} = await sb.from('training_chats').select('created_at').eq('client_id', currentClient.id).eq('role','user').order('created_at',{ascending:false});
+  if(sChats && sChats.length > 0) {
+    const sDays = new Set(sChats.map(r=>r.created_at.split('T')[0])).size;
+    document.getElementById('c-strongflow-count').textContent = sDays;
+    const lastDate = new Date(sChats[0].created_at+'').toLocaleDateString('es-CR',{day:'numeric',month:'short',year:'numeric'});
+    document.getElementById('c-strongflow-last').textContent = 'Último: '+lastDate;
+  }
 }
 
 function loadGoalDisplay(goalText) {
@@ -1890,10 +1925,10 @@ function renderCoachClients(clients) {
     sorted.sort((a,b)=>a.name.localeCompare(b.name));
   } else if(clientSortMode==='payment_asc') {
     sorted.sort((a,b)=>{const da=daysUntil(a.next_payment_date),db=daysUntil(b.next_payment_date);if(da===null&&db===null)return 0;if(da===null)return 1;if(db===null)return-1;return da-db;});
-  } else if(clientSortMode==='payment_desc') {
-    sorted.sort((a,b)=>{const da=daysUntil(a.next_payment_date),db=daysUntil(b.next_payment_date);if(da===null&&db===null)return 0;if(da===null)return-1;if(db===null)return 1;return db-da;});
   } else if(clientSortMode==='start_date') {
     sorted.sort((a,b)=>{const da=a.start_date||a.created_at||'',db=b.start_date||b.created_at||'';return da.localeCompare(db);});
+  } else if(clientSortMode==='last_active') {
+    sorted.sort((a,b)=>{const da=a.last_active||'',db=b.last_active||'';if(!da&&!db)return 0;if(!da)return 1;if(!db)return-1;return db.localeCompare(da);});
   }
 
   list.innerHTML = sorted.map(c=>{
@@ -1906,7 +1941,7 @@ function renderCoachClients(clients) {
       <div class="client-avatar">${getInitials(c.name)}</div>
       <div class="client-info">
         <div class="client-name" style="display:flex;align-items:center;gap:6px;">${c.name}${typeTag}</div>
-        <div class="client-meta">@${c.username} · ${c.days_trained||0} días${startDateStr?` · Inicio: ${startDateStr}`:''}</div>
+        <div class="client-meta">@${c.username} · ${c.days_trained||0} días${startDateStr?` · Inicio: ${startDateStr}`:''}${c.last_active?` · Sesión: ${new Date(c.last_active).toLocaleDateString('es-CR',{day:'numeric',month:'short'})}`:''}${clientSortMode==='last_active'&&!c.last_active?' · Sin sesión':''}</div>
       </div>
       <div class="payment-badge ${badgeClass}"><div style="font-size:8px;opacity:0.7;margin-bottom:1px;">PAGO</div>${badgeText}</div>
     </div>`;
