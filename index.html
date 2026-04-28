@@ -436,18 +436,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <div class="stat-card"><div class="stat-num" id="c-days-trained">0</div><div class="stat-label">Días entrenados</div></div>
       <div class="stat-card"><div class="stat-num" id="c-week-num">1</div><div class="stat-label">Semana actual</div></div>
     </div>
-    <div class="stat-row fade-up" style="margin-top:0;">
-      <div class="stat-card" style="cursor:pointer;" onclick="clientNav('food',document.querySelectorAll('.nav-item')[1])">
-        <div style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:.5px;margin-bottom:4px;">NUTRIFLEX 🥗</div>
-        <div class="stat-num" id="c-nutriflex-count" style="font-size:28px;">0</div>
-        <div class="stat-label" id="c-nutriflex-last" style="font-size:10px;">Sin sesiones</div>
-      </div>
-      <div class="stat-card" style="cursor:pointer;" onclick="openStrongFlow()">
-        <div style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:.5px;margin-bottom:4px;">STRONGFLOW 💪</div>
-        <div class="stat-num" id="c-strongflow-count" style="font-size:28px;">0</div>
-        <div class="stat-label" id="c-strongflow-last" style="font-size:10px;">Sin sesiones</div>
-      </div>
-    </div>
+
     <div class="week-nav">
       <button class="week-nav-btn" id="c-week-prev" onclick="changeClientWeek(-1)">‹</button>
       <div style="text-align:center;"><div class="week-nav-label" id="c-week-label">Semana 1</div><div class="week-nav-sub" id="c-week-sub">Activa</div></div>
@@ -649,6 +638,18 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div class="payment-card" id="coach-payment-card"></div>
     <div class="section-header"><div class="section-title">Días entrenados</div></div>
     <div class="stat-row"><div class="stat-card"><div class="stat-num" id="coach-c-days">0</div><div class="stat-label">Total</div></div><div class="stat-card"><div class="stat-num" id="coach-c-week-trained">0</div><div class="stat-label">Esta semana</div></div></div>
+    <div class="stat-row" style="margin-top:0;">
+      <div class="stat-card">
+        <div style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:.5px;margin-bottom:4px;">NUTRIFLEX 🥗</div>
+        <div class="stat-num" id="coach-nutriflex-count" style="font-size:28px;">0</div>
+        <div class="stat-label" id="coach-nutriflex-last" style="font-size:10px;">Sin sesiones</div>
+      </div>
+      <div class="stat-card">
+        <div style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:.5px;margin-bottom:4px;">STRONGFLOW 💪</div>
+        <div class="stat-num" id="coach-strongflow-count" style="font-size:28px;">0</div>
+        <div class="stat-label" id="coach-strongflow-last" style="font-size:10px;">Sin sesiones</div>
+      </div>
+    </div>
     <div class="section-header"><div class="section-title">Plan mensual</div></div>
     <div id="coach-plan-overview"></div>
     <div class="section-header"><div class="section-title">Registros del cliente</div><div class="section-action" onclick="toggleLogs()">Ver logs</div></div>
@@ -1366,6 +1367,28 @@ async function initClient() {
   loadAICounts();
 }
 
+async function loadCoachAICounts(clientId) {
+  document.getElementById('coach-nutriflex-count').textContent = '0';
+  document.getElementById('coach-nutriflex-last').textContent = 'Sin sesiones';
+  document.getElementById('coach-strongflow-count').textContent = '0';
+  document.getElementById('coach-strongflow-last').textContent = 'Sin sesiones';
+
+  const {data:nChats} = await sb.from('nutrition_chats').select('created_at').eq('client_id', clientId).eq('role','user').order('created_at',{ascending:false});
+  if(nChats && nChats.length > 0) {
+    const nDays = new Set(nChats.map(r=>r.created_at.split('T')[0])).size;
+    document.getElementById('coach-nutriflex-count').textContent = nDays;
+    const lastDate = new Date(nChats[0].created_at).toLocaleDateString('es-CR',{day:'numeric',month:'short',year:'numeric'});
+    document.getElementById('coach-nutriflex-last').textContent = 'Último: '+lastDate;
+  }
+  const {data:sChats} = await sb.from('training_chats').select('created_at').eq('client_id', clientId).eq('role','user').order('created_at',{ascending:false});
+  if(sChats && sChats.length > 0) {
+    const sDays = new Set(sChats.map(r=>r.created_at.split('T')[0])).size;
+    document.getElementById('coach-strongflow-count').textContent = sDays;
+    const lastDate = new Date(sChats[0].created_at).toLocaleDateString('es-CR',{day:'numeric',month:'short',year:'numeric'});
+    document.getElementById('coach-strongflow-last').textContent = 'Último: '+lastDate;
+  }
+}
+
 async function loadAICounts() {
   if(!currentClient?.id) return;
   // NutriFlex: count distinct days in nutrition_chats (user messages only)
@@ -1996,6 +2019,7 @@ async function openCoachClient(clientId) {
   loadCoachPlans();
   loadCoachFoodPanel();
   loadCoachContractPanel();
+  loadCoachAICounts(clientId);
   showScreen('screen-coach-client');
 }
 
