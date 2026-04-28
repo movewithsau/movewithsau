@@ -2801,6 +2801,7 @@ let foodChatHistory = [];
 let nutritionData = null;
 
 async function loadFoodScreen() {
+  if(currentClient?.id) sb.from('clients').update({last_active: new Date().toISOString()}).eq('id',currentClient.id).then(()=>{});
   const body = document.getElementById('food-screen-body');
   if(!currentClient) return;
 
@@ -3293,6 +3294,7 @@ function openStrongFlow() {
   modal.style.display = 'flex';
   if(sfChatHistory.length === 0) loadStrongFlowHistory();
   setTimeout(()=>{ document.getElementById('sf-input')?.focus(); }, 300);
+  if(currentClient?.id) sb.from('clients').update({last_active: new Date().toISOString()}).eq('id',currentClient.id).then(()=>{});
 }
 
 function closeStrongFlow() {
