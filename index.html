@@ -3934,14 +3934,15 @@ async function aiApprovePlan() {
   const clientId = aiGeneratedPlan._clientId;
   const clientName = (aiGeneratedPlan._clientName || '').split(' ')[0];
   try {
+    const { data: existPd } = await sb.from('monthly_plans').select('id').eq('client_id', clientId).eq('week_number', aiBuilderWeek).eq('day_of_week', aiBuilderDay).maybeSingle();
+    if (existPd) { await sb.from('exercises').delete().eq('plan_day_id', existPd.id); await sb.from('monthly_plans').delete().eq('id', existPd.id); }
+    const { data: pd, error: pdErr } = await sb.from('monthly_plans').insert([{ client_id: clientId, week_number: aiBuilderWeek, day_of_week: aiBuilderDay }]).select().single();
+    if (pdErr) throw pdErr;
+    let orderIdx = 0;
+    const toInsert = [];
+    let circuitLetter = 0;
     for (const day of aiGeneratedPlan.days) {
       if (day.type === 'rest' || !day.groups || day.groups.length === 0) continue;
-      const targetDay = day.day;
-const { data: existPd } = await sb.from('monthly_plans').select('id').eq('client_id', clientId).eq('week_number', aiBuilderWeek).eq('day_of_week', targetDay).maybeSingle();      if (existPd) { await sb.from('exercises').delete().eq('plan_day_id', existPd.id); await sb.from('monthly_plans').delete().eq('id', existPd.id); }
-const { data: pd, error: pdErr } = await sb.from('monthly_plans').insert([{ client_id: clientId, week_number: aiBuilderWeek, day_of_week: targetDay }]).select().single();      if (pdErr) throw pdErr;
-      let orderIdx = 0;
-      const toInsert = [];
-      let circuitLetter = 0;
       for (const group of day.groups) {
         if (group.type === 'circuit') {
           const supersetGroup = group.label || String.fromCharCode(65 + circuitLetter++);
@@ -3958,8 +3959,8 @@ const { data: pd, error: pdErr } = await sb.from('monthly_plans').insert([{ clie
           }
         }
       }
-      await sb.from('exercises').insert(toInsert);
     }
+    await sb.from('exercises').insert(toInsert);
     const trainDays = aiGeneratedPlan.days.filter(d => d.type !== 'rest').length;
     document.getElementById('ai-approve-msg').innerHTML = `<div class="ai-success">Semana ${aiBuilderWeek} guardada — ${trainDays} días para ${clientName}. <span style="cursor:pointer;text-decoration:underline;" onclick="openCoachClient('${clientId}')">Ver plan →</span></div>`;
     btn.textContent = 'Guardado ✓';
