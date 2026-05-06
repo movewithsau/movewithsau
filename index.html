@@ -3934,41 +3934,54 @@ async function aiApprovePlan() {
   const clientId = aiGeneratedPlan._clientId;
   const clientName = (aiGeneratedPlan._clientName || '').split(' ')[0];
   try {
+    console.log('🔵 aiApprovePlan START - clientId:', clientId, 'week:', aiBuilderWeek, 'day:', aiBuilderDay);
     const { data: existPd } = await sb.from('monthly_plans').select('id').eq('client_id', clientId).eq('week_number', aiBuilderWeek).eq('day_of_week', aiBuilderDay).maybeSingle();
-    if (existPd) { await sb.from('exercises').delete().eq('plan_day_id', existPd.id); await sb.from('monthly_plans').delete().eq('id', existPd.id); }
+    if (existPd) { console.log('🟡 Borrando plan anterior:', existPd.id); await sb.from('exercises').delete().eq('plan_day_id', existPd.id); await sb.from('monthly_plans').delete().eq('id', existPd.id); }
+    console.log('🟠 Creando monthly_plan...');
     const { data: pd, error: pdErr } = await sb.from('monthly_plans').insert([{ client_id: clientId, week_number: aiBuilderWeek, day_of_week: aiBuilderDay }]).select().single();
+    console.log('🟢 pd created:', pd);
     if (pdErr) throw new Error('Failed to create monthly plan: ' + pdErr.message);
+    if (!pd || !pd.id) throw new Error('pd.id is missing after insert');
     const toInsert = [];
     let orderIdx = 0;
     let circuitLetter = 0;
+    console.log('🔵 Iterando sobre days:', aiGeneratedPlan.days.length);
     for (const day of aiGeneratedPlan.days) {
-      if (day.type === 'rest' || !day.groups || day.groups.length === 0) continue;
+      if (day.type === 'rest' || !day.groups || day.groups.length === 0) { console.log('⏭️ Skipping rest day'); continue; }
+      console.log('📅 Processing day:', day.day, 'groups:', day.groups.length);
       for (const group of day.groups) {
         if (group.type === 'circuit') {
           const supersetGroup = group.label || String.fromCharCode(65 + circuitLetter++);
           const circuitRounds = group.rounds || 3;
           const circuitNotes = group.circuit_notes || `Descanso ${group.rest_between_rounds||60}s entre rounds.`;
+          console.log('🔄 Circuit group:', supersetGroup, 'exercises:', group.exercises.length);
           for (const ex of group.exercises) {
             toInsert.push({ plan_day_id: pd.id, name: ex.name, sets: 1, reps_range: ex.reps_range || '', rest_seconds: day.rest_seconds_global || 60, tag: ex.tag || 'Peso Corporal', muscle_group: ex.muscle_group || null, video_url: ex.video_url || null, notes: null, superset_group: supersetGroup, circuit_rounds: circuitRounds, circuit_notes: circuitNotes, order_index: orderIdx++ });
           }
         } else {
+          console.log('➡️ Straight exercises:', group.exercises.length);
           for (const ex of group.exercises) {
             toInsert.push({ plan_day_id: pd.id, name: ex.name, sets: ex.sets || 3, reps_range: ex.reps_range || '', rest_seconds: ex.rest_seconds || day.rest_seconds_global || 60, tag: ex.tag || 'Peso Libre', muscle_group: ex.muscle_group || null, video_url: ex.video_url || null, notes: null, superset_group: null, circuit_rounds: null, circuit_notes: null, order_index: orderIdx++ });
           }
         }
       }
     }
+    console.log('📦 toInsert array size:', toInsert.length);
     if (toInsert.length === 0) throw new Error('No exercises to insert');
+    console.log('💾 Inserting exercises...');
     const { error: insErr } = await sb.from('exercises').insert(toInsert);
+    console.log('✅ Insert done, error?:', insErr);
     if (insErr) throw new Error('Failed to insert exercises: ' + insErr.message);
+    console.log('📚 Saving to library...');
     for (const ex of toInsert) {
       await saveExerciseToLibrary(ex.name, ex.tag, ex.muscle_group, ex.video_url);
     }
     const trainDays = aiGeneratedPlan.days.filter(d => d.type !== 'rest').length;
     document.getElementById('ai-approve-msg').innerHTML = `<div class="ai-success">Semana ${aiBuilderWeek} guardada — ${trainDays} días para ${clientName}. <span style="cursor:pointer;text-decoration:underline;" onclick="openCoachClient('${clientId}')">Ver plan →</span></div>`;
     btn.textContent = 'Guardado ✓';
+    console.log('🎉 ALL DONE!');
   } catch(e) {
-    console.error('aiApprovePlan error:', e);
+    console.error('❌ aiApprovePlan error:', e);
     document.getElementById('ai-approve-msg').innerHTML = `<div class="ai-error">Error: ${e.message}</div>`;
     btn.disabled = false; btn.textContent = '✅ Aprobar y guardar';
   }
