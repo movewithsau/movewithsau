@@ -3937,9 +3937,9 @@ async function aiApprovePlan() {
     const { data: existPd } = await sb.from('monthly_plans').select('id').eq('client_id', clientId).eq('week_number', aiBuilderWeek).eq('day_of_week', aiBuilderDay).maybeSingle();
     if (existPd) { await sb.from('exercises').delete().eq('plan_day_id', existPd.id); await sb.from('monthly_plans').delete().eq('id', existPd.id); }
     const { data: pd, error: pdErr } = await sb.from('monthly_plans').insert([{ client_id: clientId, week_number: aiBuilderWeek, day_of_week: aiBuilderDay }]).select().single();
-    if (pdErr) throw pdErr;
-    let orderIdx = 0;
+    if (pdErr) throw new Error('Failed to create monthly plan: ' + pdErr.message);
     const toInsert = [];
+    let orderIdx = 0;
     let circuitLetter = 0;
     for (const day of aiGeneratedPlan.days) {
       if (day.type === 'rest' || !day.groups || day.groups.length === 0) continue;
@@ -3950,21 +3950,25 @@ async function aiApprovePlan() {
           const circuitNotes = group.circuit_notes || `Descanso ${group.rest_between_rounds||60}s entre rounds.`;
           for (const ex of group.exercises) {
             toInsert.push({ plan_day_id: pd.id, name: ex.name, sets: 1, reps_range: ex.reps_range || '', rest_seconds: day.rest_seconds_global || 60, tag: ex.tag || 'Peso Corporal', muscle_group: ex.muscle_group || null, video_url: ex.video_url || null, notes: null, superset_group: supersetGroup, circuit_rounds: circuitRounds, circuit_notes: circuitNotes, order_index: orderIdx++ });
-            await saveExerciseToLibrary(ex.name, ex.tag || 'Peso Corporal', ex.muscle_group || null, ex.video_url || null);
           }
         } else {
           for (const ex of group.exercises) {
             toInsert.push({ plan_day_id: pd.id, name: ex.name, sets: ex.sets || 3, reps_range: ex.reps_range || '', rest_seconds: ex.rest_seconds || day.rest_seconds_global || 60, tag: ex.tag || 'Peso Libre', muscle_group: ex.muscle_group || null, video_url: ex.video_url || null, notes: null, superset_group: null, circuit_rounds: null, circuit_notes: null, order_index: orderIdx++ });
-            await saveExerciseToLibrary(ex.name, ex.tag || 'Peso Libre', ex.muscle_group || null, ex.video_url || null);
           }
         }
       }
     }
-    await sb.from('exercises').insert(toInsert);
+    if (toInsert.length === 0) throw new Error('No exercises to insert');
+    const { error: insErr } = await sb.from('exercises').insert(toInsert);
+    if (insErr) throw new Error('Failed to insert exercises: ' + insErr.message);
+    for (const ex of toInsert) {
+      await saveExerciseToLibrary(ex.name, ex.tag, ex.muscle_group, ex.video_url);
+    }
     const trainDays = aiGeneratedPlan.days.filter(d => d.type !== 'rest').length;
     document.getElementById('ai-approve-msg').innerHTML = `<div class="ai-success">Semana ${aiBuilderWeek} guardada — ${trainDays} días para ${clientName}. <span style="cursor:pointer;text-decoration:underline;" onclick="openCoachClient('${clientId}')">Ver plan →</span></div>`;
     btn.textContent = 'Guardado ✓';
   } catch(e) {
+    console.error('aiApprovePlan error:', e);
     document.getElementById('ai-approve-msg').innerHTML = `<div class="ai-error">Error: ${e.message}</div>`;
     btn.disabled = false; btn.textContent = '✅ Aprobar y guardar';
   }
