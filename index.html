@@ -3945,6 +3945,9 @@ async function aiApprovePlan() {
     const toInsert = [];
     let orderIdx = 0;
     let circuitLetter = 0;
+    const validTags = ['Máquina', 'Peso Corporal', 'Peso Libre'];
+    const tagMap = { 'Cardio': 'Peso Libre' };
+    const normalizeTag = (tag) => tagMap[tag] || (validTags.includes(tag) ? tag : 'Peso Libre');
     console.log('🔵 Iterando sobre days:', aiGeneratedPlan.days.length);
     for (const day of aiGeneratedPlan.days) {
       if (day.type === 'rest' || !day.groups || day.groups.length === 0) { console.log('⏭️ Skipping rest day'); continue; }
@@ -3956,12 +3959,12 @@ async function aiApprovePlan() {
           const circuitNotes = group.circuit_notes || `Descanso ${group.rest_between_rounds||60}s entre rounds.`;
           console.log('🔄 Circuit group:', supersetGroup, 'exercises:', group.exercises.length);
           for (const ex of group.exercises) {
-            toInsert.push({ plan_day_id: pd.id, name: ex.name, sets: 1, reps_range: ex.reps_range || '', rest_seconds: day.rest_seconds_global || 60, tag: ex.tag || 'Peso Corporal', muscle_group: ex.muscle_group || null, video_url: ex.video_url || null, notes: null, superset_group: supersetGroup, circuit_rounds: circuitRounds, circuit_notes: circuitNotes, order_index: orderIdx++ });
+            toInsert.push({ plan_day_id: pd.id, name: ex.name, sets: 1, reps_range: ex.reps_range || '', rest_seconds: day.rest_seconds_global || 60, tag: normalizeTag(ex.tag || 'Peso Corporal'), muscle_group: ex.muscle_group || null, video_url: ex.video_url || null, notes: null, superset_group: supersetGroup, circuit_rounds: circuitRounds, circuit_notes: circuitNotes, order_index: orderIdx++ });
           }
         } else {
           console.log('➡️ Straight exercises:', group.exercises.length);
           for (const ex of group.exercises) {
-            toInsert.push({ plan_day_id: pd.id, name: ex.name, sets: ex.sets || 3, reps_range: ex.reps_range || '', rest_seconds: ex.rest_seconds || day.rest_seconds_global || 60, tag: ex.tag || 'Peso Libre', muscle_group: ex.muscle_group || null, video_url: ex.video_url || null, notes: null, superset_group: null, circuit_rounds: null, circuit_notes: null, order_index: orderIdx++ });
+            toInsert.push({ plan_day_id: pd.id, name: ex.name, sets: ex.sets || 3, reps_range: ex.reps_range || '', rest_seconds: ex.rest_seconds || day.rest_seconds_global || 60, tag: normalizeTag(ex.tag || 'Peso Libre'), muscle_group: ex.muscle_group || null, video_url: ex.video_url || null, notes: null, superset_group: null, circuit_rounds: null, circuit_notes: null, order_index: orderIdx++ });
           }
         }
       }
