@@ -1300,14 +1300,28 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 // ===== AUTH =====
 async function handleLogin() {
-  const username = document.getElementById('login-username').value.trim().toLowerCase();
+  const email = document.getElementById('login-username').value.trim().toLowerCase();
   const pass = document.getElementById('login-password').value;
   const remember = document.getElementById('remember-me')?.checked;
-  if(!username||!pass){showToast('⚠️ Completa todos los campos');return;}
-  const {data,error} = await sb.from('users').select('*').eq('username',username).eq('password',pass).single();
-  if(error||!data){showToast('❌ Usuario o contraseña incorrectos');return;}
+  if(!email||!pass){showToast('⚠️ Completa todos los campos');return;}
+  
+  // Authenticate with Supabase
+  const {data: authData, error: authError} = await sb.auth.signInWithPassword({
+    email: email,
+    password: pass
+  });
+  
+  if(authError || !authData?.user){
+    showToast('❌ Email o contraseña incorrectos');
+    return;
+  }
+  
+  // Get user data from users table using email
+  const {data,error} = await sb.from('users').select('*').eq('email',email).single();
+  if(error||!data){showToast('❌ Usuario no encontrado');return;}
+  
   currentUser = data;
-  if(remember){ localStorage.setItem('mws_user', JSON.stringify({username,pass})); }
+  if(remember){ localStorage.setItem('mws_user', JSON.stringify({email,pass})); }
   else { localStorage.removeItem('mws_user'); }
   if(data.role==='coach') initCoach();
   else initClient();
@@ -1323,7 +1337,7 @@ function handleLogout() {
 // ===== CLIENT =====
 async function initClient() {
   showScreen('screen-client-home');
-  const {data:cd} = await sb.from('clients').select('*').eq('username',currentUser.username).single();
+  const {data:cd} = await sb.from('clients').select('*').eq('email',currentUser.email).single();
   currentClient = cd;
   clientWeek = 1;
   // Track last_active silently
@@ -1333,7 +1347,7 @@ async function initClient() {
   document.getElementById('c-days-trained').textContent = cd?.days_trained||0;
   document.getElementById('c-week-num').textContent = clientWeek;
   document.getElementById('c-profile-name').textContent = cd?.name||currentUser.name;
-  document.getElementById('c-profile-username').textContent = '@'+currentUser.username;
+  document.getElementById('c-profile-username').textContent = '@'+(currentUser.username||currentUser.email);
   applyAvatarToProfile();
   document.getElementById('c-profile-days').textContent = cd?.days_trained||0;
   document.getElementById('c-profile-week').textContent = clientWeek;
