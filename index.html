@@ -1306,37 +1306,25 @@ async function handleLogin() {
   
   if(!username||!pass){showToast('⚠️ Completa todos los campos');return;}
   
-  // Step 1: Find user in public.users by username
-  const {data: userData, error: userError} = await sb.from('users').select('*').eq('username',username).single();
+  // Busca en tabla users por username y password
+  const {data,error} = await sb.from('users').select('*').eq('username',username).eq('password',pass).single();
   
-  if(userError || !userData) {
-    showToast('❌ Usuario no encontrado');
+  if(error||!data){
+    showToast('❌ Usuario o contraseña incorrectos');
     return;
   }
   
-  // Step 2: Authenticate with Supabase Auth using email and password
-  const {data: authData, error: authError} = await sb.auth.signInWithPassword({
-    email: userData.email || userData.username + '@movewithsau.local',
-    password: pass
-  });
+  // Usuario encontrado
+  currentUser = data;
   
-  if(authError || !authData?.user) {
-    showToast('❌ Contraseña incorrecta');
-    return;
+  if(remember){ 
+    localStorage.setItem('mws_user', JSON.stringify({username,pass})); 
+  } else { 
+    localStorage.removeItem('mws_user'); 
   }
   
-  // Step 3: Set currentUser
-  currentUser = userData;
-  
-  // Save session if remember me is checked
-  if(remember) {
-    localStorage.setItem('mws_user', JSON.stringify({username, pass}));
-  } else {
-    localStorage.removeItem('mws_user');
-  }
-  
-  // Step 4: Route to appropriate screen
-  if(userData.role === 'coach') {
+  // Ir a la pantalla correcta
+  if(data.role==='coach') {
     initCoach();
   } else {
     initClient();
