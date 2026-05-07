@@ -1303,14 +1303,44 @@ async function handleLogin() {
   const username = document.getElementById('login-username').value.trim().toLowerCase();
   const pass = document.getElementById('login-password').value;
   const remember = document.getElementById('remember-me')?.checked;
+  
   if(!username||!pass){showToast('⚠️ Completa todos los campos');return;}
-  const {data,error} = await sb.from('users').select('*').eq('username',username).eq('password',pass).single();
-  if(error||!data){showToast('❌ Usuario o contraseña incorrectos');return;}
-  currentUser = data;
-  if(remember){ localStorage.setItem('mws_user', JSON.stringify({username,pass})); }
-  else { localStorage.removeItem('mws_user'); }
-  if(data.role==='coach') initCoach();
-  else initClient();
+  
+  // Step 1: Find user in public.users by username
+  const {data: userData, error: userError} = await sb.from('users').select('*').eq('username',username).single();
+  
+  if(userError || !userData) {
+    showToast('❌ Usuario no encontrado');
+    return;
+  }
+  
+  // Step 2: Authenticate with Supabase Auth using email and password
+  const {data: authData, error: authError} = await sb.auth.signInWithPassword({
+    email: userData.email || userData.username + '@movewithsau.local',
+    password: pass
+  });
+  
+  if(authError || !authData?.user) {
+    showToast('❌ Contraseña incorrecta');
+    return;
+  }
+  
+  // Step 3: Set currentUser
+  currentUser = userData;
+  
+  // Save session if remember me is checked
+  if(remember) {
+    localStorage.setItem('mws_user', JSON.stringify({username, pass}));
+  } else {
+    localStorage.removeItem('mws_user');
+  }
+  
+  // Step 4: Route to appropriate screen
+  if(userData.role === 'coach') {
+    initCoach();
+  } else {
+    initClient();
+  }
 }
 
 function handleLogout() {
