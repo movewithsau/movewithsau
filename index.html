@@ -478,6 +478,10 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 
     <!-- TESTS TAB -->
     <div id="client-tests-tab" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div style="font-size:13px;color:var(--gray4);">Tus evaluaciones y tests</div>
+        <button onclick="showModal('modal-create-test')" style="padding:10px 16px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Crear Test</button>
+      </div>
       <div id="client-tests-list"><div class="spinner"></div></div>
     </div>
   </div>
