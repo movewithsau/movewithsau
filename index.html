@@ -2187,7 +2187,7 @@ function clientNav(tab,el) {
   el.classList.add('active');
   if(tab==='home'){showScreen('screen-client-home');loadClientDayStrip();}
   else if(tab==='food'){showScreen('screen-client-food');loadFoodScreen();}
-  else if(tab==='plan'){showScreen('screen-client-plan');loadClientPlans();}
+  else if(tab==='plan'){showScreen('screen-client-plan');loadClientPlans();loadClientTests();}
   else if(tab==='profile'){showScreen('screen-client-profile');loadClientContractPanel();}
 }
 
