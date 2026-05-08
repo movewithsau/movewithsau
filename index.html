@@ -2041,7 +2041,34 @@ async function loadClientTests() {
     document.getElementById('client-tests-list').innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">Sin evaluaciones aún.</div></div>';
     return;
   }
-  // ===== COACH EVALUACIONES =====
+  
+  const list = document.getElementById('client-tests-list');
+  
+  if(!tests || tests.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">Tu coach aún no ha creado evaluaciones.</div></div>';
+    return;
+  }
+  
+  list.innerHTML = tests.map(test => `
+    <div class="test-card fade-up" style="background:var(--gray1);border:1.5px solid var(--gray2);border-radius:var(--radius-sm);padding:16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--black);">${test.test_name}</div>
+          <div style="font-size:12px;color:var(--gray4);margin-top:2px;">📅 ${new Date(test.test_date).toLocaleDateString('es-CR')}</div>
+        </div>
+        <div style="padding:6px 12px;background:var(--orange-light);color:var(--orange);border-radius:6px;font-size:11px;font-weight:700;">${test.status === 'pending' ? '⏳ Pendiente' : '✅ Completado'}</div>
+      </div>
+      
+      ${test.context_notes ? `<div style="padding:12px;background:var(--white);border-radius:8px;margin-bottom:12px;font-size:12px;color:var(--gray5);border-left:3px solid var(--orange);">📝 <strong>Contexto:</strong> ${test.context_notes}</div>` : ''}
+      
+      <button onclick="viewTestDetails('${test.id}')" style="width:100%;padding:12px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity 0.2s;">
+        ${test.status === 'pending' ? 'Completar Evaluación' : 'Ver Detalles'}
+      </button>
+    </div>
+  `).join('');
+}
+
+// ===== COACH EVALUACIONES =====
 
 function showCoachEvaluaciones() {
   document.querySelectorAll('#screen-coach-home .section').forEach(s => s.style.display = 'none');
