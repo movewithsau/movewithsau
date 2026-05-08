@@ -613,7 +613,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 <div class="section" id="coach-evaluaciones-section" style="display:none;">
   <div class="section-header">
     <div class="section-title">📊 Mis Evaluaciones</div>
-    <div class="section-action" onclick="showModal('modal-create-test')">+ Nueva Evaluación</div>
+    <div class="section-action" onclick="openCreateTestModal()">+ Nueva Evaluación</div>
   </div>
   
   <div style="display:flex;gap:12px;margin-bottom:20px;padding-bottom:12px;border-bottom:1.5px solid var(--gray2);">
@@ -642,7 +642,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   </div>
   <div class="bottom-nav">
     <div class="nav-item" onclick="showCoachEvaluaciones()">
-  <div class="nav-icon">📊</div>
+  <div class="nav-icon">🔬</div>
   <div class="nav-label">Evaluaciones</div>
   <div class="nav-dot"></div>
 </div>
@@ -2271,6 +2271,78 @@ function resetTestForm() {
   document.getElementById('test-date-input').value = '';
   document.getElementById('test-context-notes').value = '';
   document.getElementById('test-exercises-list').innerHTML = '';
+  const sel = document.getElementById('test-client-select');
+  if(sel) sel.innerHTML = '<option value="">Seleccionar cliente...</option>';
+}
+
+async function openCreateTestModal() {
+  // Populate client dropdown
+  const sel = document.getElementById('test-client-select');
+  sel.innerHTML = '<option value="">Cargando...</option>';
+  const {data: clients} = await sb.from('clients').select('id,name').eq('coach_id', currentUser.id).order('name');
+  sel.innerHTML = '<option value="">Seleccionar cliente...</option>';
+  if(clients) {
+    clients.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.name;
+      sel.appendChild(opt);
+    });
+  }
+  showModal('modal-create-test');
+}
+
+async function saveCoachTest() {
+  const clientId = document.getElementById('test-client-select').value;
+  const testName = document.getElementById('test-name-input').value.trim();
+  const testDate = document.getElementById('test-date-input').value;
+  const contextNotes = document.getElementById('test-context-notes').value.trim();
+
+  if(!clientId) { alert('Selecciona un cliente'); return; }
+  if(!testName) { alert('Ingresa un nombre para la evaluación'); return; }
+  if(!testDate) { alert('Selecciona una fecha'); return; }
+
+  const exercises = [];
+  document.querySelectorAll('.test-exercise-item').forEach(item => {
+    const name = item.querySelector('.exercise-name').value.trim();
+    const result = item.querySelector('.exercise-result').value.trim();
+    const unit = item.querySelector('.exercise-unit').value.trim();
+    const videoUrl = item.querySelector('.exercise-video').value.trim();
+    const notes = item.querySelector('.exercise-notes').value.trim();
+    if(name) exercises.push({ name, result, unit, videoUrl, notes });
+  });
+
+  if(exercises.length === 0) { alert('Agrega al menos un ejercicio'); return; }
+
+  const {data: newTest, error: testError} = await sb.from('tests').insert({
+    client_id: clientId,
+    coach_id: currentUser.id,
+    test_name: testName,
+    test_date: testDate,
+    context_notes: contextNotes,
+    status: 'pending',
+    created_at: new Date().toISOString()
+  }).select();
+
+  if(testError) { alert('Error: ' + testError.message); return; }
+
+  const testId = newTest[0].id;
+  const exercisesToInsert = exercises.map(ex => ({
+    test_id: testId,
+    exercise_name: ex.name,
+    exercise_result: ex.result,
+    exercise_unit: ex.unit,
+    exercise_video_url: ex.videoUrl,
+    exercise_notes: ex.notes
+  }));
+
+  const {error: exError} = await sb.from('test_exercises').insert(exercisesToInsert);
+  if(exError) { alert('Error guardando ejercicios: ' + exError.message); return; }
+
+  closeModal('modal-create-test');
+  resetTestForm();
+  loadCoachTests();
+  alert('¡Evaluación creada! 💪');
 }
 
 function clientNav(tab,el) {
@@ -4954,6 +5026,14 @@ async function executeCopyDay() {
     </div>
     <div style="padding:20px;">
       
+      <!-- Cliente -->
+      <div class="form-group">
+        <label class="form-label">Cliente</label>
+        <select class="form-input" id="test-client-select" style="appearance:auto;">
+          <option value="">Seleccionar cliente...</option>
+        </select>
+      </div>
+
       <!-- Nombre del Test -->
       <div class="form-group">
         <label class="form-label">Nombre de la Evaluación</label>
@@ -4979,7 +5059,7 @@ async function executeCopyDay() {
         <button onclick="addTestExercise()" style="width:100%;padding:12px;background:var(--gray1);border:1.5px dashed var(--gray3);border-radius:var(--radius-sm);color:var(--orange);font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:'DM Sans',sans-serif;">+ Agregar Ejercicio</button>
       </div>
 
-      <button onclick="saveClientTest()" class="btn-primary" style="margin-top:20px;">Guardar Evaluación</button>
+      <button onclick="saveCoachTest()" class="btn-primary" style="margin-top:20px;">Guardar Evaluación</button>
       <button onclick="closeModal('modal-create-test')" class="btn-secondary" style="margin-top:10px;">Cancelar</button>
     </div>
   </div>
