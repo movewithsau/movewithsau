@@ -269,10 +269,6 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:200; display:none; align-items:flex-end; justify-content:center; }
 .modal-overlay.open { display:flex; }
 .modal { background:var(--white); border-radius:20px 20px 0 0; padding:22px 20px 40px; width:100%; max-width:480px; max-height:88vh; overflow-y:auto; }
-.modal-content { background:var(--white); border-radius:20px 20px 0 0; width:100%; max-width:480px; max-height:92vh; display:flex; flex-direction:column; overflow:hidden; }
-.modal-content .modal-header { flex-shrink:0; padding:16px 20px 12px; border-bottom:1px solid var(--gray2); display:flex; align-items:center; justify-content:space-between; }
-.modal-content .modal-header .modal-title { font-family:'Playfair Display',serif; font-size:18px; font-weight:700; margin-bottom:0; }
-.modal-content > div:not(.modal-header) { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
 .modal-title { font-family:'Playfair Display',serif; font-size:20px; font-weight:700; margin-bottom:18px; }
 .modal-close { float:right; font-size:24px; color:var(--gray4); cursor:pointer; line-height:1; margin-top:-2px; }
 
@@ -620,25 +616,19 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;" id="coach-name-display">—</div>
     </div>
     <!-- EVALUACIONES inline section -->
-    <div id="coach-evaluaciones-inline" style="margin-bottom:8px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0 10px;">
-        <div onclick="toggleEvalSection()" style="display:flex;align-items:center;gap:7px;cursor:pointer;flex:1;">
-          <div class="section-title" style="margin-bottom:0;">🔬 Mis Evaluaciones</div>
-          <div id="eval-section-chevron" style="font-size:11px;color:var(--gray4);transition:transform 0.25s;line-height:1;">▼</div>
-        </div>
+    <div id="coach-evaluaciones-inline" style="margin-bottom:24px;">
+      <div class="section-header">
+        <div class="section-title">🔬 Mis Evaluaciones</div>
         <div class="section-action" onclick="openCreateTestModal()">+ Nueva Evaluación</div>
       </div>
-      <div id="eval-section-body" style="display:none;">
-        <div style="display:flex;gap:8px;margin-bottom:16px;padding-bottom:12px;border-top:1.5px solid var(--gray2);padding-top:12px;">
-          <div class="eval-filter-chip active" onclick="filterCoachTests('all', this)" style="cursor:pointer;padding:6px 12px;border-radius:6px;background:var(--gray1);color:var(--black);font-size:12px;font-weight:600;transition:all 0.2s;">Todas</div>
-          <div class="eval-filter-chip" onclick="filterCoachTests('pending', this)" style="cursor:pointer;padding:6px 12px;border-radius:6px;color:var(--gray4);font-size:12px;font-weight:600;transition:all 0.2s;">⏳ Pendientes</div>
-          <div class="eval-filter-chip" onclick="filterCoachTests('completed', this)" style="cursor:pointer;padding:6px 12px;border-radius:6px;color:var(--gray4);font-size:12px;font-weight:600;transition:all 0.2s;">✅ Completadas</div>
-        </div>
-        <div id="coach-tests-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
-          <div class="spinner"></div>
-        </div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;padding-bottom:12px;border-bottom:1.5px solid var(--gray2);">
+        <div class="eval-filter-chip active" onclick="filterCoachTests('all', this)" style="cursor:pointer;padding:6px 12px;border-radius:6px;background:var(--gray1);color:var(--black);font-size:12px;font-weight:600;transition:all 0.2s;">Todas</div>
+        <div class="eval-filter-chip" onclick="filterCoachTests('pending', this)" style="cursor:pointer;padding:6px 12px;border-radius:6px;color:var(--gray4);font-size:12px;font-weight:600;transition:all 0.2s;">⏳ Pendientes</div>
+        <div class="eval-filter-chip" onclick="filterCoachTests('completed', this)" style="cursor:pointer;padding:6px 12px;border-radius:6px;color:var(--gray4);font-size:12px;font-weight:600;transition:all 0.2s;">✅ Completadas</div>
       </div>
-      <div style="height:1.5px;background:var(--gray2);"></div>
+      <div id="coach-tests-list" style="display:flex;flex-direction:column;gap:12px;">
+        <div class="spinner"></div>
+      </div>
     </div>
     <div class="section-header"><div class="section-title">Mis clientes</div><div class="section-action" id="coach-count"></div></div>
     <div class="sort-bar" id="client-sort-bar">
@@ -2073,6 +2063,11 @@ async function viewTestDetails(testId) {
       ${ex.exercise_video_url ? `<div style="margin-bottom:10px;"><a href="${ex.exercise_video_url}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;background:var(--orange-light);color:var(--orange);border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;">▶ Ver video explicativo</a></div>` : ''}
       ${ex.exercise_notes ? `<div style="font-size:12px;color:var(--gray5);margin-bottom:10px;padding:8px;background:var(--white);border-radius:6px;border-left:3px solid var(--orange);">💡 ${ex.exercise_notes}</div>` : ''}
       ${isPending ? `
+        ${ex.exercise_result ? `
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--orange-light);border-radius:8px;margin-bottom:10px;">
+          <span style="font-size:11px;font-weight:700;color:var(--orange);letter-spacing:0.06em;text-transform:uppercase;white-space:nowrap;">🎯 Meta:</span>
+          <span style="font-size:15px;font-weight:800;color:var(--orange);">${ex.exercise_result} <span style="font-size:12px;font-weight:600;">${ex.exercise_unit || ''}</span></span>
+        </div>` : ''}
         <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">
           <div>
             <label style="font-size:10px;font-weight:700;color:var(--gray4);letter-spacing:0.08em;display:block;margin-bottom:4px;">TU RESULTADO</label>
@@ -2337,25 +2332,19 @@ async function loadCoachTests(filter = 'all') {
     }
     
     list.innerHTML = tests.map(test => `
-      <div class="test-card fade-up" style="background:var(--gray1);border:1.5px solid var(--gray2);border-radius:var(--radius-sm);overflow:hidden;">
-        <div onclick="toggleTestCard('${test.id}')" style="display:flex;justify-content:space-between;align-items:center;padding:13px 14px;cursor:pointer;gap:10px;">
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:14px;font-weight:700;color:var(--black);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${test.test_name}</div>
-            <div style="font-size:11px;color:var(--gray4);margin-top:2px;">👤 ${test.client.name} · 📅 ${new Date(test.test_date).toLocaleDateString('es-CR')}</div>
+      <div class="test-card fade-up" style="background:var(--gray1);border:1.5px solid var(--gray2);border-radius:var(--radius-sm);padding:16px;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+          <div>
+            <div style="font-size:15px;font-weight:700;color:var(--black);">${test.test_name}</div>
+            <div style="font-size:12px;color:var(--gray4);margin-top:2px;">👤 ${test.client.name}</div>
+            <div style="font-size:12px;color:var(--gray4);margin-top:2px;">📅 ${new Date(test.test_date).toLocaleDateString('es-CR')}</div>
           </div>
-          <div style="display:flex;align-items:center;gap:7px;flex-shrink:0;">
-            <div style="padding:4px 9px;background:var(--orange-light);color:var(--orange);border-radius:6px;font-size:11px;font-weight:700;">${test.status === 'pending' ? '⏳ Pendiente' : '✅ Completado'}</div>
-            <div id="test-chevron-${test.id}" style="font-size:11px;color:var(--gray4);transition:transform 0.2s;">▼</div>
-          </div>
+          <div style="padding:6px 12px;background:var(--orange-light);color:var(--orange);border-radius:6px;font-size:11px;font-weight:700;">${test.status === 'pending' ? '⏳ Pendiente' : '✅ Completado'}</div>
         </div>
-        <div id="test-body-${test.id}" style="display:none;padding:0 14px 14px;border-top:1px solid var(--gray2);">
-          ${test.context_notes ? `<div style="padding:9px 11px;background:var(--white);border-radius:8px;margin:10px 0 8px;font-size:12px;color:var(--gray5);border-left:3px solid var(--orange);">📝 ${test.context_notes}</div>` : '<div style="height:10px;"></div>'}
-          <div style="display:flex;gap:8px;">
-            <button onclick="viewCoachTestDetails('${test.id}')" style="flex:1;padding:10px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Ver Detalles</button>
-            <button onclick="openEditTestModal('${test.id}')" style="padding:10px 13px;background:var(--gray2);color:var(--black);border:none;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;">✏️</button>
-            <button onclick="confirmDeleteTest('${test.id}','${test.test_name.replace(/'/g,"\\'")}')" style="padding:10px 13px;background:var(--red-light);color:var(--red);border:none;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;">🗑️</button>
-          </div>
-        </div>
+        ${test.context_notes ? `<div style="padding:12px;background:var(--white);border-radius:8px;margin-bottom:12px;font-size:12px;color:var(--gray5);border-left:3px solid var(--orange);">📝 ${test.context_notes}</div>` : ''}
+        <button onclick="viewCoachTestDetails('${test.id}')" style="width:100%;padding:12px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">
+          Ver Detalles
+        </button>
       </div>
     `).join('');
   } catch(error) {
@@ -2372,58 +2361,6 @@ function filterCoachTests(filter, chipEl) {
   chipEl.style.background = 'var(--gray1)';
   chipEl.style.color = 'var(--black)';
   loadCoachTests(filter);
-}
-
-function toggleEvalSection() {
-  const body = document.getElementById('eval-section-body');
-  const chevron = document.getElementById('eval-section-chevron');
-  if (!body) return;
-  const isOpen = body.style.display !== 'none';
-  body.style.display = isOpen ? 'none' : 'block';
-  chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
-  if (!isOpen) loadCoachTests();
-}
-
-function toggleTestCard(testId) {
-  const body = document.getElementById('test-body-' + testId);
-  const chevron = document.getElementById('test-chevron-' + testId);
-  if (!body) return;
-  const isOpen = body.style.display !== 'none';
-  body.style.display = isOpen ? 'none' : 'block';
-  chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
-}
-
-async function openEditTestModal(testId) {
-  const {data: test, error} = await sb.from('tests').select('*').eq('id', testId).single();
-  if (error || !test) { alert('Error al cargar la evaluación'); return; }
-  document.getElementById('edit-test-id').value = testId;
-  document.getElementById('edit-test-name').value = test.test_name || '';
-  document.getElementById('edit-test-date').value = test.test_date || '';
-  document.getElementById('edit-test-notes').value = test.context_notes || '';
-  document.getElementById('edit-test-status').value = test.status || 'pending';
-  showModal('modal-edit-test');
-}
-
-async function saveEditTest() {
-  const testId = document.getElementById('edit-test-id').value;
-  const testName = document.getElementById('edit-test-name').value.trim();
-  const testDate = document.getElementById('edit-test-date').value;
-  const contextNotes = document.getElementById('edit-test-notes').value.trim();
-  const status = document.getElementById('edit-test-status').value;
-  if (!testName) { alert('El nombre no puede estar vacío'); return; }
-  if (!testDate) { alert('Selecciona una fecha'); return; }
-  const {error} = await sb.from('tests').update({ test_name: testName, test_date: testDate, context_notes: contextNotes, status }).eq('id', testId);
-  if (error) { alert('Error: ' + error.message); return; }
-  closeModal('modal-edit-test');
-  loadCoachTests();
-}
-
-async function confirmDeleteTest(testId, testName) {
-  if (!confirm('¿Eliminar "' + testName + '"?\n\nEsta acción no se puede deshacer.')) return;
-  await sb.from('test_exercises').delete().eq('test_id', testId);
-  const {error} = await sb.from('tests').delete().eq('id', testId);
-  if (error) { alert('Error: ' + error.message); return; }
-  loadCoachTests();
 }
 
 function resetTestForm() {
@@ -5222,40 +5159,6 @@ async function executeCopyDay() {
 
       <button onclick="saveCoachTest()" class="btn-primary" style="margin-top:20px;">Guardar Evaluación</button>
       <button onclick="closeModal('modal-create-test')" class="btn-secondary" style="margin-top:10px;">Cancelar</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== EDIT TEST MODAL ===== -->
-<div id="modal-edit-test" class="modal-overlay">
-  <div class="modal-content">
-    <div class="modal-header">
-      <div class="modal-title">Editar Evaluación</div>
-      <button class="modal-close" onclick="closeModal('modal-edit-test')">✕</button>
-    </div>
-    <div style="padding:20px;">
-      <input type="hidden" id="edit-test-id">
-      <div class="form-group">
-        <label class="form-label">Nombre de la Evaluación</label>
-        <input type="text" class="form-input" id="edit-test-name" placeholder="ej: Eval Inicial, Test Seguimiento...">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Fecha</label>
-        <input type="date" class="form-input" id="edit-test-date">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Estado</label>
-        <select class="form-input" id="edit-test-status" style="appearance:auto;">
-          <option value="pending">⏳ Pendiente</option>
-          <option value="completed">✅ Completado</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Notas de Contexto</label>
-        <textarea class="form-textarea" id="edit-test-notes" rows="3" placeholder="ej: Dormí poco, estaba motivado, etc" style="resize:none;"></textarea>
-      </div>
-      <button onclick="saveEditTest()" class="btn-primary" style="margin-top:20px;">Guardar Cambios</button>
-      <button onclick="closeModal('modal-edit-test')" class="btn-secondary" style="margin-top:10px;">Cancelar</button>
     </div>
   </div>
 </div>
