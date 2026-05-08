@@ -609,27 +609,26 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 <!-- ===== COACH: CLIENTES ===== -->
 <div class="screen" id="screen-coach-home">
   <div class="topbar"><div class="topbar-logo">Move With Sau</div><div class="topbar-action" onclick="showModal('modal-add-client')">+ Cliente</div></div>
- <!-- ===== COACH EVALUACIONES SECTION ===== -->
-<div class="section" id="coach-evaluaciones-section" style="display:none;">
-  <div class="section-header">
-    <div class="section-title">📊 Mis Evaluaciones</div>
-    <div class="section-action" onclick="openCreateTestModal()">+ Nueva Evaluación</div>
-  </div>
-  
-  <div style="display:flex;gap:12px;margin-bottom:20px;padding-bottom:12px;border-bottom:1.5px solid var(--gray2);">
-    <div class="eval-filter-chip active" onclick="filterCoachTests('all', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;background:var(--gray1);color:var(--black);font-size:13px;font-weight:600;transition:all 0.2s;">Todas</div>
-    <div class="eval-filter-chip" onclick="filterCoachTests('pending', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;color:var(--gray4);font-size:13px;font-weight:600;transition:all 0.2s;">⏳ Pendientes</div>
-    <div class="eval-filter-chip" onclick="filterCoachTests('completed', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;color:var(--gray4);font-size:13px;font-weight:600;transition:all 0.2s;">✅ Completadas</div>
-  </div>
-  
-  <div id="coach-tests-list" style="display:flex;flex-direction:column;gap:12px;">
-    <div class="spinner"></div>
-  </div>
-</div>
+
   <div class="scroll-body">
     <div style="margin-bottom:18px;" class="fade-up">
       <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Coach</div>
       <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;" id="coach-name-display">—</div>
+    </div>
+    <!-- EVALUACIONES inline section -->
+    <div id="coach-evaluaciones-inline" style="margin-bottom:24px;">
+      <div class="section-header">
+        <div class="section-title">🔬 Mis Evaluaciones</div>
+        <div class="section-action" onclick="openCreateTestModal()">+ Nueva Evaluación</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;padding-bottom:12px;border-bottom:1.5px solid var(--gray2);">
+        <div class="eval-filter-chip active" onclick="filterCoachTests('all', this)" style="cursor:pointer;padding:6px 12px;border-radius:6px;background:var(--gray1);color:var(--black);font-size:12px;font-weight:600;transition:all 0.2s;">Todas</div>
+        <div class="eval-filter-chip" onclick="filterCoachTests('pending', this)" style="cursor:pointer;padding:6px 12px;border-radius:6px;color:var(--gray4);font-size:12px;font-weight:600;transition:all 0.2s;">⏳ Pendientes</div>
+        <div class="eval-filter-chip" onclick="filterCoachTests('completed', this)" style="cursor:pointer;padding:6px 12px;border-radius:6px;color:var(--gray4);font-size:12px;font-weight:600;transition:all 0.2s;">✅ Completadas</div>
+      </div>
+      <div id="coach-tests-list" style="display:flex;flex-direction:column;gap:12px;">
+        <div class="spinner"></div>
+      </div>
     </div>
     <div class="section-header"><div class="section-title">Mis clientes</div><div class="section-action" id="coach-count"></div></div>
     <div class="sort-bar" id="client-sort-bar">
@@ -641,11 +640,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div id="coach-clients-list"><div class="spinner"></div></div>
   </div>
   <div class="bottom-nav">
-    <div class="nav-item" onclick="showCoachEvaluaciones()">
-  <div class="nav-icon">🔬</div>
-  <div class="nav-label">Evaluaciones</div>
-  <div class="nav-dot"></div>
-</div>
+
     <div class="nav-item active" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon">👨🏻‍🔬</div><div class="nav-label">Builder</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('coaching',this)"><div class="nav-icon">🧪</div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
@@ -2200,14 +2195,8 @@ async function saveClientTest() {
 }
 
 function showCoachEvaluaciones() {
-  // Ocultar todas las sections
-  document.querySelectorAll('#screen-coach-home .section').forEach(s => s.style.display = 'none');
-  // Mostrar la de evaluaciones
-  const evalSection = document.getElementById('coach-evaluaciones-section');
-  if(evalSection) {
-    evalSection.style.display = 'block';
-    loadCoachTests();
-  }
+  // Legacy: evaluaciones now always visible inline
+  loadCoachTests();
 }
 
 async function loadCoachTests(filter = 'all') {
@@ -2359,6 +2348,7 @@ async function initCoach() {
   showScreen('screen-coach-home');
   document.getElementById('coach-name-display').textContent = currentUser.name.split(' ')[0];
   loadCoachClients();
+  loadCoachTests();
 }
 
 function setSortClients(mode, el) {
@@ -5018,7 +5008,7 @@ async function executeCopyDay() {
 </div>
 
 <!-- ===== TESTS MODAL ===== -->
-<div id="modal-create-test" class="modal-overlay" style="display:none;">
+<div id="modal-create-test" class="modal-overlay">
   <div class="modal-content">
     <div class="modal-header">
       <div class="modal-title">Crear Nueva Evaluación</div>
