@@ -478,9 +478,8 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 
     <!-- TESTS TAB -->
     <div id="client-tests-tab" style="display:none;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div style="margin-bottom:20px;">
         <div style="font-size:13px;color:var(--gray4);">Tus evaluaciones y tests</div>
-        <button onclick="showModal('modal-create-test')" style="padding:10px 16px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Crear Test</button>
       </div>
       <div id="client-tests-list"><div class="spinner"></div></div>
     </div>
@@ -2041,75 +2040,6 @@ async function loadClientTests() {
     document.getElementById('client-tests-list').innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">Sin evaluaciones aún.</div></div>';
     return;
   }
-  // ===== COACH EVALUACIONES =====
-
-function showCoachEvaluaciones() {
-  document.querySelectorAll('#screen-coach-home .section').forEach(s => s.style.display = 'none');
-  document.getElementById('coach-evaluaciones-section').style.display = 'block';
-  loadCoachTests();
-}
-
-async function loadCoachTests() {
-  if(!currentUser || currentUser.role !== 'coach') {
-    document.getElementById('coach-tests-list').innerHTML = '<div class="empty-state"><div class="empty-icon">❌</div><div class="empty-text">Solo coaches pueden ver evaluaciones.</div></div>';
-    return;
-  }
-  
-  const {data: tests} = await sb.from('tests')
-    .select('*, client:clients(name, username), exercises:test_exercises(count)')
-    .eq('coach_id', currentUser.id)
-    .order('test_date', {ascending: false});
-  
-  const list = document.getElementById('coach-tests-list');
-  
-  if(!tests || tests.length === 0) {
-    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">No has creado evaluaciones aún.<br>Click en "+ Nueva Evaluación" para crear.</div></div>';
-    return;
-  }
-  
-  list.innerHTML = tests.map(test => `
-    <div class="test-card fade-up" style="background:var(--gray1);border:1.5px solid var(--gray2);border-radius:var(--radius-sm);padding:16px;margin-bottom:12px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
-        <div>
-          <div style="font-size:15px;font-weight:700;color:var(--black);">${test.test_name}</div>
-          <div style="font-size:12px;color:var(--gray4);margin-top:2px;">👤 ${test.client.name} (@${test.client.username})</div>
-          <div style="font-size:12px;color:var(--gray4);margin-top:2px;">📅 ${new Date(test.test_date).toLocaleDateString('es-CR')}</div>
-        </div>
-        <div style="padding:6px 12px;background:var(--orange-light);color:var(--orange);border-radius:6px;font-size:11px;font-weight:700;">${test.status === 'pending' ? '⏳ Pendiente' : '✅ Completado'}</div>
-      </div>
-      
-      ${test.context_notes ? `<div style="padding:12px;background:var(--white);border-radius:8px;margin-bottom:12px;font-size:12px;color:var(--gray5);border-left:3px solid var(--orange);">📝 <strong>Contexto:</strong> ${test.context_notes}</div>` : ''}
-      
-      <div style="font-size:12px;color:var(--gray4);margin-bottom:12px;">📋 ${test.exercises?.length || 0} ejercicios</div>
-      
-      <button onclick="viewCoachTestDetails('${test.id}')" style="width:100%;padding:12px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity 0.2s;">
-        Ver Detalles
-      </button>
-    </div>
-  `).join('');
-}
-
-async function viewCoachTestDetails(testId) {
-  const {data: test} = await sb.from('tests').select('*').eq('id', testId).single();
-  const {data: exercises} = await sb.from('test_exercises').select('*').eq('test_id', testId);
-  
-  console.log('Test:', test);
-  console.log('Exercises:', exercises);
-  
-  alert(`Test: ${test.test_name}\nEjercicios: ${exercises.length}\nEstado: ${test.status}`);
-}
-
-function filterCoachTests(filter, chipEl) {
-  document.querySelectorAll('.eval-filter-chip').forEach(c => {
-    c.style.background = 'transparent';
-    c.style.color = 'var(--gray4)';
-  });
-  
-  chipEl.style.background = 'var(--gray1)';
-  chipEl.style.color = 'var(--black)';
-  
-  loadCoachTests();
-}
   const {data: tests} = await sb.from('tests').select('*').eq('client_id', currentClient.id).order('test_date', {ascending: false});
   const list = document.getElementById('client-tests-list');
   
@@ -2280,17 +2210,22 @@ function showCoachEvaluaciones() {
   }
 }
 
-async function loadCoachTests() {
+async function loadCoachTests(filter = 'all') {
   if(!currentUser || currentUser.role !== 'coach') {
     document.getElementById('coach-tests-list').innerHTML = '<div class="empty-state"><div class="empty-icon">❌</div><div class="empty-text">Solo coaches pueden ver evaluaciones.</div></div>';
     return;
   }
   
   try {
-    const {data: tests} = await sb.from('tests')
+    let query = sb.from('tests')
       .select('*, client:clients(name, username)')
       .eq('coach_id', currentUser.id)
       .order('test_date', {ascending: false});
+    
+    if(filter === 'pending') query = query.eq('status', 'pending');
+    else if(filter === 'completed') query = query.eq('status', 'completed');
+    
+    const {data: tests} = await query;
     
     const list = document.getElementById('coach-tests-list');
     
@@ -2309,14 +2244,26 @@ async function loadCoachTests() {
           </div>
           <div style="padding:6px 12px;background:var(--orange-light);color:var(--orange);border-radius:6px;font-size:11px;font-weight:700;">${test.status === 'pending' ? '⏳ Pendiente' : '✅ Completado'}</div>
         </div>
-        
         ${test.context_notes ? `<div style="padding:12px;background:var(--white);border-radius:8px;margin-bottom:12px;font-size:12px;color:var(--gray5);border-left:3px solid var(--orange);">📝 ${test.context_notes}</div>` : ''}
+        <button onclick="viewCoachTestDetails('${test.id}')" style="width:100%;padding:12px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">
+          Ver Detalles
+        </button>
       </div>
     `).join('');
   } catch(error) {
     console.error('Error loading tests:', error);
     document.getElementById('coach-tests-list').innerHTML = '<div class="empty-state"><div class="empty-icon">❌</div><div class="empty-text">Error al cargar evaluaciones</div></div>';
   }
+}
+
+function filterCoachTests(filter, chipEl) {
+  document.querySelectorAll('.eval-filter-chip').forEach(c => {
+    c.style.background = 'transparent';
+    c.style.color = 'var(--gray4)';
+  });
+  chipEl.style.background = 'var(--gray1)';
+  chipEl.style.color = 'var(--black)';
+  loadCoachTests(filter);
 }
 
 function resetTestForm() {
