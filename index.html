@@ -464,7 +464,22 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   <div class="topbar"><div class="topbar-logo">Move With Sau</div><div class="topbar-action" onclick="handleLogout()">Salir</div></div>
   <div class="scroll-body">
     <div style="margin-bottom:18px;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Tu programa</div><div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;">Tu Plan MOVE</div></div>
-    <div id="c-plans-list"><div class="spinner"></div></div>
+    
+    <!-- TAB NAVIGATION -->
+    <div style="display:flex;gap:12px;margin-bottom:20px;border-bottom:1.5px solid var(--gray2);padding-bottom:12px;">
+      <div class="client-plan-tab-chip active" onclick="switchClientPlanTab('plans', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;background:var(--gray1);color:var(--black);font-size:13px;font-weight:600;transition:all 0.2s;">📋 Mi Plan</div>
+      <div class="client-plan-tab-chip" onclick="switchClientPlanTab('tests', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;color:var(--gray4);font-size:13px;font-weight:600;transition:all 0.2s;">📊 Evaluaciones</div>
+    </div>
+
+    <!-- PLANES TAB -->
+    <div id="client-plans-tab" style="display:block;">
+      <div id="c-plans-list"><div class="spinner"></div></div>
+    </div>
+
+    <!-- TESTS TAB -->
+    <div id="client-tests-tab" style="display:none;">
+      <div id="client-tests-list"><div class="spinner"></div></div>
+    </div>
   </div>
   <a href="https://wa.me/50672083564" target="_blank" style="position:fixed;bottom:80px;right:16px;width:50px;height:50px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,211,102,0.4);z-index:99;text-decoration:none;font-size:26px;">💬</a>
   <div class="bottom-nav">
@@ -1970,6 +1985,201 @@ async function loadClientPlans() {
   const list=document.getElementById('c-plans-list');
   if(!plans||plans.length===0){list.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Tu coach aún no ha subido planes.</div></div>';return;}
   list.innerHTML=plans.map(p=>`<div class="pdf-card fade-up"><div class="pdf-icon">📄</div><div style="flex:1;min-width:0;"><div class="pdf-name">${p.pdf_name}</div><div class="pdf-date">${new Date(p.uploaded_at).toLocaleDateString('es-CR')}</div></div><a class="pdf-open" href="${p.pdf_url}" target="_blank">Abrir</a></div>`).join('');
+}
+
+// ===== TESTS (EVALUACIONES) =====
+function switchClientPlanTab(tab, chipEl) {
+  document.querySelectorAll('.client-plan-tab-chip').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.client-plan-tab-chip').forEach(c => c.style.background = 'transparent');
+  document.querySelectorAll('.client-plan-tab-chip').forEach(c => c.style.color = 'var(--gray4)');
+  
+  chipEl.classList.add('active');
+  chipEl.style.background = 'var(--gray1)';
+  chipEl.style.color = 'var(--black)';
+  
+  const plansTab = document.getElementById('client-plans-tab');
+  const testsTab = document.getElementById('client-tests-tab');
+  
+  if(tab === 'plans') {
+    plansTab.style.display = 'block';
+    testsTab.style.display = 'none';
+  } else {
+    plansTab.style.display = 'none';
+    testsTab.style.display = 'block';
+    loadClientTests();
+  }
+}
+
+async function loadClientTests() {
+  if(!currentClient) {
+    document.getElementById('client-tests-list').innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">Sin evaluaciones aún.</div></div>';
+    return;
+  }
+  
+  const {data: tests} = await sb.from('tests').select('*').eq('client_id', currentClient.id).order('test_date', {ascending: false});
+  const list = document.getElementById('client-tests-list');
+  
+  if(!tests || tests.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">Tu coach aún no ha creado evaluaciones.</div></div>';
+    return;
+  }
+  
+  list.innerHTML = tests.map(test => `
+    <div class="test-card fade-up" style="background:var(--gray1);border:1.5px solid var(--gray2);border-radius:var(--radius-sm);padding:16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--black);">${test.test_name}</div>
+          <div style="font-size:12px;color:var(--gray4);margin-top:2px;">📅 ${new Date(test.test_date).toLocaleDateString('es-CR')}</div>
+        </div>
+        <div style="padding:6px 12px;background:var(--orange-light);color:var(--orange);border-radius:6px;font-size:11px;font-weight:700;">${test.status === 'pending' ? '⏳ Pendiente' : '✅ Completado'}</div>
+      </div>
+      
+      ${test.context_notes ? `<div style="padding:12px;background:var(--white);border-radius:8px;margin-bottom:12px;font-size:12px;color:var(--gray5);border-left:3px solid var(--orange);">📝 <strong>Contexto:</strong> ${test.context_notes}</div>` : ''}
+      
+      <button onclick="viewTestDetails('${test.id}')" style="width:100%;padding:12px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity 0.2s;">
+        ${test.status === 'pending' ? 'Completar Evaluación' : 'Ver Detalles'}
+      </button>
+    </div>
+  `).join('');
+}
+
+async function viewTestDetails(testId) {
+  const {data: test} = await sb.from('tests').select('*').eq('id', testId).single();
+  if(!test) return;
+  
+  const {data: exercises} = await sb.from('test_exercises').select('*').eq('test_id', testId);
+  
+  // TODO: Mostrar modal con detalles y formulario para completar si está pendiente
+  console.log('Test:', test);
+  console.log('Exercises:', exercises);
+}
+
+function addTestExercise() {
+  const exercisesList = document.getElementById('test-exercises-list');
+  const index = exercisesList.children.length;
+  
+  const exerciseHTML = `
+    <div class="test-exercise-item" style="background:var(--gray1);border:1.5px solid var(--gray2);border-radius:var(--radius-sm);padding:14px;position:relative;">
+      <button type="button" onclick="removeTestExercise(this)" style="position:absolute;top:8px;right:8px;width:24px;height:24px;border:none;background:transparent;color:var(--gray4);font-size:18px;cursor:pointer;">✕</button>
+      
+      <div class="form-group">
+        <label class="form-label">Nombre del Ejercicio</label>
+        <input type="text" class="form-input exercise-name" placeholder="ej: Sentadilla 1RM, Flexiones máx, etc">
+      </div>
+      
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:14px;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Resultado/Valor</label>
+          <input type="text" class="form-input exercise-result" placeholder="ej: 100, 20 reps, 3:45">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Unidad</label>
+          <input type="text" class="form-input exercise-unit" placeholder="kg, reps, min, etc">
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Video Explicativo (URL)</label>
+        <input type="url" class="form-input exercise-video" placeholder="https://youtube.com/... o URL del video">
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Notas del Ejercicio</label>
+        <textarea class="form-textarea exercise-notes" rows="2" placeholder="Técnica, consejos, rango de movimiento, etc" style="resize:none;"></textarea>
+      </div>
+    </div>
+  `;
+  
+  exercisesList.insertAdjacentHTML('beforeend', exerciseHTML);
+}
+
+function removeTestExercise(btn) {
+  btn.closest('.test-exercise-item').remove();
+}
+
+async function saveClientTest() {
+  const testName = document.getElementById('test-name-input').value.trim();
+  const testDate = document.getElementById('test-date-input').value;
+  const contextNotes = document.getElementById('test-context-notes').value.trim();
+  
+  if(!testName || !testDate) {
+    alert('Por favor completa el nombre y la fecha del test');
+    return;
+  }
+  
+  if(!currentClient) {
+    alert('Error: No hay cliente seleccionado');
+    return;
+  }
+  
+  // Recolectar ejercicios
+  const exercises = [];
+  document.querySelectorAll('.test-exercise-item').forEach(item => {
+    const name = item.querySelector('.exercise-name').value.trim();
+    const result = item.querySelector('.exercise-result').value.trim();
+    const unit = item.querySelector('.exercise-unit').value.trim();
+    const videoUrl = item.querySelector('.exercise-video').value.trim();
+    const notes = item.querySelector('.exercise-notes').value.trim();
+    
+    if(name && result) {
+      exercises.push({
+        name, result, unit, videoUrl, notes
+      });
+    }
+  });
+  
+  if(exercises.length === 0) {
+    alert('Por favor agrega al menos un ejercicio al test');
+    return;
+  }
+  
+  // Guardar test en DB
+  const {data: newTest, error: testError} = await sb.from('tests').insert({
+    client_id: currentClient.id,
+    coach_id: currentUser.id,
+    test_name: testName,
+    test_date: testDate,
+    context_notes: contextNotes,
+    status: 'pending',
+    created_at: new Date().toISOString()
+  }).select();
+  
+  if(testError) {
+    alert('Error al guardar el test: ' + testError.message);
+    return;
+  }
+  
+  const testId = newTest[0].id;
+  
+  // Guardar ejercicios asociados
+  const exercisesToInsert = exercises.map(ex => ({
+    test_id: testId,
+    exercise_name: ex.name,
+    exercise_result: ex.result,
+    exercise_unit: ex.unit,
+    exercise_video_url: ex.videoUrl,
+    exercise_notes: ex.notes
+  }));
+  
+  const {error: exError} = await sb.from('test_exercises').insert(exercisesToInsert);
+  
+  if(exError) {
+    alert('Error al guardar ejercicios: ' + exError.message);
+    return;
+  }
+  
+  // Limpiar y cerrar modal
+  closeModal('modal-create-test');
+  resetTestForm();
+  loadClientTests();
+  alert('¡Evaluación creada exitosamente!');
+}
+
+function resetTestForm() {
+  document.getElementById('test-name-input').value = '';
+  document.getElementById('test-date-input').value = '';
+  document.getElementById('test-context-notes').value = '';
+  document.getElementById('test-exercises-list').innerHTML = '';
 }
 
 function clientNav(tab,el) {
@@ -4644,7 +4854,47 @@ async function executeCopyDay() {
   </div>
 </div>
 
-<!-- ===== WORKOUT RATING MODAL ===== -->
+<!-- ===== TESTS MODAL ===== -->
+<div id="modal-create-test" class="modal-overlay" style="display:none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">Crear Nueva Evaluación</div>
+      <button class="modal-close" onclick="closeModal('modal-create-test')">✕</button>
+    </div>
+    <div style="padding:20px;">
+      
+      <!-- Nombre del Test -->
+      <div class="form-group">
+        <label class="form-label">Nombre de la Evaluación</label>
+        <input type="text" class="form-input" id="test-name-input" placeholder="ej: Eval Inicial, Test Seguimiento, etc">
+      </div>
+
+      <!-- Fecha del Test -->
+      <div class="form-group">
+        <label class="form-label">Fecha</label>
+        <input type="date" class="form-input" id="test-date-input">
+      </div>
+
+      <!-- Notas de Contexto -->
+      <div class="form-group">
+        <label class="form-label">Notas de Contexto</label>
+        <textarea class="form-textarea" id="test-context-notes" rows="2" placeholder="ej: Dormí poco, estoy resfriado, estaba motivado, etc" style="resize:none;"></textarea>
+      </div>
+
+      <!-- Ejercicios del Test -->
+      <div style="margin-top:24px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:var(--black);margin-bottom:12px;">Ejercicios del Test</div>
+        <div id="test-exercises-list" style="display:flex;flex-direction:column;gap:12px;margin-bottom:12px;"></div>
+        <button onclick="addTestExercise()" style="width:100%;padding:12px;background:var(--gray1);border:1.5px dashed var(--gray3);border-radius:var(--radius-sm);color:var(--orange);font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:'DM Sans',sans-serif;">+ Agregar Ejercicio</button>
+      </div>
+
+      <button onclick="saveClientTest()" class="btn-primary" style="margin-top:20px;">Guardar Evaluación</button>
+      <button onclick="closeModal('modal-create-test')" class="btn-secondary" style="margin-top:10px;">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== WORKOUT RATING MODAL ==== -->
 <div id="modal-workout-rating" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;" onclick="closeRatingModal(event)">
   <div style="background:var(--white);border-radius:24px 24px 0 0;padding:28px 24px 40px;width:100%;max-width:480px;transform:translateY(100%);transition:transform 0.35s cubic-bezier(.32,1.2,.48,1);" id="rating-modal-sheet">
     <div style="width:36px;height:4px;background:var(--gray2);border-radius:2px;margin:0 auto 22px;"></div>
