@@ -610,6 +610,23 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 <!-- ===== COACH: CLIENTES ===== -->
 <div class="screen" id="screen-coach-home">
   <div class="topbar"><div class="topbar-logo">Move With Sau</div><div class="topbar-action" onclick="showModal('modal-add-client')">+ Cliente</div></div>
+ <!-- ===== COACH EVALUACIONES SECTION ===== -->
+<div class="section" id="coach-evaluaciones-section" style="display:none;">
+  <div class="section-header">
+    <div class="section-title">📊 Mis Evaluaciones</div>
+    <div class="section-action" onclick="showModal('modal-create-test')">+ Nueva Evaluación</div>
+  </div>
+  
+  <div style="display:flex;gap:12px;margin-bottom:20px;padding-bottom:12px;border-bottom:1.5px solid var(--gray2);">
+    <div class="eval-filter-chip active" onclick="filterCoachTests('all', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;background:var(--gray1);color:var(--black);font-size:13px;font-weight:600;transition:all 0.2s;">Todas</div>
+    <div class="eval-filter-chip" onclick="filterCoachTests('pending', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;color:var(--gray4);font-size:13px;font-weight:600;transition:all 0.2s;">⏳ Pendientes</div>
+    <div class="eval-filter-chip" onclick="filterCoachTests('completed', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;color:var(--gray4);font-size:13px;font-weight:600;transition:all 0.2s;">✅ Completadas</div>
+  </div>
+  
+  <div id="coach-tests-list" style="display:flex;flex-direction:column;gap:12px;">
+    <div class="spinner"></div>
+  </div>
+</div>
   <div class="scroll-body">
     <div style="margin-bottom:18px;" class="fade-up">
       <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Coach</div>
@@ -625,6 +642,11 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div id="coach-clients-list"><div class="spinner"></div></div>
   </div>
   <div class="bottom-nav">
+    <div class="nav-item" onclick="showCoachEvaluaciones()">
+  <div class="nav-icon">📊</div>
+  <div class="nav-label">Evaluaciones</div>
+  <div class="nav-dot"></div>
+</div>
     <div class="nav-item active" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon">👨🏻‍🔬</div><div class="nav-label">Builder</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('coaching',this)"><div class="nav-icon">🧪</div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
@@ -2019,7 +2041,75 @@ async function loadClientTests() {
     document.getElementById('client-tests-list').innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">Sin evaluaciones aún.</div></div>';
     return;
   }
+  // ===== COACH EVALUACIONES =====
+
+function showCoachEvaluaciones() {
+  document.querySelectorAll('#screen-coach-home .section').forEach(s => s.style.display = 'none');
+  document.getElementById('coach-evaluaciones-section').style.display = 'block';
+  loadCoachTests();
+}
+
+async function loadCoachTests() {
+  if(!currentUser || currentUser.role !== 'coach') {
+    document.getElementById('coach-tests-list').innerHTML = '<div class="empty-state"><div class="empty-icon">❌</div><div class="empty-text">Solo coaches pueden ver evaluaciones.</div></div>';
+    return;
+  }
   
+  const {data: tests} = await sb.from('tests')
+    .select('*, client:clients(name, username), exercises:test_exercises(count)')
+    .eq('coach_id', currentUser.id)
+    .order('test_date', {ascending: false});
+  
+  const list = document.getElementById('coach-tests-list');
+  
+  if(!tests || tests.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">No has creado evaluaciones aún.<br>Click en "+ Nueva Evaluación" para crear.</div></div>';
+    return;
+  }
+  
+  list.innerHTML = tests.map(test => `
+    <div class="test-card fade-up" style="background:var(--gray1);border:1.5px solid var(--gray2);border-radius:var(--radius-sm);padding:16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--black);">${test.test_name}</div>
+          <div style="font-size:12px;color:var(--gray4);margin-top:2px;">👤 ${test.client.name} (@${test.client.username})</div>
+          <div style="font-size:12px;color:var(--gray4);margin-top:2px;">📅 ${new Date(test.test_date).toLocaleDateString('es-CR')}</div>
+        </div>
+        <div style="padding:6px 12px;background:var(--orange-light);color:var(--orange);border-radius:6px;font-size:11px;font-weight:700;">${test.status === 'pending' ? '⏳ Pendiente' : '✅ Completado'}</div>
+      </div>
+      
+      ${test.context_notes ? `<div style="padding:12px;background:var(--white);border-radius:8px;margin-bottom:12px;font-size:12px;color:var(--gray5);border-left:3px solid var(--orange);">📝 <strong>Contexto:</strong> ${test.context_notes}</div>` : ''}
+      
+      <div style="font-size:12px;color:var(--gray4);margin-bottom:12px;">📋 ${test.exercises?.length || 0} ejercicios</div>
+      
+      <button onclick="viewCoachTestDetails('${test.id}')" style="width:100%;padding:12px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity 0.2s;">
+        Ver Detalles
+      </button>
+    </div>
+  `).join('');
+}
+
+async function viewCoachTestDetails(testId) {
+  const {data: test} = await sb.from('tests').select('*').eq('id', testId).single();
+  const {data: exercises} = await sb.from('test_exercises').select('*').eq('test_id', testId);
+  
+  console.log('Test:', test);
+  console.log('Exercises:', exercises);
+  
+  alert(`Test: ${test.test_name}\nEjercicios: ${exercises.length}\nEstado: ${test.status}`);
+}
+
+function filterCoachTests(filter, chipEl) {
+  document.querySelectorAll('.eval-filter-chip').forEach(c => {
+    c.style.background = 'transparent';
+    c.style.color = 'var(--gray4)';
+  });
+  
+  chipEl.style.background = 'var(--gray1)';
+  chipEl.style.color = 'var(--black)';
+  
+  loadCoachTests();
+}
   const {data: tests} = await sb.from('tests').select('*').eq('client_id', currentClient.id).order('test_date', {ascending: false});
   const list = document.getElementById('client-tests-list');
   
