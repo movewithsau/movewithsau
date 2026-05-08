@@ -2201,12 +2201,11 @@ async function saveClientTest() {
     return;
   }
   
-  if(!currentClient) {
-    alert('Error: No hay cliente seleccionado');
+  if(currentUser && currentUser.role !== 'coach') {
+    alert('Solo coaches pueden crear evaluaciones');
     return;
   }
   
-  // Recolectar ejercicios
   const exercises = [];
   document.querySelectorAll('.test-exercise-item').forEach(item => {
     const name = item.querySelector('.exercise-name').value.trim();
@@ -2227,9 +2226,14 @@ async function saveClientTest() {
     return;
   }
   
-  // Guardar test en DB
+  const clientId = currentClient?.id;
+  if(!clientId) {
+    alert('Necesitas seleccionar un cliente primero');
+    return;
+  }
+  
   const {data: newTest, error: testError} = await sb.from('tests').insert({
-    client_id: currentClient.id,
+    client_id: clientId,
     coach_id: currentUser.id,
     test_name: testName,
     test_date: testDate,
@@ -2245,7 +2249,6 @@ async function saveClientTest() {
   
   const testId = newTest[0].id;
   
-  // Guardar ejercicios asociados
   const exercisesToInsert = exercises.map(ex => ({
     test_id: testId,
     exercise_name: ex.name,
@@ -2262,11 +2265,17 @@ async function saveClientTest() {
     return;
   }
   
-  // Limpiar y cerrar modal
   closeModal('modal-create-test');
   resetTestForm();
-  loadClientTests();
-  alert('¡Evaluación creada exitosamente!');
+  
+  // IMPORTANTE: Recarga la vista correcta
+  if(currentUser.role === 'coach') {
+    loadCoachTests();
+  } else {
+    loadClientTests();
+  }
+  
+  alert('¡Evaluación creada exitosamente! 🎉');
 }
 
 function resetTestForm() {
