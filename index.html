@@ -2054,12 +2054,126 @@ async function loadClientTests() {
 async function viewTestDetails(testId) {
   const {data: test} = await sb.from('tests').select('*').eq('id', testId).single();
   if(!test) return;
-  
-  const {data: exercises} = await sb.from('test_exercises').select('*').eq('test_id', testId);
-  
-  // TODO: Mostrar modal con detalles y formulario para completar si está pendiente
-  console.log('Test:', test);
-  console.log('Exercises:', exercises);
+  const {data: exercises} = await sb.from('test_exercises').select('*').eq('test_id', testId).order('created_at', {ascending: true});
+
+  const isPending = test.status === 'pending';
+  const exercisesHTML = (exercises && exercises.length > 0) ? exercises.map((ex, i) => `
+    <div style="background:var(--gray1);border:1.5px solid var(--gray2);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;">
+      <div style="font-size:13px;font-weight:700;color:var(--black);margin-bottom:8px;">${i+1}. ${ex.exercise_name}</div>
+      ${ex.exercise_video_url ? `<div style="margin-bottom:10px;"><a href="${ex.exercise_video_url}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;background:var(--orange-light);color:var(--orange);border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;">▶ Ver video explicativo</a></div>` : ''}
+      ${ex.exercise_notes ? `<div style="font-size:12px;color:var(--gray5);margin-bottom:10px;padding:8px;background:var(--white);border-radius:6px;border-left:3px solid var(--orange);">💡 ${ex.exercise_notes}</div>` : ''}
+      ${isPending ? `
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">
+          <div>
+            <label style="font-size:10px;font-weight:700;color:var(--gray4);letter-spacing:0.08em;display:block;margin-bottom:4px;">TU RESULTADO</label>
+            <input type="text" id="result-${ex.id}" class="form-input" placeholder="${ex.exercise_unit ? 'ej: 10 ' + ex.exercise_unit : 'ej: 80kg, 15 reps'}" style="padding:10px 12px;font-size:14px;">
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:700;color:var(--gray4);letter-spacing:0.08em;display:block;margin-bottom:4px;">UNIDAD</label>
+            <input type="text" id="unit-${ex.id}" class="form-input" value="${ex.exercise_unit || ''}" placeholder="kg, reps..." style="padding:10px 12px;font-size:14px;">
+          </div>
+        </div>
+        <div style="margin-top:8px;">
+          <label style="font-size:10px;font-weight:700;color:var(--gray4);letter-spacing:0.08em;display:block;margin-bottom:4px;">NOTAS (opcional)</label>
+          <textarea id="notes-${ex.id}" class="form-textarea" rows="2" placeholder="cómo te sentiste, técnica, etc" style="resize:none;font-size:13px;"></textarea>
+        </div>
+      ` : `
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          ${ex.exercise_result ? `<span style="font-size:18px;font-weight:800;color:var(--orange);">${ex.exercise_result} <span style="font-size:13px;font-weight:600;color:var(--gray4);">${ex.exercise_unit || ''}</span></span>` : '<span style="font-size:13px;color:var(--gray4);">Sin resultado registrado</span>'}
+        </div>
+        ${ex.client_notes ? `<div style="font-size:12px;color:var(--gray5);margin-top:8px;padding:8px;background:var(--white);border-radius:6px;">📝 ${ex.client_notes}</div>` : ''}
+      `}
+    </div>
+  `).join('') : '<div style="text-align:center;padding:20px;color:var(--gray4);font-size:13px;">Esta evaluación no tiene ejercicios definidos.</div>';
+
+  document.getElementById('test-detail-modal-title').textContent = test.test_name;
+  document.getElementById('test-detail-modal-body').innerHTML = `
+    <div style="margin-bottom:14px;">
+      <span style="font-size:12px;color:var(--gray4);">📅 ${new Date(test.test_date).toLocaleDateString('es-CR')}</span>
+      <span style="margin-left:10px;padding:4px 10px;background:var(--orange-light);color:var(--orange);border-radius:6px;font-size:11px;font-weight:700;">${isPending ? '⏳ Pendiente' : '✅ Completado'}</span>
+    </div>
+    ${test.context_notes ? `<div style="padding:12px;background:var(--white);border:1.5px solid var(--gray2);border-radius:8px;margin-bottom:14px;font-size:12px;color:var(--gray5);">📝 <strong>Contexto:</strong> ${test.context_notes}</div>` : ''}
+    <div style="font-size:12px;font-weight:700;color:var(--gray4);letter-spacing:0.08em;margin-bottom:10px;text-transform:uppercase;">Ejercicios</div>
+    ${exercisesHTML}
+    ${isPending ? `
+      <div style="margin-top:16px;">
+        <label style="font-size:10px;font-weight:700;color:var(--gray4);letter-spacing:0.08em;display:block;margin-bottom:6px;">NOTAS GENERALES (opcional)</label>
+        <textarea id="test-general-notes" class="form-textarea" rows="2" placeholder="Cómo te sentiste en general hoy..." style="resize:none;font-size:13px;"></textarea>
+      </div>
+      <button onclick="submitTestResults('${testId}', ${JSON.stringify((exercises||[]).map(e=>e.id)).replace(/"/g,"'")})" class="btn-primary" style="margin-top:18px;">Guardar Resultados ✅</button>
+    ` : ''}
+    <button onclick="closeModal('modal-test-detail')" class="btn-secondary" style="margin-top:10px;">Cerrar</button>
+  `;
+  showModal('modal-test-detail');
+}
+
+async function submitTestResults(testId, exerciseIds) {
+  const updates = exerciseIds.map(exId => {
+    const resultEl = document.getElementById('result-' + exId);
+    const unitEl = document.getElementById('unit-' + exId);
+    const notesEl = document.getElementById('notes-' + exId);
+    if(!resultEl) return null;
+    return sb.from('test_exercises').update({
+      exercise_result: resultEl.value.trim(),
+      exercise_unit: unitEl ? unitEl.value.trim() : '',
+      client_notes: notesEl ? notesEl.value.trim() : ''
+    }).eq('id', exId);
+  }).filter(Boolean);
+
+  const generalNotes = document.getElementById('test-general-notes');
+  const generalNotesVal = generalNotes ? generalNotes.value.trim() : '';
+
+  try {
+    await Promise.all(updates);
+    await sb.from('tests').update({
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+      client_general_notes: generalNotesVal
+    }).eq('id', testId);
+    closeModal('modal-test-detail');
+    loadClientTests();
+    const msg = document.createElement('div');
+    msg.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#22c55e;color:white;padding:12px 20px;border-radius:12px;font-weight:700;font-size:14px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.15);font-family:DM Sans,sans-serif;';
+    msg.textContent = '¡Evaluación completada! 💪';
+    document.body.appendChild(msg);
+    setTimeout(() => msg.remove(), 3000);
+  } catch(err) {
+    alert('Error guardando resultados: ' + err.message);
+  }
+}
+
+async function viewCoachTestDetails(testId) {
+  const {data: test} = await sb.from('tests').select('*, client:clients(name)').eq('id', testId).single();
+  if(!test) return;
+  const {data: exercises} = await sb.from('test_exercises').select('*').eq('test_id', testId).order('created_at', {ascending: true});
+
+  const isCompleted = test.status === 'completed';
+  const exercisesHTML = (exercises && exercises.length > 0) ? exercises.map((ex, i) => `
+    <div style="background:var(--gray1);border:1.5px solid var(--gray2);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;">
+      <div style="font-size:13px;font-weight:700;color:var(--black);margin-bottom:6px;">${i+1}. ${ex.exercise_name}</div>
+      ${ex.exercise_video_url ? `<div style="margin-bottom:8px;"><a href="${ex.exercise_video_url}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--orange-light);color:var(--orange);border-radius:6px;font-size:11px;font-weight:700;text-decoration:none;">▶ Video</a></div>` : ''}
+      ${ex.exercise_notes ? `<div style="font-size:12px;color:var(--gray5);margin-bottom:8px;padding:8px;background:var(--white);border-radius:6px;border-left:3px solid var(--orange);">💡 ${ex.exercise_notes}</div>` : ''}
+      <div style="display:flex;align-items:center;gap:10px;">
+        ${ex.exercise_result ? `<span style="font-size:18px;font-weight:800;color:${isCompleted ? '#22c55e' : 'var(--orange)'};">${ex.exercise_result} <span style="font-size:12px;font-weight:600;color:var(--gray4);">${ex.exercise_unit || ''}</span></span>` : `<span style="font-size:13px;color:var(--gray4);">${isCompleted ? 'Sin resultado' : 'Pendiente de completar'}</span>`}
+      </div>
+      ${ex.client_notes ? `<div style="font-size:12px;color:var(--gray5);margin-top:6px;padding:8px;background:var(--white);border-radius:6px;">💬 Cliente: ${ex.client_notes}</div>` : ''}
+    </div>
+  `).join('') : '<div style="text-align:center;padding:20px;color:var(--gray4);font-size:13px;">Esta evaluación no tiene ejercicios.</div>';
+
+  document.getElementById('test-detail-modal-title').textContent = test.test_name;
+  document.getElementById('test-detail-modal-body').innerHTML = `
+    <div style="margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <span style="font-size:13px;font-weight:600;color:var(--black);">👤 ${test.client ? test.client.name : ''}</span>
+      <span style="font-size:12px;color:var(--gray4);">· 📅 ${new Date(test.test_date).toLocaleDateString('es-CR')}</span>
+      <span style="padding:4px 10px;background:var(--orange-light);color:var(--orange);border-radius:6px;font-size:11px;font-weight:700;">${isCompleted ? '✅ Completado' : '⏳ Pendiente'}</span>
+    </div>
+    ${test.context_notes ? `<div style="padding:10px 12px;background:var(--white);border:1.5px solid var(--gray2);border-radius:8px;margin-bottom:14px;font-size:12px;color:var(--gray5);">📝 <strong>Contexto:</strong> ${test.context_notes}</div>` : ''}
+    ${test.client_general_notes ? `<div style="padding:10px 12px;background:var(--white);border:1.5px solid var(--gray2);border-radius:8px;margin-bottom:14px;font-size:12px;color:var(--gray5);">💬 <strong>Notas del cliente:</strong> ${test.client_general_notes}</div>` : ''}
+    <div style="font-size:12px;font-weight:700;color:var(--gray4);letter-spacing:0.08em;margin-bottom:10px;text-transform:uppercase;">Ejercicios</div>
+    ${exercisesHTML}
+    <button onclick="closeModal('modal-test-detail')" class="btn-secondary" style="margin-top:10px;">Cerrar</button>
+  `;
+  showModal('modal-test-detail');
 }
 
 function addTestExercise() {
@@ -5041,6 +5155,17 @@ async function executeCopyDay() {
       <button onclick="saveCoachTest()" class="btn-primary" style="margin-top:20px;">Guardar Evaluación</button>
       <button onclick="closeModal('modal-create-test')" class="btn-secondary" style="margin-top:10px;">Cancelar</button>
     </div>
+  </div>
+</div>
+
+<!-- ===== TEST DETAIL MODAL ===== -->
+<div id="modal-test-detail" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title" id="test-detail-modal-title">Evaluación</div>
+      <button class="modal-close" onclick="closeModal('modal-test-detail')">✕</button>
+    </div>
+    <div style="padding:20px;" id="test-detail-modal-body"></div>
   </div>
 </div>
 
