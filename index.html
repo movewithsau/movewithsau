@@ -2365,6 +2365,7 @@ async function loadCoachTests(filter = 'all') {
           ${test.context_notes ? `<div style="padding:9px 11px;background:var(--white);border-radius:8px;margin:10px 0 8px;font-size:12px;color:var(--gray5);border-left:3px solid var(--orange);">📝 ${test.context_notes}</div>` : '<div style="height:10px;"></div>'}
           <div style="display:flex;gap:8px;">
             <button onclick="viewCoachTestDetails('${test.id}')" style="flex:1;padding:10px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Ver Detalles</button>
+            <button onclick="openCopyTestModal(this)" data-test-id="${test.id}" data-test-name="${test.test_name}" style="padding:10px 13px;background:var(--gray2);color:var(--black);border:none;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;" title="Copiar a otro cliente">📋</button>
             <button onclick="openEditTestModal('${test.id}')" style="padding:10px 13px;background:var(--gray2);color:var(--black);border:none;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;">✏️</button>
             <button onclick="confirmDeleteTest('${test.id}','${test.test_name.replace(/'/g,"\\'")}')" style="padding:10px 13px;background:var(--red-light);color:var(--red);border:none;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;">🗑️</button>
           </div>
@@ -2429,6 +2430,84 @@ async function saveEditTest() {
   if (error) { alert('Error: ' + error.message); return; }
   closeModal('modal-edit-test');
   loadCoachTests();
+}
+
+
+async function openCopyTestModal(btn) {
+  const testId = btn.getAttribute('data-test-id');
+  const testName = btn.getAttribute('data-test-name');
+  document.getElementById('copy-test-id').value = testId;
+  document.getElementById('copy-test-name-display').textContent = testName;
+  
+  const sel = document.getElementById('copy-test-client-select');
+  sel.innerHTML = '<option value="">Cargando...</option>';
+  const {data: clients} = await sb.from('clients').select('id,name').eq('coach_id', currentUser.id).order('name');
+  sel.innerHTML = '<option value="">Seleccionar cliente...</option>';
+  if (clients) {
+    clients.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.name;
+      sel.appendChild(opt);
+    });
+  }
+  showModal('modal-copy-test');
+}
+
+async function executeCopyTest() {
+  const testId = document.getElementById('copy-test-id').value;
+  const clientId = document.getElementById('copy-test-client-select').value;
+  const newDate = document.getElementById('copy-test-date').value;
+  if (!clientId) { alert('Selecciona un cliente destino'); return; }
+  if (!newDate) { alert('Selecciona una fecha para la copia'); return; }
+
+  const btn = document.getElementById('copy-test-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = 'Copiando...';
+
+  try {
+    // Fetch original test
+    const {data: original, error: e1} = await sb.from('tests').select('*').eq('id', testId).single();
+    if (e1 || !original) throw new Error('No se pudo cargar la evaluación original');
+
+    // Create new test for target client
+    const {data: newTest, error: e2} = await sb.from('tests').insert({
+      client_id: clientId,
+      coach_id: currentUser.id,
+      test_name: original.test_name,
+      test_date: newDate,
+      context_notes: original.context_notes || null,
+      status: 'pending',
+      created_at: new Date().toISOString()
+    }).select();
+    if (e2 || !newTest) throw new Error('Error creando la copia: ' + (e2?.message || ''));
+
+    // Fetch original exercises
+    const {data: exercises, error: e3} = await sb.from('test_exercises').select('*').eq('test_id', testId);
+    if (e3) throw new Error('Error cargando ejercicios: ' + e3.message);
+
+    if (exercises && exercises.length > 0) {
+      const toInsert = exercises.map(ex => ({
+        test_id: newTest[0].id,
+        exercise_name: ex.exercise_name,
+        exercise_result: null,
+        exercise_unit: ex.exercise_unit,
+        exercise_video_url: ex.exercise_video_url,
+        exercise_notes: ex.exercise_notes
+      }));
+      const {error: e4} = await sb.from('test_exercises').insert(toInsert);
+      if (e4) throw new Error('Error copiando ejercicios: ' + e4.message);
+    }
+
+    closeModal('modal-copy-test');
+    loadCoachTests();
+    alert('✅ ¡Evaluación copiada exitosamente!');
+  } catch(err) {
+    alert('Error: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Copiar Evaluación';
+  }
 }
 
 async function confirmDeleteTest(testId, testName) {
@@ -5310,5 +5389,38 @@ async function executeCopyDay() {
     <button onclick="closeRatingModalBtn()" style="width:100%;padding:10px;background:transparent;color:var(--gray4);border:none;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:6px;">Saltar</button>
   </div>
 </div>
+
+<!-- ===== COPY TEST MODAL ===== -->
+<div id="modal-copy-test" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">📋 Copiar Evaluación</div>
+      <button class="modal-close" onclick="closeModal('modal-copy-test')">✕</button>
+    </div>
+    <div style="padding:20px;">
+      <input type="hidden" id="copy-test-id">
+      <div style="background:var(--gray1);border-radius:10px;padding:12px 14px;margin-bottom:16px;border-left:3px solid var(--orange);">
+        <div style="font-size:11px;color:var(--gray4);font-weight:600;letter-spacing:0.05em;margin-bottom:3px;">EVALUACIÓN A COPIAR</div>
+        <div id="copy-test-name-display" style="font-size:15px;font-weight:700;color:var(--black);"></div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="font-size:12px;font-weight:700;color:var(--black);display:block;margin-bottom:6px;">Cliente destino</label>
+        <select id="copy-test-client-select" style="width:100%;padding:11px 12px;border:1.5px solid var(--gray2);border-radius:var(--radius-sm);font-size:14px;font-family:'DM Sans',sans-serif;background:var(--white);color:var(--black);">
+          <option value="">Seleccionar cliente...</option>
+        </select>
+      </div>
+      <div style="margin-bottom:20px;">
+        <label style="font-size:12px;font-weight:700;color:var(--black);display:block;margin-bottom:6px;">Fecha de la copia</label>
+        <input type="date" id="copy-test-date" style="width:100%;padding:11px 12px;border:1.5px solid var(--gray2);border-radius:var(--radius-sm);font-size:14px;font-family:'DM Sans',sans-serif;background:var(--white);color:var(--black);box-sizing:border-box;">
+      </div>
+      <div style="font-size:12px;color:var(--gray4);margin-bottom:16px;padding:10px 12px;background:var(--gray1);border-radius:8px;">
+        💡 Los resultados de los ejercicios no se copian — la evaluación se crea en estado <strong>Pendiente</strong> para el cliente seleccionado.
+      </div>
+      <button id="copy-test-confirm-btn" onclick="executeCopyTest()" style="width:100%;padding:13px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;">Copiar Evaluación</button>
+      <button onclick="closeModal('modal-copy-test')" class="btn-secondary" style="margin-top:10px;">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
