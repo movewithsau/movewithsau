@@ -1405,24 +1405,32 @@ async function initClient() {
 }
 
 async function loadCoachAICounts(clientId) {
-  document.getElementById('coach-nutriflex-count').textContent = '0';
-  document.getElementById('coach-nutriflex-last').textContent = 'Sin sesiones';
-  document.getElementById('coach-strongflow-count').textContent = '0';
-  document.getElementById('coach-strongflow-last').textContent = 'Sin sesiones';
+  const elNCount = document.getElementById('coach-nutriflex-count');
+  const elNLast  = document.getElementById('coach-nutriflex-last');
+  const elSCount = document.getElementById('coach-strongflow-count');
+  const elSLast  = document.getElementById('coach-strongflow-last');
+
+  // Elements only exist when coach client detail is visible — bail out silently if not
+  if (!elNCount || !elNLast || !elSCount || !elSLast) return;
+
+  elNCount.textContent = '0';
+  elNLast.textContent  = 'Sin sesiones';
+  elSCount.textContent = '0';
+  elSLast.textContent  = 'Sin sesiones';
 
   const {data:nChats} = await sb.from('nutrition_chats').select('created_at').eq('client_id', clientId).eq('role','user').order('created_at',{ascending:false});
   if(nChats && nChats.length > 0) {
     const nDays = new Set(nChats.map(r=>r.created_at.split('T')[0])).size;
-    document.getElementById('coach-nutriflex-count').textContent = nDays;
+    elNCount.textContent = nDays;
     const lastDate = new Date(nChats[0].created_at).toLocaleDateString('es-CR',{day:'numeric',month:'short',year:'numeric'});
-    document.getElementById('coach-nutriflex-last').textContent = 'Último: '+lastDate;
+    elNLast.textContent = 'Último: '+lastDate;
   }
   const {data:sChats} = await sb.from('training_chats').select('created_at').eq('client_id', clientId).eq('role','user').order('created_at',{ascending:false});
   if(sChats && sChats.length > 0) {
     const sDays = new Set(sChats.map(r=>r.created_at.split('T')[0])).size;
-    document.getElementById('coach-strongflow-count').textContent = sDays;
+    elSCount.textContent = sDays;
     const lastDate = new Date(sChats[0].created_at).toLocaleDateString('es-CR',{day:'numeric',month:'short',year:'numeric'});
-    document.getElementById('coach-strongflow-last').textContent = 'Último: '+lastDate;
+    elSLast.textContent = 'Último: '+lastDate;
   }
 }
 
