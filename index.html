@@ -2415,6 +2415,43 @@ async function openEditTestModal(testId) {
   document.getElementById('edit-test-date').value = test.test_date || '';
   document.getElementById('edit-test-notes').value = test.context_notes || '';
   document.getElementById('edit-test-status').value = test.status || 'pending';
+
+  // Load exercises
+  const exContainer = document.getElementById('edit-test-exercises-container');
+  exContainer.innerHTML = '<div style="font-size:12px;color:var(--gray4);padding:8px 0;">Cargando ejercicios...</div>';
+  const {data: exercises} = await sb.from('test_exercises').select('*').eq('test_id', testId).order('id');
+  if (!exercises || exercises.length === 0) {
+    exContainer.innerHTML = '<div style="font-size:12px;color:var(--gray4);padding:8px 0;">Sin ejercicios.</div>';
+  } else {
+    exContainer.innerHTML = exercises.map(ex => `
+      <div class="edit-ex-item" style="background:var(--gray1);border-radius:10px;padding:12px;margin-bottom:10px;border:1.5px solid var(--gray2);">
+        <input type="hidden" class="edit-ex-id" value="${ex.id}">
+        <div style="margin-bottom:8px;">
+          <label style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:0.04em;display:block;margin-bottom:4px;">EJERCICIO</label>
+          <input type="text" class="form-input edit-ex-name" value="${ex.exercise_name || ''}" placeholder="Nombre del ejercicio" style="font-size:13px;padding:9px 11px;">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:0.04em;display:block;margin-bottom:4px;">RESULTADO</label>
+            <input type="text" class="form-input edit-ex-result" value="${ex.exercise_result || ''}" placeholder="ej: 10, 80kg" style="font-size:13px;padding:9px 11px;">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:0.04em;display:block;margin-bottom:4px;">UNIDAD</label>
+            <input type="text" class="form-input edit-ex-unit" value="${ex.exercise_unit || ''}" placeholder="kg, reps..." style="font-size:13px;padding:9px 11px;">
+          </div>
+        </div>
+        <div style="margin-bottom:8px;">
+          <label style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:0.04em;display:block;margin-bottom:4px;">VIDEO URL</label>
+          <input type="text" class="form-input edit-ex-video" value="${ex.exercise_video_url || ''}" placeholder="https://..." style="font-size:13px;padding:9px 11px;">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:0.04em;display:block;margin-bottom:4px;">NOTAS</label>
+          <input type="text" class="form-input edit-ex-notes" value="${ex.exercise_notes || ''}" placeholder="Notas del ejercicio..." style="font-size:13px;padding:9px 11px;">
+        </div>
+      </div>
+    `).join('');
+  }
+
   showModal('modal-edit-test');
 }
 
@@ -2426,8 +2463,30 @@ async function saveEditTest() {
   const status = document.getElementById('edit-test-status').value;
   if (!testName) { alert('El nombre no puede estar vacío'); return; }
   if (!testDate) { alert('Selecciona una fecha'); return; }
+
+  // Save test header
   const {error} = await sb.from('tests').update({ test_name: testName, test_date: testDate, context_notes: contextNotes, status }).eq('id', testId);
   if (error) { alert('Error: ' + error.message); return; }
+
+  // Save exercises
+  const exItems = document.querySelectorAll('#edit-test-exercises-container .edit-ex-item');
+  for (const item of exItems) {
+    const exId = item.querySelector('.edit-ex-id').value;
+    const exName = item.querySelector('.edit-ex-name').value.trim();
+    const exResult = item.querySelector('.edit-ex-result').value.trim();
+    const exUnit = item.querySelector('.edit-ex-unit').value.trim();
+    const exVideo = item.querySelector('.edit-ex-video').value.trim();
+    const exNotes = item.querySelector('.edit-ex-notes').value.trim();
+    if (!exName) continue;
+    await sb.from('test_exercises').update({
+      exercise_name: exName,
+      exercise_result: exResult,
+      exercise_unit: exUnit,
+      exercise_video_url: exVideo || null,
+      exercise_notes: exNotes || null
+    }).eq('id', exId);
+  }
+
   closeModal('modal-edit-test');
   loadCoachTests();
 }
@@ -5345,6 +5404,10 @@ async function executeCopyDay() {
       <div class="form-group">
         <label class="form-label">Notas de Contexto</label>
         <textarea class="form-textarea" id="edit-test-notes" rows="3" placeholder="ej: Dormí poco, estaba motivado, etc" style="resize:none;"></textarea>
+      </div>
+      <div style="margin-top:16px;">
+        <label style="font-size:12px;font-weight:700;color:var(--black);letter-spacing:0.04em;display:block;margin-bottom:10px;">EJERCICIOS</label>
+        <div id="edit-test-exercises-container"></div>
       </div>
       <button onclick="saveEditTest()" class="btn-primary" style="margin-top:20px;">Guardar Cambios</button>
       <button onclick="closeModal('modal-edit-test')" class="btn-secondary" style="margin-top:10px;">Cancelar</button>
