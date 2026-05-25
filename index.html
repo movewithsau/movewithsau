@@ -48,6 +48,8 @@ if ('serviceWorker' in navigator) {
   --red: #e74c3c;
   --red-light: rgba(231,76,60,0.1);
   --blue: #2980b9;
+  --purple: #8e44ad;
+  --purple-light: rgba(142,68,173,0.1);
   --blue-light: rgba(41,128,185,0.1);
   --purple: #8e44ad;
   --purple-light: rgba(142,68,173,0.1);
@@ -387,6 +389,46 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 .installment-table td { font-size:13px; padding:6px 0; border-bottom:1px solid var(--gray2); color:var(--black); }
 .installment-table tr:last-child td { border-bottom:none; }
 .installment-table td:last-child { font-weight:700; color:var(--orange); text-align:right; }
+/* ===== TEMPLATE CARDS ===== */
+.tpl-card { background:var(--white);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:12px;border-left:4px solid var(--orange); }
+.tpl-card-header { display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px; }
+.tpl-card-name { font-size:16px;font-weight:700;color:var(--black); }
+.tpl-card-type { font-size:11px;font-weight:600;color:var(--orange);background:var(--orange-light);padding:3px 8px;border-radius:20px; }
+.tpl-card-meta { font-size:12px;color:var(--gray4);margin-bottom:12px; }
+.tpl-card-days { display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px; }
+.tpl-day-chip { font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--gray1);color:var(--gray5);border:1px solid var(--gray2); }
+.tpl-card-actions { display:flex;gap:8px; }
+.tpl-btn { flex:1;padding:9px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif; }
+.tpl-btn-edit { background:var(--gray1);color:var(--black); }
+.tpl-btn-delete { background:var(--red-light);color:var(--red); }
+/* Template day editor */
+.tpl-day-card { background:var(--gray1);border-radius:var(--radius-sm);padding:14px;margin-bottom:12px;border:1.5px solid var(--gray2); }
+.tpl-day-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:12px; }
+.tpl-day-name-input { flex:1;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-size:13px;font-family:'DM Sans',sans-serif;background:var(--white);color:var(--black); }
+.tpl-day-name-input:focus { border-color:var(--orange);outline:none; }
+.tpl-ex-card { background:var(--white);border-radius:8px;padding:12px;margin-bottom:8px;border:1px solid var(--gray2); }
+.tpl-ex-row { display:flex;gap:6px;margin-bottom:6px; }
+.tpl-ex-input { flex:1;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;background:var(--white);min-width:0; }
+.tpl-ex-input:focus { border-color:var(--orange);outline:none; }
+.tpl-progression-row { display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;margin-bottom:6px; }
+.tpl-prog-label { font-size:10px;font-weight:700;color:var(--gray4);text-align:center;margin-bottom:2px; }
+.tpl-prog-input { width:100%;padding:6px 4px;border:1.5px solid var(--gray2);border-radius:6px;font-size:12px;font-family:'DM Mono',monospace;text-align:center;background:var(--white);box-sizing:border-box; }
+.tpl-prog-input:focus { border-color:var(--orange);outline:none; }
+/* Progress dashboard */
+.progress-summary-row { display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px; }
+.progress-stat { background:var(--white);border-radius:10px;padding:12px;box-shadow:var(--shadow);text-align:center; }
+.progress-stat-num { font-family:'DM Mono',monospace;font-size:22px;font-weight:700;color:var(--orange); }
+.progress-stat-label { font-size:10px;color:var(--gray4);margin-top:3px; }
+.volume-table { width:100%;border-collapse:collapse;margin-top:8px; }
+.volume-table th { font-size:10px;font-weight:700;color:var(--gray4);padding:6px 4px;text-align:center;background:var(--gray1);border-bottom:2px solid var(--gray2); }
+.volume-table th:first-child { text-align:left;padding-left:8px; }
+.volume-table td { font-size:12px;padding:8px 4px;text-align:center;border-bottom:1px solid var(--gray2); }
+.volume-table td:first-child { font-weight:600;text-align:left;padding-left:8px;color:var(--black); }
+.vol-badge { display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;font-family:'DM Mono',monospace; }
+.vol-good { background:#e8f5e9;color:#2e7d32; }
+.vol-low { background:var(--yellow-light);color:#7d5a00; }
+.vol-zero { background:var(--gray1);color:var(--gray4); }
+
 </style>
 </head>
 <body>
@@ -652,7 +694,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   <div class="bottom-nav">
 
     <div class="nav-item active" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
-    <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon">👨🏻‍🔬</div><div class="nav-label">Builder</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon">📋</div><div class="nav-label">Machotes</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('coaching',this)"><div class="nav-icon">🧪</div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('data',this)"><div class="nav-icon">📊</div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon">⚙️</div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
@@ -669,8 +711,20 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div class="section-header"><div class="section-title">Días entrenados</div></div>
     <div class="stat-row"><div class="stat-card"><div class="stat-num" id="coach-c-days">0</div><div class="stat-label">Total</div></div><div class="stat-card"><div class="stat-num" id="coach-c-week-trained">0</div><div class="stat-label">Esta semana</div></div></div>
 
-    <div class="section-header"><div class="section-title">Plan mensual</div></div>
+    <div class="section-header">
+      <div class="section-title">Plan mensual</div>
+      <div style="display:flex;gap:6px;">
+        <div class="section-action" onclick="openAssignTemplateModal()" style="background:var(--orange);color:white;padding:5px 10px;border-radius:6px;font-size:11px;">📋 Desde Template</div>
+        <div class="section-action" onclick="showPlanBuilder()">+ Manual</div>
+      </div>
+    </div>
     <div id="coach-plan-overview"></div>
+
+    <div class="section-header" style="margin-top:4px;">
+      <div class="section-title">📊 Progreso del mes</div>
+      <div class="section-action" onclick="toggleProgressDashboard()">Ver</div>
+    </div>
+    <div id="coach-progress-dashboard" style="display:none;"></div>
     <div class="section-header"><div class="section-title">Registros del cliente</div><div class="section-action" onclick="toggleLogs()">Ver logs</div></div>
     <div id="coach-client-logs" style="display:none;"></div>
     <div class="section-header"><div class="section-title">Tu Plan MOVE</div><div class="section-action" onclick="showModal('modal-upload-pdf')">+ PDF</div></div>
@@ -765,12 +819,76 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
   </div>
   <div class="bottom-nav">
     <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
-    <div class="nav-item active" onclick="coachNav('builder',this)"><div class="nav-icon">👨🏻‍🔬</div><div class="nav-label">Builder</div><div class="nav-dot"></div></div>
+    <div class="nav-item active" onclick="coachNav('builder',this)"><div class="nav-icon">📋</div><div class="nav-label">Machotes</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('coaching',this)"><div class="nav-icon">🧪</div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('data',this)"><div class="nav-icon">📊</div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon">⚙️</div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
   </div>
 </div>
+
+<!-- ===== TEMPLATES / MACHOTES ===== -->
+<div class="screen" id="screen-templates">
+  <div class="topbar">
+    <div class="topbar-logo">Move With Sau</div>
+    <div class="topbar-title" style="font-size:15px;">📋 Machotes</div>
+    <div class="topbar-action" onclick="openNewTemplateModal()">+ Nuevo</div>
+  </div>
+  <div class="scroll-body">
+    <div style="margin-bottom:6px;">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Biblioteca</div>
+      <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;">Machotes</div>
+      <div style="font-size:12px;color:var(--gray4);margin-top:4px;">Crea plantillas reutilizables y asígnalas a clientes en segundos.</div>
+    </div>
+    <div class="filter-chips" id="template-type-chips" style="margin-bottom:14px;margin-top:14px;">
+      <div class="filter-chip active" onclick="setTemplateFilter('',this)">Todos</div>
+      <div class="filter-chip" onclick="setTemplateFilter('Gym',this)">🏋️ Gym</div>
+      <div class="filter-chip" onclick="setTemplateFilter('Condominio',this)">🏠 Condominio</div>
+      <div class="filter-chip" onclick="setTemplateFilter('Peso Corporal',this)">💪 Peso Corporal</div>
+      <div class="filter-chip" onclick="setTemplateFilter('Cardio',this)">🏃 Cardio</div>
+      <div class="filter-chip" onclick="setTemplateFilter('Femenino',this)">🌸 Femenino</div>
+    </div>
+    <div id="templates-list"><div class="spinner"></div></div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
+    <div class="nav-item active" onclick="coachNav('builder',this)"><div class="nav-icon">📋</div><div class="nav-label">Machotes</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('coaching',this)"><div class="nav-icon">🧪</div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('data',this)"><div class="nav-icon">📊</div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon">⚙️</div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
+  </div>
+</div>
+
+<!-- ===== TEMPLATE EDITOR ===== -->
+<div class="screen" id="screen-template-editor">
+  <div class="topbar">
+    <div class="back-btn" onclick="showScreen('screen-templates');loadTemplates();">‹ Machotes</div>
+    <div class="topbar-title" id="template-editor-title">Nuevo Machote</div>
+    <div class="topbar-action" onclick="saveTemplate()">Guardar</div>
+  </div>
+  <div class="scroll-body">
+    <div style="margin-bottom:14px;">
+      <label style="font-size:11px;font-weight:700;color:var(--gray5);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:6px;">Nombre del machote</label>
+      <input class="form-input" id="tpl-name" placeholder="ej: Gym PPL 4 días, Femenino Glúteos...">
+    </div>
+    <div style="margin-bottom:18px;">
+      <label style="font-size:11px;font-weight:700;color:var(--gray5);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:6px;">Tipo</label>
+      <select class="form-select" id="tpl-type">
+        <option value="Gym">🏋️ Gym</option>
+        <option value="Condominio">🏠 Condominio</option>
+        <option value="Peso Corporal">💪 Peso Corporal</option>
+        <option value="Cardio">🏃 Cardio</option>
+        <option value="Femenino">🌸 Femenino</option>
+      </select>
+    </div>
+    <div class="section-header">
+      <div class="section-title">Días del machote</div>
+      <div class="section-action" onclick="addTemplateDay()">+ Día</div>
+    </div>
+    <div id="tpl-days-list"></div>
+    <div style="height:20px;"></div>
+  </div>
+</div>
+
 
 <!-- ===== COACH: AJUSTES ===== -->
 <div class="screen" id="screen-coach-settings">
@@ -784,7 +902,7 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
   </div>
   <div class="bottom-nav">
     <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
-    <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon">👨🏻‍🔬</div><div class="nav-label">Builder</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon">📋</div><div class="nav-label">Machotes</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('coaching',this)"><div class="nav-icon">🧪</div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('data',this)"><div class="nav-icon">📊</div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
     <div class="nav-item active" onclick="coachNav('settings',this)"><div class="nav-icon">⚙️</div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
@@ -808,7 +926,7 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
   </div>
   <div class="bottom-nav">
     <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
-    <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon">👨🏻‍🔬</div><div class="nav-label">Builder</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon">📋</div><div class="nav-label">Machotes</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('coaching',this)"><div class="nav-icon">🧪</div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
     <div class="nav-item active" onclick="coachNav('data',this)"><div class="nav-icon">📊</div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon">⚙️</div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
@@ -874,7 +992,7 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
   </div>
   <div class="bottom-nav">
     <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
-    <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon">👨🏻‍🔬</div><div class="nav-label">Builder</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon">📋</div><div class="nav-label">Machotes</div><div class="nav-dot"></div></div>
     <div class="nav-item active" onclick="coachNav('coaching',this)"><div class="nav-icon">🧪</div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('data',this)"><div class="nav-icon">📊</div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon">⚙️</div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
@@ -3194,6 +3312,413 @@ async function copyWeekFromPrevious() {
   buildWeekTabs(); buildDayStrip(); switchBuilderDay(builderDay);
 }
 
+
+// ===== TEMPLATES (MACHOTES) =====
+let currentTemplateId = null;
+let templateFilter = '';
+let tplDayCount = 0;
+let tplExCount = 0;
+
+function setTemplateFilter(type, el) {
+  templateFilter = type;
+  document.querySelectorAll('#template-type-chips .filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  loadTemplates();
+}
+
+async function loadTemplates() {
+  const list = document.getElementById('templates-list');
+  if (!list) return;
+  list.innerHTML = '<div class="spinner"></div>';
+  let q = sb.from('routine_templates').select('*').order('created_at', {ascending: false});
+  if (templateFilter) q = q.eq('type', templateFilter);
+  const { data: templates, error } = await q;
+  if (error || !templates || templates.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--gray4);"><div style="font-size:32px;margin-bottom:8px;">📋</div><div style="font-size:14px;font-weight:600;">Sin machotes aún</div><div style="font-size:12px;margin-top:4px;">Crea tu primer machote con el botón + Nuevo</div></div>';
+    return;
+  }
+  const typeEmoji = { 'Gym':'🏋️', 'Condominio':'🏠', 'Peso Corporal':'💪', 'Cardio':'🏃', 'Femenino':'🌸' };
+  let html = '';
+  for (const t of templates) {
+    const { data: days } = await sb.from('template_days').select('id,day_name,day_order').eq('template_id', t.id).order('day_order');
+    const dayCount = days ? days.length : 0;
+    const dayChips = days ? days.map(d => `<div class="tpl-day-chip">${d.day_name}</div>`).join('') : '';
+    html += `<div class="tpl-card fade-up">
+      <div class="tpl-card-header">
+        <div class="tpl-card-name">${t.name}</div>
+        <div class="tpl-card-type">${typeEmoji[t.type]||''} ${t.type}</div>
+      </div>
+      <div class="tpl-card-meta">${dayCount} día${dayCount !== 1 ? 's' : ''} · 4 semanas con progresión</div>
+      <div class="tpl-card-days">${dayChips}</div>
+      <div class="tpl-card-actions">
+        <button class="tpl-btn tpl-btn-edit" onclick="openTemplateEditor('${t.id}')">✏️ Editar</button>
+        <button class="tpl-btn tpl-btn-delete" onclick="deleteTemplate('${t.id}','${t.name.replace(/'/g,"\'")}')">🗑️ Borrar</button>
+      </div>
+    </div>`;
+  }
+  list.innerHTML = html;
+}
+
+function openNewTemplateModal() {
+  showModal('modal-new-template');
+  document.getElementById('new-tpl-name').value = '';
+  document.getElementById('new-tpl-type').value = 'Gym';
+}
+
+async function createNewTemplate() {
+  const name = document.getElementById('new-tpl-name').value.trim();
+  const type = document.getElementById('new-tpl-type').value;
+  if (!name) { showToast('⚠️ Escribe un nombre'); return;  }
+  const { data, error } = await sb.from('routine_templates').insert([{ name, type }]).select().single();
+  if (error) { showToast('❌ Error: ' + error.message); return; }
+  closeModal('modal-new-template');
+  openTemplateEditor(data.id);
+}
+
+async function openTemplateEditor(templateId) {
+  currentTemplateId = templateId;
+  tplDayCount = 0;
+  tplExCount = 0;
+  showScreen('screen-template-editor');
+  const { data: t } = await sb.from('routine_templates').select('*').eq('id', templateId).single();
+  if (t) {
+    document.getElementById('template-editor-title').textContent = t.name;
+    document.getElementById('tpl-name').value = t.name;
+    document.getElementById('tpl-type').value = t.type;
+  }
+  await loadTemplateDays();
+}
+
+async function loadTemplateDays() {
+  const container = document.getElementById('tpl-days-list');
+  container.innerHTML = '<div class="spinner"></div>';
+  const { data: days } = await sb.from('template_days').select('*').eq('template_id', currentTemplateId).order('day_order');
+  container.innerHTML = '';
+  tplDayCount = 0;
+  if (days && days.length > 0) {
+    for (const day of days) {
+      await addTemplateDayCard(day);
+    }
+  }
+}
+
+async function addTemplateDayCard(existingDay = null) {
+  tplDayCount++;
+  const dayId = tplDayCount;
+  const container = document.getElementById('tpl-days-list');
+  const card = document.createElement('div');
+  card.className = 'tpl-day-card fade-up';
+  card.id = `tpl-day-${dayId}`;
+  card.dataset.dbId = existingDay ? existingDay.id : '';
+  card.innerHTML = `
+    <div class="tpl-day-header">
+      <input class="tpl-day-name-input" id="tpl-day-name-${dayId}" placeholder="ej: Día A - Empuje, Día Pierna..." value="${existingDay ? existingDay.day_name : `Día ${dayId}`}">
+      <button onclick="removeTemplateDayCard(${dayId})" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-left:8px;font-family:'DM Sans',sans-serif;">✕ Borrar</button>
+    </div>
+    <div id="tpl-day-exs-${dayId}" style="margin-bottom:8px;"></div>
+    <div style="display:flex;gap:6px;">
+      <button class="add-ex-btn" style="flex:1;margin-top:0;font-size:12px;padding:9px;" onclick="addTemplateExercise(${dayId})">+ Ejercicio</button>
+      <button class="add-ex-btn" style="flex:1;margin-top:0;font-size:12px;padding:9px;background:var(--orange-light);border-style:solid;" onclick="openLibraryForTemplate(${dayId})">📚 Biblioteca</button>
+    </div>
+  `;
+  container.appendChild(card);
+  // Load exercises if editing existing
+  if (existingDay) {
+    const { data: exs } = await sb.from('template_exercises').select('*').eq('template_day_id', existingDay.id).order('exercise_order');
+    if (exs) { for (const ex of exs) { addTemplateExercise(dayId, ex); } }
+  }
+}
+
+function removeTemplateDayCard(dayId) {
+  const card = document.getElementById(`tpl-day-${dayId}`);
+  if (card) card.remove();
+}
+
+function addTemplateExercise(dayId, prefill = null) {
+  tplExCount++;
+  const exId = tplExCount;
+  const container = document.getElementById(`tpl-day-exs-${dayId}`);
+  if (!container) return;
+  const div = document.createElement('div');
+  div.className = 'tpl-ex-card';
+  div.id = `tpl-ex-${exId}`;
+  div.dataset.dayId = dayId;
+  div.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--orange);">Ejercicio ${exId}</span>
+      <button onclick="document.getElementById('tpl-ex-${exId}').remove()" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;">✕</button>
+    </div>
+    <div class="tpl-ex-row">
+      <input class="tpl-ex-input" style="flex:3;" id="tpl-ex-name-${exId}" placeholder="Nombre del ejercicio" value="${prefill ? prefill.exercise_name : ''}">
+      <input class="tpl-ex-input" style="flex:1;" id="tpl-ex-reps-${exId}" placeholder="Reps/Tiempo" value="${prefill ? prefill.reps : '10-12'}">
+    </div>
+    <div style="font-size:10px;font-weight:700;color:var(--gray5);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Series por semana (progresión):</div>
+    <div class="tpl-progression-row">
+      <div><div class="tpl-prog-label">Sem 1</div><input class="tpl-prog-input" type="number" id="tpl-ex-w1-${exId}" min="1" max="20" value="${prefill ? prefill.sets_week1 : 3}"></div>
+      <div><div class="tpl-prog-label">Sem 2</div><input class="tpl-prog-input" type="number" id="tpl-ex-w2-${exId}" min="1" max="20" value="${prefill ? prefill.sets_week2 : 3}"></div>
+      <div><div class="tpl-prog-label">Sem 3</div><input class="tpl-prog-input" type="number" id="tpl-ex-w3-${exId}" min="1" max="20" value="${prefill ? prefill.sets_week3 : 4}"></div>
+      <div><div class="tpl-prog-label">Sem 4</div><input class="tpl-prog-input" type="number" id="tpl-ex-w4-${exId}" min="1" max="20" value="${prefill ? prefill.sets_week4 : 4}"></div>
+    </div>
+    <input class="tpl-ex-input" style="width:100%;box-sizing:border-box;margin-top:6px;" id="tpl-ex-rest-${exId}" placeholder="Descanso (seg) — ej: 90" value="${prefill ? prefill.rest_seconds : 90}">
+    <input class="tpl-ex-input" style="width:100%;box-sizing:border-box;margin-top:6px;" id="tpl-ex-notes-${exId}" placeholder="Notas (opcional)" value="${prefill ? (prefill.notes || '') : ''}">
+    <input class="tpl-ex-input" style="width:100%;box-sizing:border-box;margin-top:6px;" id="tpl-ex-muscle-${exId}" placeholder="Grupo muscular (ej: Pecho, Espalda)" value="${prefill ? (prefill.muscle_groups || '') : ''}">
+  `;
+  container.appendChild(div);
+}
+
+function openLibraryForTemplate(dayId) {
+  // Store which day to add to, then open library modal
+  window._tplLibraryTargetDayId = dayId;
+  openLibrary('template');
+}
+
+async function addTemplateDay() {
+  await addTemplateDayCard(null);
+}
+
+async function saveTemplate() {
+  const name = document.getElementById('tpl-name').value.trim();
+  const type = document.getElementById('tpl-type').value;
+  if (!name) { showToast('⚠️ Escribe un nombre'); return; }
+  // Update template metadata
+  await sb.from('routine_templates').update({ name, type }).eq('id', currentTemplateId);
+  document.getElementById('template-editor-title').textContent = name;
+  // Get all day cards
+  const dayCells = document.querySelectorAll('[id^="tpl-day-"]');
+  // Delete all existing days/exercises for this template
+  const { data: oldDays } = await sb.from('template_days').select('id').eq('template_id', currentTemplateId);
+  if (oldDays && oldDays.length > 0) {
+    for (const od of oldDays) {
+      await sb.from('template_exercises').delete().eq('template_day_id', od.id);
+    }
+    await sb.from('template_days').delete().eq('template_id', currentTemplateId);
+  }
+  let order = 0;
+  for (const card of dayCells) {
+    const dayIdStr = card.id.replace('tpl-day-', '');
+    const dayName = document.getElementById(`tpl-day-name-${dayIdStr}`)?.value.trim() || `Día ${dayIdStr}`;
+    const { data: newDay } = await sb.from('template_days').insert([{ template_id: currentTemplateId, day_name: dayName, day_order: order++ }]).select().single();
+    if (!newDay) continue;
+    // Get exercises in this day
+    const exCards = card.querySelectorAll('[id^="tpl-ex-"]');
+    let exOrder = 0;
+    for (const exCard of exCards) {
+      const exIdStr = exCard.id.replace('tpl-ex-', '');
+      const exName = document.getElementById(`tpl-ex-name-${exIdStr}`)?.value.trim();
+      if (!exName) continue;
+      const w1 = parseInt(document.getElementById(`tpl-ex-w1-${exIdStr}`)?.value) || 3;
+      const w2 = parseInt(document.getElementById(`tpl-ex-w2-${exIdStr}`)?.value) || 3;
+      const w3 = parseInt(document.getElementById(`tpl-ex-w3-${exIdStr}`)?.value) || 4;
+      const w4 = parseInt(document.getElementById(`tpl-ex-w4-${exIdStr}`)?.value) || 4;
+      const reps = document.getElementById(`tpl-ex-reps-${exIdStr}`)?.value || '10-12';
+      const rest = parseInt(document.getElementById(`tpl-ex-rest-${exIdStr}`)?.value) || 90;
+      const notes = document.getElementById(`tpl-ex-notes-${exIdStr}`)?.value.trim() || null;
+      const muscle = document.getElementById(`tpl-ex-muscle-${exIdStr}`)?.value.trim() || null;
+      await sb.from('template_exercises').insert([{ template_day_id: newDay.id, exercise_name: exName, sets_week1: w1, sets_week2: w2, sets_week3: w3, sets_week4: w4, reps, rest_seconds: rest, notes, muscle_groups: muscle, exercise_order: exOrder++ }]);
+      // Auto-save to library
+      if (exName) await saveExerciseToLibrary(exName, 'Peso Libre', muscle, null);
+    }
+  }
+  showToast('✅ Machote guardado');
+}
+
+async function deleteTemplate(id, name) {
+  if (!confirm(`¿Borrar el machote "${name}"?`)) return;
+  const { data: days } = await sb.from('template_days').select('id').eq('template_id', id);
+  if (days) { for (const d of days) { await sb.from('template_exercises').delete().eq('template_day_id', d.id); } }
+  await sb.from('template_days').delete().eq('template_id', id);
+  await sb.from('routine_templates').delete().eq('id', id);
+  showToast('🗑️ Machote eliminado');
+  loadTemplates();
+}
+
+// ===== ASSIGN TEMPLATE TO CLIENT =====
+async function openAssignTemplateModal() {
+  if (!currentClient) return;
+  const sel = document.getElementById('assign-tpl-select');
+  sel.innerHTML = '<option value="">Selecciona un machote...</option>';
+  document.getElementById('assign-tpl-preview').style.display = 'none';
+  const { data: templates } = await sb.from('routine_templates').select('*').order('name');
+  if (templates) {
+    const typeEmoji = { 'Gym':'🏋️', 'Condominio':'🏠', 'Peso Corporal':'💪', 'Cardio':'🏃', 'Femenino':'🌸' };
+    templates.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.id;
+      opt.textContent = `${typeEmoji[t.type]||''} ${t.name}`;
+      sel.appendChild(opt);
+    });
+  }
+  sel.onchange = () => previewTemplate(sel.value);
+  showModal('modal-assign-template');
+}
+
+async function previewTemplate(templateId) {
+  const preview = document.getElementById('assign-tpl-preview');
+  const content = document.getElementById('assign-tpl-preview-content');
+  if (!templateId) { preview.style.display = 'none'; return; }
+  preview.style.display = 'block';
+  content.innerHTML = '<div class="spinner"></div>';
+  const { data: days } = await sb.from('template_days').select('*').eq('template_id', templateId).order('day_order');
+  if (!days || days.length === 0) { content.innerHTML = '<div style="color:var(--gray4);font-size:12px;">Sin días configurados</div>'; return; }
+  let html = '';
+  for (const d of days) {
+    const { data: exs } = await sb.from('template_exercises').select('exercise_name,sets_week1,sets_week2,sets_week3,sets_week4').eq('template_day_id', d.id).order('exercise_order');
+    html += `<div style="margin-bottom:8px;"><div style="font-size:12px;font-weight:700;color:var(--black);">📅 ${d.day_name}</div>`;
+    if (exs && exs.length > 0) {
+      html += exs.map(e => `<div style="font-size:11px;color:var(--gray5);padding-left:12px;margin-top:2px;">• ${e.exercise_name} <span style="color:var(--orange);font-family:'DM Mono',monospace;">[${e.sets_week1}→${e.sets_week2}→${e.sets_week3}→${e.sets_week4} series]</span></div>`).join('');
+    }
+    html += '</div>';
+  }
+  content.innerHTML = html;
+}
+
+async function assignTemplateToClient() {
+  const templateId = document.getElementById('assign-tpl-select').value;
+  if (!templateId || !currentClient) { showToast('⚠️ Selecciona un machote'); return; }
+  showToast('⏳ Generando plan...');
+  // Delete existing plan for client
+  const { data: existPds } = await sb.from('monthly_plans').select('id').eq('client_id', currentClient.id);
+  if (existPds && existPds.length > 0) {
+    for (const pd of existPds) { await sb.from('exercises').delete().eq('plan_day_id', pd.id); }
+    await sb.from('monthly_plans').delete().eq('client_id', currentClient.id);
+  }
+  // Get template days and exercises
+  const { data: days } = await sb.from('template_days').select('*').eq('template_id', templateId).order('day_order');
+  if (!days || days.length === 0) { showToast('⚠️ El machote no tiene días'); return; }
+  const setsPerWeek = [0, 1, 2, 3, 4]; // weeks 1-4
+  const weekSetsKey = ['sets_week1', 'sets_week2', 'sets_week3', 'sets_week4'];
+  for (let week = 1; week <= 4; week++) {
+    for (const day of days) {
+      const { data: exs } = await sb.from('template_exercises').select('*').eq('template_day_id', day.id).order('exercise_order');
+      const { data: newPd } = await sb.from('monthly_plans').insert([{ client_id: currentClient.id, week_number: week, day_of_week: day.day_name }]).select().single();
+      if (!newPd || !exs) continue;
+      const exercisesToInsert = exs.map((e, idx) => ({
+        plan_day_id: newPd.id,
+        name: e.exercise_name,
+        sets: e[weekSetsKey[week - 1]] || 3,
+        reps_range: e.reps || '10-12',
+        rest_seconds: e.rest_seconds || 90,
+        tag: 'Peso Libre',
+        muscle_group: e.muscle_groups || null,
+        notes: e.notes || null,
+        video_url: null,
+        superset_group: null,
+        circuit_notes: null,
+        circuit_rounds: null,
+        order_index: idx
+      }));
+      if (exercisesToInsert.length > 0) await sb.from('exercises').insert(exercisesToInsert);
+    }
+  }
+  closeModal('modal-assign-template');
+  showToast('✅ Plan de 4 semanas generado');
+  loadCoachClientDetail(currentClient.id);
+}
+
+// ===== PROGRESS DASHBOARD =====
+let progressDashboardVisible = false;
+
+async function toggleProgressDashboard() {
+  const container = document.getElementById('coach-progress-dashboard');
+  if (!container) return;
+  if (progressDashboardVisible) {
+    container.style.display = 'none';
+    progressDashboardVisible = false;
+    return;
+  }
+  progressDashboardVisible = true;
+  container.style.display = 'block';
+  container.innerHTML = '<div class="spinner"></div>';
+  await loadProgressDashboard();
+}
+
+async function loadProgressDashboard() {
+  const container = document.getElementById('coach-progress-dashboard');
+  if (!container || !currentClient) return;
+  // Get current month range
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+  const monthName = now.toLocaleString('es', { month: 'long', year: 'numeric' });
+  // Fetch logs for this month
+  const { data: logs } = await sb.from('exercise_logs').select('*').eq('client_id', currentClient.id).gte('created_at', monthStart).lte('created_at', monthEnd);
+  // Fetch workout ratings for session count and avg rating
+  const { data: ratings } = await sb.from('workout_ratings').select('*').eq('client_id', currentClient.id).gte('created_at', monthStart).lte('created_at', monthEnd);
+  // Client data
+  const { data: clientData } = await sb.from('clients').select('initial_weight,current_weight,days_trained').eq('id', currentClient.id).single();
+  // ---- Block 1: Summary ----
+  const sessionCount = ratings ? ratings.length : 0;
+  const totalMinutes = logs ? logs.reduce((s, l) => s + (l.duration_seconds ? Math.round(l.duration_seconds / 60) : 0), 0) : 0;
+  const avgRating = ratings && ratings.length > 0 ? (() => {
+    const ratingMap = { '😎': 1, '🥵': 2, '😵‍💫': 3 };
+    const avg = ratings.reduce((s, r) => s + (ratingMap[r.rating] || 0), 0) / ratings.length;
+    if (avg < 1.5) return '😎';
+    if (avg < 2.5) return '🥵';
+    return '😵‍💫';
+  })() : '—';
+  const weightChange = clientData && clientData.initial_weight && clientData.current_weight
+    ? ((parseFloat(clientData.current_weight) - parseFloat(clientData.initial_weight)).toFixed(1))
+    : null;
+  // ---- Block 2: Sets per muscle per week ----
+  const MUSCLE_GROUPS = ['Pecho', 'Espalda', 'Hombros', 'Bíceps', 'Tríceps', 'Cuádriceps', 'Isquiotibiales', 'Glúteos', 'Core', 'Cardio'];
+  // Get planned exercises (from monthly_plans + exercises table)
+  const { data: planDays } = await sb.from('monthly_plans').select('id,week_number').eq('client_id', currentClient.id);
+  const volumeByWeek = {}; // { muscle: { w1: N, w2: N, w3: N, w4: N } }
+  if (planDays && planDays.length > 0) {
+    for (const pd of planDays) {
+      const { data: exs } = await sb.from('exercises').select('muscle_group,sets').eq('plan_day_id', pd.id);
+      if (!exs) continue;
+      for (const ex of exs) {
+        if (!ex.muscle_group) continue;
+        const muscles = ex.muscle_group.split(',').map(m => m.trim());
+        for (const m of muscles) {
+          if (!MUSCLE_GROUPS.includes(m)) continue;
+          if (!volumeByWeek[m]) volumeByWeek[m] = { w1: 0, w2: 0, w3: 0, w4: 0 };
+          const wk = `w${pd.week_number}`;
+          if (wk in volumeByWeek[m]) volumeByWeek[m][wk] += (ex.sets || 0);
+        }
+      }
+    }
+  }
+  // Render
+  let volumeRows = '';
+  const musclesToShow = MUSCLE_GROUPS.filter(m => volumeByWeek[m]);
+  if (musclesToShow.length === 0) volumeRows = `<tr><td colspan="5" style="text-align:center;color:var(--gray4);padding:16px;font-size:12px;">Sin datos de plan programado</td></tr>`;
+  else {
+    for (const m of musclesToShow) {
+      const v = volumeByWeek[m];
+      const badge = (n) => {
+        if (!n) return `<span class="vol-badge vol-zero">0</span>`;
+        if (n >= 10) return `<span class="vol-badge vol-good">${n}</span>`;
+        return `<span class="vol-badge vol-low">${n}</span>`;
+      };
+      volumeRows += `<tr><td>${m}</td><td>${badge(v.w1)}</td><td>${badge(v.w2)}</td><td>${badge(v.w3)}</td><td>${badge(v.w4)}</td></tr>`;
+    }
+  }
+  container.innerHTML = `
+    <div style="background:var(--white);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px;">${monthName}</div>
+      <div class="progress-summary-row">
+        <div class="progress-stat"><div class="progress-stat-num">${sessionCount}</div><div class="progress-stat-label">Sesiones</div></div>
+        <div class="progress-stat"><div class="progress-stat-num">${totalMinutes > 0 ? totalMinutes + 'm' : '—'}</div><div class="progress-stat-label">Tiempo total</div></div>
+        <div class="progress-stat"><div class="progress-stat-num" style="font-size:26px;">${avgRating}</div><div class="progress-stat-label">Rating prom.</div></div>
+      </div>
+      ${weightChange !== null ? `<div style="text-align:center;font-size:12px;color:var(--gray5);padding:8px;background:var(--gray1);border-radius:8px;">Peso: ${clientData.initial_weight}kg → ${clientData.current_weight}kg <strong style="color:${parseFloat(weightChange) <= 0 ? 'var(--green)' : 'var(--orange)'};">(${parseFloat(weightChange) > 0 ? '+' : ''}${weightChange}kg)</strong></div>` : ''}
+    </div>
+    <div style="background:var(--white);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Series por músculo / semana</div>
+      <div style="font-size:10px;color:var(--gray4);margin-bottom:10px;">🟢 ≥10 series (vol. óptimo) · 🟡 &lt;10 · ⬜ Sin programar</div>
+      <div style="overflow-x:auto;">
+        <table class="volume-table">
+          <thead><tr><th>Músculo</th><th>Sem 1</th><th>Sem 2</th><th>Sem 3</th><th>Sem 4</th></tr></thead>
+          <tbody>${volumeRows}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+
 // ===== COACH CLIENT MANAGEMENT =====
 async function addClient() {
   const name=document.getElementById('nc-name').value.trim();
@@ -3320,10 +3845,10 @@ let exCoachingFilter = '';
 let allExCoaching = [];
 
 function coachNav(tab,el) {
-  document.querySelectorAll('#screen-coach-home .nav-item,#screen-coach-settings .nav-item,#screen-coach-data .nav-item,#screen-ai-builder .nav-item,#screen-coach-coaching .nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('#screen-coach-home .nav-item,#screen-coach-settings .nav-item,#screen-coach-data .nav-item,#screen-ai-builder .nav-item,#screen-templates .nav-item,#screen-template-editor .nav-item,#screen-coach-coaching .nav-item').forEach(n=>n.classList.remove('active'));
   el.classList.add('active');
   if(tab==='clients'){showScreen('screen-coach-home');loadCoachClients();}
-  if(tab==='builder'){showScreen('screen-ai-builder');loadAiBuilderScreen();}
+  if(tab==='builder'){showScreen('screen-templates');loadTemplates();}
   if(tab==='coaching'){showScreen('screen-coach-coaching');loadFoodLibrary();switchCoachingTab(coachingActiveTab);}
   if(tab==='data'){showScreen('screen-coach-data');loadDataScreen();}
   if(tab==='settings'){showScreen('screen-coach-settings');loadSettings();}
@@ -4278,9 +4803,10 @@ async function saveOneToLibrary(id) {
 
 let librarySwapTargetId = null; // null = add mode, number = swap mode for that form id
 
-async function openLibrary() {
+async function openLibrary(mode) {
   librarySwapTargetId = null;
   libraryFilterCategory = '';
+  if (mode !== 'template') window._tplLibraryTargetDayId = null;
   document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
   document.querySelector('.filter-chip').classList.add('active');
   const title = document.getElementById('library-modal-title');
@@ -4380,6 +4906,16 @@ async function deleteLibraryEx(id) {
 }
 
 function addFromLibrary(ex) {
+  // If we're in template mode, add to template day instead
+  if (window._tplLibraryTargetDayId) {
+    addTemplateExercise(window._tplLibraryTargetDayId, {
+      exercise_name: ex.name, reps: '10-12', sets_week1: 3, sets_week2: 3, sets_week3: 4, sets_week4: 4,
+      rest_seconds: 90, notes: null, muscle_groups: ex.muscle_group || null
+    });
+    window._tplLibraryTargetDayId = null;
+    closeModal('modal-ex-library');
+    return;
+  }
   addExerciseForm({name:ex.name,tag:ex.tag,muscle_group:ex.muscle_group,sets:'',reps_range:'',rest_seconds:60,video_url:ex.video_url||'',notes:'',superset_group:null});
   closeModal('modal-ex-library');
 }
@@ -5484,6 +6020,55 @@ async function executeCopyDay() {
     </div>
   </div>
 </div>
+
+<!-- ===== MODAL: NEW TEMPLATE ===== -->
+<div class="modal-overlay" id="modal-new-template">
+  <div class="modal-card">
+    <span class="modal-close" onclick="closeModal('modal-new-template')">×</span>
+    <div class="modal-title">Nuevo Machote</div>
+    <div class="form-group">
+      <label class="form-label">Nombre</label>
+      <input class="form-input" id="new-tpl-name" placeholder="ej: Gym PPL 4 días...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tipo</label>
+      <select class="form-select" id="new-tpl-type">
+        <option value="Gym">🏋️ Gym</option>
+        <option value="Condominio">🏠 Condominio</option>
+        <option value="Peso Corporal">💪 Peso Corporal</option>
+        <option value="Cardio">🏃 Cardio</option>
+        <option value="Femenino">🌸 Femenino</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="createNewTemplate()">Crear Machote</button>
+    <button onclick="closeModal('modal-new-template')" class="btn-secondary" style="margin-top:10px;">Cancelar</button>
+  </div>
+</div>
+
+<!-- ===== MODAL: ASSIGN TEMPLATE TO CLIENT ===== -->
+<div class="modal-overlay" id="modal-assign-template">
+  <div class="modal-card">
+    <span class="modal-close" onclick="closeModal('modal-assign-template')">×</span>
+    <div class="modal-title">📋 Asignar Machote</div>
+    <div style="font-size:12px;color:var(--gray4);margin-bottom:16px;">Selecciona un machote para generar las 4 semanas automáticamente con progresión.</div>
+    <div class="form-group">
+      <label class="form-label">Machote</label>
+      <select class="form-select" id="assign-tpl-select">
+        <option value="">Selecciona un machote...</option>
+      </select>
+    </div>
+    <div id="assign-tpl-preview" style="display:none;margin-bottom:16px;padding:12px;background:var(--gray1);border-radius:10px;">
+      <div style="font-size:11px;font-weight:700;color:var(--gray5);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Vista previa</div>
+      <div id="assign-tpl-preview-content"></div>
+    </div>
+    <div style="background:var(--yellow-light);border:1px solid var(--yellow);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:#7d5a00;">
+      ⚠️ Esto reemplazará el plan mensual actual del cliente.
+    </div>
+    <button class="btn-primary" onclick="assignTemplateToClient()">✅ Generar Plan de 4 Semanas</button>
+    <button onclick="closeModal('modal-assign-template')" class="btn-secondary" style="margin-top:10px;">Cancelar</button>
+  </div>
+</div>
+
 
 </body>
 </html>
