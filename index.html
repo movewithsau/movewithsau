@@ -684,8 +684,12 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       </div>
       <div style="height:1.5px;background:var(--gray2);"></div>
     </div>
-    <div class="section-header"><div class="section-title">Mis clientes</div><div class="section-action" id="coach-count"></div></div>
-    <div class="sort-bar" id="client-sort-bar">
+    <!-- Client tabs: Activos / Churn -->
+    <div style="display:flex;margin:0 -20px 0;border-bottom:2px solid var(--gray2);background:var(--white);position:sticky;top:0;z-index:10;margin-bottom:0;">
+      <div id="ctab-active" onclick="setClientTab('active')" style="flex:1;text-align:center;padding:13px 8px 11px;font-size:13px;font-weight:700;color:var(--orange);border-bottom:2px solid var(--orange);margin-bottom:-2px;cursor:pointer;">💪 Activos <span id="coach-count-active" style="font-size:11px;font-weight:600;color:var(--orange);"></span></div>
+      <div id="ctab-churn" onclick="setClientTab('churn')" style="flex:1;text-align:center;padding:13px 8px 11px;font-size:13px;font-weight:700;color:var(--gray4);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;">👋 Churn <span id="coach-count-churn" style="font-size:11px;font-weight:600;color:var(--gray4);"></span></div>
+    </div>
+    <div id="client-sort-bar" class="sort-bar" style="margin-top:12px;">
       <div class="sort-chip active" onclick="setSortClients('name',this)">A–Z</div>
       <div class="sort-chip" onclick="setSortClients('payment_asc',this)">Pago próximo ↑</div>
       <div class="sort-chip" onclick="setSortClients('start_date',this)">Fecha inicio</div>
@@ -2805,10 +2809,15 @@ function setSortClients(mode, el) {
 function renderCoachClients(clients) {
   window._cachedClients = clients;
   const list = document.getElementById('coach-clients-list');
-  document.getElementById('coach-count').textContent=(clients?.length||0)+' clientes';
-  if(!clients||clients.length===0){list.innerHTML='<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-text">Sin clientes aún.<br>Toca + Cliente para agregar.</div></div>';return;}
-
-  let sorted = [...clients];
+  // Filter by current tab
+  const filtered = (clients||[]).filter(c => clientTab === 'churn' ? c.is_churn : !c.is_churn);
+  if(filtered.length===0){
+    list.innerHTML = clientTab === 'churn'
+      ? '<div class="empty-state"><div class="empty-icon">👋</div><div class="empty-text">Sin clientes en Churn.<br>¡Todos están activos!</div></div>'
+      : '<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-text">Sin clientes aún.<br>Toca + Cliente para agregar.</div></div>';
+    return;
+  }
+  let sorted = [...filtered];
   if(clientSortMode==='name') {
     sorted.sort((a,b)=>a.name.localeCompare(b.name));
   } else if(clientSortMode==='payment_asc') {
@@ -2825,19 +2834,49 @@ function renderCoachClients(clients) {
     const badgeText = getPaymentBadgeText(d);
     const startDateStr = c.start_date ? formatDate(c.start_date) : (c.created_at ? new Date(c.created_at).toLocaleDateString('es-CR',{day:'numeric',month:'short',year:'numeric'}) : null);
     const typeTag = c.client_type ? `<span class="client-type-tag">${c.client_type==='Virtual'?'V':'H'}</span>` : '';
+    const churnBadge = c.is_churn ? `<div style="background:#f3f4f6;color:var(--gray4);border-radius:8px;padding:6px 10px;text-align:center;font-size:11px;font-weight:700;line-height:1.2;border:1.5px solid var(--gray2);">👋<div style="font-size:8px;margin-top:1px;">CHURN</div></div>` : `<div class="payment-badge ${badgeClass}"><div style="font-size:8px;opacity:0.7;margin-bottom:1px;">PAGO</div>${badgeText}</div>`;
     return `<div class="client-card fade-up" onclick="openCoachClient('${c.id}')">
-      <div class="client-avatar">${getInitials(c.name)}</div>
+      <div class="client-avatar" style="${c.is_churn ? 'opacity:0.5;' : ''}">${getInitials(c.name)}</div>
       <div class="client-info">
-        <div class="client-name" style="display:flex;align-items:center;gap:6px;">${c.name}${typeTag}</div>
+        <div class="client-name" style="display:flex;align-items:center;gap:6px;${c.is_churn ? 'color:var(--gray4);' : ''}">${c.name}${typeTag}</div>
         <div class="client-meta">@${c.username} · ${c.days_trained||0} días${startDateStr?` · Inicio: ${startDateStr}`:''}${clientSortMode==='last_active'?(c.last_active?` · 🟢 ${new Date(c.last_active).toLocaleDateString('es-CR',{weekday:'short',day:'numeric',month:'short'})}`:' · ⚫ Sin sesión'):''}</div>
       </div>
-      <div class="payment-badge ${badgeClass}"><div style="font-size:8px;opacity:0.7;margin-bottom:1px;">PAGO</div>${badgeText}</div>
+      ${churnBadge}
     </div>`;
   }).join('');
 }
 
+let clientTab = 'active'; // 'active' | 'churn'
+
+function setClientTab(tab) {
+  clientTab = tab;
+  const activeTab = document.getElementById('ctab-active');
+  const churnTab = document.getElementById('ctab-churn');
+  const sortBar = document.getElementById('client-sort-bar');
+  if (activeTab && churnTab) {
+    if (tab === 'active') {
+      activeTab.style.color = 'var(--orange)'; activeTab.style.borderBottomColor = 'var(--orange)';
+      churnTab.style.color = 'var(--gray4)'; churnTab.style.borderBottomColor = 'transparent';
+    } else {
+      churnTab.style.color = 'var(--orange)'; churnTab.style.borderBottomColor = 'var(--orange)';
+      activeTab.style.color = 'var(--gray4)'; activeTab.style.borderBottomColor = 'transparent';
+    }
+  }
+  // Hide sort bar for churn (less relevant)
+  if (sortBar) sortBar.style.display = tab === 'churn' ? 'none' : '';
+  renderCoachClients(window._cachedClientsAll || []);
+}
+
 async function loadCoachClients() {
   const {data:clients} = await sb.from('clients').select('*').eq('coach_id',currentUser.id);
+  window._cachedClientsAll = clients || [];
+  // Update counts
+  const active = (clients||[]).filter(c => !c.is_churn);
+  const churned = (clients||[]).filter(c => c.is_churn);
+  const activeCountEl = document.getElementById('coach-count-active');
+  const churnCountEl = document.getElementById('coach-count-churn');
+  if (activeCountEl) activeCountEl.textContent = active.length ? `(${active.length})` : '';
+  if (churnCountEl) churnCountEl.textContent = churned.length ? `(${churned.length})` : '';
   renderCoachClients(clients||[]);
 }
 
@@ -2881,7 +2920,10 @@ async function openCoachClient(clientId) {
         </label>
       </span>
     </div>
-    <div class="payment-row"><span class="payment-key">Tiempo entrenado</span><span class="payment-val">${Math.floor((c.total_training_minutes||0)/60)}h ${(c.total_training_minutes||0)%60}min</span></div>`;
+    <div class="payment-row"><span class="payment-key">Tiempo entrenado</span><span class="payment-val">${Math.floor((c.total_training_minutes||0)/60)}h ${(c.total_training_minutes||0)%60}min</span></div>
+    <div style="margin-top:14px;padding-top:12px;border-top:1.5px solid var(--gray2);">
+      ${c.is_churn ? `<button onclick="toggleChurnClient(false)" style="width:100%;padding:10px;background:var(--green-light);color:var(--green);border:1.5px solid var(--green);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✅ Reactivar cliente</button>` : `<button onclick="toggleChurnClient(true)" style="width:100%;padding:10px;background:var(--red-light);color:var(--red);border:1.5px solid var(--red);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">👋 Marcar como Churn</button>`}
+    </div>`;
   document.getElementById('ep-date').value=c.next_payment_date||'';
   document.getElementById('ep-amount').value=c.payment_amount||'';
   document.getElementById('ep-start-date').value=c.start_date||'';
@@ -3454,6 +3496,7 @@ function addTemplateExercise(dayId, prefill = null) {
   const exId = tplExCount;
   const container = document.getElementById(`tpl-day-exs-${dayId}`);
   if (!container) return;
+  const isCircuit = prefill && prefill.superset_group;
   const div = document.createElement('div');
   div.className = 'tpl-ex-card';
   div.id = `tpl-ex-${exId}`;
@@ -3467,18 +3510,44 @@ function addTemplateExercise(dayId, prefill = null) {
       <input class="tpl-ex-input" style="flex:3;" id="tpl-ex-name-${exId}" placeholder="Nombre del ejercicio" value="${prefill ? prefill.exercise_name : ''}">
       <input class="tpl-ex-input" style="flex:1;" id="tpl-ex-reps-${exId}" placeholder="Reps/Tiempo" value="${prefill ? prefill.reps : '10-12'}">
     </div>
-    <div style="font-size:10px;font-weight:700;color:var(--gray5);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Series por semana (progresión):</div>
-    <div class="tpl-progression-row">
-      <div><div class="tpl-prog-label">Sem 1</div><input class="tpl-prog-input" type="number" id="tpl-ex-w1-${exId}" min="1" max="20" value="${prefill ? prefill.sets_week1 : 3}"></div>
-      <div><div class="tpl-prog-label">Sem 2</div><input class="tpl-prog-input" type="number" id="tpl-ex-w2-${exId}" min="1" max="20" value="${prefill ? prefill.sets_week2 : 3}"></div>
-      <div><div class="tpl-prog-label">Sem 3</div><input class="tpl-prog-input" type="number" id="tpl-ex-w3-${exId}" min="1" max="20" value="${prefill ? prefill.sets_week3 : 4}"></div>
-      <div><div class="tpl-prog-label">Sem 4</div><input class="tpl-prog-input" type="number" id="tpl-ex-w4-${exId}" min="1" max="20" value="${prefill ? prefill.sets_week4 : 4}"></div>
+    <div id="tpl-series-section-${exId}" style="${isCircuit ? 'display:none;' : ''}">
+      <div style="font-size:10px;font-weight:700;color:var(--gray5);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;margin-top:6px;">Series por semana (progresión):</div>
+      <div class="tpl-progression-row">
+        <div><div class="tpl-prog-label">Sem 1</div><input class="tpl-prog-input" type="number" id="tpl-ex-w1-${exId}" min="1" max="20" value="${prefill ? prefill.sets_week1 : 3}"></div>
+        <div><div class="tpl-prog-label">Sem 2</div><input class="tpl-prog-input" type="number" id="tpl-ex-w2-${exId}" min="1" max="20" value="${prefill ? prefill.sets_week2 : 3}"></div>
+        <div><div class="tpl-prog-label">Sem 3</div><input class="tpl-prog-input" type="number" id="tpl-ex-w3-${exId}" min="1" max="20" value="${prefill ? prefill.sets_week3 : 4}"></div>
+        <div><div class="tpl-prog-label">Sem 4</div><input class="tpl-prog-input" type="number" id="tpl-ex-w4-${exId}" min="1" max="20" value="${prefill ? prefill.sets_week4 : 4}"></div>
+      </div>
     </div>
     <input class="tpl-ex-input" style="width:100%;box-sizing:border-box;margin-top:6px;" id="tpl-ex-rest-${exId}" placeholder="Descanso (seg) — ej: 90" value="${prefill ? prefill.rest_seconds : 90}">
+    <input class="tpl-ex-input" style="width:100%;box-sizing:border-box;margin-top:6px;" id="tpl-ex-video-${exId}" placeholder="URL video (opcional)" value="${prefill ? (prefill.video_url || '') : ''}">
     <input class="tpl-ex-input" style="width:100%;box-sizing:border-box;margin-top:6px;" id="tpl-ex-notes-${exId}" placeholder="Notas (opcional)" value="${prefill ? (prefill.notes || '') : ''}">
     <input class="tpl-ex-input" style="width:100%;box-sizing:border-box;margin-top:6px;" id="tpl-ex-muscle-${exId}" placeholder="Grupo muscular (ej: Pecho, Espalda)" value="${prefill ? (prefill.muscle_groups || '') : ''}">
+    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--gray2);">
+      <input type="checkbox" id="tpl-ex-circuit-cb-${exId}" ${isCircuit ? 'checked' : ''} onchange="tplToggleCircuit(${exId})" style="width:15px;height:15px;accent-color:var(--orange);cursor:pointer;">
+      <label for="tpl-ex-circuit-cb-${exId}" style="font-size:12px;font-weight:600;color:var(--gray5);cursor:pointer;">Parte de un Circuito</label>
+      <input class="tpl-ex-input" id="tpl-ex-circuit-group-${exId}" placeholder="Letra ej: A" style="width:60px;flex:none;display:${isCircuit ? 'block' : 'none'};" value="${prefill && prefill.superset_group ? prefill.superset_group : ''}">
+    </div>
+    <div id="tpl-ex-circuit-panel-${exId}" style="display:${isCircuit ? 'block' : 'none'};margin-top:8px;">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+        <label style="font-size:11px;font-weight:600;color:var(--gray5);white-space:nowrap;">Rounds del circuito:</label>
+        <input class="tpl-ex-input" type="number" id="tpl-ex-rounds-${exId}" placeholder="3" min="1" max="10" value="${prefill && prefill.circuit_rounds ? prefill.circuit_rounds : ''}" style="width:70px;flex:none;">
+      </div>
+      <textarea class="tpl-ex-input" id="tpl-ex-circuit-notes-${exId}" rows="2" placeholder="Notas del circuito (ej: Sin descanso entre ejercicios)" style="width:100%;box-sizing:border-box;resize:vertical;">${prefill && prefill.circuit_notes ? prefill.circuit_notes : ''}</textarea>
+    </div>
   `;
   container.appendChild(div);
+}
+
+function tplToggleCircuit(exId) {
+  const cb = document.getElementById(`tpl-ex-circuit-cb-${exId}`);
+  const groupInput = document.getElementById(`tpl-ex-circuit-group-${exId}`);
+  const panel = document.getElementById(`tpl-ex-circuit-panel-${exId}`);
+  const seriesSection = document.getElementById(`tpl-series-section-${exId}`);
+  const isCircuit = cb.checked;
+  groupInput.style.display = isCircuit ? 'block' : 'none';
+  panel.style.display = isCircuit ? 'block' : 'none';
+  if (seriesSection) seriesSection.style.display = isCircuit ? 'none' : '';
 }
 
 function openLibraryForTemplate(dayId) {
@@ -3529,9 +3598,14 @@ async function saveTemplate() {
       const rest = parseInt(document.getElementById(`tpl-ex-rest-${exIdStr}`)?.value) || 90;
       const notes = document.getElementById(`tpl-ex-notes-${exIdStr}`)?.value.trim() || null;
       const muscle = document.getElementById(`tpl-ex-muscle-${exIdStr}`)?.value.trim() || null;
-      await sb.from('template_exercises').insert([{ template_day_id: newDay.id, exercise_name: exName, sets_week1: w1, sets_week2: w2, sets_week3: w3, sets_week4: w4, reps, rest_seconds: rest, notes, muscle_groups: muscle, exercise_order: exOrder++ }]);
+      const video = document.getElementById(`tpl-ex-video-${exIdStr}`)?.value.trim() || null;
+      const isCircuit = document.getElementById(`tpl-ex-circuit-cb-${exIdStr}`)?.checked || false;
+      const supersetGroup = isCircuit ? (document.getElementById(`tpl-ex-circuit-group-${exIdStr}`)?.value.trim() || 'A') : null;
+      const circuitRounds = isCircuit ? (parseInt(document.getElementById(`tpl-ex-rounds-${exIdStr}`)?.value) || null) : null;
+      const circuitNotes = isCircuit ? (document.getElementById(`tpl-ex-circuit-notes-${exIdStr}`)?.value.trim() || null) : null;
+      await sb.from('template_exercises').insert([{ template_day_id: newDay.id, exercise_name: exName, sets_week1: w1, sets_week2: w2, sets_week3: w3, sets_week4: w4, reps, rest_seconds: rest, notes, muscle_groups: muscle, video_url: video, superset_group: supersetGroup, circuit_rounds: circuitRounds, circuit_notes: circuitNotes, exercise_order: exOrder++ }]);
       // Auto-save to library
-      if (exName) await saveExerciseToLibrary(exName, 'Peso Libre', muscle, null);
+      if (exName) await saveExerciseToLibrary(exName, 'Peso Libre', muscle, video);
     }
   }
   showToast('✅ Machote guardado');
@@ -3610,16 +3684,16 @@ async function assignTemplateToClient() {
       const exercisesToInsert = exs.map((e, idx) => ({
         plan_day_id: newPd.id,
         name: e.exercise_name,
-        sets: e[weekSetsKey[week - 1]] || 3,
+        sets: e.superset_group ? 1 : (e[weekSetsKey[week - 1]] || 3),
         reps_range: e.reps || '10-12',
         rest_seconds: e.rest_seconds || 90,
         tag: 'Peso Libre',
         muscle_group: e.muscle_groups || null,
         notes: e.notes || null,
-        video_url: null,
-        superset_group: null,
-        circuit_notes: null,
-        circuit_rounds: null,
+        video_url: e.video_url || null,
+        superset_group: e.superset_group || null,
+        circuit_notes: e.circuit_notes || null,
+        circuit_rounds: e.circuit_rounds || null,
         order_index: idx
       }));
       if (exercisesToInsert.length > 0) await sb.from('exercises').insert(exercisesToInsert);
@@ -3766,6 +3840,20 @@ async function updatePayment() {
   closeModal('modal-edit-payment');
   showToast('✅ Cliente actualizado');
   openCoachClient(currentClient.id);
+}
+
+async function toggleChurnClient(makeChurn) {
+  if (!currentClient) return;
+  const msg = makeChurn
+    ? '¿Marcar este cliente como Churn? Se moverá al tab de clientes inactivos.'
+    : '¿Reactivar este cliente? Volverá al listado de clientes activos.';
+  if (!confirm(msg)) return;
+  const { error } = await sb.from('clients').update({ is_churn: makeChurn }).eq('id', currentClient.id);
+  if (error) { showToast('❌ Error: ' + error.message); return; }
+  currentClient.is_churn = makeChurn;
+  showToast(makeChurn ? '👋 Cliente movido a Churn' : '✅ Cliente reactivado');
+  showScreen('screen-coach-home');
+  loadCoachClients();
 }
 
 async function toggleClientWeight() {
