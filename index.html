@@ -389,6 +389,23 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 .installment-table td { font-size:13px; padding:6px 0; border-bottom:1px solid var(--gray2); color:var(--black); }
 .installment-table tr:last-child td { border-bottom:none; }
 .installment-table td:last-child { font-weight:700; color:var(--orange); text-align:right; }
+/* ===== TEMPLATE DAY LIST VIEW ===== */
+.tpl-day-row { background:var(--white);border-radius:10px;margin-bottom:8px;border:1.5px solid var(--gray2);overflow:hidden;transition:border-color 0.15s; }
+.tpl-day-row.expanded { border-color:var(--orange); }
+.tpl-day-row-header { display:flex;align-items:center;gap:8px;padding:12px 14px;cursor:pointer; }
+.tpl-day-row-order { font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:var(--orange);background:var(--orange-light);padding:3px 7px;border-radius:20px;flex-shrink:0; }
+.tpl-day-row-name { flex:1;font-size:14px;font-weight:700;color:var(--black); }
+.tpl-day-row-meta { font-size:11px;color:var(--gray4);flex-shrink:0; }
+.tpl-day-row-chevron { font-size:11px;color:var(--gray4);transition:transform 0.2s;flex-shrink:0; }
+.tpl-day-row.expanded .tpl-day-row-chevron { transform:rotate(180deg); }
+.tpl-day-row-actions { display:flex;gap:6px;padding:0 14px 12px;flex-wrap:wrap; }
+.tpl-day-action-btn { padding:7px 12px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;flex-shrink:0; }
+.tpl-day-body { padding:0 14px 14px;border-top:1px solid var(--gray2); }
+.tpl-day-ex-preview { padding:8px 0;border-bottom:1px solid var(--gray2);display:flex;align-items:center;gap:8px; }
+.tpl-day-ex-preview:last-child { border-bottom:none; }
+.tpl-day-ex-name { flex:1;font-size:13px;font-weight:600;color:var(--black); }
+.tpl-day-ex-prog { font-family:'DM Mono',monospace;font-size:10px;color:var(--orange); }
+
 /* ===== TEMPLATE CARDS ===== */
 .tpl-card { background:var(--white);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:12px;border-left:4px solid var(--orange); }
 .tpl-card-header { display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px; }
@@ -731,6 +748,16 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <div class="section-action" onclick="toggleProgressDashboard()">Ver</div>
     </div>
     <div id="coach-progress-dashboard" style="display:none;"></div>
+    <div class="section-header">
+      <div class="section-title">📝 Trainer Notes</div>
+      <div class="section-action" id="trainer-notes-save-btn" onclick="saveTrainerNotes()" style="display:none;">Guardar</div>
+    </div>
+    <div id="trainer-notes-panel" style="margin-bottom:16px;">
+      <textarea id="trainer-notes-input" class="form-textarea" rows="4"
+        placeholder="Lesiones, alergias, restricciones, objetivos específicos, cualquier detalle relevante..."
+        oninput="document.getElementById('trainer-notes-save-btn').style.display='block'"
+        style="width:100%;box-sizing:border-box;font-size:13px;line-height:1.5;resize:vertical;"></textarea>
+    </div>
     <div class="section-header"><div class="section-title">Registros del cliente</div><div class="section-action" onclick="toggleLogs()">Ver logs</div></div>
     <div id="coach-client-logs" style="display:none;"></div>
     <div class="section-header"><div class="section-title">Tu Plan MOVE</div><div class="section-action" onclick="showModal('modal-upload-pdf')">+ PDF</div></div>
@@ -2938,6 +2965,7 @@ async function openCoachClient(clientId) {
   loadCoachFoodPanel();
   loadCoachContractPanel();
   loadCoachAICounts(clientId);
+  loadTrainerNotes(clientId);
   showScreen('screen-coach-client');
 }
 
@@ -3395,25 +3423,175 @@ async function loadTemplates() {
     return;
   }
   const typeEmoji = { 'Gym':'🏋️', 'Condominio':'🏠', 'Peso Corporal':'💪', 'Cardio':'🏃', 'Femenino':'🌸' };
-  let html = '';
+  list.innerHTML = '';
   for (const t of templates) {
     const { data: days } = await sb.from('template_days').select('id,day_name,day_order').eq('template_id', t.id).order('day_order');
     const dayCount = days ? days.length : 0;
-    const dayChips = days ? days.map(d => `<div class="tpl-day-chip">${d.day_name}</div>`).join('') : '';
-    html += `<div class="tpl-card fade-up">
-      <div class="tpl-card-header">
+    const safeNameAttr = t.name.replace(/'/g, "\'").replace(/"/g, '&quot;');
+    // Build card
+    const card = document.createElement('div');
+    card.className = 'tpl-card fade-up';
+    card.id = `tpl-overview-${t.id}`;
+    // Header
+    card.innerHTML = `
+      <div class="tpl-card-header" style="margin-bottom:4px;">
         <div class="tpl-card-name">${t.name}</div>
         <div class="tpl-card-type">${typeEmoji[t.type]||''} ${t.type}</div>
       </div>
-      <div class="tpl-card-meta">${dayCount} día${dayCount !== 1 ? 's' : ''} · 4 semanas con progresión</div>
-      <div class="tpl-card-days">${dayChips}</div>
-      <div class="tpl-card-actions">
-        <button class="tpl-btn tpl-btn-edit" onclick="openTemplateEditor('${t.id}')">✏️ Editar</button>
-        <button class="tpl-btn tpl-btn-delete" onclick="deleteTemplate('${t.id}','${t.name.replace(/'/g,"\'")}')">🗑️ Borrar</button>
+      <div class="tpl-card-meta" style="margin-bottom:14px;">${dayCount} día${dayCount !== 1 ? 's' : ''} · 4 semanas con progresión</div>
+      <div id="tpl-days-overview-${t.id}" style="margin-bottom:12px;"></div>
+      <div style="display:flex;gap:6px;padding-top:10px;border-top:1.5px solid var(--gray2);">
+        <button class="tpl-btn" style="flex:1;background:var(--orange-light);color:var(--orange);border:1.5px solid var(--orange);" onclick="tplAddDayFromOverview('${t.id}')">+ Día</button>
+        <button class="tpl-btn tpl-btn-edit" style="flex:1;" onclick="openTemplateEditor('${t.id}')">⚙️ Ajustes</button>
+        <button class="tpl-btn tpl-btn-delete" style="flex:1;" onclick="deleteTemplate('${t.id}','${safeNameAttr}')">🗑️ Borrar</button>
       </div>
-    </div>`;
+    `;
+    list.appendChild(card);
+    // Render day rows
+    const daysContainer = document.getElementById(`tpl-days-overview-${t.id}`);
+    if (days && days.length > 0) {
+      for (let i = 0; i < days.length; i++) {
+        const d = days[i];
+        const { data: exs } = await sb.from('template_exercises').select('exercise_name,sets_week1,sets_week2,sets_week3,sets_week4,superset_group').eq('template_day_id', d.id).order('exercise_order');
+        const exCount = exs ? exs.length : 0;
+        const row = document.createElement('div');
+        row.className = 'tpl-day-row';
+        row.id = `tpl-day-row-${d.id}`;
+        const isFirst = i === 0, isLast = i === days.length - 1;
+        // Build exercise previews (collapsed)
+        const exPreviewHTML = exs ? exs.map(e => `
+          <div class="tpl-day-ex-preview">
+            <div class="tpl-day-ex-name">${e.superset_group ? `<span style="font-size:9px;background:var(--blue-light);color:var(--blue);padding:2px 6px;border-radius:10px;font-weight:700;margin-right:4px;">C${e.superset_group}</span>` : ''}${e.exercise_name}</div>
+            <div class="tpl-day-ex-prog">${e.superset_group ? '—' : `${e.sets_week1}→${e.sets_week2}→${e.sets_week3}→${e.sets_week4}`}</div>
+          </div>`).join('') : '<div style="font-size:12px;color:var(--gray4);padding:8px 0;">Sin ejercicios</div>';
+        row.innerHTML = `
+          <div class="tpl-day-row-header" onclick="tplToggleDayRow('${d.id}')">
+            <div class="tpl-day-row-order">Día ${i + 1}</div>
+            <div class="tpl-day-row-name">${d.day_name}</div>
+            <div class="tpl-day-row-meta">${exCount} ej.</div>
+            <div class="tpl-day-row-chevron">▼</div>
+          </div>
+          <div class="tpl-day-row-body" id="tpl-day-body-${d.id}" style="display:none;">
+            <div class="tpl-day-row-actions">
+              <button class="tpl-day-action-btn" style="background:var(--orange);color:white;" onclick="tplEditDay('${t.id}','${d.id}')">✏️ Editar ejercicios</button>
+              <button class="tpl-day-action-btn" style="background:var(--gray1);color:var(--black);" onclick="tplDuplicateDay('${t.id}','${d.id}')" title="Duplicar día">📋 Duplicar</button>
+              ${!isFirst ? `<button class="tpl-day-action-btn" style="background:var(--gray1);color:var(--gray5);" onclick="tplMoveDayOrder('${t.id}','${d.id}',-1)" title="Subir">↑ Subir</button>` : ''}
+              ${!isLast ? `<button class="tpl-day-action-btn" style="background:var(--gray1);color:var(--gray5);" onclick="tplMoveDayOrder('${t.id}','${d.id}',1)" title="Bajar">↓ Bajar</button>` : ''}
+              <button class="tpl-day-action-btn" style="background:var(--red-light);color:var(--red);" onclick="tplDeleteDay('${t.id}','${d.id}','${d.day_name.replace(/'/g,"\'")}')">🗑️ Borrar</button>
+            </div>
+            <div class="tpl-day-body">${exPreviewHTML}</div>
+          </div>
+        `;
+        daysContainer.appendChild(row);
+      }
+    } else {
+      daysContainer.innerHTML = '<div style="font-size:12px;color:var(--gray4);text-align:center;padding:12px 0;">Sin días — toca "+ Día" para agregar</div>';
+    }
   }
-  list.innerHTML = html;
+}
+
+// Toggle expand/collapse a day row
+function tplToggleDayRow(dayId) {
+  const row = document.getElementById(`tpl-day-row-${dayId}`);
+  const body = document.getElementById(`tpl-day-body-${dayId}`);
+  if (!row || !body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  row.classList.toggle('expanded', !isOpen);
+}
+
+// Edit a specific day's exercises directly
+async function tplEditDay(templateId, dayId) {
+  currentTemplateId = templateId;
+  tplDayCount = 0; tplExCount = 0;
+  showScreen('screen-template-editor');
+  const { data: t } = await sb.from('routine_templates').select('*').eq('id', templateId).single();
+  if (t) {
+    document.getElementById('template-editor-title').textContent = t.name;
+    document.getElementById('tpl-name').value = t.name;
+    document.getElementById('tpl-type').value = t.type;
+  }
+  // Load only this specific day
+  const container = document.getElementById('tpl-days-list');
+  container.innerHTML = '';
+  const { data: day } = await sb.from('template_days').select('*').eq('id', dayId).single();
+  if (day) await addTemplateDayCard(day);
+  // Load all other days collapsed
+  const { data: allDays } = await sb.from('template_days').select('*').eq('template_id', templateId).order('day_order');
+  if (allDays) {
+    for (const d of allDays) {
+      if (d.id !== dayId) await addTemplateDayCard(d);
+    }
+  }
+}
+
+// Add a new day from the overview screen
+async function tplAddDayFromOverview(templateId) {
+  currentTemplateId = templateId;
+  tplDayCount = 0; tplExCount = 0;
+  showScreen('screen-template-editor');
+  const { data: t } = await sb.from('routine_templates').select('*').eq('id', templateId).single();
+  if (t) {
+    document.getElementById('template-editor-title').textContent = t.name;
+    document.getElementById('tpl-name').value = t.name;
+    document.getElementById('tpl-type').value = t.type;
+  }
+  await loadTemplateDays();
+  // Add a new empty day at bottom
+  await addTemplateDayCard(null);
+  // Scroll to bottom
+  setTimeout(() => { const c = document.getElementById('tpl-days-list'); if (c) c.lastElementChild?.scrollIntoView({behavior:'smooth'}); }, 100);
+}
+
+// Move a day up or down
+async function tplMoveDayOrder(templateId, dayId, direction) {
+  const { data: days } = await sb.from('template_days').select('*').eq('template_id', templateId).order('day_order');
+  if (!days) return;
+  const idx = days.findIndex(d => d.id === dayId);
+  const targetIdx = idx + direction;
+  if (targetIdx < 0 || targetIdx >= days.length) return;
+  // Swap order values
+  const dayA = days[idx], dayB = days[targetIdx];
+  const orderA = dayA.day_order, orderB = dayB.day_order;
+  await sb.from('template_days').update({ day_order: orderB }).eq('id', dayA.id);
+  await sb.from('template_days').update({ day_order: orderA }).eq('id', dayB.id);
+  showToast('✅ Orden actualizado');
+  loadTemplates();
+}
+
+// Duplicate a day with all its exercises
+async function tplDuplicateDay(templateId, dayId) {
+  const { data: day } = await sb.from('template_days').select('*').eq('id', dayId).single();
+  if (!day) return;
+  const { data: exs } = await sb.from('template_exercises').select('*').eq('template_day_id', dayId).order('exercise_order');
+  // Get max day_order
+  const { data: allDays } = await sb.from('template_days').select('day_order').eq('template_id', templateId).order('day_order', {ascending: false}).limit(1);
+  const maxOrder = allDays && allDays.length > 0 ? allDays[0].day_order + 1 : 0;
+  const { data: newDay } = await sb.from('template_days').insert([{
+    template_id: templateId, day_name: day.day_name + ' (copia)', day_order: maxOrder
+  }]).select().single();
+  if (!newDay) return;
+  if (exs && exs.length > 0) {
+    const newExs = exs.map(e => ({
+      template_day_id: newDay.id, exercise_name: e.exercise_name,
+      sets_week1: e.sets_week1, sets_week2: e.sets_week2, sets_week3: e.sets_week3, sets_week4: e.sets_week4,
+      reps: e.reps, rest_seconds: e.rest_seconds, notes: e.notes, muscle_groups: e.muscle_groups,
+      video_url: e.video_url, superset_group: e.superset_group, circuit_rounds: e.circuit_rounds,
+      circuit_notes: e.circuit_notes, exercise_order: e.exercise_order
+    }));
+    await sb.from('template_exercises').insert(newExs);
+  }
+  showToast('📋 Día duplicado');
+  loadTemplates();
+}
+
+// Delete a single day
+async function tplDeleteDay(templateId, dayId, dayName) {
+  if (!confirm(`¿Borrar "${dayName}"? Se eliminarán todos sus ejercicios.`)) return;
+  await sb.from('template_exercises').delete().eq('template_day_id', dayId);
+  await sb.from('template_days').delete().eq('id', dayId);
+  showToast('🗑️ Día eliminado');
+  loadTemplates();
 }
 
 function openNewTemplateModal() {
@@ -3508,6 +3686,7 @@ function addTemplateExercise(dayId, prefill = null) {
       <div style="display:flex;gap:4px;align-items:center;">
         <button onclick="tplMoveEx('tpl-ex-${exId}',-1)" title="Subir" style="background:var(--gray1);color:var(--gray5);border:1.5px solid var(--gray2);border-radius:6px;padding:4px 8px;font-size:13px;cursor:pointer;line-height:1;">↑</button>
         <button onclick="tplMoveEx('tpl-ex-${exId}',1)" title="Bajar" style="background:var(--gray1);color:var(--gray5);border:1.5px solid var(--gray2);border-radius:6px;padding:4px 8px;font-size:13px;cursor:pointer;line-height:1;">↓</button>
+        <button onclick="tplSaveToLibrary(${exId})" style="background:var(--green-light);color:var(--green);border:none;border-radius:6px;padding:5px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">📚 Guardar</button>
         <button onclick="tplSwapFromLibrary(${exId})" style="background:var(--blue-light);color:var(--blue);border:1.5px solid var(--blue);border-radius:6px;padding:5px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">🔄 Cambiar</button>
         <button onclick="document.getElementById('tpl-ex-${exId}').remove()" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>
       </div>
@@ -3570,6 +3749,16 @@ function tplMoveEx(formId, direction) {
   if (targetIdx < 0 || targetIdx >= forms.length) return;
   if (direction === -1) parent.insertBefore(el, forms[targetIdx]);
   else parent.insertBefore(forms[targetIdx], el);
+}
+
+async function tplSaveToLibrary(exId) {
+  const name = document.getElementById(`tpl-ex-name-${exId}`)?.value.trim();
+  if (!name) { showToast('⚠️ Escribe el nombre primero'); return; }
+  const muscleSel = document.getElementById(`tpl-ex-muscle-${exId}`)?.value || '';
+  const muscle = muscleSel === 'custom' ? (document.getElementById(`tpl-bmc-input-${exId}`)?.value.trim() || null) : (muscleSel || null);
+  const video = document.getElementById(`tpl-ex-video-${exId}`)?.value.trim() || null;
+  await saveExerciseToLibrary(name, 'Peso Libre', muscle, video);
+  showToast('📚 Guardado en biblioteca');
 }
 
 function tplSwapFromLibrary(exId) {
@@ -3911,6 +4100,25 @@ async function toggleChurnClient(makeChurn) {
   showToast(makeChurn ? '👋 Cliente movido a Churn' : '✅ Cliente reactivado');
   showScreen('screen-coach-home');
   loadCoachClients();
+}
+
+async function loadTrainerNotes(clientId) {
+  const input = document.getElementById('trainer-notes-input');
+  const saveBtn = document.getElementById('trainer-notes-save-btn');
+  if (!input) return;
+  const { data: c } = await sb.from('clients').select('trainer_notes').eq('id', clientId).single();
+  input.value = c?.trainer_notes || '';
+  if (saveBtn) saveBtn.style.display = 'none';
+}
+
+async function saveTrainerNotes() {
+  if (!currentClient) return;
+  const notes = document.getElementById('trainer-notes-input')?.value.trim() || null;
+  const { error } = await sb.from('clients').update({ trainer_notes: notes }).eq('id', currentClient.id);
+  if (error) { showToast('❌ ' + error.message); return; }
+  currentClient.trainer_notes = notes;
+  document.getElementById('trainer-notes-save-btn').style.display = 'none';
+  showToast('📝 Notas guardadas');
 }
 
 async function toggleClientWeight() {
