@@ -3829,11 +3829,17 @@ async function saveTemplateSettings() {
 
 // Save only the single day being edited — DELETE+REINSERT only that day's exercises
 async function saveSingleDay() {
-  // Scope strictly to the editor's day list — avoids picking up tpl-day-row-* from other screens
   const container = document.getElementById('tpl-days-list');
+  console.log('saveSingleDay container:', container);
+  console.log('tplSingleDayId:', tplSingleDayId);
   const card = container ? container.querySelector('.tpl-day-card') : null;
+  console.log('card found:', card);
   if (!card) { showToast('⚠️ Sin día para guardar'); return; }
   const dayNameInput = card.querySelector('.tpl-day-name-input');
+  console.log('dayNameInput:', dayNameInput, 'value:', dayNameInput?.value);
+  // Also try reading ALL inputs inside container for debugging
+  const allInputs = container.querySelectorAll('input');
+  console.log('All inputs in container:', allInputs.length, [...allInputs].map(i => ({cls: i.className, val: i.value})));
   const dayName = dayNameInput ? dayNameInput.value.trim() : '';
   if (!dayName) { showToast('⚠️ Escribe el nombre del día'); return; }
   showToast('⏳ Guardando...');
