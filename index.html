@@ -4860,6 +4860,7 @@ function renderFoodScreen() {
       <div>
         <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Move With Sau</div>
         <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;">NutriFlex 🥗</div>
+        ${currentClient.nutrition_mode === 'deficit' ? '<div style="display:inline-block;background:var(--orange);color:white;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:0.08em;margin-top:2px;">🔥 MÉTODO DEL PLATO MOVE</div>' : ''}
       </div>
       <button onclick="clearFoodChat()" style="background:none;border:none;color:var(--gray4);font-size:11px;font-weight:600;cursor:pointer;padding:4px 8px;font-family:'DM Sans',sans-serif;margin-top:6px;">🗑 Limpiar chat</button>
     </div>
@@ -4894,6 +4895,37 @@ function scrollFoodChat() {
     const msgs = document.getElementById('food-chat-messages');
     if(msgs) msgs.scrollIntoView({behavior:'smooth',block:'end'});
   }, 100);
+}
+
+function buildNutriflexSystemPrompt() {
+  const mode = currentClient?.nutrition_mode || 'maintenance';
+  const basePrompt = NUTRIFLEX_SYSTEM_PROMPT;
+
+  if (mode === 'deficit') {
+    return basePrompt + `
+
+=== MODO DÉFICIT — MÉTODO DEL PLATO MOVE ===
+Este cliente está en un proceso de PÉRDIDA DE PESO con un enfoque intuitivo y sostenible, NO de conteo obsesivo de macros.
+
+Tu filosofía para este cliente es el MÉTODO DEL PLATO MOVE:
+• 🥩 MITAD del plato → Proteína (siempre. es la base de cada comida)
+• 🍚 UN CUARTO del plato → Carbohidratos (porción moderada, referencia ~20g CHO)
+• 🥦 UN CUARTO del plato → Vegetales (volumen, fibra, saciedad sin calorías extra)
+
+CÓMO APLICAR ESTO:
+- Cuando el cliente pida ideas de comidas, describí el plato visualmente. No digas "X gramos de Y" — decí "un trozo de pechuga que llene la mitad del plato", "una porción de arroz del tamaño de tu puño", "el resto de vegetales salteados".
+- Si el cliente pregunta por cantidades, podés referenciar los alimentos de la librería, pero siempre enmarcado en la lógica del plato.
+- Priorizá proteínas altas y saciantes: pollo, atún, huevo, res magra, cerdo magro.
+- Los carbohidratos son bienvenidos — solo en porción moderada (~20g CHO como referencia de ¼ plato). Nunca los elimines ni los hagas sentir prohibidos.
+- Los vegetales son libres: espinaca, brócoli, pepino, tomate, lechuga, zanahoria — cantidad sin límite.
+- Evitá frases como "no puedes comer X". Encuadrá todo en "en este momento tu plato se ve así".
+- La flexibilidad es parte del método. Si el cliente salió a comer afuera, ayudalo a elegir bien SIN hacerlo sentir mal.
+
+META EMOCIONAL: Que el cliente entienda que comer bien no es complicado. Que sepa armar su plato sin calculadora. Que confíe en el proceso.
+=== FIN MODO DÉFICIT ===`;
+  }
+
+  return basePrompt;
 }
 
 async function sendFoodMessage() {
@@ -4960,7 +4992,7 @@ ${currentClient.macros_notas ? `Notas del coach: ${currentClient.macros_notas}` 
         model: 'llama-3.3-70b-versatile',
         max_tokens: 1000,
         messages: [
-          {role: 'system', content: NUTRIFLEX_SYSTEM_PROMPT + (window._foodLibraryContext||'') + '\n\n' + clientContext},
+          {role: 'system', content: buildNutriflexSystemPrompt() + (window._foodLibraryContext||'') + '\n\n' + clientContext},
           ...foodChatHistory.slice(-20)
         ]
       })
@@ -5031,6 +5063,15 @@ async function loadCoachFoodPanel() {
       <button onclick="saveNutritionData()" class="btn-primary" style="padding:11px;">Guardar InBody</button>
     </div>
     <div class="card" style="margin-bottom:10px;">
+      <div class="notes-label" style="margin-bottom:12px;">Enfoque nutricional</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:4px;">
+        <button onclick="setNutritionMode('deficit')" id="nm-deficit" style="padding:10px 6px;border:2px solid ${currentClient.nutrition_mode==='deficit'?'var(--orange)':'var(--gray2)'};border-radius:var(--radius-sm);background:${currentClient.nutrition_mode==='deficit'?'var(--orange)':'var(--white)'};color:${currentClient.nutrition_mode==='deficit'?'white':'var(--gray5)'};font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;">🔥 Déficit</button>
+        <button onclick="setNutritionMode('maintenance')" id="nm-maint" style="padding:10px 6px;border:2px solid ${currentClient.nutrition_mode==='maintenance'?'var(--orange)':'var(--gray2)'};border-radius:var(--radius-sm);background:${currentClient.nutrition_mode==='maintenance'?'var(--orange)':'var(--white)'};color:${currentClient.nutrition_mode==='maintenance'?'white':'var(--gray5)'};font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;">⚖️ Mant.</button>
+        <button onclick="setNutritionMode('surplus')" id="nm-surplus" style="padding:10px 6px;border:2px solid ${currentClient.nutrition_mode==='surplus'?'var(--orange)':'var(--gray2)'};border-radius:var(--radius-sm);background:${currentClient.nutrition_mode==='surplus'?'var(--orange)':'var(--white)'};color:${currentClient.nutrition_mode==='surplus'?'white':'var(--gray5)'};font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;">💪 Superávit</button>
+      </div>
+      ${currentClient.nutrition_mode==='deficit'?'<div style="font-size:10px;color:var(--orange);margin-bottom:12px;font-weight:600;">Modo Método del Plato MOVE activo — NutriFlex guiará con platos intuitivos</div>':'<div style="font-size:10px;color:var(--gray4);margin-bottom:12px;">NutriFlex usará los macros asignados como referencia principal</div>'}
+    </div>
+    <div class="card" style="margin-bottom:10px;">
       <div class="notes-label" style="margin-bottom:12px;">Macros asignados</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
         <div><label class="form-label">Calorías</label><input class="form-input" type="number" id="mac-kcal" value="${currentClient.macros_calorias||''}" placeholder="2000" style="font-size:13px;padding:9px 12px;"></div>
@@ -5091,6 +5132,14 @@ async function saveMacros() {
   await sb.from('clients').update(updates).eq('id',currentClient.id);
   Object.assign(currentClient, updates);
   showToast('✅ Macros guardados');
+}
+
+async function setNutritionMode(mode) {
+  if(!currentClient) return;
+  await sb.from('clients').update({nutrition_mode: mode}).eq('id', currentClient.id);
+  currentClient.nutrition_mode = mode;
+  showToast(mode === 'deficit' ? '🔥 Modo Déficit — Método del Plato MOVE' : mode === 'maintenance' ? '⚖️ Modo Mantenimiento' : '💪 Modo Superávit');
+  loadCoachFoodPanel();
 }
 // ===== SOLO EXERCISE LOG FUNCTIONS =====
 function saveSoloLog(exId, setNum, logsKey) {
