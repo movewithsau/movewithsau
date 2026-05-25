@@ -3829,13 +3829,12 @@ async function saveTemplateSettings() {
 
 // Save only the single day being edited — DELETE+REINSERT only that day's exercises
 async function saveSingleDay() {
-  const dayCells = document.querySelectorAll('[id^="tpl-day-"]');
-  if (!dayCells || dayCells.length === 0) { showToast('⚠️ Sin día para guardar'); return; }
-  const card = dayCells[0];
-  const dayIdStr = card.id.replace('tpl-day-', '');
-  // Read name directly from the input inside the card (robust — no ID mismatch)
-  const dayNameInput = card.querySelector('.tpl-day-name-input') || document.getElementById(`tpl-day-name-${dayIdStr}`);
-  const dayName = dayNameInput?.value.trim();
+  // Scope strictly to the editor's day list — avoids picking up tpl-day-row-* from other screens
+  const container = document.getElementById('tpl-days-list');
+  const card = container ? container.querySelector('.tpl-day-card') : null;
+  if (!card) { showToast('⚠️ Sin día para guardar'); return; }
+  const dayNameInput = card.querySelector('.tpl-day-name-input');
+  const dayName = dayNameInput ? dayNameInput.value.trim() : '';
   if (!dayName) { showToast('⚠️ Escribe el nombre del día'); return; }
   showToast('⏳ Guardando...');
   let targetDayId = tplSingleDayId;
@@ -3853,7 +3852,7 @@ async function saveSingleDay() {
     await sb.from('template_exercises').delete().eq('template_day_id', targetDayId);
   }
   // Reinsert exercises
-  const exCards = card.querySelectorAll('[id^="tpl-ex-"]');
+  const exCards = card.querySelectorAll('.builder-ex-card');
   let exOrder = 0;
   for (const exCard of exCards) {
     const exIdStr = exCard.id.replace('tpl-ex-', '');
@@ -3895,7 +3894,8 @@ async function saveTemplate() {
   await sb.from('routine_templates').update({ name, type }).eq('id', currentTemplateId);
   document.getElementById('template-editor-title').textContent = name;
   // Get all day cards
-  const dayCells = document.querySelectorAll('[id^="tpl-day-"]');
+  const container = document.getElementById('tpl-days-list');
+  const dayCells = container ? container.querySelectorAll('.tpl-day-card') : [];
   // Delete all existing days/exercises for this template
   const { data: oldDays } = await sb.from('template_days').select('id').eq('template_id', currentTemplateId);
   if (oldDays && oldDays.length > 0) {
@@ -3906,12 +3906,13 @@ async function saveTemplate() {
   }
   let order = 0;
   for (const card of dayCells) {
-    const dayIdStr = card.id.replace('tpl-day-', '');
-    const dayName = document.getElementById(`tpl-day-name-${dayIdStr}`)?.value.trim() || `Día ${dayIdStr}`;
+    const dayNameInput = card.querySelector('.tpl-day-name-input');
+    const dayName = dayNameInput ? dayNameInput.value.trim() : '';
+    if (!dayName) continue;
     const { data: newDay } = await sb.from('template_days').insert([{ template_id: currentTemplateId, day_name: dayName, day_order: order++ }]).select().single();
     if (!newDay) continue;
     // Get exercises in this day
-    const exCards = card.querySelectorAll('[id^="tpl-ex-"]');
+    const exCards = card.querySelectorAll('.builder-ex-card');
     let exOrder = 0;
     for (const exCard of exCards) {
       const exIdStr = exCard.id.replace('tpl-ex-', '');
