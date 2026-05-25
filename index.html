@@ -3497,46 +3497,102 @@ function addTemplateExercise(dayId, prefill = null) {
   const container = document.getElementById(`tpl-day-exs-${dayId}`);
   if (!container) return;
   const isCircuit = prefill && prefill.superset_group;
+  const ms = MUSCLES.map(m => `<option value="${m}"${prefill && prefill.muscle_groups === m ? ' selected' : ''}>${m}</option>`).join('');
   const div = document.createElement('div');
-  div.className = 'tpl-ex-card';
+  div.className = 'builder-ex-card fade-up';
   div.id = `tpl-ex-${exId}`;
   div.dataset.dayId = dayId;
   div.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--orange);">Ejercicio ${exId}</span>
-      <button onclick="document.getElementById('tpl-ex-${exId}').remove()" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;">✕</button>
+    <div class="builder-ex-header">
+      <span class="builder-ex-num">Ejercicio ${exId}</span>
+      <div style="display:flex;gap:4px;align-items:center;">
+        <button onclick="tplMoveEx('tpl-ex-${exId}',-1)" title="Subir" style="background:var(--gray1);color:var(--gray5);border:1.5px solid var(--gray2);border-radius:6px;padding:4px 8px;font-size:13px;cursor:pointer;line-height:1;">↑</button>
+        <button onclick="tplMoveEx('tpl-ex-${exId}',1)" title="Bajar" style="background:var(--gray1);color:var(--gray5);border:1.5px solid var(--gray2);border-radius:6px;padding:4px 8px;font-size:13px;cursor:pointer;line-height:1;">↓</button>
+        <button onclick="tplSwapFromLibrary(${exId})" style="background:var(--blue-light);color:var(--blue);border:1.5px solid var(--blue);border-radius:6px;padding:5px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">🔄 Cambiar</button>
+        <button onclick="document.getElementById('tpl-ex-${exId}').remove()" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>
+      </div>
     </div>
-    <div class="tpl-ex-row">
-      <input class="tpl-ex-input" style="flex:3;" id="tpl-ex-name-${exId}" placeholder="Nombre del ejercicio" value="${prefill ? prefill.exercise_name : ''}">
-      <input class="tpl-ex-input" style="flex:1;" id="tpl-ex-reps-${exId}" placeholder="Reps/Tiempo" value="${prefill ? prefill.reps : '10-12'}">
-    </div>
+    <div class="form-group"><input class="builder-input" style="width:100%;" placeholder="Nombre del ejercicio" id="tpl-ex-name-${exId}" value="${prefill ? prefill.exercise_name : ''}"></div>
     <div id="tpl-series-section-${exId}" style="${isCircuit ? 'display:none;' : ''}">
-      <div style="font-size:10px;font-weight:700;color:var(--gray5);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;margin-top:6px;">Series por semana (progresión):</div>
-      <div class="tpl-progression-row">
+      <div style="font-size:10px;font-weight:700;color:var(--gray5);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Series por semana (progresión):</div>
+      <div class="tpl-progression-row" style="margin-bottom:8px;">
         <div><div class="tpl-prog-label">Sem 1</div><input class="tpl-prog-input" type="number" id="tpl-ex-w1-${exId}" min="1" max="20" value="${prefill ? prefill.sets_week1 : 3}"></div>
         <div><div class="tpl-prog-label">Sem 2</div><input class="tpl-prog-input" type="number" id="tpl-ex-w2-${exId}" min="1" max="20" value="${prefill ? prefill.sets_week2 : 3}"></div>
         <div><div class="tpl-prog-label">Sem 3</div><input class="tpl-prog-input" type="number" id="tpl-ex-w3-${exId}" min="1" max="20" value="${prefill ? prefill.sets_week3 : 4}"></div>
         <div><div class="tpl-prog-label">Sem 4</div><input class="tpl-prog-input" type="number" id="tpl-ex-w4-${exId}" min="1" max="20" value="${prefill ? prefill.sets_week4 : 4}"></div>
       </div>
     </div>
-    <input class="tpl-ex-input" style="width:100%;box-sizing:border-box;margin-top:6px;" id="tpl-ex-rest-${exId}" placeholder="Descanso (seg) — ej: 90" value="${prefill ? prefill.rest_seconds : 90}">
-    <input class="tpl-ex-input" style="width:100%;box-sizing:border-box;margin-top:6px;" id="tpl-ex-video-${exId}" placeholder="URL video (opcional)" value="${prefill ? (prefill.video_url || '') : ''}">
-    <input class="tpl-ex-input" style="width:100%;box-sizing:border-box;margin-top:6px;" id="tpl-ex-notes-${exId}" placeholder="Notas (opcional)" value="${prefill ? (prefill.notes || '') : ''}">
-    <input class="tpl-ex-input" style="width:100%;box-sizing:border-box;margin-top:6px;" id="tpl-ex-muscle-${exId}" placeholder="Grupo muscular (ej: Pecho, Espalda)" value="${prefill ? (prefill.muscle_groups || '') : ''}">
-    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--gray2);">
-      <input type="checkbox" id="tpl-ex-circuit-cb-${exId}" ${isCircuit ? 'checked' : ''} onchange="tplToggleCircuit(${exId})" style="width:15px;height:15px;accent-color:var(--orange);cursor:pointer;">
-      <label for="tpl-ex-circuit-cb-${exId}" style="font-size:12px;font-weight:600;color:var(--gray5);cursor:pointer;">Parte de un Circuito</label>
-      <input class="tpl-ex-input" id="tpl-ex-circuit-group-${exId}" placeholder="Letra ej: A" style="width:60px;flex:none;display:${isCircuit ? 'block' : 'none'};" value="${prefill && prefill.superset_group ? prefill.superset_group : ''}">
-    </div>
-    <div id="tpl-ex-circuit-panel-${exId}" style="display:${isCircuit ? 'block' : 'none'};margin-top:8px;">
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
-        <label style="font-size:11px;font-weight:600;color:var(--gray5);white-space:nowrap;">Rounds del circuito:</label>
-        <input class="tpl-ex-input" type="number" id="tpl-ex-rounds-${exId}" placeholder="3" min="1" max="10" value="${prefill && prefill.circuit_rounds ? prefill.circuit_rounds : ''}" style="width:70px;flex:none;">
+    <div class="builder-row">
+      <div style="flex:1;display:flex;flex-direction:column;gap:3px;">
+        <div style="display:flex;gap:3px;">
+          <button id="tpl-reps-mode-${exId}" onclick="tplSetRepMode(${exId},'reps')" class="unit-btn selected" style="font-size:10px;padding:4px 8px;">Reps</button>
+          <button id="tpl-time-mode-${exId}" onclick="tplSetRepMode(${exId},'time')" class="unit-btn" style="font-size:10px;padding:4px 8px;">Tiempo</button>
+        </div>
+        <input class="builder-input" id="tpl-ex-reps-${exId}" placeholder="ej: 8-12" value="${prefill ? prefill.reps : '10-12'}">
       </div>
-      <textarea class="tpl-ex-input" id="tpl-ex-circuit-notes-${exId}" rows="2" placeholder="Notas del circuito (ej: Sin descanso entre ejercicios)" style="width:100%;box-sizing:border-box;resize:vertical;">${prefill && prefill.circuit_notes ? prefill.circuit_notes : ''}</textarea>
+      <input class="builder-input" type="number" placeholder="Descanso (seg)" id="tpl-ex-rest-${exId}" value="${prefill ? prefill.rest_seconds : 90}">
+    </div>
+    <div class="builder-row">
+      <select class="builder-select" id="tpl-ex-muscle-${exId}" onchange="tplToggleCustomMuscle(this,${exId})">
+        <option value="">Grupo muscular</option>
+        ${ms}
+        <option value="custom"${prefill && prefill.muscle_groups && !MUSCLES.includes(prefill.muscle_groups) ? ' selected' : ''}>Otro...</option>
+      </select>
+    </div>
+    <div id="tpl-bmc-${exId}" style="display:${prefill && prefill.muscle_groups && !MUSCLES.includes(prefill.muscle_groups) ? 'block' : 'none'};margin-bottom:6px;">
+      <input class="builder-input" style="width:100%;" id="tpl-bmc-input-${exId}" placeholder="Grupo muscular personalizado" value="${prefill && prefill.muscle_groups && !MUSCLES.includes(prefill.muscle_groups) ? prefill.muscle_groups : ''}">
+    </div>
+    <div class="form-group"><input class="builder-input" style="width:100%;" placeholder="URL video (opcional)" id="tpl-ex-video-${exId}" value="${prefill ? (prefill.video_url || '') : ''}"></div>
+    <div class="form-group"><textarea class="form-textarea" placeholder="Notas del coach (opcional)" id="tpl-ex-notes-${exId}" rows="2">${prefill ? (prefill.notes || '') : ''}</textarea></div>
+    <div class="superset-toggle">
+      <input type="checkbox" id="tpl-ex-circuit-cb-${exId}" ${isCircuit ? 'checked' : ''} onchange="tplToggleCircuit(${exId})">
+      <label for="tpl-ex-circuit-cb-${exId}">Parte de un Circuito</label>
+      <input class="superset-group-input" id="tpl-ex-circuit-group-${exId}" placeholder="Ej: A" style="display:${isCircuit ? 'inline-block' : 'none'};" value="${prefill && prefill.superset_group ? prefill.superset_group : ''}">
+    </div>
+    <div id="tpl-ex-circuit-panel-${exId}" style="display:${isCircuit ? 'block' : 'none'};margin-top:6px;">
+      <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;">
+        <label style="font-size:11px;font-weight:600;color:var(--gray5);white-space:nowrap;">Rounds del circuito:</label>
+        <input class="builder-input" type="number" id="tpl-ex-rounds-${exId}" placeholder="3" min="1" max="10" value="${prefill && prefill.circuit_rounds ? prefill.circuit_rounds : ''}" style="width:70px;flex:none;">
+      </div>
+      <textarea class="form-textarea" id="tpl-ex-circuit-notes-${exId}" rows="2" placeholder="Notas del circuito (ej: Sin descanso entre ejercicios)">${prefill && prefill.circuit_notes ? prefill.circuit_notes : ''}</textarea>
     </div>
   `;
   container.appendChild(div);
+}
+
+function tplMoveEx(formId, direction) {
+  const el = document.getElementById(formId);
+  if (!el) return;
+  const parent = el.parentNode;
+  const forms = [...parent.querySelectorAll('[id^="tpl-ex-"]')];
+  const idx = forms.indexOf(el);
+  const targetIdx = idx + direction;
+  if (targetIdx < 0 || targetIdx >= forms.length) return;
+  if (direction === -1) parent.insertBefore(el, forms[targetIdx]);
+  else parent.insertBefore(forms[targetIdx], el);
+}
+
+function tplSwapFromLibrary(exId) {
+  window._tplSwapTargetExId = exId;
+  window._tplLibraryTargetDayId = null;
+  openLibrary('tpl-swap');
+}
+
+function tplSetRepMode(exId, mode) {
+  const repsBtn = document.getElementById(`tpl-reps-mode-${exId}`);
+  const timeBtn = document.getElementById(`tpl-time-mode-${exId}`);
+  const input = document.getElementById(`tpl-ex-reps-${exId}`);
+  if (mode === 'reps') {
+    repsBtn.classList.add('selected'); timeBtn.classList.remove('selected');
+    input.placeholder = 'ej: 8-12';
+  } else {
+    timeBtn.classList.add('selected'); repsBtn.classList.remove('selected');
+    input.placeholder = 'ej: 30s ó 1min';
+  }
+}
+
+function tplToggleCustomMuscle(sel, exId) {
+  document.getElementById(`tpl-bmc-${exId}`).style.display = sel.value === 'custom' ? 'block' : 'none';
 }
 
 function tplToggleCircuit(exId) {
@@ -3545,7 +3601,7 @@ function tplToggleCircuit(exId) {
   const panel = document.getElementById(`tpl-ex-circuit-panel-${exId}`);
   const seriesSection = document.getElementById(`tpl-series-section-${exId}`);
   const isCircuit = cb.checked;
-  groupInput.style.display = isCircuit ? 'block' : 'none';
+  groupInput.style.display = isCircuit ? 'inline-block' : 'none';
   panel.style.display = isCircuit ? 'block' : 'none';
   if (seriesSection) seriesSection.style.display = isCircuit ? 'none' : '';
 }
@@ -3597,7 +3653,8 @@ async function saveTemplate() {
       const reps = document.getElementById(`tpl-ex-reps-${exIdStr}`)?.value || '10-12';
       const rest = parseInt(document.getElementById(`tpl-ex-rest-${exIdStr}`)?.value) || 90;
       const notes = document.getElementById(`tpl-ex-notes-${exIdStr}`)?.value.trim() || null;
-      const muscle = document.getElementById(`tpl-ex-muscle-${exIdStr}`)?.value.trim() || null;
+      const muscleSel = document.getElementById(`tpl-ex-muscle-${exIdStr}`)?.value || '';
+      const muscle = muscleSel === 'custom' ? (document.getElementById(`tpl-bmc-input-${exIdStr}`)?.value.trim() || null) : (muscleSel || null);
       const video = document.getElementById(`tpl-ex-video-${exIdStr}`)?.value.trim() || null;
       const isCircuit = document.getElementById(`tpl-ex-circuit-cb-${exIdStr}`)?.checked || false;
       const supersetGroup = isCircuit ? (document.getElementById(`tpl-ex-circuit-group-${exIdStr}`)?.value.trim() || 'A') : null;
@@ -4920,7 +4977,10 @@ let librarySwapTargetId = null; // null = add mode, number = swap mode for that 
 async function openLibrary(mode) {
   librarySwapTargetId = null;
   libraryFilterCategory = '';
-  if (mode !== 'template') window._tplLibraryTargetDayId = null;
+  if (mode !== 'template' && mode !== 'tpl-swap') {
+    window._tplLibraryTargetDayId = null;
+    window._tplSwapTargetExId = null;
+  }
   document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
   document.querySelector('.filter-chip').classList.add('active');
   const title = document.getElementById('library-modal-title');
@@ -5020,16 +5080,43 @@ async function deleteLibraryEx(id) {
 }
 
 function addFromLibrary(ex) {
-  // If we're in template mode, add to template day instead
+  // Template swap mode — replace name/muscle/video, keep reps/series
+  if (window._tplSwapTargetExId) {
+    const exId = window._tplSwapTargetExId;
+    const nameEl = document.getElementById(`tpl-ex-name-${exId}`);
+    const muscleEl = document.getElementById(`tpl-ex-muscle-${exId}`);
+    const videoEl = document.getElementById(`tpl-ex-video-${exId}`);
+    if (nameEl) nameEl.value = ex.name;
+    if (muscleEl) {
+      if (MUSCLES.includes(ex.muscle_group)) {
+        muscleEl.value = ex.muscle_group;
+        const customDiv = document.getElementById(`tpl-bmc-${exId}`);
+        if (customDiv) customDiv.style.display = 'none';
+      } else if (ex.muscle_group) {
+        muscleEl.value = 'custom';
+        const customDiv = document.getElementById(`tpl-bmc-${exId}`);
+        const customInput = document.getElementById(`tpl-bmc-input-${exId}`);
+        if (customDiv) customDiv.style.display = 'block';
+        if (customInput) customInput.value = ex.muscle_group;
+      }
+    }
+    if (videoEl) videoEl.value = ex.video_url || '';
+    window._tplSwapTargetExId = null;
+    closeModal('modal-ex-library');
+    showToast('✅ Ejercicio cambiado');
+    return;
+  }
+  // Template add mode — add new exercise to day
   if (window._tplLibraryTargetDayId) {
     addTemplateExercise(window._tplLibraryTargetDayId, {
       exercise_name: ex.name, reps: '10-12', sets_week1: 3, sets_week2: 3, sets_week3: 4, sets_week4: 4,
-      rest_seconds: 90, notes: null, muscle_groups: ex.muscle_group || null
+      rest_seconds: 90, notes: null, muscle_groups: ex.muscle_group || null, video_url: ex.video_url || null
     });
     window._tplLibraryTargetDayId = null;
     closeModal('modal-ex-library');
     return;
   }
+  // Normal builder mode
   addExerciseForm({name:ex.name,tag:ex.tag,muscle_group:ex.muscle_group,sets:'',reps_range:'',rest_seconds:60,video_url:ex.video_url||'',notes:'',superset_group:null});
   closeModal('modal-ex-library');
 }
