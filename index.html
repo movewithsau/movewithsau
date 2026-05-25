@@ -1658,7 +1658,8 @@ function changeClientWeek(dir) {
 
 async function loadClientDayStrip() {
   if(!currentClient)return;
-  const {data:planDays} = await sb.from('monthly_plans').select('day_of_week,id').eq('client_id',currentClient.id).eq('week_number',clientWeek).order('id',{ascending:true});
+  const {data:planDays, error:planErr} = await sb.from('monthly_plans').select('day_of_week,id').eq('client_id',currentClient.id).eq('week_number',clientWeek).order('id',{ascending:true});
+  console.log('🔵 loadClientDayStrip | currentClient:', JSON.stringify(currentClient), '| week:', clientWeek, '| planDays:', JSON.stringify(planDays), '| error:', planErr);
   const strip = document.getElementById('c-day-strip');
   strip.innerHTML='';
   const hasDays = planDays ? planDays.map(p=>p.day_of_week) : [];
