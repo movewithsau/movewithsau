@@ -1658,8 +1658,8 @@ function changeClientWeek(dir) {
 
 async function loadClientDayStrip() {
   if(!currentClient)return;
-  const {data:planDays, error:planErr} = await sb.from('monthly_plans').select('day_of_week,id').eq('client_id',currentClient.id).eq('week_number',clientWeek).order('id',{ascending:true});
-  console.log('🔵 loadClientDayStrip | currentClient:', JSON.stringify(currentClient), '| week:', clientWeek, '| planDays:', JSON.stringify(planDays), '| error:', planErr);
+  const {data:planDays} = await sb.from('monthly_plans').select('day_of_week,id,day_order').eq('client_id',currentClient.id).eq('week_number',clientWeek).order('day_order',{ascending:true}).order('id',{ascending:true});
+
   const strip = document.getElementById('c-day-strip');
   strip.innerHTML='';
   const hasDays = planDays ? planDays.map(p=>p.day_of_week) : [];
@@ -3223,7 +3223,7 @@ function switchBuilderWeek(w) {
 
 async function buildDayStrip() {
   if(!currentClient)return;
-  const {data:existing} = await sb.from('monthly_plans').select('day_of_week,id').eq('client_id',currentClient.id).eq('week_number',builderWeek).order('id',{ascending:true});
+  const {data:existing} = await sb.from('monthly_plans').select('day_of_week,id,day_order').eq('client_id',currentClient.id).eq('week_number',builderWeek).order('day_order',{ascending:true}).order('id',{ascending:true});
   const strip=document.getElementById('builder-day-strip');
   if(!strip)return;
   strip.innerHTML='';
@@ -3282,17 +3282,51 @@ async function addNewTrainingDay(dayName) {
 }
 
 function openDayOptionsMenu(dayValue, label, anchorEl) {
-  // Simple context: rename or delete
-  const action = prompt(`Día "${label}"
-
-Escribe "borrar" para eliminar, o el nuevo nombre para renombrar:`, label);
-  if(action === null) return;
-  if(action.toLowerCase() === 'borrar') {
-    deleteTrainingDay(dayValue, label);
-  } else if(action.trim() && action.trim() !== label) {
-    renameTrainingDay(dayValue, action.trim());
-  }
+  document.getElementById('day-options-popover')?.remove();
+  const pop = document.createElement('div');
+  pop.id = 'day-options-popover';
+  pop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:500;display:flex;align-items:flex-end;justify-content:center;';
+  const safeLabel = label.replace(/'/g,"\'").replace(/"/g,'&quot;');
+  const safeDayValue = dayValue.replace(/'/g,"\'").replace(/"/g,'&quot;');
+  pop.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;max-width:480px;">
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px;">${label}</div>
+      <div style="font-size:12px;color:var(--gray4);margin-bottom:20px;">Opciones del día</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        <button id="pop-move-left" style="padding:12px;border-radius:12px;background:var(--gray1);border:1.5px solid var(--gray2);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">← Mover antes</button>
+        <button id="pop-move-right" style="padding:12px;border-radius:12px;background:var(--gray1);border:1.5px solid var(--gray2);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Mover después →</button>
+      </div>
+      <button id="pop-rename" style="width:100%;padding:12px;border-radius:12px;background:var(--gray1);border:1.5px solid var(--gray2);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:10px;">✏️ Renombrar</button>
+      <button id="pop-delete" style="width:100%;padding:12px;border-radius:12px;background:#fff0f0;border:1.5px solid var(--red);color:var(--red);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:10px;">🗑️ Borrar día</button>
+      <button id="pop-cancel" style="width:100%;padding:12px;border-radius:12px;background:var(--gray1);border:1.5px solid var(--gray2);font-size:13px;color:var(--gray4);font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Cancelar</button>
+    </div>`;
+  pop.querySelector('#pop-move-left').onclick = () => { pop.remove(); moveDayOrder(dayValue, -1); };
+  pop.querySelector('#pop-move-right').onclick = () => { pop.remove(); moveDayOrder(dayValue, 1); };
+  pop.querySelector('#pop-rename').onclick = () => { pop.remove(); const n=prompt('Nuevo nombre:',label); if(n&&n.trim()&&n.trim()!==label) renameTrainingDay(dayValue,n.trim()); };
+  pop.querySelector('#pop-delete').onclick = () => { pop.remove(); deleteTrainingDay(dayValue, label); };
+  pop.querySelector('#pop-cancel').onclick = () => pop.remove();
+  pop.onclick = (e) => { if(e.target===pop) pop.remove(); };
+  document.body.appendChild(pop);
 }
+
+async function moveDayOrder(dayValue, direction) {
+  const {data:days} = await sb.from('monthly_plans').select('id,day_of_week,day_order').eq('client_id',currentClient.id).eq('week_number',builderWeek).order('day_order',{ascending:true}).order('id',{ascending:true});
+  if(!days||days.length<2) return;
+  // Normalize first
+  for(let i=0;i<days.length;i++) {
+    await sb.from('monthly_plans').update({day_order:i}).eq('id',days[i].id);
+    days[i].day_order = i;
+  }
+  const idx = days.findIndex(d=>d.day_of_week===dayValue);
+  const swapIdx = idx + direction;
+  if(swapIdx < 0 || swapIdx >= days.length) { showToast('Ya está en el extremo'); return; }
+  const a = days[idx], b = days[swapIdx];
+  await sb.from('monthly_plans').update({day_order:b.day_order}).eq('id',a.id);
+  await sb.from('monthly_plans').update({day_order:a.day_order}).eq('id',b.id);
+  builderDay = dayValue;
+  await buildDayStrip();
+}
+
 
 async function deleteTrainingDay(dayValue, label) {
   if(!confirm('¿Borrar el día "'+label+'" y todos sus ejercicios?')) return;
