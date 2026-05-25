@@ -779,7 +779,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   <div class="scroll-body">
     <div class="section-header"><div class="section-title">Semana</div><div class="section-action" id="copy-week-btn" onclick="copyWeekFromPrevious()" style="display:none;">Copiar semana anterior</div></div>
     <div class="week-tab-row" id="builder-week-tabs"></div>
-    <div class="section-header"><div class="section-title">Día</div></div>
+    <div class="section-header"><div class="section-title">Día de Entrenamiento</div><div class="section-action" style="font-size:10px;color:var(--gray4);">mantén para opciones</div></div>
     <div class="day-strip" id="builder-day-strip"></div>
     <div class="section-header"><div class="section-title">Ejercicios</div></div>
     <div id="builder-exercises-list"></div>
@@ -787,7 +787,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <button class="add-ex-btn" style="flex:1;min-width:120px;margin-top:0;" onclick="addExerciseForm()">+ Ejercicio</button>
       <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:var(--orange-light);border-style:solid;" onclick="openLibrary()">📚 Biblioteca</button>
       <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:var(--blue-light);border-color:var(--blue);color:var(--blue);border-style:solid;" onclick="showCopyDayModal()">📋 Copiar día</button>
-      <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:#fff0f0;border-color:#e53e3e;color:#e53e3e;border-style:solid;" onclick="deleteBuilderDay()">🗑️ Borrar día</button>
+      <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:#fff0f0;border-color:#e53e3e;color:#e53e3e;border-style:solid;" onclick="deleteTrainingDay(builderDay, builderDay)">🗑️ Borrar día</button>
     </div>
     <button class="btn-primary" style="margin-top:10px;" onclick="savePlanDay()">Guardar día</button>
   </div>
@@ -1658,25 +1658,47 @@ function changeClientWeek(dir) {
 
 async function loadClientDayStrip() {
   if(!currentClient)return;
-  const {data:planDays} = await sb.from('monthly_plans').select('day_of_week').eq('client_id',currentClient.id).eq('week_number',clientWeek);
+  const {data:planDays} = await sb.from('monthly_plans').select('day_of_week,day_label').eq('client_id',currentClient.id).eq('week_number',clientWeek).order('created_at',{ascending:true});
   const strip = document.getElementById('c-day-strip');
   strip.innerHTML='';
-  const today = getTodayName();
   const hasDays = planDays ? planDays.map(p=>p.day_of_week) : [];
   if(!clientDay || !hasDays.includes(clientDay)) {
-    clientDay = hasDays.includes(today) ? today : (hasDays[0]||today);
+    // Try to auto-select today's day name if it matches
+    const today = getTodayName();
+    clientDay = hasDays.includes(today) ? today : (hasDays[0]||null);
   }
-  DAYS.forEach(day=>{
-    const has = hasDays.includes(day);
+  if(hasDays.length === 0) {
+    strip.innerHTML='<div style="font-size:13px;color:var(--gray4);padding:6px 0;">Sin días de entrenamiento esta semana.</div>';
+    loadClientExercises();
+    return;
+  }
+  // Render only days that have a workout — as training day tags
+  hasDays.forEach((day, idx) => {
+    const pd = planDays[idx];
+    const label = pd.day_label || getDayShortLabel(day, idx);
     const chip = document.createElement('div');
-    chip.className = 'day-chip'+(day===clientDay?' active':'')+(has?' has-workout':'');
-    chip.textContent = day.substring(0,3);
-    chip.style.opacity = has?'1':'0.4';
-    chip.style.pointerEvents = has?'auto':'none';
+    chip.className = 'day-chip has-workout'+(day===clientDay?' active':'');
+    chip.textContent = label;
+    chip.style.whiteSpace = 'nowrap';
     chip.onclick = ()=>{ clientDay=day; loadClientDayStrip(); };
     strip.appendChild(chip);
   });
   loadClientExercises();
+}
+
+// Returns a short display label for a day value
+function getDayShortLabel(dayValue, idx) {
+  // If it looks like a weekday name, abbreviate it
+  const weekdays = {
+    'Lunes':'Lun','Martes':'Mar','Miércoles':'Mié','Jueves':'Jue',
+    'Viernes':'Vie','Sábado':'Sáb','Domingo':'Dom'
+  };
+  if(weekdays[dayValue]) return weekdays[dayValue];
+  // If it's a "Día N - Name" format, shorten
+  const m = dayValue.match(/^Día\s*(\d+)/i);
+  if(m) return 'D'+m[1];
+  // Fallback: first 4 chars
+  return dayValue.substring(0,4);
 }
 
 async function loadClientExercises() {
@@ -3192,7 +3214,7 @@ async function buildWeekTabs() {
 }
 
 function switchBuilderWeek(w) {
-  builderWeek=w; builderDay=DAYS[0];
+  builderWeek=w; builderDay=null;
   buildWeekTabs(); buildDayStrip();
   document.getElementById('builder-exercises-list').innerHTML='';
   exFormCount=0;
@@ -3200,11 +3222,96 @@ function switchBuilderWeek(w) {
 
 async function buildDayStrip() {
   if(!currentClient)return;
-  const {data:existing} = await sb.from('monthly_plans').select('day_of_week').eq('client_id',currentClient.id).eq('week_number',builderWeek);
-  const hasDays=existing?existing.map(e=>e.day_of_week):[];
+  const {data:existing} = await sb.from('monthly_plans').select('day_of_week,day_label').eq('client_id',currentClient.id).eq('week_number',builderWeek).order('created_at',{ascending:true});
   const strip=document.getElementById('builder-day-strip');
   if(!strip)return;
-  strip.innerHTML=DAYS.map(d=>`<div class="day-chip${d===builderDay?' active':''}${hasDays.includes(d)?' has-workout':''}" onclick="switchBuilderDay('${d}')">${d.substring(0,3)}</div>`).join('');
+  strip.innerHTML='';
+  const planDays = existing||[];
+  // Render each existing training day as a chip
+  planDays.forEach((pd,idx) => {
+    const label = pd.day_label || getDayShortLabel(pd.day_of_week, idx);
+    const chip = document.createElement('div');
+    chip.className = 'day-chip has-workout'+(pd.day_of_week===builderDay?' active':'');
+    chip.textContent = label;
+    chip.style.whiteSpace = 'nowrap';
+    chip.onclick = ()=>{ builderDay=pd.day_of_week; buildDayStrip(); switchBuilderDay(pd.day_of_week); };
+    // Long-press or right-click to rename/delete day
+    chip.oncontextmenu = (e) => { e.preventDefault(); openDayOptionsMenu(pd.day_of_week, label, chip); };
+    // Long press for mobile
+    let lpTimer;
+    chip.addEventListener('touchstart', () => { lpTimer = setTimeout(() => openDayOptionsMenu(pd.day_of_week, label, chip), 600); }, {passive:true});
+    chip.addEventListener('touchend', () => clearTimeout(lpTimer), {passive:true});
+    strip.appendChild(chip);
+  });
+  // "+ Día" button to add a new training day
+  const addBtn = document.createElement('div');
+  addBtn.className = 'day-chip';
+  addBtn.style.cssText = 'border:1.5px dashed var(--orange);color:var(--orange);opacity:0.8;white-space:nowrap;';
+  addBtn.textContent = '+ Día';
+  addBtn.onclick = ()=> openAddTrainingDayModal();
+  strip.appendChild(addBtn);
+  // Auto-select first day if none selected or current not in list
+  if(planDays.length>0 && (!builderDay || !planDays.find(p=>p.day_of_week===builderDay))) {
+    builderDay = planDays[0].day_of_week;
+    buildDayStrip();
+  }
+}
+
+function openAddTrainingDayModal() {
+  const existingDays = parseInt(document.querySelectorAll('#builder-day-strip .day-chip.has-workout').length)||0;
+  const suggested = 'Día ' + (existingDays + 1);
+  const name = prompt('Nombre del día de entrenamiento:', suggested);
+  if(!name || !name.trim()) return;
+  addNewTrainingDay(name.trim());
+}
+
+async function addNewTrainingDay(dayName) {
+  if(!currentClient) return;
+  const key = dayName; // use the full name as day_of_week key
+  // Check if already exists
+  const {data:ex} = await sb.from('monthly_plans').select('id').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',key).maybeSingle();
+  if(ex) { showToast('⚠️ Ya existe ese día'); return; }
+  const {data:pd,error} = await sb.from('monthly_plans').insert([{client_id:currentClient.id,week_number:builderWeek,day_of_week:key}]).select().single();
+  if(error){showToast('❌ '+error.message);return;}
+  builderDay = key;
+  showToast('✅ Día "'+dayName+'" creado');
+  await buildDayStrip();
+  document.getElementById('builder-exercises-list').innerHTML='';
+  exFormCount=0;
+}
+
+function openDayOptionsMenu(dayValue, label, anchorEl) {
+  // Simple context: rename or delete
+  const action = prompt(`Día "${label}"
+
+Escribe "borrar" para eliminar, o el nuevo nombre para renombrar:`, label);
+  if(action === null) return;
+  if(action.toLowerCase() === 'borrar') {
+    deleteTrainingDay(dayValue, label);
+  } else if(action.trim() && action.trim() !== label) {
+    renameTrainingDay(dayValue, action.trim());
+  }
+}
+
+async function deleteTrainingDay(dayValue, label) {
+  if(!confirm('¿Borrar el día "'+label+'" y todos sus ejercicios?')) return;
+  const {data:pd} = await sb.from('monthly_plans').select('id').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',dayValue).maybeSingle();
+  if(pd) {
+    await sb.from('exercises').delete().eq('plan_day_id',pd.id);
+    await sb.from('monthly_plans').delete().eq('id',pd.id);
+  }
+  builderDay = null;
+  document.getElementById('builder-exercises-list').innerHTML='';
+  exFormCount=0;
+  showToast('🗑️ Día eliminado');
+  await buildDayStrip();
+}
+
+async function renameTrainingDay(dayValue, newName) {
+  await sb.from('monthly_plans').update({day_of_week:newName}).eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',dayValue);
+  if(builderDay===dayValue) builderDay=newName;
+  showToast('✅ Renombrado a "'+newName+'"');
+  await buildDayStrip();
 }
 
 async function switchBuilderDay(day) {
@@ -3394,7 +3501,8 @@ async function copyWeekFromPrevious() {
     }
   }
   showToast('✅ Semana '+prevWeek+' copiada a semana '+builderWeek);
-  buildWeekTabs(); buildDayStrip(); switchBuilderDay(builderDay);
+  builderDay = null;
+  await buildWeekTabs(); await buildDayStrip();
 }
 
 
@@ -6288,8 +6396,9 @@ async function showCopyDayModal() {
           ${[1,2,3,4].map(w=>`<button onclick="selectCopyWeek(${w},this)" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid var(--gray2);background:var(--gray1);color:var(--gray5);cursor:pointer;font-family:'DM Sans',sans-serif;" id="copy-w-${w}">Semana ${w}</button>`).join('')}
         </div>
         <div class="notes-label" style="margin-bottom:8px;">Día destino</div>
-        <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
-          ${DAYS.map(d=>`<button onclick="selectCopyDay('${d}',this)" style="padding:7px 13px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid var(--gray2);background:var(--gray1);color:var(--gray5);cursor:pointer;font-family:'DM Sans',sans-serif;" id="copy-d-${d.replace('é','e').replace('á','a').replace('ó','o')}">${d.substring(0,3)}</button>`).join('')}
+        <div style="margin-bottom:14px;">
+          <input id="copy-day-input" class="form-input" placeholder="ej: Día 1, Lunes, Push A..." style="width:100%;" value="">
+          <div id="copy-day-suggestions" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
         </div>
         <div class="notes-label" style="margin-bottom:8px;">Cliente destino</div>
         <select id="copy-client-sel" class="form-select" style="margin-bottom:18px;">
@@ -6300,6 +6409,18 @@ async function showCopyDayModal() {
       </div>
     </div>`;
   document.body.insertAdjacentHTML('beforeend', modalHtml);
+  // Populate day suggestions from week 1 existing days
+  const {data:existDays} = await sb.from('monthly_plans').select('day_of_week').eq('client_id',currentClient.id).eq('week_number',copyTargetWeek||builderWeek);
+  const sugBox = document.getElementById('copy-day-suggestions');
+  if(sugBox && existDays) {
+    existDays.forEach(pd=>{
+      const btn=document.createElement('button');
+      btn.textContent=getDayShortLabel(pd.day_of_week,0)+' ('+pd.day_of_week+')';
+      btn.style.cssText='padding:5px 10px;border-radius:16px;font-size:11px;font-weight:700;border:1.5px solid var(--gray2);background:var(--gray1);color:var(--gray5);cursor:pointer;font-family:\'DM Sans\',sans-serif;';
+      btn.onclick=()=>selectCopyDay(pd.day_of_week);
+      sugBox.appendChild(btn);
+    });
+  }
 }
 
 function selectCopyWeek(w, btn) {
@@ -6307,10 +6428,10 @@ function selectCopyWeek(w, btn) {
   document.querySelectorAll('[id^="copy-w-"]').forEach(b=>{b.style.background='var(--gray1)';b.style.color='var(--gray5)';b.style.borderColor='var(--gray2)';});
   btn.style.background='var(--orange)'; btn.style.color='white'; btn.style.borderColor='var(--orange)';
 }
-function selectCopyDay(d, btn) {
+function selectCopyDay(d) {
   copyTargetDay = d;
-  document.querySelectorAll('[id^="copy-d-"]').forEach(b=>{b.style.background='var(--gray1)';b.style.color='var(--gray5)';b.style.borderColor='var(--gray2)';});
-  btn.style.background='var(--orange)'; btn.style.color='white'; btn.style.borderColor='var(--orange)';
+  const input = document.getElementById('copy-day-input');
+  if(input) input.value = d;
 }
 function closeCopyDayModal() {
   document.getElementById('copy-day-overlay')?.remove();
@@ -6318,7 +6439,9 @@ function closeCopyDayModal() {
 }
 async function executeCopyDay() {
   if(!copyTargetWeek){showToast('⚠️ Seleccioná semana destino');return;}
-  if(!copyTargetDay){showToast('⚠️ Seleccioná día destino');return;}
+  const dayInput = document.getElementById('copy-day-input');
+  if(dayInput && dayInput.value.trim()) copyTargetDay = dayInput.value.trim();
+  if(!copyTargetDay){showToast('⚠️ Escribe el nombre del día destino');return;}
   const targetClientId = document.getElementById('copy-client-sel').value;
   const {data:srcExs} = await sb.from('exercises').select('*').eq('plan_day_id',copyDaySourcePlanId).order('order_index');
   if(!srcExs||srcExs.length===0){showToast('⚠️ No hay ejercicios en el día origen');return;}
