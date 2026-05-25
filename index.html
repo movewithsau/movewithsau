@@ -894,9 +894,9 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
 <!-- ===== TEMPLATE EDITOR ===== -->
 <div class="screen" id="screen-template-editor">
   <div class="topbar">
-    <div class="back-btn" onclick="showScreen('screen-templates');loadTemplates();">‹ Machotes</div>
+    <div class="back-btn" id="tpl-editor-back-btn" onclick="tplEditorBack()">‹ Machotes</div>
     <div class="topbar-title" id="template-editor-title">Nuevo Machote</div>
-    <div class="topbar-action" onclick="saveTemplate()">Guardar</div>
+    <div class="topbar-action" id="tpl-editor-save-btn" onclick="tplEditorSave()">Guardar</div>
   </div>
   <div class="scroll-body">
     <div style="margin-bottom:14px;">
@@ -3501,8 +3501,11 @@ function tplToggleDayRow(dayId) {
 }
 
 // Edit a specific day's exercises directly
+let tplSingleDayId = null; // when set, editor is in single-day mode
+
 async function tplEditDay(templateId, dayId) {
   currentTemplateId = templateId;
+  tplSingleDayId = dayId;
   tplDayCount = 0; tplExCount = 0;
   showScreen('screen-template-editor');
   const { data: t } = await sb.from('routine_templates').select('*').eq('id', templateId).single();
@@ -3511,36 +3514,28 @@ async function tplEditDay(templateId, dayId) {
     document.getElementById('tpl-name').value = t.name;
     document.getElementById('tpl-type').value = t.type;
   }
-  // Load only this specific day
+  // Load ONLY this specific day
   const container = document.getElementById('tpl-days-list');
   container.innerHTML = '';
   const { data: day } = await sb.from('template_days').select('*').eq('id', dayId).single();
   if (day) await addTemplateDayCard(day);
-  // Load all other days collapsed
-  const { data: allDays } = await sb.from('template_days').select('*').eq('template_id', templateId).order('day_order');
-  if (allDays) {
-    for (const d of allDays) {
-      if (d.id !== dayId) await addTemplateDayCard(d);
-    }
-  }
 }
 
 // Add a new day from the overview screen
 async function tplAddDayFromOverview(templateId) {
   currentTemplateId = templateId;
+  tplSingleDayId = 'new'; // new day mode
   tplDayCount = 0; tplExCount = 0;
   showScreen('screen-template-editor');
   const { data: t } = await sb.from('routine_templates').select('*').eq('id', templateId).single();
   if (t) {
-    document.getElementById('template-editor-title').textContent = t.name;
+    document.getElementById('template-editor-title').textContent = `${t.name} — Nuevo día`;
     document.getElementById('tpl-name').value = t.name;
     document.getElementById('tpl-type').value = t.type;
   }
-  await loadTemplateDays();
-  // Add a new empty day at bottom
+  const container = document.getElementById('tpl-days-list');
+  container.innerHTML = '';
   await addTemplateDayCard(null);
-  // Scroll to bottom
-  setTimeout(() => { const c = document.getElementById('tpl-days-list'); if (c) c.lastElementChild?.scrollIntoView({behavior:'smooth'}); }, 100);
 }
 
 // Move a day up or down
@@ -3612,6 +3607,7 @@ async function createNewTemplate() {
 
 async function openTemplateEditor(templateId) {
   currentTemplateId = templateId;
+  tplSingleDayId = null; // settings mode — show name/type fields only, no days
   tplDayCount = 0;
   tplExCount = 0;
   showScreen('screen-template-editor');
@@ -3621,7 +3617,9 @@ async function openTemplateEditor(templateId) {
     document.getElementById('tpl-name').value = t.name;
     document.getElementById('tpl-type').value = t.type;
   }
-  await loadTemplateDays();
+  // In settings mode: show name/type editor only, no day list
+  const container = document.getElementById('tpl-days-list');
+  container.innerHTML = '<div style="padding:16px;background:var(--gray1);border-radius:10px;text-align:center;color:var(--gray4);font-size:13px;">Edita el nombre y tipo del machote arriba, luego guarda.</div>';
 }
 
 async function loadTemplateDays() {
@@ -3803,6 +3801,88 @@ function openLibraryForTemplate(dayId) {
 
 async function addTemplateDay() {
   await addTemplateDayCard(null);
+}
+
+function tplEditorBack() {
+  showScreen('screen-templates');
+  loadTemplates();
+}
+
+async function tplEditorSave() {
+  if (tplSingleDayId) {
+    await saveSingleDay();
+  } else {
+    await saveTemplateSettings();
+  }
+}
+
+// Save only name/type (settings mode)
+async function saveTemplateSettings() {
+  const name = document.getElementById('tpl-name').value.trim();
+  const type = document.getElementById('tpl-type').value;
+  if (!name) { showToast('⚠️ Escribe un nombre'); return; }
+  await sb.from('routine_templates').update({ name, type }).eq('id', currentTemplateId);
+  showToast('✅ Machote actualizado');
+  showScreen('screen-templates');
+  loadTemplates();
+}
+
+// Save only the single day being edited — DELETE+REINSERT only that day's exercises
+async function saveSingleDay() {
+  const dayCells = document.querySelectorAll('[id^="tpl-day-"]');
+  if (!dayCells || dayCells.length === 0) { showToast('⚠️ Sin día para guardar'); return; }
+  const card = dayCells[0];
+  const dayIdStr = card.id.replace('tpl-day-', '');
+  const dayName = document.getElementById(`tpl-day-name-${dayIdStr}`)?.value.trim();
+  if (!dayName) { showToast('⚠️ Escribe el nombre del día'); return; }
+  showToast('⏳ Guardando...');
+  let targetDayId = tplSingleDayId;
+  if (tplSingleDayId === 'new') {
+    // Get max day_order for this template
+    const { data: allDays } = await sb.from('template_days').select('day_order').eq('template_id', currentTemplateId).order('day_order', {ascending: false}).limit(1);
+    const maxOrder = allDays && allDays.length > 0 ? allDays[0].day_order + 1 : 0;
+    const { data: newDay } = await sb.from('template_days').insert([{ template_id: currentTemplateId, day_name: dayName, day_order: maxOrder }]).select().single();
+    if (!newDay) { showToast('❌ Error creando día'); return; }
+    targetDayId = newDay.id;
+  } else {
+    // Update day name
+    await sb.from('template_days').update({ day_name: dayName }).eq('id', targetDayId);
+    // Delete existing exercises for this day only
+    await sb.from('template_exercises').delete().eq('template_day_id', targetDayId);
+  }
+  // Reinsert exercises
+  const exCards = card.querySelectorAll('[id^="tpl-ex-"]');
+  let exOrder = 0;
+  for (const exCard of exCards) {
+    const exIdStr = exCard.id.replace('tpl-ex-', '');
+    const exName = document.getElementById(`tpl-ex-name-${exIdStr}`)?.value.trim();
+    if (!exName) continue;
+    const w1 = parseInt(document.getElementById(`tpl-ex-w1-${exIdStr}`)?.value) || 3;
+    const w2 = parseInt(document.getElementById(`tpl-ex-w2-${exIdStr}`)?.value) || 3;
+    const w3 = parseInt(document.getElementById(`tpl-ex-w3-${exIdStr}`)?.value) || 4;
+    const w4 = parseInt(document.getElementById(`tpl-ex-w4-${exIdStr}`)?.value) || 4;
+    const reps = document.getElementById(`tpl-ex-reps-${exIdStr}`)?.value || '10-12';
+    const rest = parseInt(document.getElementById(`tpl-ex-rest-${exIdStr}`)?.value) || 90;
+    const notes = document.getElementById(`tpl-ex-notes-${exIdStr}`)?.value.trim() || null;
+    const muscleSel = document.getElementById(`tpl-ex-muscle-${exIdStr}`)?.value || '';
+    const muscle = muscleSel === 'custom' ? (document.getElementById(`tpl-bmc-input-${exIdStr}`)?.value.trim() || null) : (muscleSel || null);
+    const video = document.getElementById(`tpl-ex-video-${exIdStr}`)?.value.trim() || null;
+    const isCircuit = document.getElementById(`tpl-ex-circuit-cb-${exIdStr}`)?.checked || false;
+    const supersetGroup = isCircuit ? (document.getElementById(`tpl-ex-circuit-group-${exIdStr}`)?.value.trim() || 'A') : null;
+    const circuitRounds = isCircuit ? (parseInt(document.getElementById(`tpl-ex-rounds-${exIdStr}`)?.value) || null) : null;
+    const circuitNotes = isCircuit ? (document.getElementById(`tpl-ex-circuit-notes-${exIdStr}`)?.value.trim() || null) : null;
+    await sb.from('template_exercises').insert([{
+      template_day_id: targetDayId, exercise_name: exName,
+      sets_week1: w1, sets_week2: w2, sets_week3: w3, sets_week4: w4,
+      reps, rest_seconds: rest, notes, muscle_groups: muscle, video_url: video,
+      superset_group: supersetGroup, circuit_rounds: circuitRounds, circuit_notes: circuitNotes,
+      exercise_order: exOrder++
+    }]);
+    if (exName) await saveExerciseToLibrary(exName, 'Peso Libre', muscle, video);
+  }
+  showToast('✅ Día guardado');
+  showScreen('screen-templates');
+  loadTemplates();
 }
 
 async function saveTemplate() {
