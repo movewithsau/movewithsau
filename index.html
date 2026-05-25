@@ -532,11 +532,17 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div style="display:flex;gap:12px;margin-bottom:20px;border-bottom:1.5px solid var(--gray2);padding-bottom:12px;">
       <div class="client-plan-tab-chip active" onclick="switchClientPlanTab('plans', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;background:var(--gray1);color:var(--black);font-size:13px;font-weight:600;transition:all 0.2s;">📋 Mi Plan</div>
       <div class="client-plan-tab-chip" onclick="switchClientPlanTab('tests', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;color:var(--gray4);font-size:13px;font-weight:600;transition:all 0.2s;">📊 Evaluaciones</div>
+      <div class="client-plan-tab-chip" onclick="switchClientPlanTab('habits', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;color:var(--gray4);font-size:13px;font-weight:600;transition:all 0.2s;">✅ Mis Hábitos</div>
     </div>
 
     <!-- PLANES TAB -->
     <div id="client-plans-tab" style="display:block;">
       <div id="c-plans-list"><div class="spinner"></div></div>
+    </div>
+
+    <!-- HABITS TAB -->
+    <div id="client-habits-tab" style="display:none;">
+      <div id="c-habits-list"><div class="spinner"></div></div>
     </div>
 
     <!-- TESTS TAB -->
@@ -764,6 +770,13 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div id="coach-plans-list"></div>
     <div class="section-header"><div class="section-title">Módulo Food</div></div>
     <div id="coach-food-panel"></div>
+    <!-- HABITS SECTION (coach view) -->
+    <div class="section-header" style="margin-top:8px;">
+      <div class="section-title">✅ Hábitos del cliente</div>
+      <div class="section-action" onclick="openAddHabitModal()">+ Hábito</div>
+    </div>
+    <div id="coach-habits-panel"></div>
+
     <!-- CONTRACT SECTION (coach view) -->
     <div class="section-header" style="margin-top:8px;">
       <div class="section-title">Contrato</div>
@@ -2192,24 +2205,21 @@ async function loadClientPlans() {
 
 // ===== TESTS (EVALUACIONES) =====
 function switchClientPlanTab(tab, chipEl) {
-  document.querySelectorAll('.client-plan-tab-chip').forEach(c => c.classList.remove('active'));
-  document.querySelectorAll('.client-plan-tab-chip').forEach(c => c.style.background = 'transparent');
-  document.querySelectorAll('.client-plan-tab-chip').forEach(c => c.style.color = 'var(--gray4)');
-  
+  document.querySelectorAll('.client-plan-tab-chip').forEach(c => { c.classList.remove('active'); c.style.background='transparent'; c.style.color='var(--gray4)'; });
   chipEl.classList.add('active');
   chipEl.style.background = 'var(--gray1)';
   chipEl.style.color = 'var(--black)';
-  
-  const plansTab = document.getElementById('client-plans-tab');
-  const testsTab = document.getElementById('client-tests-tab');
-  
+  document.getElementById('client-plans-tab').style.display = 'none';
+  document.getElementById('client-tests-tab').style.display = 'none';
+  document.getElementById('client-habits-tab').style.display = 'none';
   if(tab === 'plans') {
-    plansTab.style.display = 'block';
-    testsTab.style.display = 'none';
-  } else {
-    plansTab.style.display = 'none';
-    testsTab.style.display = 'block';
+    document.getElementById('client-plans-tab').style.display = 'block';
+  } else if(tab === 'tests') {
+    document.getElementById('client-tests-tab').style.display = 'block';
     loadClientTests();
+  } else if(tab === 'habits') {
+    document.getElementById('client-habits-tab').style.display = 'block';
+    loadClientHabits();
   }
 }
 
@@ -2986,6 +2996,7 @@ async function openCoachClient(clientId) {
   loadCoachClientDetail(clientId);
   loadCoachPlans();
   loadCoachFoodPanel();
+  loadCoachHabits(clientId);
   loadCoachContractPanel();
   loadCoachAICounts(clientId);
   loadTrainerNotes(clientId);
@@ -3033,7 +3044,7 @@ async function loadCoachClientDetail(clientId) {
   const weeks={};
   plans.forEach(p=>{if(!weeks[p.week_number])weeks[p.week_number]=[];weeks[p.week_number].push(p);});
   Object.values(weeks).forEach(days=>{
-    days.sort((a,b)=>DAYS.indexOf(a.day_of_week)-DAYS.indexOf(b.day_of_week));
+    days.sort((a,b)=>(a.day_order??99)-(b.day_order??99)||(a.id>b.id?1:-1));
   });
 
   planOverviewAllPlans = weeks;
@@ -6491,6 +6502,169 @@ async function executeCopyDay() {
   await buildWeekTabs(); await buildDayStrip();
 }
 
+// ===== HABITS SYSTEM =====
+
+async function loadCoachHabits(clientId) {
+  const panel = document.getElementById('coach-habits-panel');
+  if(!panel) return;
+  const {data:habits} = await sb.from('habits').select('*').eq('client_id', clientId).order('order_index', {ascending:true});
+  if(!habits || habits.length === 0) {
+    panel.innerHTML = '<div style="font-size:13px;color:var(--gray4);padding:8px 0 12px;">Sin hábitos asignados. Toca + Hábito para agregar.</div>';
+    return;
+  }
+  panel.innerHTML = habits.map((h, idx) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--white);border:1.5px solid var(--gray2);border-radius:12px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <button onclick="moveHabitOrder('${h.id}','${clientId}',-1)" style="background:none;border:none;color:var(--gray4);cursor:pointer;font-size:12px;line-height:1;padding:1px 4px;">▲</button>
+          <button onclick="moveHabitOrder('${h.id}','${clientId}',1)" style="background:none;border:none;color:var(--gray4);cursor:pointer;font-size:12px;line-height:1;padding:1px 4px;">▼</button>
+        </div>
+        <div style="font-size:14px;font-weight:600;">${h.name}</div>
+      </div>
+      <button onclick="deleteHabit('${h.id}','${clientId}')" style="background:none;border:none;color:var(--gray4);cursor:pointer;font-size:16px;padding:4px;">🗑️</button>
+    </div>
+  `).join('');
+}
+
+function openAddHabitModal() {
+  document.getElementById('new-habit-name').value = '';
+  showModal('modal-add-habit');
+}
+
+async function saveNewHabit() {
+  const name = document.getElementById('new-habit-name').value.trim();
+  if(!name) { showToast('⚠️ Escribe el nombre del hábito'); return; }
+  if(!currentClient) return;
+  const {data:existing} = await sb.from('habits').select('order_index').eq('client_id', currentClient.id).order('order_index', {ascending:false}).limit(1);
+  const nextOrder = (existing && existing.length > 0) ? (existing[0].order_index + 1) : 0;
+  const {error} = await sb.from('habits').insert([{
+    client_id: currentClient.id,
+    coach_id: currentUser.id,
+    name,
+    order_index: nextOrder
+  }]);
+  if(error) { showToast('❌ ' + error.message); return; }
+  closeModal('modal-add-habit');
+  showToast('✅ Hábito agregado');
+  loadCoachHabits(currentClient.id);
+}
+
+async function deleteHabit(habitId, clientId) {
+  if(!confirm('¿Borrar este hábito? Se perderá el historial de este hábito.')) return;
+  await sb.from('habit_logs').delete().eq('habit_id', habitId);
+  await sb.from('habits').delete().eq('id', habitId);
+  showToast('🗑️ Hábito eliminado');
+  loadCoachHabits(clientId);
+}
+
+async function moveHabitOrder(habitId, clientId, direction) {
+  const {data:habits} = await sb.from('habits').select('id,order_index').eq('client_id', clientId).order('order_index', {ascending:true});
+  if(!habits || habits.length < 2) return;
+  // Normalize
+  for(let i = 0; i < habits.length; i++) {
+    await sb.from('habits').update({order_index: i}).eq('id', habits[i].id);
+    habits[i].order_index = i;
+  }
+  const idx = habits.findIndex(h => h.id === habitId);
+  const swapIdx = idx + direction;
+  if(swapIdx < 0 || swapIdx >= habits.length) return;
+  await sb.from('habits').update({order_index: habits[swapIdx].order_index}).eq('id', habits[idx].id);
+  await sb.from('habits').update({order_index: habits[idx].order_index}).eq('id', habits[swapIdx].id);
+  loadCoachHabits(clientId);
+}
+
+// ===== CLIENT HABITS =====
+
+async function loadClientHabits() {
+  const container = document.getElementById('c-habits-list');
+  if(!container || !currentClient) return;
+  container.innerHTML = '<div class="spinner"></div>';
+
+  const {data:habits} = await sb.from('habits').select('*').eq('client_id', currentClient.id).order('order_index', {ascending:true});
+
+  if(!habits || habits.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-text">Tu coach aún no ha configurado hábitos.</div></div>';
+    return;
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  const habitIds = habits.map(h => h.id);
+
+  // Get today's logs
+  const {data:todayLogs} = await sb.from('habit_logs').select('habit_id').eq('client_id', currentClient.id).eq('completed_date', today);
+  const completedToday = new Set((todayLogs||[]).map(l => l.habit_id));
+
+  // Get all-time counts per habit
+  const {data:allLogs} = await sb.from('habit_logs').select('habit_id').eq('client_id', currentClient.id);
+  const counts = {};
+  (allLogs||[]).forEach(l => { counts[l.habit_id] = (counts[l.habit_id]||0) + 1; });
+
+  const todayStr = new Date().toLocaleDateString('es-CR', {weekday:'long', day:'numeric', month:'long'});
+
+  container.innerHTML = `
+    <div style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:14px;">${todayStr}</div>
+
+    <!-- TODAY'S CHECKBOXES -->
+    <div style="margin-bottom:24px;">
+      ${habits.map(h => {
+        const done = completedToday.has(h.id);
+        return `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:${done?'var(--green-light)':'var(--white)'};border:1.5px solid ${done?'var(--green)':'var(--gray2)'};border-radius:14px;margin-bottom:8px;transition:all 0.2s;" id="habit-row-${h.id}">
+          <div style="font-size:15px;font-weight:600;color:${done?'var(--green)':'var(--black)'};">${done?'✅ ':''} ${h.name}</div>
+          <label style="position:relative;cursor:pointer;">
+            <input type="checkbox" ${done?'checked':''} onchange="toggleHabit('${h.id}', this.checked)" style="width:22px;height:22px;accent-color:var(--orange);cursor:pointer;">
+          </label>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <!-- STREAK / HISTORY COUNTER -->
+    <div style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;">Historial de cumplimiento</div>
+    <div style="background:var(--white);border:1.5px solid var(--gray2);border-radius:16px;overflow:hidden;">
+      ${habits.map((h, idx) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;${idx < habits.length-1 ? 'border-bottom:1px solid var(--gray2);' : ''}">
+          <div style="font-size:13px;font-weight:600;color:var(--black);flex:1;margin-right:12px;">${h.name}</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="font-size:20px;font-weight:900;color:var(--orange);">${counts[h.id]||0}</div>
+            <div style="font-size:11px;color:var(--gray4);font-weight:600;">${(counts[h.id]||0)===1?'día':'días'}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+async function toggleHabit(habitId, checked) {
+  if(!currentClient) return;
+  const today = new Date().toISOString().split('T')[0];
+  const row = document.getElementById('habit-row-' + habitId);
+
+  if(checked) {
+    const {error} = await sb.from('habit_logs').insert([{
+      habit_id: habitId,
+      client_id: currentClient.id,
+      completed_date: today
+    }]);
+    if(error && error.code !== '23505') { // ignore unique constraint (already logged)
+      showToast('❌ ' + error.message); return;
+    }
+    if(row) {
+      row.style.background = 'var(--green-light)';
+      row.style.border = '1.5px solid var(--green)';
+    }
+    showToast('🔥 ¡Hábito cumplido!');
+  } else {
+    await sb.from('habit_logs').delete().eq('habit_id', habitId).eq('client_id', currentClient.id).eq('completed_date', today);
+    if(row) {
+      row.style.background = 'var(--white)';
+      row.style.border = '1.5px solid var(--gray2)';
+    }
+    showToast('↩️ Desmarcado');
+  }
+  // Refresh counts without full reload
+  loadClientHabits();
+}
+
 </script>
 
 <!-- Add/Edit Food Modal -->
@@ -6725,6 +6899,20 @@ async function executeCopyDay() {
   </div>
 </div>
 
+
+<!-- ===== MODAL: ADD HABIT ===== -->
+<div class="modal-overlay" id="modal-add-habit">
+  <div class="modal-card">
+    <span class="modal-close" onclick="closeModal('modal-add-habit')">×</span>
+    <div class="modal-title">Nuevo Hábito</div>
+    <div class="form-group">
+      <label class="form-label">Nombre del hábito</label>
+      <input class="form-input" id="new-habit-name" placeholder="ej: Tomar 2L de agua, Dormir 8h...">
+    </div>
+    <button class="btn-primary" onclick="saveNewHabit()">Agregar Hábito</button>
+    <button onclick="closeModal('modal-add-habit')" class="btn-secondary" style="margin-top:10px;">Cancelar</button>
+  </div>
+</div>
 
 </body>
 </html>
