@@ -3833,7 +3833,9 @@ async function saveSingleDay() {
   if (!dayCells || dayCells.length === 0) { showToast('⚠️ Sin día para guardar'); return; }
   const card = dayCells[0];
   const dayIdStr = card.id.replace('tpl-day-', '');
-  const dayName = document.getElementById(`tpl-day-name-${dayIdStr}`)?.value.trim();
+  // Read name directly from the input inside the card (robust — no ID mismatch)
+  const dayNameInput = card.querySelector('.tpl-day-name-input') || document.getElementById(`tpl-day-name-${dayIdStr}`);
+  const dayName = dayNameInput?.value.trim();
   if (!dayName) { showToast('⚠️ Escribe el nombre del día'); return; }
   showToast('⏳ Guardando...');
   let targetDayId = tplSingleDayId;
