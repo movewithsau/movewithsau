@@ -833,6 +833,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <div class="ai-week-chip" onclick="setAiWeek(2,this)">Semana 2</div>
       <div class="ai-week-chip" onclick="setAiWeek(3,this)">Semana 3</div>
       <div class="ai-week-chip" onclick="setAiWeek(4,this)">Semana 4</div>
+      <div class="ai-week-chip" onclick="setAiWeek(5,this)">🔄 Deload</div>
     </div>
     <div class="section-header">
       <div class="section-title">Día</div>
@@ -1653,16 +1654,16 @@ async function saveGoal() {
 }
 
 function updateClientWeekUI() {
-  document.getElementById('c-week-label').textContent = 'Semana '+clientWeek;
-  document.getElementById('c-week-sub').textContent = clientWeek===1?'Semana base':'Progresión';
-  document.getElementById('c-greeting-week').textContent = 'Semana '+clientWeek+' de tu plan mensual 💪';
+  document.getElementById('c-week-label').textContent = clientWeek===5?'🔄 Deload':'Semana '+clientWeek;
+  document.getElementById('c-week-sub').textContent = clientWeek===1?'Semana base':clientWeek===5?'🔄 Deload':'Progresión';
+  document.getElementById('c-greeting-week').textContent = clientWeek===5?'Semana 5 · Deload 🔄':'Semana '+clientWeek+' de tu plan mensual 💪';
   document.getElementById('c-week-prev').disabled = clientWeek<=1;
-  document.getElementById('c-week-next').disabled = clientWeek>=4;
+  document.getElementById('c-week-next').disabled = clientWeek>=5;
   document.getElementById('c-week-num').textContent = clientWeek;
 }
 
 function changeClientWeek(dir) {
-  clientWeek = Math.max(1,Math.min(4,clientWeek+dir));
+  clientWeek = Math.max(1,Math.min(5,clientWeek+dir));
   updateClientWeekUI();
   loadClientDayStrip();
 }
@@ -3219,7 +3220,7 @@ async function buildWeekTabs() {
   const hasWeeks=existing?[...new Set(existing.map(e=>e.week_number))]:[];
   const tabs=document.getElementById('builder-week-tabs');
   if(!tabs)return;
-  tabs.innerHTML=[1,2,3,4].map(w=>`<div class="week-tab${w===builderWeek?' active':''}${hasWeeks.includes(w)?' has-data':''}" onclick="switchBuilderWeek(${w})">${w===builderWeek?'● ':''}Semana ${w}</div>`).join('');
+  tabs.innerHTML=[1,2,3,4,5].map(w=>`<div class="week-tab${w===builderWeek?' active':''}${hasWeeks.includes(w)?' has-data':''}" onclick="switchBuilderWeek(${w})">${w===builderWeek?'● ':''}${w===5?'🔄 Deload':'Semana '+w}</div>`).join('');
   document.getElementById('copy-week-btn').style.display=builderWeek>1?'block':'none';
 }
 
@@ -3590,7 +3591,7 @@ async function loadTemplates() {
         <div class="tpl-card-name">${t.name}</div>
         <div class="tpl-card-type">${typeEmoji[t.type]||''} ${t.type}</div>
       </div>
-      <div class="tpl-card-meta" style="margin-bottom:14px;">${dayCount} día${dayCount !== 1 ? 's' : ''} · 4 semanas con progresión</div>
+      <div class="tpl-card-meta" style="margin-bottom:14px;">${dayCount} día${dayCount !== 1 ? 's' : ''} · 4 semanas con progresión + deload</div>
       <div id="tpl-days-overview-${t.id}" style="margin-bottom:12px;"></div>
       <div style="display:flex;gap:6px;padding-top:10px;border-top:1.5px solid var(--gray2);">
         <button class="tpl-btn" style="flex:1;background:var(--orange-light);color:var(--orange);border:1.5px solid var(--orange);" onclick="tplAddDayFromOverview('${t.id}')">+ Día</button>
@@ -4187,7 +4188,7 @@ async function assignTemplateToClient() {
     }
   }
   closeModal('modal-assign-template');
-  showToast('✅ Plan de 4 semanas generado');
+  showToast('✅ Plan de 5 semanas generado');
   loadCoachClientDetail(currentClient.id);
 }
 
@@ -4239,7 +4240,7 @@ async function loadProgressDashboard() {
   const MUSCLE_GROUPS = ['Pecho', 'Espalda', 'Hombros', 'Bíceps', 'Tríceps', 'Cuádriceps', 'Isquiotibiales', 'Glúteos', 'Core', 'Cardio'];
   // Get planned exercises (from monthly_plans + exercises table)
   const { data: planDays } = await sb.from('monthly_plans').select('id,week_number').eq('client_id', currentClient.id);
-  const volumeByWeek = {}; // { muscle: { w1: N, w2: N, w3: N, w4: N } }
+  const volumeByWeek = {}; // { muscle: { w1: N, w2: N, w3: N, w4: N, w5: N } }
   if (planDays && planDays.length > 0) {
     for (const pd of planDays) {
       const { data: exs } = await sb.from('exercises').select('muscle_group,sets').eq('plan_day_id', pd.id);
@@ -4249,7 +4250,7 @@ async function loadProgressDashboard() {
         const muscles = ex.muscle_group.split(',').map(m => m.trim());
         for (const m of muscles) {
           if (!MUSCLE_GROUPS.includes(m)) continue;
-          if (!volumeByWeek[m]) volumeByWeek[m] = { w1: 0, w2: 0, w3: 0, w4: 0 };
+          if (!volumeByWeek[m]) volumeByWeek[m] = { w1: 0, w2: 0, w3: 0, w4: 0, w5: 0 };
           const wk = `w${pd.week_number}`;
           if (wk in volumeByWeek[m]) volumeByWeek[m][wk] += (ex.sets || 0);
         }
@@ -4259,7 +4260,7 @@ async function loadProgressDashboard() {
   // Render
   let volumeRows = '';
   const musclesToShow = MUSCLE_GROUPS.filter(m => volumeByWeek[m]);
-  if (musclesToShow.length === 0) volumeRows = `<tr><td colspan="5" style="text-align:center;color:var(--gray4);padding:16px;font-size:12px;">Sin datos de plan programado</td></tr>`;
+  if (musclesToShow.length === 0) volumeRows = `<tr><td colspan="6" style="text-align:center;color:var(--gray4);padding:16px;font-size:12px;">Sin datos de plan programado</td></tr>`;
   else {
     for (const m of musclesToShow) {
       const v = volumeByWeek[m];
@@ -4268,7 +4269,7 @@ async function loadProgressDashboard() {
         if (n >= 10) return `<span class="vol-badge vol-good">${n}</span>`;
         return `<span class="vol-badge vol-low">${n}</span>`;
       };
-      volumeRows += `<tr><td>${m}</td><td>${badge(v.w1)}</td><td>${badge(v.w2)}</td><td>${badge(v.w3)}</td><td>${badge(v.w4)}</td></tr>`;
+      volumeRows += `<tr><td>${m}</td><td>${badge(v.w1)}</td><td>${badge(v.w2)}</td><td>${badge(v.w3)}</td><td>${badge(v.w4)}</td><td>${badge(v.w5)}</td></tr>`;
     }
   }
   container.innerHTML = `
@@ -4286,7 +4287,7 @@ async function loadProgressDashboard() {
       <div style="font-size:10px;color:var(--gray4);margin-bottom:10px;">🟢 ≥10 series (vol. óptimo) · 🟡 &lt;10 · ⬜ Sin programar</div>
       <div style="overflow-x:auto;">
         <table class="volume-table">
-          <thead><tr><th>Músculo</th><th>Sem 1</th><th>Sem 2</th><th>Sem 3</th><th>Sem 4</th></tr></thead>
+          <thead><tr><th>Músculo</th><th>Sem 1</th><th>Sem 2</th><th>Sem 3</th><th>Sem 4</th><th>🔄 DL</th></tr></thead>
           <tbody>${volumeRows}</tbody>
         </table>
       </div>
@@ -6927,7 +6928,7 @@ async function toggleHabit(habitId, checked) {
   <div class="modal-card">
     <span class="modal-close" onclick="closeModal('modal-assign-template')">×</span>
     <div class="modal-title">📋 Asignar Machote</div>
-    <div style="font-size:12px;color:var(--gray4);margin-bottom:16px;">Selecciona un machote para generar las 4 semanas automáticamente con progresión.</div>
+    <div style="font-size:12px;color:var(--gray4);margin-bottom:16px;">Selecciona un machote para generar las 4 semanas automáticamente con progresión. La semana 5 (deload) se programa manualmente.</div>
     <div class="form-group">
       <label class="form-label">Machote</label>
       <select class="form-select" id="assign-tpl-select">
