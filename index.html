@@ -833,7 +833,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <div class="ai-week-chip" onclick="setAiWeek(2,this)">Semana 2</div>
       <div class="ai-week-chip" onclick="setAiWeek(3,this)">Semana 3</div>
       <div class="ai-week-chip" onclick="setAiWeek(4,this)">Semana 4</div>
-      <div class="ai-week-chip" onclick="setAiWeek(5,this)">🔄 Deload</div>
+      <div class="ai-week-chip" onclick="setAiWeek(5,this)">Deload</div>
     </div>
     <div class="section-header">
       <div class="section-title">Día</div>
@@ -1654,9 +1654,9 @@ async function saveGoal() {
 }
 
 function updateClientWeekUI() {
-  document.getElementById('c-week-label').textContent = clientWeek===5?'🔄 Deload':'Semana '+clientWeek;
-  document.getElementById('c-week-sub').textContent = clientWeek===1?'Semana base':clientWeek===5?'🔄 Deload':'Progresión';
-  document.getElementById('c-greeting-week').textContent = clientWeek===5?'Semana 5 · Deload 🔄':'Semana '+clientWeek+' de tu plan mensual 💪';
+  document.getElementById('c-week-label').textContent = clientWeek===5?'Deload':'Semana '+clientWeek;
+  document.getElementById('c-week-sub').textContent = clientWeek===1?'Semana base':clientWeek===5?'Deload':'Progresión';
+  document.getElementById('c-greeting-week').textContent = clientWeek===5?'Semana 5 · Deload':'Semana '+clientWeek+' de tu plan mensual 💪';
   document.getElementById('c-week-prev').disabled = clientWeek<=1;
   document.getElementById('c-week-next').disabled = clientWeek>=5;
   document.getElementById('c-week-num').textContent = clientWeek;
@@ -3220,7 +3220,7 @@ async function buildWeekTabs() {
   const hasWeeks=existing?[...new Set(existing.map(e=>e.week_number))]:[];
   const tabs=document.getElementById('builder-week-tabs');
   if(!tabs)return;
-  tabs.innerHTML=[1,2,3,4,5].map(w=>`<div class="week-tab${w===builderWeek?' active':''}${hasWeeks.includes(w)?' has-data':''}" onclick="switchBuilderWeek(${w})">${w===builderWeek?'● ':''}${w===5?'🔄 Deload':'Semana '+w}</div>`).join('');
+  tabs.innerHTML=[1,2,3,4,5].map(w=>`<div class="week-tab${w===builderWeek?' active':''}${hasWeeks.includes(w)?' has-data':''}" onclick="switchBuilderWeek(${w})">${w===builderWeek?'● ':''}${w===5?'Deload':'Semana '+w}</div>`).join('');
   document.getElementById('copy-week-btn').style.display=builderWeek>1?'block':'none';
 }
 
