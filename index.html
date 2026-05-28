@@ -1893,30 +1893,49 @@ async function loadClientExercises() {
   let circuitLogs = {};
   try { circuitLogs = JSON.parse(localStorage.getItem(circuitLogsKey)||'{}'); } catch{}
 
-  // ── Fetch previous session logs for all exercises (batch) ──
+  // ── Fetch previous session logs by exercise NAME (works across all weeks) ──
   const prevByEx = {};
   try {
-    const exIds = exs.map(e=>e.id);
-    const {data:allPrevLogs} = await sb.from('exercise_logs')
-      .select('exercise_id,set_number,weight,reps_done,weight_unit,logged_at')
-      .in('exercise_id', exIds)
-      .eq('client_id', currentClient.id)
-      .order('logged_at',{ascending:false})
-      .limit(exIds.length * 12);
-    if(allPrevLogs && allPrevLogs.length > 0) {
-      const lastDateByEx = {};
-      allPrevLogs.forEach(l => {
-        const d = l.logged_at.split('T')[0];
-        if(!lastDateByEx[l.exercise_id]) lastDateByEx[l.exercise_id] = d;
-      });
-      allPrevLogs.forEach(l => {
-        const d = l.logged_at.split('T')[0];
-        if(d !== lastDateByEx[l.exercise_id]) return;
-        if(!prevByEx[l.exercise_id]) prevByEx[l.exercise_id] = {};
-        if(!prevByEx[l.exercise_id][l.set_number]) {
-          prevByEx[l.exercise_id][l.set_number] = {weight:l.weight, reps:l.reps_done, unit:l.weight_unit||'kg'};
+    const exNames = exs.map(e=>e.name);
+    // Get all plan days for this client (all weeks)
+    const {data:allPlanDays} = await sb.from('monthly_plans').select('id').eq('client_id',currentClient.id);
+    if(allPlanDays && allPlanDays.length > 0) {
+      const allPlanDayIds = allPlanDays.map(p=>p.id);
+      // Get all exercises across all weeks with matching names
+      const {data:allMatchingExs} = await sb.from('exercises')
+        .select('id,name')
+        .in('plan_day_id', allPlanDayIds)
+        .in('name', exNames);
+      if(allMatchingExs && allMatchingExs.length > 0) {
+        const nameById = {};
+        allMatchingExs.forEach(e=>{ nameById[e.id]=e.name; });
+        const allMatchIds = allMatchingExs.map(e=>e.id);
+        const {data:allPrevLogs} = await sb.from('exercise_logs')
+          .select('exercise_id,set_number,weight,reps_done,weight_unit,logged_at')
+          .in('exercise_id', allMatchIds)
+          .eq('client_id', currentClient.id)
+          .order('logged_at',{ascending:false})
+          .limit(allMatchIds.length * 8);
+        if(allPrevLogs && allPrevLogs.length > 0) {
+          const lastDateByName = {};
+          allPrevLogs.forEach(l=>{
+            const name = nameById[l.exercise_id];
+            if(!name) return;
+            const d = l.logged_at.split('T')[0];
+            if(!lastDateByName[name]) lastDateByName[name] = d;
+          });
+          allPrevLogs.forEach(l=>{
+            const name = nameById[l.exercise_id];
+            if(!name) return;
+            const d = l.logged_at.split('T')[0];
+            if(d !== lastDateByName[name]) return;
+            if(!prevByEx[name]) prevByEx[name] = {};
+            if(!prevByEx[name][l.set_number]) {
+              prevByEx[name][l.set_number] = {weight:l.weight, reps:l.reps_done, unit:l.weight_unit||'kg'};
+            }
+          });
         }
-      });
+      }
     }
   } catch(e) { console.warn('prev logs fetch failed:', e); }
 
@@ -2045,7 +2064,7 @@ async function loadClientExercises() {
         const wVal = saved.w||'';
         const rVal = saved.r||'';
         const filled = saved.w && saved.r;
-        const prev = prevByEx[ex.id]?.[s];
+        const prev = prevByEx[ex.name]?.[s];
         const prevHint = prev
           ? `<span style="font-size:10px;color:var(--orange);font-weight:700;white-space:nowrap;margin-left:4px;">↑ ${prev.weight||'—'}${prev.unit} × ${prev.reps||'—'}</span>`
           : '';
