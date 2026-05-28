@@ -1670,7 +1670,7 @@ function changeClientWeek(dir) {
 
 async function loadClientDayStrip() {
   if(!currentClient)return;
-  const {data:planDays} = await sb.from('monthly_plans').select('day_of_week,id,day_order').eq('client_id',currentClient.id).eq('week_number',clientWeek).order('day_order',{ascending:true}).order('id',{ascending:true});
+  const {data:planDays} = await sb.from('monthly_plans').select('day_of_week,id').eq('client_id',currentClient.id).eq('week_number',clientWeek).order('id',{ascending:true});
 
   const strip = document.getElementById('c-day-strip');
   strip.innerHTML='';
@@ -3233,7 +3233,7 @@ function switchBuilderWeek(w) {
 
 async function buildDayStrip() {
   if(!currentClient)return;
-  const {data:existing} = await sb.from('monthly_plans').select('day_of_week,id,day_order').eq('client_id',currentClient.id).eq('week_number',builderWeek).order('day_order',{ascending:true}).order('id',{ascending:true});
+  const {data:existing} = await sb.from('monthly_plans').select('day_of_week,id').eq('client_id',currentClient.id).eq('week_number',builderWeek).order('id',{ascending:true});
   const strip=document.getElementById('builder-day-strip');
   if(!strip)return;
   strip.innerHTML='';
@@ -3323,23 +3323,23 @@ function openDayOptionsMenu(dayValue, label, anchorEl) {
 }
 
 async function moveDayOrder(dayValue, direction) {
-  const {data:days} = await sb.from('monthly_plans').select('id,day_of_week,day_order').eq('client_id',currentClient.id).eq('week_number',builderWeek).order('day_order',{ascending:true}).order('id',{ascending:true});
+  const {data:days} = await sb.from('monthly_plans').select('id,day_of_week').eq('client_id',currentClient.id).eq('week_number',builderWeek).order('id',{ascending:true});
   if(!days||days.length<2) return;
-  // Normalize first
-  for(let i=0;i<days.length;i++) {
-    await sb.from('monthly_plans').update({day_order:i}).eq('id',days[i].id);
-    days[i].day_order = i;
-  }
   const idx = days.findIndex(d=>d.day_of_week===dayValue);
   const swapIdx = idx + direction;
   if(swapIdx < 0 || swapIdx >= days.length) { showToast('Ya está en el extremo'); return; }
-  const a = days[idx], b = days[swapIdx];
-  await sb.from('monthly_plans').update({day_order:b.day_order}).eq('id',a.id);
-  await sb.from('monthly_plans').update({day_order:a.day_order}).eq('id',b.id);
-  // Keep the moved day selected, rebuild strip without reloading exercises
+  // Try to update day_order (column may not exist yet — silently ignore if it fails)
+  try {
+    for(let i=0;i<days.length;i++) {
+      await sb.from('monthly_plans').update({day_order:i}).eq('id',days[i].id);
+      days[i].day_order = i;
+    }
+    const a = days[idx], b = days[swapIdx];
+    await sb.from('monthly_plans').update({day_order:b.day_order}).eq('id',a.id);
+    await sb.from('monthly_plans').update({day_order:a.day_order}).eq('id',b.id);
+  } catch(e) { console.warn('day_order column not available yet:', e); }
   builderDay = dayValue;
   await buildDayStrip();
-  // Reload exercises for the selected day to keep state in sync
   if(builderDay) await switchBuilderDay(builderDay);
 }
 
@@ -3525,7 +3525,7 @@ async function savePlanDay() {
     exercises.push({name,sets:ssCheck?1:parseInt(sets),reps_range:reps,rest_seconds:parseInt(rest)||60,tag,muscle_group:muscle||null,video_url:video||null,notes:notes||null,circuit_notes:ssCheck&&ssGroup?circuitNotes:null,circuit_rounds:ssCheck&&ssGroup?circuitRounds:null,superset_group:ssCheck&&ssGroup?ssGroup:null,order_index:idx});
   });
   if(!valid){showToast('⚠️ Completa nombre, series y reps');return;}
-  const {data:existPd} = await sb.from('monthly_plans').select('id,day_order').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',builderDay).maybeSingle();
+  const {data:existPd} = await sb.from('monthly_plans').select('id').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',builderDay).maybeSingle();
   const preservedOrder = existPd?.day_order ?? null;
   if(existPd){ await sb.from('exercises').delete().eq('plan_day_id',existPd.id); await sb.from('monthly_plans').delete().eq('id',existPd.id); }
   const {data:pd,error} = await sb.from('monthly_plans').insert([{client_id:currentClient.id,week_number:builderWeek,day_of_week:builderDay}]).select().single();
@@ -6467,7 +6467,7 @@ function renumberForms() {
 // ===== DELETE DAY =====
 async function deleteBuilderDay() {
   if(!confirm(`¿Borrar todos los ejercicios del ${builderDay} Semana ${builderWeek}? Esto no se puede deshacer.`)) return;
-  const {data:pd} = await sb.from('monthly_plans').select('id').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',builderDay).single();
+  const {data:pd} = await sb.from('monthly_plans').select('id').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',builderDay).maybeSingle();
   if(!pd) { showToast('⚠️ Este día no tiene ejercicios guardados'); return; }
   await sb.from('exercises').delete().eq('plan_day_id', pd.id);
   await sb.from('monthly_plans').delete().eq('id', pd.id);
@@ -6482,7 +6482,7 @@ let copyDaySourcePlanId = null;
 let copyTargetWeek = null, copyTargetDay = null;
 
 async function showCopyDayModal() {
-  const {data:pd} = await sb.from('monthly_plans').select('id').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',builderDay).single();
+  const {data:pd} = await sb.from('monthly_plans').select('id').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',builderDay).maybeSingle();
   if(!pd) { showToast('⚠️ Primero guardá ejercicios en este día'); return; }
   copyDaySourcePlanId = pd.id;
   const {data:allClients} = await sb.from('clients').select('id,name').eq('coach_id',currentUser.id).order('name');
