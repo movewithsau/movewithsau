@@ -3261,7 +3261,6 @@ async function openCoachClient(clientId) {
   document.getElementById('ep-client-type').value=c.client_type||'';
   logsVisible = false;
   logsFilterDate = null;
-  document.getElementById('coach-client-logs').style.display = 'none';
   document.getElementById('coach-c-days').textContent=c.days_trained||0;
   loadWeekTrainedCount(c.id);
   loadCoachClientDetail(clientId);
@@ -5175,15 +5174,12 @@ async function saveSessionDuration(sessId, clientId) {
 }
 
 async function toggleLogs() {
-  const container = document.getElementById('coach-client-logs');
-  logsVisible = !logsVisible;
-  container.style.display = logsVisible ? 'block' : 'none';
-  if(logsVisible) await loadClientLogs();
+  // Section removed — logs now shown via Seguimiento semanal tracker
 }
 
 async function loadClientLogs() {
   const container = document.getElementById('coach-client-logs');
-  container.innerHTML = '<div class="spinner"></div>';
+  if(!container) return;
   if(!currentClient) return;
   const {data:logs} = await sb.from('exercise_logs').select('*, exercises(name, reps_range, sets)').eq('client_id', currentClient.id).order('logged_at', {ascending: false}).limit(400);
   const {data:ratings} = await sb.from('workout_ratings').select('*').eq('client_id', currentClient.id).order('date',{ascending:false}).limit(60);
