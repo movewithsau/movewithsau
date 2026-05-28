@@ -3884,16 +3884,23 @@ async function loadTemplates() {
     card.id = `tpl-overview-${t.id}`;
     // Header
     card.innerHTML = `
-      <div class="tpl-card-header" style="margin-bottom:4px;">
-        <div class="tpl-card-name">${t.name}</div>
-        <div class="tpl-card-type">${typeEmoji[t.type]||''} ${t.type}</div>
+      <div class="tpl-card-toggle" onclick="tplToggleCard('${t.id}')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
+            <div class="tpl-card-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.name}</div>
+            <div class="tpl-card-type" style="flex-shrink:0;">${typeEmoji[t.type]||''} ${t.type}</div>
+          </div>
+          <div class="tpl-card-meta" style="margin-bottom:0;">${dayCount} día${dayCount !== 1 ? 's' : ''} · 4 semanas con progresión + deload</div>
+        </div>
+        <div id="tpl-card-chevron-${t.id}" style="font-size:13px;color:var(--gray4);transition:transform 0.2s;flex-shrink:0;">▼</div>
       </div>
-      <div class="tpl-card-meta" style="margin-bottom:14px;">${dayCount} día${dayCount !== 1 ? 's' : ''} · 4 semanas con progresión + deload</div>
-      <div id="tpl-days-overview-${t.id}" style="margin-bottom:12px;"></div>
-      <div style="display:flex;gap:6px;padding-top:10px;border-top:1.5px solid var(--gray2);">
-        <button class="tpl-btn" style="flex:1;background:var(--orange-light);color:var(--orange);border:1.5px solid var(--orange);" onclick="tplAddDayFromOverview('${t.id}')">+ Día</button>
-        <button class="tpl-btn tpl-btn-edit" style="flex:1;" onclick="openTemplateEditor('${t.id}')">⚙️ Ajustes</button>
-        <button class="tpl-btn tpl-btn-delete" style="flex:1;" onclick="deleteTemplate('${t.id}','${safeNameAttr}')">🗑️ Borrar</button>
+      <div id="tpl-card-body-${t.id}" style="display:none;">
+        <div id="tpl-days-overview-${t.id}" style="margin-top:14px;margin-bottom:12px;"></div>
+        <div style="display:flex;gap:6px;padding-top:10px;border-top:1.5px solid var(--gray2);">
+          <button class="tpl-btn" style="flex:1;background:var(--orange-light);color:var(--orange);border:1.5px solid var(--orange);" onclick="tplAddDayFromOverview('${t.id}')">+ Día</button>
+          <button class="tpl-btn tpl-btn-edit" style="flex:1;" onclick="openTemplateEditor('${t.id}')">⚙️ Ajustes</button>
+          <button class="tpl-btn tpl-btn-delete" style="flex:1;" onclick="deleteTemplate('${t.id}','${safeNameAttr}')">🗑️ Borrar</button>
+        </div>
       </div>
     `;
     list.appendChild(card);
@@ -3938,6 +3945,16 @@ async function loadTemplates() {
       daysContainer.innerHTML = '<div style="font-size:12px;color:var(--gray4);text-align:center;padding:12px 0;">Sin días — toca "+ Día" para agregar</div>';
     }
   }
+}
+
+// Toggle expand/collapse a whole template card
+function tplToggleCard(templateId) {
+  const body = document.getElementById(`tpl-card-body-${templateId}`);
+  const chevron = document.getElementById(`tpl-card-chevron-${templateId}`);
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
 }
 
 // Toggle expand/collapse a day row
