@@ -1245,6 +1245,7 @@ const sb = createClient(
 let currentUser = null, currentClient = null, currentExercise = null;
 let clientWeek = 1, clientDay = null, currentPlanDayId = null;
 let weeklyTrackerWeek = 1;
+let prevWeekLogsCache = {}; // { exName: { setNum: {weight, reps, unit} } }
 let builderWeek = 1, builderDay = null;
 let exFormCount = 0;
 let selectedPdfFile = null;
@@ -1441,6 +1442,29 @@ function applyAvatarToProfile() {
 }
 
 function showToast(msg,dur=2500) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),dur); }
+
+function showProgressionCelebration(msg) {
+  // Remove existing if any
+  const existing = document.getElementById('progression-celebration');
+  if(existing) existing.remove();
+  const el = document.createElement('div');
+  el.id = 'progression-celebration';
+  el.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.8);z-index:9999;background:linear-gradient(135deg,#E84C16,#ff6b35);color:white;padding:20px 28px;border-radius:20px;text-align:center;box-shadow:0 12px 40px rgba(232,76,22,0.45);transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1),opacity 0.25s;opacity:0;max-width:280px;';
+  el.innerHTML = `
+    <div style="font-size:36px;margin-bottom:8px;">🔥</div>
+    <div style="font-size:15px;font-weight:800;letter-spacing:-0.02em;line-height:1.3;">${msg}</div>
+    <div style="font-size:12px;margin-top:6px;opacity:0.85;font-weight:600;">¡Semana anterior superada!</div>`;
+  document.body.appendChild(el);
+  requestAnimationFrame(()=>{
+    el.style.transform='translate(-50%,-50%) scale(1)';
+    el.style.opacity='1';
+  });
+  setTimeout(()=>{
+    el.style.transform='translate(-50%,-50%) scale(0.85)';
+    el.style.opacity='0';
+    setTimeout(()=>el.remove(), 300);
+  }, 2800);
+}
 function showModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 function getInitials(n) { if(!n)return'??'; return n.split(' ').map(x=>x[0]).join('').substring(0,2).toUpperCase(); }
@@ -1933,6 +1957,7 @@ async function loadClientExercises() {
       }
     } catch(e){ console.warn('prev logs fetch failed:',e); }
   }
+  prevWeekLogsCache = prevByEx;
 
   // ===== WORKOUT START BUTTON (before warmup banner) =====
   const workoutStarted = isWorkoutStarted();
@@ -5698,6 +5723,14 @@ async function saveSoloToSupabase(exId, logsKey, sets) {
   try { logs = JSON.parse(localStorage.getItem(logsKey)||'{}'); } catch{}
   const inserts = [];
   let totalWeight = 0;
+
+  // Find exercise name for prev week comparison
+  const exNameEl = document.querySelector(`[id^="unit-solo-${exId}"]`)?.closest('.fade-up')?.querySelector('[style*="text-decoration:underline"]');
+  const exName = exNameEl?.textContent?.trim() || null;
+  const prevSets = exName ? (prevWeekLogsCache[exName] || {}) : {};
+
+  // Check for progressions
+  const progressions = [];
   for(let s=1; s<=sets; s++){
     const saved = logs[`${exId}_s${s}`]||{};
     const w = parseFloat(saved.w)||null;
@@ -5705,16 +5738,29 @@ async function saveSoloToSupabase(exId, logsKey, sets) {
     if(w||r){
       inserts.push({exercise_id:exId, client_id:currentClient.id, week_number:clientWeek, set_number:s, weight:w, weight_unit:currentWeightUnit, reps_done:r, difficulty:null});
       if(w&&r) totalWeight += w*r;
+      // Compare with previous week
+      const prev = prevSets[s];
+      if(prev) {
+        const prevW = parseFloat(prev.weight)||0;
+        const prevR = parseInt(prev.reps)||0;
+        if(w && prevW && w > prevW) progressions.push({set:s, type:'peso', from:prevW, to:w, unit:currentWeightUnit});
+        else if(r && prevR && r > prevR && !(w > prevW)) progressions.push({set:s, type:'reps', from:prevR, to:r});
+      }
     }
   }
   if(inserts.length === 0){ showToast('⚠️ Completa al menos un set'); return; }
   const {error} = await sb.from('exercise_logs').insert(inserts);
   if(error){ showToast('❌ '+error.message); return; }
   markExerciseDone(exId);
-  if(totalWeight > 0){
-    const OBJECTS = [{w:0.4,label:'una lata 🥤'},{w:7,label:'un gato 🐱'},{w:15,label:'un perro 🐕'},{w:80,label:'una persona 🙋'},{w:300,label:'un piano 🎹'},{w:1000,label:'un carro 🚗'}];
-    let closest = OBJECTS[0];
-    for(const obj of OBJECTS){ if(totalWeight>=obj.w) closest=obj; else break; }
+
+  // Show progression celebration first if any
+  if(progressions.length > 0) {
+    const best = progressions[0];
+    const msg = best.type === 'peso'
+      ? `🔥 ¡Progresión! Set ${best.set}: ${best.from}${best.unit} → ${best.to}${best.unit}`
+      : `🔥 ¡Progresión! Set ${best.set}: ${best.from} → ${best.to} reps`;
+    showProgressionCelebration(msg);
+  } else if(totalWeight > 0){
     showToast(`🏋️ ¡${totalWeight.toFixed(0)}${currentWeightUnit} levantados!`, 3500);
   } else {
     showToast('✅ ¡Guardado!');
