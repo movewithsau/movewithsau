@@ -790,7 +790,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   <div class="scroll-body">
     <div class="section-header"><div class="section-title">Semana</div><div class="section-action" id="copy-week-btn" onclick="copyWeekFromPrevious()" style="display:none;">Copiar semana anterior</div></div>
     <div class="week-tab-row" id="builder-week-tabs"></div>
-    <div class="section-header"><div class="section-title">Día de Entrenamiento</div><div class="section-action" style="font-size:10px;color:var(--gray4);">mantén para opciones</div></div>
+    <div class="section-header"><div class="section-title">Día de Entrenamiento</div><div class="section-action" style="font-size:10px;color:var(--gray4);">toca ⚙ para mover/renombrar</div></div>
     <div class="day-strip" id="builder-day-strip"></div>
     <div class="section-header"><div class="section-title">Ejercicios</div></div>
     <div id="builder-exercises-list"></div>
@@ -3233,7 +3233,7 @@ function switchBuilderWeek(w) {
 
 async function buildDayStrip() {
   if(!currentClient)return;
-  const {data:existing} = await sb.from('monthly_plans').select('day_of_week,id').eq('client_id',currentClient.id).eq('week_number',builderWeek).order('id',{ascending:true});
+  const {data:existing} = await sb.from('monthly_plans').select('day_of_week,id,day_order').eq('client_id',currentClient.id).eq('week_number',builderWeek).order('day_order',{ascending:true,nullsFirst:false}).order('id',{ascending:true});
   const strip=document.getElementById('builder-day-strip');
   if(!strip)return;
   strip.innerHTML='';
@@ -3243,12 +3243,26 @@ async function buildDayStrip() {
     const label = getDayShortLabel(pd.day_of_week, idx);
     const chip = document.createElement('div');
     chip.className = 'day-chip has-workout'+(pd.day_of_week===builderDay?' active':'');
-    chip.textContent = label;
     chip.style.whiteSpace = 'nowrap';
+    chip.style.display = 'inline-flex';
+    chip.style.alignItems = 'center';
+    chip.style.gap = '4px';
+    // Label
+    const labelSpan = document.createElement('span');
+    labelSpan.textContent = label;
+    labelSpan.style.pointerEvents = 'none';
+    chip.appendChild(labelSpan);
+    // ⚙ options button — visible click, works desktop + mobile
+    const optBtn = document.createElement('span');
+    optBtn.textContent = '⚙';
+    optBtn.title = 'Opciones del día';
+    optBtn.style.cssText = 'font-size:10px;opacity:0.55;cursor:pointer;line-height:1;padding:1px 0 0 1px;';
+    optBtn.onclick = (e) => { e.stopPropagation(); openDayOptionsMenu(pd.day_of_week, label, chip); };
+    chip.appendChild(optBtn);
     chip.onclick = ()=>{ builderDay=pd.day_of_week; buildDayStrip(); switchBuilderDay(pd.day_of_week); };
-    // Long-press or right-click to rename/delete day
+    // Right-click also works
     chip.oncontextmenu = (e) => { e.preventDefault(); openDayOptionsMenu(pd.day_of_week, label, chip); };
-    // Long press for mobile
+    // Long press for mobile (backup)
     let lpTimer;
     chip.addEventListener('touchstart', () => { lpTimer = setTimeout(() => openDayOptionsMenu(pd.day_of_week, label, chip), 600); }, {passive:true});
     chip.addEventListener('touchend', () => clearTimeout(lpTimer), {passive:true});
@@ -3323,7 +3337,7 @@ function openDayOptionsMenu(dayValue, label, anchorEl) {
 }
 
 async function moveDayOrder(dayValue, direction) {
-  const {data:days} = await sb.from('monthly_plans').select('id,day_of_week').eq('client_id',currentClient.id).eq('week_number',builderWeek).order('id',{ascending:true});
+  const {data:days} = await sb.from('monthly_plans').select('id,day_of_week,day_order').eq('client_id',currentClient.id).eq('week_number',builderWeek).order('day_order',{ascending:true,nullsFirst:false}).order('id',{ascending:true});
   if(!days||days.length<2) return;
   const idx = days.findIndex(d=>d.day_of_week===dayValue);
   const swapIdx = idx + direction;
