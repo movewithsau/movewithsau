@@ -4920,10 +4920,14 @@ async function renderWeeklyTracker(clientId) {
 
     let dateStr = '';
     if(loggedAt) {
-      const d = new Date(loggedAt);
-      const now = new Date();
-      const diffDays = Math.floor((now - d)/(1000*60*60*24));
-      dateStr = diffDays===0?'hoy':diffDays===1?'ayer':diffDays+' días atrás';
+      const logDate = loggedAt.split('T')[0];
+      const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local
+      if(logDate === today) {
+        dateStr = 'hoy';
+      } else {
+        const diffDays = Math.round((new Date(today) - new Date(logDate)) / (1000*60*60*24));
+        dateStr = diffDays === 1 ? 'ayer' : diffDays > 0 ? diffDays+' días atrás' : 'hoy';
+      }
     }
 
     const durMin = sess?.duration_minutes;
