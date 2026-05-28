@@ -760,8 +760,6 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     </div>
     <div class="section-header"><div class="section-title">Seguimiento semanal</div></div>
     <div id="coach-weekly-tracker" style="margin-bottom:4px;"></div>
-    <div class="section-header"><div class="section-title">Registros del cliente</div><div class="section-action" onclick="toggleLogs()">Ver logs</div></div>
-    <div id="coach-client-logs" style="display:none;"></div>
     <div class="section-header"><div class="section-title">Tu Plan MOVE</div><div class="section-action" onclick="showModal('modal-upload-pdf')">+ PDF</div></div>
     <div id="coach-plans-list"></div>
     <div class="section-header" style="margin-top:4px;">
@@ -1895,6 +1893,33 @@ async function loadClientExercises() {
   let circuitLogs = {};
   try { circuitLogs = JSON.parse(localStorage.getItem(circuitLogsKey)||'{}'); } catch{}
 
+  // ── Fetch previous session logs for all exercises (batch) ──
+  const prevByEx = {};
+  try {
+    const exIds = exs.map(e=>e.id);
+    const {data:allPrevLogs} = await sb.from('exercise_logs')
+      .select('exercise_id,set_number,weight,reps_done,weight_unit,logged_at')
+      .in('exercise_id', exIds)
+      .eq('client_id', currentClient.id)
+      .order('logged_at',{ascending:false})
+      .limit(exIds.length * 12);
+    if(allPrevLogs && allPrevLogs.length > 0) {
+      const lastDateByEx = {};
+      allPrevLogs.forEach(l => {
+        const d = l.logged_at.split('T')[0];
+        if(!lastDateByEx[l.exercise_id]) lastDateByEx[l.exercise_id] = d;
+      });
+      allPrevLogs.forEach(l => {
+        const d = l.logged_at.split('T')[0];
+        if(d !== lastDateByEx[l.exercise_id]) return;
+        if(!prevByEx[l.exercise_id]) prevByEx[l.exercise_id] = {};
+        if(!prevByEx[l.exercise_id][l.set_number]) {
+          prevByEx[l.exercise_id][l.set_number] = {weight:l.weight, reps:l.reps_done, unit:l.weight_unit||'kg'};
+        }
+      });
+    }
+  } catch(e) { console.warn('prev logs fetch failed:', e); }
+
   // ===== WORKOUT START BUTTON (before warmup banner) =====
   const workoutStarted = isWorkoutStarted();
   const startBtnHtml = !workoutStarted
@@ -2020,10 +2045,14 @@ async function loadClientExercises() {
         const wVal = saved.w||'';
         const rVal = saved.r||'';
         const filled = saved.w && saved.r;
+        const prev = prevByEx[ex.id]?.[s];
+        const prevHint = prev
+          ? `<span style="font-size:10px;color:var(--orange);font-weight:700;white-space:nowrap;margin-left:4px;">↑ ${prev.weight||'—'}${prev.unit} × ${prev.reps||'—'}</span>`
+          : '';
         setRows += `<tr>
           <td style="padding:5px 6px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:var(--gray4);white-space:nowrap;border-bottom:1px solid var(--gray2);">Set ${s}</td>
           <td style="padding:4px;border-bottom:1px solid var(--gray2);">
-            <div style="display:flex;gap:3px;align-items:center;">
+            <div style="display:flex;gap:3px;align-items:center;flex-wrap:wrap;">
               <input type="number" inputmode="decimal" placeholder="${currentWeightUnit}" value="${wVal}"
                 style="width:52px;padding:5px 4px;border:1.5px solid ${filled?'var(--green)':'var(--gray2)'};border-radius:6px;font-size:12px;text-align:center;font-family:'DM Sans',sans-serif;outline:none;background:${filled?'var(--green-light)':'var(--white)'};color:var(--black);"
                 id="slog-w-${ex.id}-s${s}"
@@ -2034,6 +2063,7 @@ async function loadClientExercises() {
                 id="slog-r-${ex.id}-s${s}"
                 onchange="saveSoloLog('${ex.id}',${s},'${soloLogsKey}')"
                 onfocus="this.style.borderColor='var(--orange)'">
+              ${prevHint}
             </div>
           </td>
         </tr>`;
@@ -4952,7 +4982,7 @@ async function renderWeeklyTracker(clientId) {
                 <button onclick="saveSessionDuration('${sessId}','${clientId}')" style="background:var(--orange);color:white;border:none;border-radius:6px;padding:3px 7px;font-size:11px;font-weight:700;cursor:pointer;">✓</button>
                 <button onclick="cancelEditDuration('${sessId}','${durMin||0}')" style="background:var(--gray2);color:var(--gray5);border:none;border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;">✕</button>
               </span>
-            ` : `<span style="font-size:10px;color:var(--gray3);">sin sesión</span>`}
+            ` : `<span onclick="addNewSession('${pd.id}','${clientId}',${week},this)" style="font-size:11px;font-weight:600;color:var(--gray4);cursor:pointer;background:var(--gray1);padding:2px 7px;border-radius:6px;border:1px dashed var(--gray3);" title="Agregar tiempo">+ tiempo</span>`}
             <button onclick="toggleDayLogs('${pd.id}','${label.replace(/'/g,"\\'")}',this)" style="background:none;border:none;color:var(--orange);font-size:11px;font-weight:700;cursor:pointer;padding:2px 4px;">Logs ›</button>
           </div>
         </div>
