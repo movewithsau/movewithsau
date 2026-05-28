@@ -3064,7 +3064,7 @@ function renderPlanOverview() {
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
       ${weekNums.map(w=>`
         <button onclick="selectPlanOverviewWeek(${w})" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid ${w===planOverviewSelectedWeek?'var(--orange)':'var(--gray2)'};background:${w===planOverviewSelectedWeek?'var(--orange)':'var(--gray1)'};color:${w===planOverviewSelectedWeek?'white':'var(--gray5)'};cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;">
-          Semana ${w}
+          ${w===5?'Deload':'Semana '+w}
         </button>`).join('')}
       <button onclick="openBuilderForWeek(${planOverviewSelectedWeek})" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid var(--orange);background:var(--orange-light);color:var(--orange);cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:auto;">Editar</button>
     </div>
@@ -3264,7 +3264,10 @@ async function buildDayStrip() {
   // Auto-select first day if none selected or current not in list
   if(planDays.length>0 && (!builderDay || !planDays.find(p=>p.day_of_week===builderDay))) {
     builderDay = planDays[0].day_of_week;
-    buildDayStrip();
+    // Update active class on already-rendered chips
+    strip.querySelectorAll('.day-chip.has-workout').forEach(c => c.classList.remove('active'));
+    const firstChip = strip.querySelector('.day-chip.has-workout');
+    if(firstChip) firstChip.classList.add('active');
   }
 }
 
@@ -3333,8 +3336,11 @@ async function moveDayOrder(dayValue, direction) {
   const a = days[idx], b = days[swapIdx];
   await sb.from('monthly_plans').update({day_order:b.day_order}).eq('id',a.id);
   await sb.from('monthly_plans').update({day_order:a.day_order}).eq('id',b.id);
+  // Keep the moved day selected, rebuild strip without reloading exercises
   builderDay = dayValue;
   await buildDayStrip();
+  // Reload exercises for the selected day to keep state in sync
+  if(builderDay) await switchBuilderDay(builderDay);
 }
 
 
@@ -3519,9 +3525,10 @@ async function savePlanDay() {
     exercises.push({name,sets:ssCheck?1:parseInt(sets),reps_range:reps,rest_seconds:parseInt(rest)||60,tag,muscle_group:muscle||null,video_url:video||null,notes:notes||null,circuit_notes:ssCheck&&ssGroup?circuitNotes:null,circuit_rounds:ssCheck&&ssGroup?circuitRounds:null,superset_group:ssCheck&&ssGroup?ssGroup:null,order_index:idx});
   });
   if(!valid){showToast('⚠️ Completa nombre, series y reps');return;}
-  const {data:existPd} = await sb.from('monthly_plans').select('id').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',builderDay).single();
+  const {data:existPd} = await sb.from('monthly_plans').select('id,day_order').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',builderDay).maybeSingle();
+  const preservedOrder = existPd?.day_order ?? null;
   if(existPd){ await sb.from('exercises').delete().eq('plan_day_id',existPd.id); await sb.from('monthly_plans').delete().eq('id',existPd.id); }
-  const {data:pd,error} = await sb.from('monthly_plans').insert([{client_id:currentClient.id,week_number:builderWeek,day_of_week:builderDay}]).select().single();
+  const {data:pd,error} = await sb.from('monthly_plans').insert([{client_id:currentClient.id,week_number:builderWeek,day_of_week:builderDay,day_order:preservedOrder}]).select().single();
   if(error){showToast('❌ '+error.message);return;}
   const exData=exercises.map(e=>({...e,plan_day_id:pd.id}));
   await sb.from('exercises').insert(exData);
@@ -3537,9 +3544,9 @@ async function copyWeekFromPrevious() {
   if(!prevDays||prevDays.length===0){showToast('⚠️ La semana '+(prevWeek)+' está vacía');return;}
   for(const pd of prevDays){
     const {data:exs} = await sb.from('exercises').select('*').eq('plan_day_id',pd.id);
-    const {data:existPd} = await sb.from('monthly_plans').select('id').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',pd.day_of_week).single();
+    const {data:existPd} = await sb.from('monthly_plans').select('id').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',pd.day_of_week).maybeSingle();
     if(existPd){await sb.from('exercises').delete().eq('plan_day_id',existPd.id);await sb.from('monthly_plans').delete().eq('id',existPd.id);}
-    const {data:newPd} = await sb.from('monthly_plans').insert([{client_id:currentClient.id,week_number:builderWeek,day_of_week:pd.day_of_week}]).select().single();
+    const {data:newPd} = await sb.from('monthly_plans').insert([{client_id:currentClient.id,week_number:builderWeek,day_of_week:pd.day_of_week,day_order:pd.day_order??null}]).select().single();
     if(exs&&newPd){
       const newExs=exs.map(e=>({plan_day_id:newPd.id,name:e.name,sets:e.sets,reps_range:e.reps_range,rest_seconds:e.rest_seconds,tag:e.tag,muscle_group:e.muscle_group,video_url:e.video_url,notes:e.notes,circuit_notes:e.circuit_notes||null,circuit_rounds:e.circuit_rounds||null,superset_group:e.superset_group,order_index:e.order_index}));
       await sb.from('exercises').insert(newExs);
@@ -6487,7 +6494,7 @@ async function showCopyDayModal() {
         <div style="font-size:12px;color:var(--gray5);margin-bottom:14px;">Copiando: Semana ${builderWeek} · ${builderDay}</div>
         <div class="notes-label" style="margin-bottom:8px;">Semana destino</div>
         <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
-          ${[1,2,3,4].map(w=>`<button onclick="selectCopyWeek(${w},this)" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid var(--gray2);background:var(--gray1);color:var(--gray5);cursor:pointer;font-family:'DM Sans',sans-serif;" id="copy-w-${w}">Semana ${w}</button>`).join('')}
+          ${[1,2,3,4,5].map(w=>`<button onclick="selectCopyWeek(${w},this)" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid var(--gray2);background:var(--gray1);color:var(--gray5);cursor:pointer;font-family:'DM Sans',sans-serif;" id="copy-w-${w}">${w===5?'Deload':'Semana '+w}</button>`).join('')}
         </div>
         <div class="notes-label" style="margin-bottom:8px;">Día destino</div>
         <div style="margin-bottom:14px;">
@@ -6539,7 +6546,7 @@ async function executeCopyDay() {
   const targetClientId = document.getElementById('copy-client-sel').value;
   const {data:srcExs} = await sb.from('exercises').select('*').eq('plan_day_id',copyDaySourcePlanId).order('order_index');
   if(!srcExs||srcExs.length===0){showToast('⚠️ No hay ejercicios en el día origen');return;}
-  const {data:existPd} = await sb.from('monthly_plans').select('id').eq('client_id',targetClientId).eq('week_number',copyTargetWeek).eq('day_of_week',copyTargetDay).single();
+  const {data:existPd} = await sb.from('monthly_plans').select('id').eq('client_id',targetClientId).eq('week_number',copyTargetWeek).eq('day_of_week',copyTargetDay).maybeSingle();
   if(existPd){await sb.from('exercises').delete().eq('plan_day_id',existPd.id);await sb.from('monthly_plans').delete().eq('id',existPd.id);}
   const {data:newPd,error} = await sb.from('monthly_plans').insert([{client_id:targetClientId,week_number:copyTargetWeek,day_of_week:copyTargetDay}]).select().single();
   if(error){showToast('❌ '+error.message);return;}
