@@ -2214,7 +2214,7 @@ function applyRatingModalUI(emoji, showSaved) {
   if(closeBtn) closeBtn.style.display = 'block';
 }
 
-function openExDetail(ex) {
+async function openExDetail(ex) {
   currentExercise = ex;
   document.getElementById('detail-tag').textContent = ex.tag;
   document.getElementById('detail-name').textContent = ex.name;
@@ -2227,9 +2227,28 @@ function openExDetail(ex) {
   if(ex.notes){nb.style.display='block';document.getElementById('detail-notes').textContent=ex.notes;}else{nb.style.display='none';}
   const vl=document.getElementById('detail-video');
   if(ex.video_url){vl.style.display='flex';vl.href=ex.video_url;}else{vl.style.display='none';}
+
+  // ── Fetch last session logs for this exercise ──
+  let prevBySet = {};
+  try {
+    const {data:prevLogs} = await sb.from('exercise_logs')
+      .select('set_number,weight,reps_done,weight_unit,logged_at')
+      .eq('exercise_id', ex.id)
+      .eq('client_id', currentClient.id)
+      .order('logged_at', {ascending:false})
+      .limit(ex.sets * 4);
+    if(prevLogs && prevLogs.length > 0) {
+      const lastDate = prevLogs[0].logged_at.split('T')[0];
+      prevLogs.filter(l=>l.logged_at.split('T')[0]===lastDate)
+               .forEach(l=>{ prevBySet[l.set_number] = l; });
+    }
+  } catch(e) { console.warn('Could not load prev logs:', e); }
+
+  const hasPrev = Object.keys(prevBySet).length > 0;
+
   const c=document.getElementById('sets-log-container');
   c.innerHTML='';
-  // Weight unit toggle — using new .unit-btn class that colors both equally
+  // Weight unit toggle
   c.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
     <span style="font-size:12px;color:var(--gray5);font-weight:600;">Unidad de peso:</span>
     <div style="display:flex;gap:4px;">
@@ -2237,16 +2256,31 @@ function openExDetail(ex) {
       <button id="unit-lb" class="unit-btn" onclick="setWeightUnit('lb')">lb</button>
     </div>
   </div>`;
+
+  // Header row if there's prev data
+  if(hasPrev) {
+    c.innerHTML += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;padding:5px 8px;background:var(--gray1);border-radius:8px;">
+      <span style="font-size:10px;color:var(--gray4);font-weight:600;flex:none;width:48px;">Última</span>
+      <span style="font-size:10px;color:var(--gray4);font-weight:600;flex:1;text-align:center;">Peso</span>
+      <span style="font-size:10px;color:var(--gray4);font-weight:600;flex:1;text-align:center;">Reps</span>
+      <span style="font-size:10px;color:transparent;width:64px;">—</span>
+    </div>`;
+  }
+
   for(let i=1;i<=ex.sets;i++){
+    const prev = prevBySet[i];
+    const prevWStr = prev?.weight ? `${prev.weight}${prev.weight_unit||'kg'}` : null;
+    const prevRStr = prev?.reps_done ? `${prev.reps_done}` : null;
+    const prevHint = (prevWStr||prevRStr)
+      ? `<div style="font-size:10px;color:var(--orange);font-weight:600;flex:none;width:48px;">${prevWStr||'—'} × ${prevRStr||'—'}</div>`
+      : `<div style="flex:none;width:48px;"></div>`;
+
     c.innerHTML+=`<div class="set-row">
       <div class="set-num">Set ${i}</div>
-      <input class="set-input" type="number" placeholder="kg" id="log-w-${i}" min="0" step="0.5">
-      <input class="set-input" type="number" placeholder="reps" id="log-r-${i}" min="0">
-      <div class="diff-btns">
-        <button class="diff-btn easy" onclick="toggleDiff(this,'easy')">😊</button>
-        <button class="diff-btn hard" onclick="toggleDiff(this,'hard')">🔥</button>
-      </div>
-    </div>`;
+      <input class="set-input" type="number" placeholder="${prev?.weight||'kg'}" id="log-w-${i}" min="0" step="0.5">
+      <input class="set-input" type="number" placeholder="${prev?.reps_done||'reps'}" id="log-r-${i}" min="0">
+    </div>
+    ${prev ? `<div style="font-size:10px;color:var(--gray4);padding:1px 0 5px 48px;">Última vez: <span style="color:var(--orange);font-weight:700;">${prevWStr||'—'} × ${prevRStr||'—'} reps</span></div>` : ''}`;
   }
   // Show timer display if workout is running
   const timerEl = document.getElementById('workout-timer-display');
@@ -2314,12 +2348,8 @@ async function saveLog() {
   for(let i=1;i<=currentExercise.sets;i++){
     const w=parseFloat(document.getElementById('log-w-'+i)?.value)||0;
     const r=parseInt(document.getElementById('log-r-'+i)?.value)||0;
-    const setRows = document.querySelectorAll('#sets-log-container .set-row');
-    const setRow = setRows[i-1];
-    const diffBtn = setRow ? setRow.querySelector('.diff-btn.selected') : null;
-    const diff=diffBtn?(diffBtn.classList.contains('easy')?'facil':'dificil'):null;
     if(w>0&&r>0) totalWeight += w * r;
-    logs.push({exercise_id:currentExercise.id,client_id:currentClient.id,week_number:clientWeek,set_number:i,weight:w||null,weight_unit:weightUnit,reps_done:r||null,difficulty:diff});
+    logs.push({exercise_id:currentExercise.id,client_id:currentClient.id,week_number:clientWeek,set_number:i,weight:w||null,weight_unit:weightUnit,reps_done:r||null,difficulty:null});
   }
   await sb.from('exercise_logs').insert(logs);
 
