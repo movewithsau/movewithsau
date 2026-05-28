@@ -1893,51 +1893,46 @@ async function loadClientExercises() {
   let circuitLogs = {};
   try { circuitLogs = JSON.parse(localStorage.getItem(circuitLogsKey)||'{}'); } catch{}
 
-  // ── Fetch previous session logs by exercise NAME (works across all weeks) ──
+  // ── Fetch prev week logs (S1→S2, S2→S3, S3→S4, S5 nada) ──
   const prevByEx = {};
-  try {
-    const exNames = exs.map(e=>e.name);
-    // Get all plan days for this client (all weeks)
-    const {data:allPlanDays} = await sb.from('monthly_plans').select('id').eq('client_id',currentClient.id);
-    if(allPlanDays && allPlanDays.length > 0) {
-      const allPlanDayIds = allPlanDays.map(p=>p.id);
-      // Get all exercises across all weeks with matching names
-      const {data:allMatchingExs} = await sb.from('exercises')
-        .select('id,name')
-        .in('plan_day_id', allPlanDayIds)
-        .in('name', exNames);
-      if(allMatchingExs && allMatchingExs.length > 0) {
-        const nameById = {};
-        allMatchingExs.forEach(e=>{ nameById[e.id]=e.name; });
-        const allMatchIds = allMatchingExs.map(e=>e.id);
-        const {data:allPrevLogs} = await sb.from('exercise_logs')
-          .select('exercise_id,set_number,weight,reps_done,weight_unit,logged_at')
-          .in('exercise_id', allMatchIds)
-          .eq('client_id', currentClient.id)
-          .order('logged_at',{ascending:false})
-          .limit(allMatchIds.length * 8);
-        if(allPrevLogs && allPrevLogs.length > 0) {
-          const lastDateByName = {};
-          allPrevLogs.forEach(l=>{
-            const name = nameById[l.exercise_id];
-            if(!name) return;
-            const d = l.logged_at.split('T')[0];
-            if(!lastDateByName[name]) lastDateByName[name] = d;
-          });
-          allPrevLogs.forEach(l=>{
-            const name = nameById[l.exercise_id];
-            if(!name) return;
-            const d = l.logged_at.split('T')[0];
-            if(d !== lastDateByName[name]) return;
-            if(!prevByEx[name]) prevByEx[name] = {};
-            if(!prevByEx[name][l.set_number]) {
-              prevByEx[name][l.set_number] = {weight:l.weight, reps:l.reps_done, unit:l.weight_unit||'kg'};
-            }
-          });
+  if(clientWeek >= 2 && clientWeek <= 4) {
+    try {
+      const prevWeek = clientWeek - 1;
+      const exNames = exs.map(e=>e.name);
+      const {data:prevPlanDays} = await sb.from('monthly_plans')
+        .select('id')
+        .eq('client_id', currentClient.id)
+        .eq('week_number', prevWeek);
+      if(prevPlanDays && prevPlanDays.length > 0) {
+        const prevPlanDayIds = prevPlanDays.map(p=>p.id);
+        const {data:prevExs} = await sb.from('exercises')
+          .select('id,name')
+          .in('plan_day_id', prevPlanDayIds)
+          .in('name', exNames);
+        if(prevExs && prevExs.length > 0) {
+          const nameById = {};
+          prevExs.forEach(e=>{ nameById[e.id]=e.name; });
+          const prevExIds = prevExs.map(e=>e.id);
+          const {data:prevLogs} = await sb.from('exercise_logs')
+            .select('exercise_id,set_number,weight,reps_done,weight_unit')
+            .in('exercise_id', prevExIds)
+            .eq('client_id', currentClient.id)
+            .order('logged_at',{ascending:false})
+            .limit(prevExIds.length * 8);
+          if(prevLogs) {
+            prevLogs.forEach(l=>{
+              const name = nameById[l.exercise_id];
+              if(!name) return;
+              if(!prevByEx[name]) prevByEx[name]={};
+              if(!prevByEx[name][l.set_number]) {
+                prevByEx[name][l.set_number]={weight:l.weight,reps:l.reps_done,unit:l.weight_unit||'kg'};
+              }
+            });
+          }
         }
       }
-    }
-  } catch(e) { console.warn('prev logs fetch failed:', e); }
+    } catch(e){ console.warn('prev logs fetch failed:',e); }
+  }
 
   // ===== WORKOUT START BUTTON (before warmup banner) =====
   const workoutStarted = isWorkoutStarted();
