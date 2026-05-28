@@ -1673,6 +1673,23 @@ async function loadClientDayStrip() {
     clientDay = hasDays.includes(today) ? today : (hasDays[0]||null);
   }
 
+  // ── Check which days have been trained (via exercise_logs) ──
+  const completedDayIds = new Set();
+  if(planDays && planDays.length > 0) {
+    const planDayIds = planDays.map(p=>p.id);
+    const {data:exs} = await sb.from('exercises').select('id,plan_day_id').in('plan_day_id', planDayIds);
+    if(exs && exs.length > 0) {
+      const exIds = exs.map(e=>e.id);
+      const {data:logs} = await sb.from('exercise_logs').select('exercise_id').in('exercise_id', exIds).limit(500);
+      if(logs) {
+        logs.forEach(l => {
+          const ex = exs.find(e=>e.id===l.exercise_id);
+          if(ex) completedDayIds.add(ex.plan_day_id);
+        });
+      }
+    }
+  }
+
   // ── Combined week + day card ──
   const card = document.createElement('div');
   card.style.cssText = 'background:var(--white);border:2px solid var(--orange);border-radius:16px;overflow:visible;box-shadow:0 2px 12px rgba(232,76,22,0.1);margin-bottom:16px;position:relative;';
@@ -1732,43 +1749,90 @@ async function loadClientDayStrip() {
     return;
   }
 
+  // ── Progress summary ──
+  const doneCount = (planDays||[]).filter(p=>completedDayIds.has(p.id)).length;
+  const totalCount = (planDays||[]).length;
+  if(totalCount > 0) {
+    const pct = Math.round((doneCount/totalCount)*100);
+    const progressEl = document.createElement('div');
+    progressEl.style.cssText = 'padding:8px 16px 6px;';
+    progressEl.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <span style="font-size:10px;font-weight:600;color:var(--gray4);">${doneCount}/${totalCount} días completados</span>
+        <span style="font-size:10px;font-weight:700;color:var(--orange);">${pct}%</span>
+      </div>
+      <div style="height:4px;background:var(--gray2);border-radius:3px;overflow:hidden;">
+        <div style="height:100%;width:${pct}%;background:var(--orange);border-radius:3px;"></div>
+      </div>`;
+    card.appendChild(progressEl);
+  }
+
+  // ── Divider 2 ──
+  const divider2 = document.createElement('div');
+  divider2.style.cssText = 'height:1px;background:var(--gray2);margin:0 16px 0;';
+  card.appendChild(divider2);
+
   // ── Day dropdown trigger ──
+  const activePd = planDays.find(p=>p.day_of_week===clientDay);
+  const isDoneActive = activePd && completedDayIds.has(activePd.id);
   const selectedLabel = getDayShortLabel(clientDay, hasDays.indexOf(clientDay));
 
   const trigger = document.createElement('div');
   trigger.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;user-select:none;';
 
+  const triggerLeft = document.createElement('div');
+  triggerLeft.style.cssText = 'display:flex;align-items:center;gap:8px;';
+  // Dot for selected day
+  const activeDot = document.createElement('div');
+  activeDot.style.cssText = isDoneActive
+    ? 'width:14px;height:14px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;flex-shrink:0;'
+    : 'width:14px;height:14px;border-radius:50%;border:1.5px solid var(--gray3);flex-shrink:0;';
+  if(isDoneActive) activeDot.innerHTML = '<span style="color:white;font-size:8px;font-weight:900;">✓</span>';
   const dayLabelEl = document.createElement('div');
   dayLabelEl.style.cssText = 'font-size:17px;font-weight:700;color:var(--black);';
   dayLabelEl.textContent = selectedLabel;
+  triggerLeft.appendChild(activeDot);
+  triggerLeft.appendChild(dayLabelEl);
 
   const arrow = document.createElement('span');
   arrow.style.cssText = 'font-size:20px;color:var(--orange);line-height:1;transition:transform 0.2s;';
   arrow.textContent = '▾';
 
-  trigger.appendChild(dayLabelEl);
+  trigger.appendChild(triggerLeft);
   trigger.appendChild(arrow);
   card.appendChild(trigger);
 
-  // ── Dropdown list (absolute, outside card overflow) ──
+  // ── Dropdown list ──
   const wrapper = document.createElement('div');
   wrapper.style.cssText = 'position:relative;';
 
   const list = document.createElement('div');
   list.style.cssText = 'display:none;position:absolute;top:4px;left:0;right:0;background:var(--white);border:1.5px solid var(--gray2);border-radius:14px;overflow:hidden;z-index:100;box-shadow:0 8px 28px rgba(0,0,0,0.12);';
 
-  hasDays.forEach((day, idx) => {
+  planDays.forEach((pd, idx) => {
+    const day = pd.day_of_week;
     const label = getDayShortLabel(day, idx);
     const isActive = day === clientDay;
+    const isDone = completedDayIds.has(pd.id);
     const item = document.createElement('div');
     item.style.cssText = `padding:13px 16px;font-size:15px;font-weight:${isActive?'700':'500'};cursor:pointer;`
       + `color:${isActive?'var(--orange)':'var(--black)'};background:${isActive?'var(--orange-light)':'var(--white)'};`
-      + `display:flex;align-items:center;justify-content:space-between;`
-      + (idx < hasDays.length-1 ? 'border-bottom:1px solid var(--gray1);' : '');
+      + `display:flex;align-items:center;gap:10px;`
+      + (idx < planDays.length-1 ? 'border-bottom:1px solid var(--gray1);' : '');
+
+    // Status dot per item
+    const dot = document.createElement('div');
+    dot.style.cssText = isDone
+      ? 'width:14px;height:14px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;flex-shrink:0;'
+      : 'width:14px;height:14px;border-radius:50%;border:1.5px solid var(--gray3);flex-shrink:0;';
+    if(isDone) dot.innerHTML = '<span style="color:white;font-size:8px;font-weight:900;">✓</span>';
+
     const nameSpan = document.createElement('span');
+    nameSpan.style.cssText = 'flex:1;';
     nameSpan.textContent = label;
+
+    item.appendChild(dot);
     item.appendChild(nameSpan);
-    if(isActive){ const chk=document.createElement('span'); chk.style.cssText='font-size:14px;color:var(--orange);'; chk.textContent='✓'; item.appendChild(chk); }
     item.onclick = () => { clientDay=day; list.style.display='none'; arrow.style.transform=''; loadClientDayStrip(); };
     list.appendChild(item);
   });
