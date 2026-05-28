@@ -500,11 +500,6 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <div class="stat-card"><div class="stat-num" id="c-week-num">1</div><div class="stat-label">Semana actual</div></div>
     </div>
 
-    <div class="week-nav">
-      <button class="week-nav-btn" id="c-week-prev" onclick="changeClientWeek(-1)">‹</button>
-      <div style="text-align:center;"><div class="week-nav-label" id="c-week-label">Semana 1</div><div class="week-nav-sub" id="c-week-sub">Activa</div></div>
-      <button class="week-nav-btn" id="c-week-next" onclick="changeClientWeek(1)">›</button>
-    </div>
     <div id="c-day-strip"></div>
     <div style="font-size:16px;font-weight:700;color:var(--black);margin-bottom:10px;">¡Vamos Con TODA Hoy CHAMP! 🏆</div>
     <div id="c-exercises-list"><div class="spinner"></div></div>
@@ -1653,11 +1648,7 @@ async function saveGoal() {
 }
 
 function updateClientWeekUI() {
-  document.getElementById('c-week-label').textContent = clientWeek===5?'Deload':'Semana '+clientWeek;
-  document.getElementById('c-week-sub').textContent = clientWeek===1?'Semana base':clientWeek===5?'Deload':'Progresión';
   document.getElementById('c-greeting-week').textContent = clientWeek===5?'Semana 5 · Deload':'Semana '+clientWeek+' de tu plan mensual 💪';
-  document.getElementById('c-week-prev').disabled = clientWeek<=1;
-  document.getElementById('c-week-next').disabled = clientWeek>=5;
   document.getElementById('c-week-num').textContent = clientWeek;
 }
 
@@ -1678,93 +1669,125 @@ async function loadClientDayStrip() {
     const today = getTodayName();
     clientDay = hasDays.includes(today) ? today : (hasDays[0]||null);
   }
+
+  // ── Combined week + day card ──
+  const card = document.createElement('div');
+  card.style.cssText = 'background:var(--white);border:2px solid var(--orange);border-radius:16px;overflow:visible;box-shadow:0 2px 12px rgba(232,76,22,0.1);margin-bottom:16px;position:relative;';
+
+  // Top label
+  const topLabel = document.createElement('div');
+  topLabel.style.cssText = 'font-size:10px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:0.12em;padding:12px 16px 0;';
+  topLabel.textContent = 'Entrenando hoy';
+  card.appendChild(topLabel);
+
+  // ── Week row ──
+  const weekRow = document.createElement('div');
+  weekRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:6px 12px 10px;';
+
+  const prevBtn = document.createElement('button');
+  prevBtn.style.cssText = 'width:30px;height:30px;border-radius:50%;border:1.5px solid var(--gray2);background:var(--gray1);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+  prevBtn.textContent = '‹';
+  prevBtn.disabled = clientWeek <= 1;
+  if(clientWeek <= 1) prevBtn.style.opacity = '0.3';
+  prevBtn.onclick = () => { clientWeek = Math.max(1, clientWeek-1); clientDay=null; updateClientWeekUI(); loadClientDayStrip(); };
+
+  const weekCenter = document.createElement('div');
+  weekCenter.style.cssText = 'text-align:center;flex:1;';
+  const weekName = document.createElement('div');
+  weekName.style.cssText = "font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--black);";
+  weekName.textContent = clientWeek===5?'Deload':'Semana '+clientWeek;
+  const weekSub = document.createElement('div');
+  weekSub.style.cssText = 'font-size:11px;color:var(--orange);font-weight:600;margin-top:1px;';
+  weekSub.textContent = clientWeek===1?'Semana base':clientWeek===5?'Deload':'Progresión';
+  weekCenter.appendChild(weekName);
+  weekCenter.appendChild(weekSub);
+
+  const nextBtn = document.createElement('button');
+  nextBtn.style.cssText = 'width:30px;height:30px;border-radius:50%;border:1.5px solid var(--gray2);background:var(--gray1);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+  nextBtn.textContent = '›';
+  nextBtn.disabled = clientWeek >= 5;
+  if(clientWeek >= 5) nextBtn.style.opacity = '0.3';
+  nextBtn.onclick = () => { clientWeek = Math.min(5, clientWeek+1); clientDay=null; updateClientWeekUI(); loadClientDayStrip(); };
+
+  weekRow.appendChild(prevBtn);
+  weekRow.appendChild(weekCenter);
+  weekRow.appendChild(nextBtn);
+  card.appendChild(weekRow);
+
+  // ── Divider ──
+  const divider = document.createElement('div');
+  divider.style.cssText = 'height:1px;background:var(--gray2);margin:0 16px;';
+  card.appendChild(divider);
+
   if(hasDays.length === 0) {
-    strip.innerHTML='<div style="font-size:13px;color:var(--gray4);padding:6px 0 14px;">Sin días de entrenamiento esta semana.</div>';
+    const empty = document.createElement('div');
+    empty.style.cssText = 'font-size:13px;color:var(--gray4);padding:14px 16px;';
+    empty.textContent = 'Sin días de entrenamiento esta semana.';
+    card.appendChild(empty);
+    strip.appendChild(card);
     loadClientExercises();
     return;
   }
 
+  // ── Day dropdown trigger ──
   const selectedLabel = getDayShortLabel(clientDay, hasDays.indexOf(clientDay));
 
-  // --- Dropdown wrapper ---
-  const wrapper = document.createElement('div');
-  wrapper.style.cssText = 'position:relative;margin-bottom:16px;';
-
-  // Trigger button
   const trigger = document.createElement('div');
-  trigger.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--white);border:2px solid var(--orange);border-radius:14px;cursor:pointer;user-select:none;box-shadow:0 2px 10px rgba(232,76,22,0.1);';
+  trigger.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;user-select:none;';
 
-  const triggerLeft = document.createElement('div');
-  const topLabel = document.createElement('div');
-  topLabel.style.cssText = 'font-size:10px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:3px;';
-  topLabel.textContent = 'Entrenando hoy';
-  const selectedLabelEl = document.createElement('div');
-  selectedLabelEl.id = 'c-day-selected-label';
-  selectedLabelEl.style.cssText = 'font-size:17px;font-weight:700;color:var(--black);';
-  selectedLabelEl.textContent = selectedLabel;
-  triggerLeft.appendChild(topLabel);
-  triggerLeft.appendChild(selectedLabelEl);
+  const dayLabelEl = document.createElement('div');
+  dayLabelEl.style.cssText = 'font-size:17px;font-weight:700;color:var(--black);';
+  dayLabelEl.textContent = selectedLabel;
 
   const arrow = document.createElement('span');
-  arrow.style.cssText = 'font-size:22px;color:var(--orange);line-height:1;transition:transform 0.2s;display:block;';
+  arrow.style.cssText = 'font-size:20px;color:var(--orange);line-height:1;transition:transform 0.2s;';
   arrow.textContent = '▾';
 
-  trigger.appendChild(triggerLeft);
+  trigger.appendChild(dayLabelEl);
   trigger.appendChild(arrow);
+  card.appendChild(trigger);
 
-  // Dropdown list
+  // ── Dropdown list (absolute, outside card overflow) ──
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:relative;';
+
   const list = document.createElement('div');
-  list.style.cssText = 'display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--white);border:1.5px solid var(--gray2);border-radius:14px;overflow:hidden;z-index:100;box-shadow:0 8px 28px rgba(0,0,0,0.12);';
+  list.style.cssText = 'display:none;position:absolute;top:4px;left:0;right:0;background:var(--white);border:1.5px solid var(--gray2);border-radius:14px;overflow:hidden;z-index:100;box-shadow:0 8px 28px rgba(0,0,0,0.12);';
 
   hasDays.forEach((day, idx) => {
     const label = getDayShortLabel(day, idx);
     const isActive = day === clientDay;
     const item = document.createElement('div');
-    item.style.cssText = `padding:14px 16px;font-size:15px;font-weight:${isActive?'700':'500'};cursor:pointer;`
+    item.style.cssText = `padding:13px 16px;font-size:15px;font-weight:${isActive?'700':'500'};cursor:pointer;`
       + `color:${isActive?'var(--orange)':'var(--black)'};background:${isActive?'var(--orange-light)':'var(--white)'};`
       + `display:flex;align-items:center;justify-content:space-between;`
       + (idx < hasDays.length-1 ? 'border-bottom:1px solid var(--gray1);' : '');
     const nameSpan = document.createElement('span');
     nameSpan.textContent = label;
     item.appendChild(nameSpan);
-    if(isActive) {
-      const check = document.createElement('span');
-      check.style.cssText = 'font-size:14px;color:var(--orange);';
-      check.textContent = '✓';
-      item.appendChild(check);
-    }
-    item.onclick = () => {
-      clientDay = day;
-      list.style.display = 'none';
-      arrow.style.transform = '';
-      loadClientDayStrip();
-    };
+    if(isActive){ const chk=document.createElement('span'); chk.style.cssText='font-size:14px;color:var(--orange);'; chk.textContent='✓'; item.appendChild(chk); }
+    item.onclick = () => { clientDay=day; list.style.display='none'; arrow.style.transform=''; loadClientDayStrip(); };
     list.appendChild(item);
   });
 
-  // Toggle open/close
   let open = false;
   trigger.onclick = () => {
     open = !open;
     list.style.display = open ? 'block' : 'none';
     arrow.style.transform = open ? 'rotate(180deg)' : '';
   };
-
-  // Close on outside click
   setTimeout(() => {
     document.addEventListener('click', function outsideClick(e) {
-      if(!wrapper.contains(e.target)) {
-        open = false;
-        list.style.display = 'none';
-        arrow.style.transform = '';
+      if(!card.contains(e.target) && !list.contains(e.target)) {
+        open=false; list.style.display='none'; arrow.style.transform='';
         document.removeEventListener('click', outsideClick);
       }
     });
   }, 0);
 
-  wrapper.appendChild(trigger);
   wrapper.appendChild(list);
-  strip.appendChild(wrapper);
+  card.appendChild(wrapper);
+  strip.appendChild(card);
 
   loadClientExercises();
 }
