@@ -758,6 +758,8 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
         oninput="document.getElementById('trainer-notes-save-btn').style.display='block'"
         style="width:100%;box-sizing:border-box;font-size:13px;line-height:1.5;resize:vertical;"></textarea>
     </div>
+    <div class="section-header"><div class="section-title">Seguimiento semanal</div></div>
+    <div id="coach-weekly-tracker" style="margin-bottom:4px;"></div>
     <div class="section-header"><div class="section-title">Registros del cliente</div><div class="section-action" onclick="toggleLogs()">Ver logs</div></div>
     <div id="coach-client-logs" style="display:none;"></div>
     <div class="section-header"><div class="section-title">Tu Plan MOVE</div><div class="section-action" onclick="showModal('modal-upload-pdf')">+ PDF</div></div>
@@ -1243,7 +1245,8 @@ const sb = createClient(
 
 // STATE
 let currentUser = null, currentClient = null, currentExercise = null;
-let clientWeek = 1, clientDay = null;
+let clientWeek = 1, clientDay = null, currentPlanDayId = null;
+let weeklyTrackerWeek = 1;
 let builderWeek = 1, builderDay = null;
 let exFormCount = 0;
 let selectedPdfFile = null;
@@ -1815,6 +1818,7 @@ async function loadClientExercises() {
   if(!currentClient){list.innerHTML='<div class="empty-state"><div class="empty-icon">🏋️</div><div class="empty-text">Sin rutina asignada.</div></div>';return;}
   const {data:planDay} = await sb.from('monthly_plans').select('*').eq('client_id',currentClient.id).eq('week_number',clientWeek).eq('day_of_week',clientDay).single();
   if(!planDay){list.innerHTML='<div class="empty-state"><div class="empty-icon">😴</div><div class="empty-text">Sin ejercicios para este día.</div></div>';return;}
+  currentPlanDayId = planDay.id;
   const {data:exs} = await sb.from('exercises').select('*').eq('plan_day_id',planDay.id).order('order_index');
   if(!exs||exs.length===0){list.innerHTML='<div class="empty-state"><div class="empty-icon">😴</div><div class="empty-text">Sin ejercicios para este día.</div></div>';return;}
 
@@ -2065,6 +2069,18 @@ async function handleFinishWorkout() {
     }
     await sb.from('clients').update(updates).eq('id',currentClient.id);
     currentClient.total_training_minutes = newTotal;
+    // Save per-session duration to workout_sessions
+    if(currentPlanDayId) {
+      try {
+        await sb.from('workout_sessions').upsert([{
+          client_id: currentClient.id,
+          plan_day_id: currentPlanDayId,
+          week_number: clientWeek,
+          session_date: today,
+          duration_minutes: addedMin
+        }], {onConflict:'client_id,plan_day_id'});
+      } catch(e) { console.warn('workout_sessions not ready:', e); }
+    }
     document.getElementById('c-days-trained').textContent = newDays;
     document.getElementById('c-profile-days').textContent = newDays;
     document.getElementById('c-total-time').textContent = `${Math.floor(newTotal/60)}h ${newTotal%60}min`;
@@ -3072,7 +3088,7 @@ async function openCoachClient(clientId) {
         </label>
       </span>
     </div>
-    <div class="payment-row"><span class="payment-key">Tiempo entrenado</span><span class="payment-val">${Math.floor((c.total_training_minutes||0)/60)}h ${(c.total_training_minutes||0)%60}min</span></div>
+    <div class="payment-row"><span class="payment-key">Tiempo entrenado</span><span class="payment-val payment-val-time">${Math.floor((c.total_training_minutes||0)/60)}h ${(c.total_training_minutes||0)%60}min</span></div>
     <div style="margin-top:14px;padding-top:12px;border-top:1.5px solid var(--gray2);">
       ${c.is_churn ? `<button onclick="toggleChurnClient(false)" style="width:100%;padding:10px;background:var(--green-light);color:var(--green);border:1.5px solid var(--green);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✅ Reactivar cliente</button>` : `<button onclick="toggleChurnClient(true)" style="width:100%;padding:10px;background:var(--red-light);color:var(--red);border:1.5px solid var(--red);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">👋 Marcar como Churn</button>`}
     </div>`;
@@ -3092,6 +3108,7 @@ async function openCoachClient(clientId) {
   loadCoachContractPanel();
   loadCoachAICounts(clientId);
   loadTrainerNotes(clientId);
+  loadWeeklyTracker(clientId);
   showScreen('screen-coach-client');
 }
 
@@ -3176,7 +3193,9 @@ function renderPlanOverview() {
 
 function selectPlanOverviewWeek(w) {
   planOverviewSelectedWeek = w;
+  weeklyTrackerWeek = w;
   renderPlanOverview();
+  if(currentClient) renderWeeklyTracker(currentClient.id);
 }
 
 async function togglePlanDay(planDayId, chipEl) {
@@ -4729,6 +4748,264 @@ async function loadDataScreen() {
 // ===== CLIENT LOGS =====
 let logsVisible = false;
 let logsFilterDate = null; // null = all
+
+// ===== WEEKLY TRAINING TRACKER (coach view) =====
+async function loadWeeklyTracker(clientId) {
+  const container = document.getElementById('coach-weekly-tracker');
+  if(!container || !clientId) return;
+  container.innerHTML = '<div class="spinner" style="width:18px;height:18px;margin:10px auto;"></div>';
+  weeklyTrackerWeek = planOverviewSelectedWeek || 1;
+  await renderWeeklyTracker(clientId);
+}
+
+async function renderWeeklyTracker(clientId) {
+  const container = document.getElementById('coach-weekly-tracker');
+  if(!container) return;
+  const week = weeklyTrackerWeek;
+
+  // 1. Plan days ordered correctly
+  const {data:planDays} = await sb.from('monthly_plans')
+    .select('id,day_of_week,day_order')
+    .eq('client_id', clientId)
+    .eq('week_number', week)
+    .order('day_order',{ascending:true,nullsFirst:false})
+    .order('id',{ascending:true});
+
+  const weekLabel = week===5?'Deload':'Semana '+week;
+  const weekSub = week===1?'Base':week===5?'Deload':'Progresión';
+
+  if(!planDays || planDays.length===0) {
+    container.innerHTML = `
+      <div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 14px;margin-bottom:8px;">
+        ${buildTrackerWeekNav(clientId, weekLabel, weekSub, week)}
+        <div style="font-size:13px;color:var(--gray4);padding:8px 0;">Sin días de entrenamiento esta semana.</div>
+      </div>`;
+    return;
+  }
+
+  const planDayIds = planDays.map(p=>p.id);
+
+  // 2. Get exercises for these plan days
+  const {data:exs} = await sb.from('exercises').select('id,plan_day_id').in('plan_day_id', planDayIds);
+  const exIds = (exs||[]).map(e=>e.id);
+
+  // 3. Get exercise_logs to know which days have been trained
+  let logsMap = {}; // plan_day_id → most recent logged_at
+  if(exIds.length > 0) {
+    const {data:logs} = await sb.from('exercise_logs')
+      .select('exercise_id,logged_at')
+      .in('exercise_id', exIds)
+      .order('logged_at',{ascending:false});
+    if(logs) {
+      logs.forEach(l => {
+        const ex = (exs||[]).find(e=>e.id===l.exercise_id);
+        if(!ex) return;
+        const pdId = ex.plan_day_id;
+        if(!logsMap[pdId]) logsMap[pdId] = l.logged_at;
+      });
+    }
+  }
+
+  // 4. Get workout_sessions for duration + id (for editing)
+  const {data:sessions} = await sb.from('workout_sessions')
+    .select('id,plan_day_id,duration_minutes,session_date')
+    .eq('client_id', clientId)
+    .in('plan_day_id', planDayIds);
+  const sessMap = {};
+  if(sessions) sessions.forEach(s=>{ sessMap[s.plan_day_id]=s; });
+
+  const done = planDays.filter(p=>logsMap[p.id]).length;
+  const total = planDays.length;
+
+  // 5. Render
+  const rows = planDays.map((pd,idx) => {
+    const label = getDayShortLabel(pd.day_of_week, idx);
+    const loggedAt = logsMap[pd.id];
+    const sess = sessMap[pd.id];
+    const completed = !!loggedAt;
+
+    let dateStr = '';
+    if(loggedAt) {
+      const d = new Date(loggedAt);
+      const now = new Date();
+      const diffDays = Math.floor((now - d)/(1000*60*60*24));
+      dateStr = diffDays===0?'hoy':diffDays===1?'ayer':diffDays+' días atrás';
+    }
+
+    const durMin = sess?.duration_minutes;
+    const durStr = durMin ? (durMin>=60?`${Math.floor(durMin/60)}h ${durMin%60}min`:`${durMin}min`) : '';
+    const sessId = sess?.id || '';
+
+    if(completed) {
+      return `
+        <div style="display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--gray1);">
+          <div style="width:18px;height:18px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <span style="color:white;font-size:9px;font-weight:900;">✓</span>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:700;color:var(--black);">${label}</div>
+            <div style="font-size:10px;color:var(--gray4);">${dateStr}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
+            ${sessId ? `
+              <span id="dur-display-${sessId}" onclick="startEditDuration('${sessId}','${durMin||0}')" style="font-size:11px;font-weight:600;color:var(--orange);cursor:pointer;background:var(--orange-light);padding:2px 7px;border-radius:6px;" title="Toca para editar">${durStr||'+ tiempo'}</span>
+              <span id="dur-edit-${sessId}" style="display:none;gap:3px;align-items:center;">
+                <input id="dur-input-${sessId}" type="number" min="1" max="300" style="width:52px;padding:3px 5px;border:1.5px solid var(--orange);border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;" placeholder="min">
+                <button onclick="saveSessionDuration('${sessId}','${clientId}')" style="background:var(--orange);color:white;border:none;border-radius:6px;padding:3px 7px;font-size:11px;font-weight:700;cursor:pointer;">✓</button>
+                <button onclick="cancelEditDuration('${sessId}','${durMin||0}')" style="background:var(--gray2);color:var(--gray5);border:none;border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;">✕</button>
+              </span>
+            ` : `<span style="font-size:10px;color:var(--gray3);">sin sesión</span>`}
+            <button onclick="toggleDayLogs('${pd.id}','${label.replace(/'/g,"\\'")}',this)" style="background:none;border:none;color:var(--orange);font-size:11px;font-weight:700;cursor:pointer;padding:2px 4px;">Logs ›</button>
+          </div>
+        </div>
+        <div id="day-logs-${pd.id}" style="display:none;"></div>`;
+    } else {
+      return `
+        <div style="display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--gray1);">
+          <div style="width:18px;height:18px;border-radius:50%;border:1.5px solid var(--gray3);flex-shrink:0;"></div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:500;color:var(--gray4);">${label}</div>
+            <div style="font-size:10px;color:var(--gray3);">pendiente</div>
+          </div>
+        </div>`;
+    }
+  }).join('');
+
+  const pct = Math.round((done/total)*100);
+  const progressBar = `
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--gray2);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+        <span style="font-size:11px;font-weight:700;color:var(--black);">${done} / ${total} días completados</span>
+        <span style="font-size:11px;font-weight:700;color:var(--orange);">${pct}%</span>
+      </div>
+      <div style="height:5px;background:var(--gray2);border-radius:3px;overflow:hidden;">
+        <div style="height:100%;width:${pct}%;background:var(--orange);border-radius:3px;transition:width .3s;"></div>
+      </div>
+    </div>`;
+
+  container.innerHTML = `
+    <div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 14px;margin-bottom:8px;">
+      ${buildTrackerWeekNav(clientId, weekLabel, weekSub, week)}
+      <div style="border-top:1px solid var(--gray2);margin-bottom:2px;"></div>
+      ${rows}
+      ${progressBar}
+    </div>`;
+}
+
+function buildTrackerWeekNav(clientId, weekLabel, weekSub, week) {
+  return `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <button onclick="changeTrackerWeek(${week-1},'${clientId}')" ${week<=1?'disabled':''} style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--gray2);background:var(--gray1);font-size:15px;cursor:pointer;${week<=1?'opacity:0.3;':''};display:flex;align-items:center;justify-content:center;">‹</button>
+      <div style="text-align:center;">
+        <div style="font-family:'Playfair Display',serif;font-size:14px;font-weight:700;">${weekLabel}</div>
+        <div style="font-size:10px;color:var(--orange);font-weight:600;">${weekSub}</div>
+      </div>
+      <button onclick="changeTrackerWeek(${week+1},'${clientId}')" ${week>=5?'disabled':''} style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--gray2);background:var(--gray1);font-size:15px;cursor:pointer;${week>=5?'opacity:0.3;':''};display:flex;align-items:center;justify-content:center;">›</button>
+    </div>`;
+}
+
+async function changeTrackerWeek(week, clientId) {
+  weeklyTrackerWeek = Math.max(1, Math.min(5, week));
+  await renderWeeklyTracker(clientId);
+}
+
+async function toggleDayLogs(planDayId, label, btn) {
+  const container = document.getElementById('day-logs-'+planDayId);
+  if(!container) return;
+  const isOpen = container.style.display !== 'none';
+  if(isOpen) { container.style.display='none'; btn.textContent='Logs ›'; return; }
+  btn.textContent='Logs ↓';
+  container.style.display='block';
+  if(container.innerHTML) return;
+  container.innerHTML = '<div class="spinner" style="width:14px;height:14px;margin:6px auto;"></div>';
+  const {data:exs} = await sb.from('exercises').select('id,name').eq('plan_day_id', planDayId).order('order_index');
+  if(!exs||exs.length===0){container.innerHTML='';return;}
+  const exIds = exs.map(e=>e.id);
+  const {data:logs} = await sb.from('exercise_logs').select('*').in('exercise_id',exIds).order('logged_at',{ascending:false});
+  if(!logs||logs.length===0){container.innerHTML='<div style="font-size:12px;color:var(--gray4);padding:6px 0;">Sin logs guardados.</div>';return;}
+  // Group by exercise
+  const byEx = {};
+  exs.forEach(e=>{ byEx[e.id]={name:e.name,sets:[]}; });
+  logs.forEach(l=>{ if(byEx[l.exercise_id]) byEx[l.exercise_id].sets.push(l); });
+  const html = exs.map(e=>{
+    const sets = byEx[e.id].sets.sort((a,b)=>a.set_number-b.set_number);
+    if(!sets.length) return '';
+    const setRows = sets.map(s=>{
+      const diffColor = s.difficulty==='facil'?'#22c55e':'#E84C16';
+      const diffLabel = s.difficulty==='facil'?'Fácil':'Difícil';
+      const diffSpan = s.difficulty ? `<span style="color:${diffColor};">${diffLabel}</span>` : '';
+      return `
+      <div style="display:flex;gap:10px;font-size:11px;color:var(--gray5);padding:2px 0;">
+        <span style="color:var(--gray4);">Set ${s.set_number}</span>
+        <span>${s.weight?s.weight+(s.weight_unit||'kg'):'-'}</span>
+        <span>${s.reps_done?s.reps_done+' reps':'-'}</span>
+        ${diffSpan}
+      </div>`;
+    }).join('');
+    return `<div style="padding:6px 0 2px;border-bottom:1px solid var(--gray1);">
+      <div style="font-size:12px;font-weight:700;margin-bottom:3px;">${e.name}</div>
+      ${setRows}
+    </div>`;
+  }).filter(Boolean).join('');
+  container.innerHTML = `<div style="background:var(--gray1);border-radius:8px;padding:8px 10px;margin:4px 0 6px;">${html||'Sin datos'}</div>`;
+}
+
+function startEditDuration(sessId, currentMin) {
+  document.getElementById('dur-display-'+sessId).style.display='none';
+  const editEl = document.getElementById('dur-edit-'+sessId);
+  editEl.style.display='inline-flex';
+  const inp = document.getElementById('dur-input-'+sessId);
+  inp.value = currentMin > 0 ? currentMin : '';
+  inp.focus();
+}
+
+function cancelEditDuration(sessId, currentMin) {
+  const durStr = currentMin>0?(currentMin>=60?`${Math.floor(currentMin/60)}h ${currentMin%60}min`:`${currentMin}min`):'+ tiempo';
+  document.getElementById('dur-display-'+sessId).textContent = durStr;
+  document.getElementById('dur-display-'+sessId).style.display='';
+  document.getElementById('dur-edit-'+sessId).style.display='none';
+}
+
+async function saveSessionDuration(sessId, clientId) {
+  const inp = document.getElementById('dur-input-'+sessId);
+  const newMin = parseInt(inp.value);
+  if(!newMin || newMin < 1 || newMin > 600) { showToast('⚠️ Ingresá entre 1 y 600 minutos'); return; }
+
+  // Get old value to recalculate total
+  const {data:sess} = await sb.from('workout_sessions').select('duration_minutes,client_id').eq('id',sessId).single();
+  const oldMin = sess?.duration_minutes || 0;
+  const diff = newMin - oldMin;
+
+  // Update session duration
+  await sb.from('workout_sessions').update({duration_minutes:newMin}).eq('id',sessId);
+
+  // Recalculate client total
+  if(diff !== 0) {
+    const {data:cl} = await sb.from('clients').select('total_training_minutes').eq('id',clientId).single();
+    const newTotal = Math.max(0, (cl?.total_training_minutes||0) + diff);
+    await sb.from('clients').update({total_training_minutes:newTotal}).eq('id',clientId);
+  }
+
+  // Update UI
+  const durStr = newMin>=60?`${Math.floor(newMin/60)}h ${newMin%60}min`:`${newMin}min`;
+  const display = document.getElementById('dur-display-'+sessId);
+  display.textContent = durStr;
+  display.style.display='';
+  document.getElementById('dur-edit-'+sessId).style.display='none';
+  document.getElementById('dur-input-'+sessId).setAttribute('data-val', newMin);
+  showToast('✅ Tiempo actualizado');
+
+  // Reload payment card total time
+  if(currentClient) {
+    const {data:updatedClient} = await sb.from('clients').select('total_training_minutes').eq('id',clientId).single();
+    if(updatedClient) {
+      currentClient.total_training_minutes = updatedClient.total_training_minutes;
+      const t = updatedClient.total_training_minutes||0;
+      const timeEl = document.querySelector('.payment-val-time');
+      if(timeEl) timeEl.textContent = `${Math.floor(t/60)}h ${t%60}min`;
+    }
+  }
+}
 
 async function toggleLogs() {
   const container = document.getElementById('coach-client-logs');
