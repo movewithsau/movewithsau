@@ -3006,7 +3006,7 @@ async function openCopyTestModal(btn) {
   
   const sel = document.getElementById('copy-test-client-select');
   sel.innerHTML = '<option value="">Cargando...</option>';
-  const {data: clients} = await sb.from('clients').select('id,name').eq('coach_id', currentUser.id).order('name');
+  const {data: clients} = await sb.from('clients').select('id,name').eq('coach_id', currentUser.id).eq('is_churn', false).order('name');
   sel.innerHTML = '<option value="">Seleccionar cliente...</option>';
   if (clients) {
     clients.forEach(c => {
@@ -3096,7 +3096,7 @@ async function openCreateTestModal() {
   // Populate client dropdown
   const sel = document.getElementById('test-client-select');
   sel.innerHTML = '<option value="">Cargando...</option>';
-  const {data: clients} = await sb.from('clients').select('id,name').eq('coach_id', currentUser.id).order('name');
+  const {data: clients} = await sb.from('clients').select('id,name').eq('coach_id', currentUser.id).eq('is_churn', false).order('name');
   sel.innerHTML = '<option value="">Seleccionar cliente...</option>';
   if(clients) {
     clients.forEach(c => {
@@ -3952,6 +3952,7 @@ async function loadTemplates() {
           <button class="tpl-btn tpl-btn-edit" style="flex:1;" onclick="openTemplateEditor('${t.id}')">⚙️ Ajustes</button>
           <button class="tpl-btn tpl-btn-delete" style="flex:1;" onclick="deleteTemplate('${t.id}','${safeNameAttr}')">🗑️ Borrar</button>
         </div>
+        <button class="tpl-btn" style="width:100%;margin-top:6px;background:#e8f5e9;color:#2e7d32;border:1.5px solid #43a047;" onclick="openAssignProgramaToClientModal('${t.id}','${safeNameAttr}')">👤 Asignar a cliente</button>
       </div>
     `;
     list.appendChild(card);
@@ -4716,6 +4717,7 @@ async function loadWorkouts() {
           <button class="tpl-btn" style="flex:1;background:var(--orange-light);color:var(--orange);border:1.5px solid var(--orange);" onclick="openWorkoutEditor('${w.id}','${safeNameAttr}')">✏️ Editar</button>
           <button class="tpl-btn tpl-btn-delete" style="flex:1;" onclick="deleteWorkout('${w.id}','${safeNameAttr}')">🗑️ Borrar</button>
         </div>
+        <button class="tpl-btn" style="width:100%;margin-top:6px;background:#e8f5e9;color:#2e7d32;border:1.5px solid #43a047;" onclick="openPasteWorkoutToClientModal('${w.id}','${safeNameAttr}')">👤 Pegar en cliente</button>
       </div>
     `;
     list.appendChild(card);
@@ -4832,6 +4834,124 @@ async function openWorkoutEditor(workoutId, name) {
 }
 
 // (workout editor now uses screen-template-editor — see openWorkoutEditor)
+
+// ===== ASSIGN PROGRAMA TO CLIENT (from library) =====
+let _assignProgLibTemplateId = null;
+
+async function openAssignProgramaToClientModal(templateId, templateName) {
+  _assignProgLibTemplateId = templateId;
+  document.getElementById('assign-prog-name-label').textContent = '📋 ' + templateName;
+  const sel = document.getElementById('assign-prog-client-select');
+  sel.innerHTML = '<option value="">Cargando...</option>';
+  const { data: clients } = await sb.from('clients').select('id,name').eq('coach_id', currentUser.id).eq('is_churn', false).order('name');
+  sel.innerHTML = '<option value="">Selecciona un cliente...</option>';
+  if (clients) clients.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.name; sel.appendChild(o); });
+  showModal('modal-assign-programa-to-client');
+}
+
+async function confirmAssignProgramaToClient() {
+  const clientId = document.getElementById('assign-prog-client-select').value;
+  if (!clientId) { showToast('⚠️ Selecciona un cliente'); return; }
+  if (!_assignProgLibTemplateId) return;
+  if (!confirm('¿Asignar este programa? Reemplazará el plan actual del cliente.')) return;
+  closeModal('modal-assign-programa-to-client');
+  showToast('⏳ Generando plan...');
+  // Reuse existing assignTemplateToClient logic — temporarily set the selects
+  // Get template days
+  const { data: days } = await sb.from('template_days').select('*').eq('template_id', _assignProgLibTemplateId).order('day_order');
+  if (!days || days.length === 0) { showToast('⚠️ El programa no tiene días configurados'); return; }
+  // Delete existing plan for client
+  const { data: oldDays } = await sb.from('monthly_plans').select('id').eq('client_id', clientId);
+  if (oldDays) {
+    for (const od of oldDays) { await sb.from('exercises').delete().eq('plan_day_id', od.id); }
+    await sb.from('monthly_plans').delete().eq('client_id', clientId);
+  }
+  // Create 4 weeks × each day
+  for (let week = 1; week <= 4; week++) {
+    for (const day of days) {
+      const { data: newPd } = await sb.from('monthly_plans').insert([{ client_id: clientId, week_number: week, day_of_week: day.day_name }]).select().single();
+      if (!newPd) continue;
+      const { data: exs } = await sb.from('template_exercises').select('*').eq('template_day_id', day.id).order('exercise_order');
+      if (!exs) continue;
+      const setsKey = ['sets_week1','sets_week2','sets_week3','sets_week4'];
+      const toInsert = exs.map((e, idx) => ({
+        plan_day_id: newPd.id, name: e.exercise_name,
+        sets: e[setsKey[week-1]] || 3,
+        reps_range: e.reps || '10-12', rest_seconds: e.rest_seconds || 90,
+        tag: 'Peso Libre', muscle_group: e.muscle_groups || null,
+        video_url: e.video_url || null, notes: e.notes || null,
+        superset_group: e.superset_group || null, order_index: idx
+      }));
+      if (toInsert.length > 0) await sb.from('exercises').insert(toInsert);
+    }
+  }
+  showToast('✅ Programa asignado exitosamente');
+  _assignProgLibTemplateId = null;
+}
+
+// ===== PASTE WORKOUT TO CLIENT (from library) =====
+let _pasteWktLibWorkoutId = null;
+const DAY_OPTIONS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+
+async function openPasteWorkoutToClientModal(workoutId, workoutName) {
+  _pasteWktLibWorkoutId = workoutId;
+  document.getElementById('paste-wkt-client-name-label').textContent = '🏋️ ' + workoutName;
+  const sel = document.getElementById('paste-wkt-client-select');
+  sel.innerHTML = '<option value="">Cargando...</option>';
+  const { data: clients } = await sb.from('clients').select('id,name').eq('coach_id', currentUser.id).eq('is_churn', false).order('name');
+  sel.innerHTML = '<option value="">Selecciona un cliente...</option>';
+  if (clients) clients.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.name; sel.appendChild(o); });
+  // Populate day select with standard days
+  const daySel = document.getElementById('paste-wkt-client-day-select');
+  daySel.innerHTML = '<option value="">Selecciona un día...</option>' + DAY_OPTIONS.map(d => `<option value="${d}">${d}</option>`).join('');
+  ['pwc-wk1','pwc-wk2','pwc-wk3','pwc-wk4'].forEach(id => { const el = document.getElementById(id); if(el) el.checked = false; });
+  showModal('modal-paste-workout-to-client');
+}
+
+async function loadDaysForPasteClient(clientId) {
+  if (!clientId) return;
+  // Load existing days from client's plan to offer as options
+  const { data: pds } = await sb.from('monthly_plans').select('day_of_week').eq('client_id', clientId);
+  const existingDays = pds ? [...new Set(pds.map(p => p.day_of_week))] : [];
+  const allDays = [...new Set([...DAY_OPTIONS, ...existingDays])];
+  const daySel = document.getElementById('paste-wkt-client-day-select');
+  daySel.innerHTML = '<option value="">Selecciona un día...</option>' + allDays.map(d => `<option value="${d}">${d}</option>`).join('');
+}
+
+async function confirmPasteWorkoutToClient() {
+  const clientId = document.getElementById('paste-wkt-client-select').value;
+  const day = document.getElementById('paste-wkt-client-day-select').value;
+  if (!clientId) { showToast('⚠️ Selecciona un cliente'); return; }
+  if (!day) { showToast('⚠️ Selecciona un día'); return; }
+  if (!_pasteWktLibWorkoutId) return;
+  const checkedWeeks = [1,2,3,4].filter(w => document.getElementById('pwc-wk'+w)?.checked);
+  const weeksToApply = checkedWeeks.length > 0 ? checkedWeeks : [1,2,3,4];
+  const weekLabel = checkedWeeks.length > 0 ? 'S' + checkedWeeks.join(', S') : 'todas las semanas';
+  if (!confirm(`¿Pegar workout en "${day}" (${weekLabel}) de este cliente? Reemplazará los ejercicios existentes.`)) return;
+  closeModal('modal-paste-workout-to-client');
+  showToast('⏳ Pegando workout...');
+  const { data: exs } = await sb.from('workout_exercises').select('*').eq('workout_id', _pasteWktLibWorkoutId).order('exercise_order');
+  if (!exs || exs.length === 0) { showToast('⚠️ El workout no tiene ejercicios'); return; }
+  const setsKey = ['sets_week1','sets_week2','sets_week3','sets_week4'];
+  for (const week of weeksToApply) {
+    let { data: pd } = await sb.from('monthly_plans').select('id').eq('client_id', clientId).eq('week_number', week).eq('day_of_week', day).maybeSingle();
+    if (!pd) {
+      const { data: newPd } = await sb.from('monthly_plans').insert([{ client_id: clientId, week_number: week, day_of_week: day }]).select().single();
+      pd = newPd;
+    }
+    if (!pd) continue;
+    await sb.from('exercises').delete().eq('plan_day_id', pd.id);
+    const toInsert = exs.map((e, idx) => ({
+      plan_day_id: pd.id, name: e.exercise_name,
+      sets: e[setsKey[week-1]] != null ? e[setsKey[week-1]] : (e.sets_week1 || 3),
+      reps_range: e.reps || '10-12', rest_seconds: e.rest_seconds || 90,
+      tag: 'Peso Libre', order_index: idx
+    }));
+    await sb.from('exercises').insert(toInsert);
+  }
+  showToast('✅ Workout pegado en ' + weekLabel);
+  _pasteWktLibWorkoutId = null;
+}
 
 // ===== BLOQUES =====
 let currentBloqueIdForEditor = null;
@@ -5561,7 +5681,7 @@ async function loadDataScreen() {
   legend.innerHTML = '';
 
   // Get all clients for this coach
-  const {data:clients} = await sb.from('clients').select('id,name,days_trained').eq('coach_id',currentUser.id);
+  const {data:clients} = await sb.from('clients').select('id,name,days_trained').eq('coach_id',currentUser.id).eq('is_churn',false);
   if(!clients||clients.length===0){
     container.innerHTML='<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">Sin clientes aún.</div></div>';
     return;
@@ -8246,6 +8366,57 @@ async function toggleHabit(habitId, checked) {
     </div>
     <button class="btn-primary" onclick="createNewTemplate()">Crear Machote</button>
     <button onclick="closeModal('modal-new-template')" class="btn-secondary" style="margin-top:10px;">Cancelar</button>
+  </div>
+</div>
+
+<!-- ===== MODAL: ASIGNAR PROGRAMA A CLIENTE (from library) ===== -->
+<div class="modal-overlay" id="modal-assign-programa-to-client">
+  <div class="modal-card">
+    <span class="modal-close" onclick="closeModal('modal-assign-programa-to-client')">×</span>
+    <div class="modal-title">👤 Asignar Programa</div>
+    <div style="font-size:13px;font-weight:700;color:var(--black);margin-bottom:4px;" id="assign-prog-name-label"></div>
+    <div style="font-size:12px;color:var(--gray4);margin-bottom:16px;">Genera el plan de 4 semanas en el perfil del cliente seleccionado.</div>
+    <div class="form-group">
+      <label class="form-label">Cliente</label>
+      <select class="form-select" id="assign-prog-client-select">
+        <option value="">Selecciona un cliente...</option>
+      </select>
+    </div>
+    <div style="font-size:11px;color:var(--red);margin-bottom:14px;">⚠️ Esto reemplazará el plan actual del cliente.</div>
+    <button class="btn-primary" onclick="confirmAssignProgramaToClient()">✅ Asignar Programa</button>
+    <button onclick="closeModal('modal-assign-programa-to-client')" class="btn-secondary" style="margin-top:10px;">Cancelar</button>
+  </div>
+</div>
+
+<!-- ===== MODAL: PEGAR WORKOUT EN CLIENTE (from library) ===== -->
+<div class="modal-overlay" id="modal-paste-workout-to-client">
+  <div class="modal-card">
+    <span class="modal-close" onclick="closeModal('modal-paste-workout-to-client')">×</span>
+    <div class="modal-title">👤 Pegar Workout en Cliente</div>
+    <div style="font-size:13px;font-weight:700;color:var(--black);margin-bottom:4px;" id="paste-wkt-client-name-label"></div>
+    <div style="font-size:12px;color:var(--gray4);margin-bottom:16px;">Selecciona el cliente, día y semanas donde pegar este workout.</div>
+    <div class="form-group">
+      <label class="form-label">Cliente</label>
+      <select class="form-select" id="paste-wkt-client-select" onchange="loadDaysForPasteClient(this.value)">
+        <option value="">Selecciona un cliente...</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Día</label>
+      <select class="form-select" id="paste-wkt-client-day-select">
+        <option value="">Selecciona un día...</option>
+      </select>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--gray5);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Semanas (vacío = todas)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:16px;">
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;cursor:pointer;"><input type="checkbox" id="pwc-wk1" style="accent-color:var(--orange);"> S1</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;cursor:pointer;"><input type="checkbox" id="pwc-wk2" style="accent-color:var(--orange);"> S2</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;cursor:pointer;"><input type="checkbox" id="pwc-wk3" style="accent-color:var(--orange);"> S3</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;cursor:pointer;"><input type="checkbox" id="pwc-wk4" style="accent-color:var(--orange);"> S4</label>
+    </div>
+    <div style="font-size:11px;color:var(--red);margin-bottom:14px;">⚠️ Reemplazará los ejercicios existentes en ese día.</div>
+    <button class="btn-primary" onclick="confirmPasteWorkoutToClient()">✅ Pegar Workout</button>
+    <button onclick="closeModal('modal-paste-workout-to-client')" class="btn-secondary" style="margin-top:10px;">Cancelar</button>
   </div>
 </div>
 
