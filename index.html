@@ -805,6 +805,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:var(--orange-light);border-style:solid;" onclick="openLibrary()">📚 Biblioteca</button>
       <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:var(--blue-light);border-color:var(--blue);color:var(--blue);border-style:solid;" onclick="showCopyDayModal()">📋 Copiar día</button>
       <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:#f0fff4;border-color:#38a169;color:#38a169;border-style:solid;" onclick="openPasteWorkoutModal()">🏋️ Pegar Workout</button>
+      <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:#f5f0ff;border-color:#7c3aed;color:#7c3aed;border-style:solid;" onclick="openPasteBloqueModal()">🧱 Agregar Bloque</button>
       <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:#fff0f0;border-color:#e53e3e;color:#e53e3e;border-style:solid;" onclick="deleteTrainingDay(builderDay, builderDay)">🗑️ Borrar día</button>
     </div>
     <button class="btn-primary" style="margin-top:10px;" onclick="savePlanDay()">Guardar día</button>
@@ -889,6 +890,7 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
   <div style="display:flex;border-bottom:2px solid var(--gray2);background:var(--white);position:sticky;top:0;z-index:10;">
     <div id="mtab-programas" onclick="switchMachotesTab('programas')" style="flex:1;text-align:center;padding:14px 8px 12px;font-size:13px;font-weight:700;color:var(--orange);border-bottom:2px solid var(--orange);margin-bottom:-2px;cursor:pointer;">📋 Programas</div>
     <div id="mtab-workouts" onclick="switchMachotesTab('workouts')" style="flex:1;text-align:center;padding:14px 8px 12px;font-size:13px;font-weight:700;color:var(--gray4);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;">🏋️ Workouts</div>
+    <div id="mtab-bloques" onclick="switchMachotesTab('bloques')" style="flex:1;text-align:center;padding:14px 8px 12px;font-size:13px;font-weight:700;color:var(--gray4);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;">🧱 Bloques</div>
   </div>
   <div class="scroll-body">
     <!-- PROGRAMAS PANEL -->
@@ -924,6 +926,15 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
         <div class="filter-chip" onclick="setWorkoutFilter('Femenino',this)">🌸 Femenino</div>
       </div>
       <div id="workouts-list"><div class="spinner"></div></div>
+    </div>
+    <!-- BLOQUES PANEL -->
+    <div id="machotes-panel-bloques" style="display:none;">
+      <div style="margin-bottom:6px;margin-top:8px;">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Biblioteca</div>
+        <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;">Bloques</div>
+        <div style="font-size:12px;color:var(--gray4);margin-top:4px;">Grupos de ejercicios para agregar a cualquier día sin borrar nada.</div>
+      </div>
+      <div id="bloques-list"><div class="spinner" style="display:none;"></div></div>
     </div>
   </div>
   <div class="bottom-nav">
@@ -4337,6 +4348,10 @@ async function tplEditorSave() {
     await saveWorkoutFromEditor();
     return;
   }
+  if (tplEditorMode === 'bloque') {
+    await saveBloqueFromEditor();
+    return;
+  }
   if (tplSingleDayId) {
     await saveSingleDay();
   } else {
@@ -4631,8 +4646,9 @@ function switchMachotesTab(tab) {
   currentMachotesTab = tab;
   document.getElementById('machotes-panel-programas').style.display = tab === 'programas' ? 'block' : 'none';
   document.getElementById('machotes-panel-workouts').style.display = tab === 'workouts' ? 'block' : 'none';
+  document.getElementById('machotes-panel-bloques').style.display = tab === 'bloques' ? 'block' : 'none';
   // Update tab styles
-  const tabs = ['programas','workouts'];
+  const tabs = ['programas','workouts','bloques'];
   tabs.forEach(t => {
     const el = document.getElementById('mtab-' + t);
     if (!el) return;
@@ -4645,8 +4661,10 @@ function switchMachotesTab(tab) {
   if (newBtn) {
     if (tab === 'programas') { newBtn.onclick = () => openNewTemplateModal(); newBtn.textContent = '+ Nuevo'; }
     else if (tab === 'workouts') { newBtn.onclick = () => openNewWorkoutModal(); newBtn.textContent = '+ Workout'; }
+    else if (tab === 'bloques') { newBtn.onclick = () => openNewBloqueModal(); newBtn.textContent = '+ Bloque'; }
   }
   if (tab === 'workouts') loadWorkouts();
+  if (tab === 'bloques') loadBloques();
 }
 
 // ===== WORKOUT TEMPLATES =====
@@ -4814,6 +4832,307 @@ async function openWorkoutEditor(workoutId, name) {
 }
 
 // (workout editor now uses screen-template-editor — see openWorkoutEditor)
+
+// ===== BLOQUES =====
+let currentBloqueIdForEditor = null;
+
+function openNewBloqueModal() {
+  showModal('modal-new-bloque');
+  document.getElementById('new-blq-name').value = '';
+}
+
+async function createNewBloque() {
+  const name = document.getElementById('new-blq-name').value.trim();
+  if (!name) { showToast('⚠️ Escribe un nombre'); return; }
+  const { data, error } = await sb.from('block_templates').insert([{ name }]).select().single();
+  if (error) { showToast('❌ ' + error.message); return; }
+  closeModal('modal-new-bloque');
+  await openBloqueEditor(data.id, name);
+}
+
+async function loadBloques() {
+  const list = document.getElementById('bloques-list');
+  if (!list) return;
+  list.innerHTML = '<div class="spinner"></div>';
+  const { data: bloques, error } = await sb.from('block_templates').select('*').order('created_at', {ascending: false});
+  list.innerHTML = '';
+  if (error || !bloques || bloques.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--gray4);"><div style="font-size:32px;margin-bottom:8px;">🧱</div><div style="font-size:14px;font-weight:600;">Sin bloques aún</div><div style="font-size:12px;margin-top:4px;">Crea tu primer bloque de ejercicios</div></div>';
+    return;
+  }
+  for (const b of bloques) {
+    const { data: exs } = await sb.from('block_exercises').select('id,exercise_name,sets_week1,reps').eq('block_id', b.id).order('exercise_order');
+    const exCount = exs ? exs.length : 0;
+    const card = document.createElement('div');
+    card.className = 'tpl-card fade-up';
+    card.id = 'blq-card-' + b.id;
+    const safeName = (b.name||'').replace(/'/g,"\'").replace(/"/g,'&quot;');
+    card.innerHTML = `
+      <div onclick="toggleBloqueCard('${b.id}')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
+            <div class="tpl-card-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">🧱 ${b.name}</div>
+          </div>
+          <div class="tpl-card-meta" style="margin-bottom:0;">${exCount} ejercicio${exCount!==1?'s':''}</div>
+        </div>
+        <div id="blq-chevron-${b.id}" style="font-size:13px;color:var(--gray4);transition:transform 0.2s;flex-shrink:0;">▼</div>
+      </div>
+      <div id="blq-body-${b.id}" style="display:none;margin-top:14px;">
+        <div id="blq-ex-list-${b.id}" style="margin-bottom:12px;"></div>
+        <div style="display:flex;gap:6px;padding-top:10px;border-top:1.5px solid var(--gray2);">
+          <button class="tpl-btn" style="flex:1;background:var(--orange-light);color:var(--orange);border:1.5px solid var(--orange);" onclick="openBloqueEditor('${b.id}','${safeName}')">✏️ Editar</button>
+          <button class="tpl-btn tpl-btn-delete" style="flex:1;" onclick="deleteBloque('${b.id}','${safeName}')">🗑️ Borrar</button>
+        </div>
+      </div>
+    `;
+    list.appendChild(card);
+    const exContainer = document.getElementById('blq-ex-list-' + b.id);
+    if (exs && exs.length > 0 && exContainer) {
+      exContainer.innerHTML = exs.map(e => {
+        const prog = e.sets_week1 || '—';
+        return `<div class="tpl-day-ex-preview"><div class="tpl-day-ex-name">${e.exercise_name}</div><div class="tpl-day-ex-prog">${e.reps||''} · ${prog} series</div></div>`;
+      }).join('');
+    } else if (exContainer) {
+      exContainer.innerHTML = '<div style="font-size:12px;color:var(--gray4);padding:8px 0;">Sin ejercicios — toca Editar para agregar</div>';
+    }
+  }
+}
+
+function toggleBloqueCard(id) {
+  const body = document.getElementById('blq-body-' + id);
+  const chevron = document.getElementById('blq-chevron-' + id);
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
+async function deleteBloque(id, name) {
+  if (!confirm('¿Borrar el bloque "' + name + '"?')) return;
+  await sb.from('block_exercises').delete().eq('block_id', id);
+  await sb.from('block_templates').delete().eq('id', id);
+  showToast('🗑️ Bloque eliminado');
+  loadBloques();
+}
+
+async function openBloqueEditor(bloqueId, name) {
+  // Reuse template editor screen in bloque mode
+  tplEditorMode = 'bloque';
+  currentBloqueIdForEditor = bloqueId;
+  tplSingleDayId = 'bloque-day';
+  tplDayCount = 0; tplExCount = 0;
+  document.getElementById('template-editor-title').textContent = name || 'Editar Bloque';
+  document.getElementById('tpl-editor-back-btn').textContent = '‹ Bloques';
+  document.getElementById('tpl-editor-back-btn').onclick = () => {
+    tplEditorMode = 'template'; currentBloqueIdForEditor = null;
+    document.getElementById('screen-template-editor').dataset.mode = '';
+    document.getElementById('tpl-editor-back-btn').textContent = '‹ Machotes';
+    document.getElementById('tpl-editor-back-btn').onclick = tplEditorBack;
+    document.querySelectorAll('#screen-template-editor .scroll-body [data-hidden-by-workout-mode]').forEach(el => { el.style.display = ''; el.dataset.hiddenByWorkoutMode = ''; });
+    showScreen('screen-templates');
+    switchMachotesTab('bloques');
+  };
+  document.getElementById('screen-template-editor').dataset.mode = 'workout'; // reuse same CSS hiding
+  const scrollBody2 = document.querySelector('#screen-template-editor .scroll-body');
+  if (scrollBody2) {
+    [...scrollBody2.children].forEach(child => {
+      if (child.id !== 'tpl-days-section-header' && child.id !== 'tpl-days-list' && !child.style.height) {
+        child.style.display = 'none';
+        child.dataset.hiddenByWorkoutMode = '1';
+      }
+    });
+  }
+  showScreen('screen-template-editor');
+  const container = document.getElementById('tpl-days-list');
+  container.innerHTML = '';
+  tplDayCount = 0; tplExCount = 0;
+  const card = document.createElement('div');
+  card.className = 'tpl-day-card fade-up';
+  card.id = 'tpl-day-1';
+  card.dataset.dbId = 'bloque-' + bloqueId;
+  card.innerHTML = `
+    <div id="tpl-day-exs-1" style="margin-bottom:8px;"></div>
+    <div style="display:flex;gap:6px;">
+      <button class="add-ex-btn" style="flex:1;margin-top:0;font-size:12px;padding:9px;" onclick="addTemplateExercise(1)">+ Ejercicio</button>
+      <button class="add-ex-btn" style="flex:1;margin-top:0;font-size:12px;padding:9px;background:var(--orange-light);border-style:solid;" onclick="openLibraryForTemplate(1)">📚 Biblioteca</button>
+    </div>
+  `;
+  tplDayCount = 1;
+  container.appendChild(card);
+  const { data: exs } = await sb.from('block_exercises').select('*').eq('block_id', bloqueId).order('exercise_order');
+  if (exs) {
+    for (const ex of exs) {
+      addTemplateExercise(1, {
+        exercise_name: ex.exercise_name,
+        sets_week1: ex.sets_week1, sets_week2: ex.sets_week2,
+        sets_week3: ex.sets_week3, sets_week4: ex.sets_week4,
+        reps: ex.reps, rest_seconds: ex.rest_seconds,
+        notes: ex.notes, muscle_groups: ex.muscle_groups,
+        video_url: ex.video_url, superset_group: ex.superset_group,
+        circuit_rounds: ex.circuit_rounds, circuit_notes: ex.circuit_notes
+      });
+    }
+  }
+}
+
+// Save bloque from template editor screen
+async function saveBloqueFromEditor() {
+  if (!currentBloqueIdForEditor) return;
+  showToast('⏳ Guardando...');
+  const card = document.querySelector('#tpl-days-list .tpl-day-card');
+  if (!card) { showToast('⚠️ Sin ejercicios'); return; }
+  await sb.from('block_exercises').delete().eq('block_id', currentBloqueIdForEditor);
+  const exCards = card.querySelectorAll('.builder-ex-card');
+  const toInsert = [];
+  let exOrder = 0;
+  for (const exCard of exCards) {
+    const exIdStr = exCard.id.replace('tpl-ex-', '');
+    const exName = document.getElementById('tpl-ex-name-' + exIdStr)?.value.trim();
+    if (!exName) continue;
+    const w1v = document.getElementById('tpl-ex-w1-' + exIdStr)?.value;
+    const w2v = document.getElementById('tpl-ex-w2-' + exIdStr)?.value;
+    const w3v = document.getElementById('tpl-ex-w3-' + exIdStr)?.value;
+    const w4v = document.getElementById('tpl-ex-w4-' + exIdStr)?.value;
+    const reps = document.getElementById('tpl-ex-reps-' + exIdStr)?.value || '10-12';
+    const rest = parseInt(document.getElementById('tpl-ex-rest-' + exIdStr)?.value) || 90;
+    const notes = document.getElementById('tpl-ex-notes-' + exIdStr)?.value.trim() || null;
+    const muscleSel = document.getElementById('tpl-ex-muscle-' + exIdStr)?.value || '';
+    const muscle = muscleSel === 'custom' ? (document.getElementById('tpl-bmc-input-' + exIdStr)?.value.trim() || null) : (muscleSel || null);
+    const video = document.getElementById('tpl-ex-video-' + exIdStr)?.value.trim() || null;
+    const isCircuit = document.getElementById('tpl-ex-circuit-cb-' + exIdStr)?.checked || false;
+    const supersetGroup = isCircuit ? (document.getElementById('tpl-ex-circuit-group-' + exIdStr)?.value.trim() || 'A') : null;
+    const circuitRounds = isCircuit ? (parseInt(document.getElementById('tpl-ex-rounds-' + exIdStr)?.value) || null) : null;
+    const circuitNotes = isCircuit ? (document.getElementById('tpl-ex-circuit-notes-' + exIdStr)?.value.trim() || null) : null;
+    toInsert.push({
+      block_id: currentBloqueIdForEditor,
+      exercise_name: exName,
+      sets_week1: w1v ? parseInt(w1v) : null,
+      sets_week2: w2v ? parseInt(w2v) : null,
+      sets_week3: w3v ? parseInt(w3v) : null,
+      sets_week4: w4v ? parseInt(w4v) : null,
+      reps, rest_seconds: rest, notes, muscle_groups: muscle, video_url: video,
+      superset_group: supersetGroup, circuit_rounds: circuitRounds, circuit_notes: circuitNotes,
+      exercise_order: exOrder++
+    });
+    if (exName) await saveExerciseToLibrary(exName, 'Peso Libre', muscle, video);
+  }
+  if (toInsert.length > 0) {
+    const { error } = await sb.from('block_exercises').insert(toInsert);
+    if (error) { showToast('❌ ' + error.message); return; }
+  }
+  showToast('✅ Bloque guardado');
+  tplEditorMode = 'template';
+  currentBloqueIdForEditor = null;
+  document.getElementById('screen-template-editor').dataset.mode = '';
+  document.getElementById('tpl-editor-back-btn').textContent = '‹ Machotes';
+  document.getElementById('tpl-editor-back-btn').onclick = tplEditorBack;
+  document.querySelectorAll('#screen-template-editor .scroll-body [data-hidden-by-workout-mode]').forEach(el => { el.style.display = ''; el.dataset.hiddenByWorkoutMode = ''; });
+  showScreen('screen-templates');
+  switchMachotesTab('bloques');
+}
+
+// ===== PASTE BLOQUE TO CLIENT DAY =====
+function selectBloquePosition(pos) {
+  const startLabel = document.getElementById('blq-pos-start-label');
+  const endLabel = document.getElementById('blq-pos-end-label');
+  if (!startLabel || !endLabel) return;
+  if (pos === 'start') {
+    startLabel.style.borderColor = 'var(--orange)'; startLabel.style.background = 'var(--orange-light)';
+    startLabel.querySelector('span').style.color = 'var(--orange)';
+    endLabel.style.borderColor = 'var(--gray2)'; endLabel.style.background = 'var(--gray1)';
+    endLabel.querySelector('span').style.color = 'var(--gray5)';
+    document.querySelector('input[name="blq-position"][value="start"]').checked = true;
+  } else {
+    endLabel.style.borderColor = 'var(--orange)'; endLabel.style.background = 'var(--orange-light)';
+    endLabel.querySelector('span').style.color = 'var(--orange)';
+    startLabel.style.borderColor = 'var(--gray2)'; startLabel.style.background = 'var(--gray1)';
+    startLabel.querySelector('span').style.color = 'var(--gray5)';
+    document.querySelector('input[name="blq-position"][value="end"]').checked = true;
+  }
+}
+
+async function openPasteBloqueModal() {
+  if (!currentClient || !builderDay) { showToast('⚠️ Selecciona un día primero'); return; }
+  const { data: bloques } = await sb.from('block_templates').select('id,name').order('name');
+  const sel = document.getElementById('paste-blq-select');
+  sel.innerHTML = '<option value="">Selecciona un bloque...</option>';
+  if (bloques) bloques.forEach(b => { const o = document.createElement('option'); o.value = b.id; o.textContent = '🧱 ' + b.name; sel.appendChild(o); });
+  sel.onchange = () => loadPasteBloquePreview(sel.value);
+  document.getElementById('paste-blq-preview').innerHTML = '';
+  document.getElementById('paste-blq-target-label').textContent = (currentClient.name||'Cliente') + ' · ' + builderDay + ' · Sem ' + builderWeek;
+  ['blq-wk1','blq-wk2','blq-wk3','blq-wk4'].forEach(id => { const el = document.getElementById(id); if(el) el.checked = false; });
+  selectBloquePosition('start');
+  showModal('modal-paste-bloque');
+}
+
+async function loadPasteBloquePreview(bloqueId) {
+  const preview = document.getElementById('paste-blq-preview');
+  if (!bloqueId) { preview.innerHTML = ''; return; }
+  const { data: exs } = await sb.from('block_exercises').select('exercise_name,sets_week1,reps').eq('block_id', bloqueId).order('exercise_order');
+  if (!exs || exs.length === 0) { preview.innerHTML = '<div style="font-size:12px;color:var(--gray4);">Sin ejercicios en este bloque</div>'; return; }
+  preview.innerHTML = '<div style="background:var(--gray1);border-radius:10px;padding:10px;margin-bottom:4px;">' +
+    exs.map(e => `<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--gray2);display:flex;justify-content:space-between;"><span>${e.exercise_name}</span><span style="color:#7c3aed;font-family:'DM Mono',monospace;font-size:11px;">${e.reps||''} · ${e.sets_week1||'—'} series</span></div>`).join('') + '</div>';
+}
+
+async function confirmPasteBloque() {
+  const bloqueId = document.getElementById('paste-blq-select').value;
+  if (!bloqueId) { showToast('⚠️ Selecciona un bloque'); return; }
+  if (!currentClient || !builderDay) { showToast('⚠️ Sin cliente o día activo'); return; }
+  const position = document.querySelector('input[name="blq-position"]:checked')?.value || 'start';
+  const checkedWeeks = [1,2,3,4].filter(w => document.getElementById('blq-wk'+w)?.checked);
+  const weeksToApply = checkedWeeks.length > 0 ? checkedWeeks : [1,2,3,4];
+  const weekLabel = checkedWeeks.length > 0 ? 'S' + checkedWeeks.join(', S') : 'todas las semanas';
+  closeModal('modal-paste-bloque');
+  showToast('⏳ Agregando bloque...');
+  const { data: blqExs } = await sb.from('block_exercises').select('*').eq('block_id', bloqueId).order('exercise_order');
+  if (!blqExs || blqExs.length === 0) { showToast('⚠️ El bloque no tiene ejercicios'); return; }
+  for (const week of weeksToApply) {
+    // Get or create plan_day
+    let { data: pd } = await sb.from('monthly_plans').select('id').eq('client_id', currentClient.id).eq('week_number', week).eq('day_of_week', builderDay).maybeSingle();
+    if (!pd) {
+      const { data: newPd } = await sb.from('monthly_plans').insert([{ client_id: currentClient.id, week_number: week, day_of_week: builderDay }]).select().single();
+      pd = newPd;
+    }
+    if (!pd) continue;
+    // Get existing exercises to know current count + order
+    const { data: existingExs } = await sb.from('exercises').select('id,order_index').eq('plan_day_id', pd.id).order('order_index');
+    const existingCount = existingExs ? existingExs.length : 0;
+    const setsKey = ['sets_week1','sets_week2','sets_week3','sets_week4'];
+    if (position === 'end') {
+      // Append after existing — start order at existingCount
+      const toInsert = blqExs.map((e, idx) => ({
+        plan_day_id: pd.id,
+        name: e.exercise_name,
+        sets: e[setsKey[week-1]] != null ? e[setsKey[week-1]] : (e.sets_week1 || 3),
+        reps_range: e.reps || '10-12',
+        rest_seconds: e.rest_seconds || 90,
+        tag: 'Peso Libre',
+        order_index: existingCount + idx
+      }));
+      await sb.from('exercises').insert(toInsert);
+    } else {
+      // Prepend — shift existing up, then insert bloque at start
+      if (existingExs && existingExs.length > 0) {
+        for (const ex of existingExs) {
+          await sb.from('exercises').update({ order_index: ex.order_index + blqExs.length }).eq('id', ex.id);
+        }
+      }
+      const toInsert = blqExs.map((e, idx) => ({
+        plan_day_id: pd.id,
+        name: e.exercise_name,
+        sets: e[setsKey[week-1]] != null ? e[setsKey[week-1]] : (e.sets_week1 || 3),
+        reps_range: e.reps || '10-12',
+        rest_seconds: e.rest_seconds || 90,
+        tag: 'Peso Libre',
+        order_index: idx
+      }));
+      await sb.from('exercises').insert(toInsert);
+    }
+  }
+  showToast('✅ Bloque agregado en ' + weekLabel);
+  await buildDayStrip();
+  if (builderDay) await switchBuilderDay(builderDay);
+}
 
 // ===== PASTE WORKOUT TO CLIENT =====
 async function openPasteWorkoutModal() {
@@ -7927,6 +8246,55 @@ async function toggleHabit(habitId, checked) {
     </div>
     <button class="btn-primary" onclick="createNewTemplate()">Crear Machote</button>
     <button onclick="closeModal('modal-new-template')" class="btn-secondary" style="margin-top:10px;">Cancelar</button>
+  </div>
+</div>
+
+<!-- ===== MODAL: NEW BLOQUE ===== -->
+<div class="modal-overlay" id="modal-new-bloque">
+  <div class="modal-card">
+    <span class="modal-close" onclick="closeModal('modal-new-bloque')">×</span>
+    <div class="modal-title">🧱 Nuevo Bloque</div>
+    <div class="form-group">
+      <label class="form-label">Nombre</label>
+      <input class="form-input" id="new-blq-name" placeholder="ej: Calentamiento Tren Superior, Movilidad Cadera...">
+    </div>
+    <button class="btn-primary" onclick="createNewBloque()">Crear Bloque</button>
+    <button onclick="closeModal('modal-new-bloque')" class="btn-secondary" style="margin-top:10px;">Cancelar</button>
+  </div>
+</div>
+
+<!-- ===== MODAL: PASTE BLOQUE TO CLIENT DAY ===== -->
+<div class="modal-overlay" id="modal-paste-bloque">
+  <div class="modal-card">
+    <span class="modal-close" onclick="closeModal('modal-paste-bloque')">×</span>
+    <div class="modal-title">🧱 Agregar Bloque</div>
+    <div style="font-size:12px;color:var(--gray4);margin-bottom:16px;">Los ejercicios del bloque se <strong style="color:var(--black);">agregan</strong> al día sin borrar lo que ya existe.</div>
+    <div class="form-group">
+      <label class="form-label">Bloque</label>
+      <select class="form-select" id="paste-blq-select">
+        <option value="">Selecciona un bloque...</option>
+      </select>
+    </div>
+    <div id="paste-blq-preview" style="margin-bottom:14px;"></div>
+    <div style="font-size:11px;color:var(--gray4);margin-bottom:10px;">Se agregará en: <strong id="paste-blq-target-label" style="color:var(--black);"></strong></div>
+    <div style="font-size:11px;font-weight:700;color:var(--gray5);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">¿Dónde agregar?</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+      <label id="blq-pos-start-label" onclick="selectBloquePosition('start')" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;border:2px solid var(--orange);background:var(--orange-light);cursor:pointer;">
+        <input type="radio" name="blq-position" value="start" checked style="accent-color:var(--orange);"> <span style="font-size:13px;font-weight:700;color:var(--orange);">⬆️ Al inicio</span>
+      </label>
+      <label id="blq-pos-end-label" onclick="selectBloquePosition('end')" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;border:2px solid var(--gray2);background:var(--gray1);cursor:pointer;">
+        <input type="radio" name="blq-position" value="end" style="accent-color:var(--orange);"> <span style="font-size:13px;font-weight:700;color:var(--gray5);">⬇️ Al final</span>
+      </label>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--gray5);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Semanas a aplicar (vacío = todas)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:16px;">
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;cursor:pointer;"><input type="checkbox" id="blq-wk1" style="accent-color:var(--orange);"> S1</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;cursor:pointer;"><input type="checkbox" id="blq-wk2" style="accent-color:var(--orange);"> S2</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;cursor:pointer;"><input type="checkbox" id="blq-wk3" style="accent-color:var(--orange);"> S3</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;cursor:pointer;"><input type="checkbox" id="blq-wk4" style="accent-color:var(--orange);"> S4</label>
+    </div>
+    <button class="btn-primary" onclick="confirmPasteBloque()">🧱 Agregar Bloque</button>
+    <button onclick="closeModal('modal-paste-bloque')" class="btn-secondary" style="margin-top:10px;">Cancelar</button>
   </div>
 </div>
 
