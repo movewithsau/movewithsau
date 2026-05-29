@@ -406,6 +406,18 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 .tpl-day-ex-name { flex:1;font-size:13px;font-weight:600;color:var(--black); }
 .tpl-day-ex-prog { font-family:'DM Mono',monospace;font-size:10px;color:var(--orange); }
 
+/* ===== WORKOUT EDITOR MODE ===== */
+#screen-template-editor[data-mode="workout"] #tpl-name,
+#screen-template-editor[data-mode="workout"] #tpl-type,
+#screen-template-editor[data-mode="workout"] #tpl-days-section-header,
+#screen-template-editor[data-mode="workout"] .tpl-day-name-input {
+  display: none !important;
+}
+#screen-template-editor[data-mode="workout"] .tpl-day-card {
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
 /* ===== TEMPLATE CARDS ===== */
 .tpl-card { background:var(--white);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:12px;border-left:4px solid var(--orange); }
 .tpl-card-header { display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px; }
@@ -945,9 +957,9 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
         <option value="Femenino">🌸 Femenino</option>
       </select>
     </div>
-    <div class="section-header">
-      <div class="section-title">Días del machote</div>
-      <div class="section-action" onclick="addTemplateDay()">+ Día</div>
+    <div class="section-header" id="tpl-days-section-header">
+      <div class="section-title" id="tpl-days-section-title">Días del machote</div>
+      <div class="section-action" id="tpl-add-day-btn" onclick="addTemplateDay()">+ Día</div>
     </div>
     <div id="tpl-days-list"></div>
     <div style="height:20px;"></div>
@@ -3997,6 +4009,8 @@ function tplToggleDayRow(dayId) {
 
 // Edit a specific day's exercises directly
 let tplSingleDayId = null; // when set, editor is in single-day mode
+let tplEditorMode = 'template'; // 'template' | 'workout'
+let currentWorkoutIdForEditor = null; // workout being edited
 
 async function tplEditDay(templateId, dayId) {
   currentTemplateId = templateId;
@@ -4301,11 +4315,28 @@ async function addTemplateDay() {
 }
 
 function tplEditorBack() {
+  if (tplEditorMode === 'workout') {
+    tplEditorMode = 'template';
+    currentWorkoutIdForEditor = null;
+    document.getElementById('screen-template-editor').dataset.mode = '';
+    // Reset back btn
+    document.getElementById('tpl-editor-back-btn').textContent = '‹ Machotes';
+    document.getElementById('tpl-editor-back-btn').onclick = tplEditorBack;
+    // Restore hidden elements
+    document.querySelectorAll('#screen-template-editor .scroll-body [data-hidden-by-workout-mode]').forEach(el => { el.style.display = ''; el.dataset.hiddenByWorkoutMode = ''; });
+    showScreen('screen-templates');
+    switchMachotesTab('workouts');
+    return;
+  }
   showScreen('screen-templates');
   loadTemplates();
 }
 
 async function tplEditorSave() {
+  if (tplEditorMode === 'workout') {
+    await saveWorkoutFromEditor();
+    return;
+  }
   if (tplSingleDayId) {
     await saveSingleDay();
   } else {
@@ -4387,6 +4418,64 @@ async function saveSingleDay() {
   showToast('✅ Día guardado');
   showScreen('screen-templates');
   loadTemplates();
+}
+
+// Save workout exercises from the template editor screen (workout mode)
+async function saveWorkoutFromEditor() {
+  if (!currentWorkoutIdForEditor) return;
+  showToast('⏳ Guardando...');
+  const card = document.querySelector('#tpl-days-list .tpl-day-card');
+  if (!card) { showToast('⚠️ Sin ejercicios'); return; }
+  // Delete existing exercises
+  await sb.from('workout_exercises').delete().eq('workout_id', currentWorkoutIdForEditor);
+  const exCards = card.querySelectorAll('.builder-ex-card');
+  const toInsert = [];
+  let exOrder = 0;
+  for (const exCard of exCards) {
+    const exIdStr = exCard.id.replace('tpl-ex-', '');
+    const exName = document.getElementById('tpl-ex-name-' + exIdStr)?.value.trim();
+    if (!exName) continue;
+    const w1v = document.getElementById('tpl-ex-w1-' + exIdStr)?.value;
+    const w2v = document.getElementById('tpl-ex-w2-' + exIdStr)?.value;
+    const w3v = document.getElementById('tpl-ex-w3-' + exIdStr)?.value;
+    const w4v = document.getElementById('tpl-ex-w4-' + exIdStr)?.value;
+    const reps = document.getElementById('tpl-ex-reps-' + exIdStr)?.value || '10-12';
+    const rest = parseInt(document.getElementById('tpl-ex-rest-' + exIdStr)?.value) || 90;
+    const notes = document.getElementById('tpl-ex-notes-' + exIdStr)?.value.trim() || null;
+    const muscleSel = document.getElementById('tpl-ex-muscle-' + exIdStr)?.value || '';
+    const muscle = muscleSel === 'custom' ? (document.getElementById('tpl-bmc-input-' + exIdStr)?.value.trim() || null) : (muscleSel || null);
+    const video = document.getElementById('tpl-ex-video-' + exIdStr)?.value.trim() || null;
+    const isCircuit = document.getElementById('tpl-ex-circuit-cb-' + exIdStr)?.checked || false;
+    const supersetGroup = isCircuit ? (document.getElementById('tpl-ex-circuit-group-' + exIdStr)?.value.trim() || 'A') : null;
+    const circuitRounds = isCircuit ? (parseInt(document.getElementById('tpl-ex-rounds-' + exIdStr)?.value) || null) : null;
+    const circuitNotes = isCircuit ? (document.getElementById('tpl-ex-circuit-notes-' + exIdStr)?.value.trim() || null) : null;
+    toInsert.push({
+      workout_id: currentWorkoutIdForEditor,
+      exercise_name: exName,
+      sets_week1: w1v ? parseInt(w1v) : null,
+      sets_week2: w2v ? parseInt(w2v) : null,
+      sets_week3: w3v ? parseInt(w3v) : null,
+      sets_week4: w4v ? parseInt(w4v) : null,
+      reps, rest_seconds: rest, notes, muscle_groups: muscle, video_url: video,
+      superset_group: supersetGroup, circuit_rounds: circuitRounds, circuit_notes: circuitNotes,
+      exercise_order: exOrder++
+    });
+    if (exName) await saveExerciseToLibrary(exName, 'Peso Libre', muscle, video);
+  }
+  if (toInsert.length > 0) {
+    const { error } = await sb.from('workout_exercises').insert(toInsert);
+    if (error) { showToast('❌ ' + error.message); return; }
+  }
+  showToast('✅ Workout guardado');
+  // Reset and go back to workouts tab
+  tplEditorMode = 'template';
+  currentWorkoutIdForEditor = null;
+  document.getElementById('screen-template-editor').dataset.mode = '';
+  document.getElementById('tpl-editor-back-btn').textContent = '‹ Machotes';
+  document.getElementById('tpl-editor-back-btn').onclick = tplEditorBack;
+  document.querySelectorAll('#screen-template-editor .scroll-body [data-hidden-by-workout-mode]').forEach(el => { el.style.display = ''; el.dataset.hiddenByWorkoutMode = ''; });
+  showScreen('screen-templates');
+  switchMachotesTab('workouts');
 }
 
 async function saveTemplate() {
@@ -4648,8 +4737,7 @@ async function createNewWorkout() {
   const { data, error } = await sb.from('workout_templates').insert([{ name, type }]).select().single();
   if (error) { showToast('❌ Error: ' + error.message); return; }
   closeModal('modal-new-workout');
-  showToast('✅ Workout "' + name + '" creado');
-  openWorkoutEditor(data.id, name);
+  await openWorkoutEditor(data.id, name);
 }
 
 async function deleteWorkout(workoutId, name) {
@@ -4661,92 +4749,71 @@ async function deleteWorkout(workoutId, name) {
 }
 
 // ===== WORKOUT EDITOR (modal bottom sheet) =====
-let wktEditorWorkoutId = null;
-let wktEditorExCount = 0;
+// wktEditorWorkoutId/ExCount removed — workout editor now uses screen-template-editor
 
 async function openWorkoutEditor(workoutId, name) {
-  wktEditorWorkoutId = workoutId;
-  wktEditorExCount = 0;
-  document.getElementById('wkt-editor-title').textContent = name || 'Editar Workout';
-  const container = document.getElementById('wkt-editor-exercises');
-  container.innerHTML = '<div class="spinner"></div>';
-  showModal('modal-workout-editor');
-  const { data: exs } = await sb.from('workout_exercises').select('*').eq('workout_id', workoutId).order('exercise_order');
+  // Reuse the template editor screen in workout mode
+  tplEditorMode = 'workout';
+  currentWorkoutIdForEditor = workoutId;
+  tplSingleDayId = 'workout-day'; // single-day-like mode so tplEditorSave routes correctly
+  tplDayCount = 0; tplExCount = 0;
+  // Set up the screen UI for workout editing
+  document.getElementById('template-editor-title').textContent = name || 'Editar Workout';
+  document.getElementById('tpl-editor-back-btn').textContent = '‹ Workouts';
+  document.getElementById('tpl-editor-back-btn').onclick = () => { tplEditorMode = 'template'; showScreen('screen-templates'); switchMachotesTab('workouts'); };
+  // Hide name/type fields — workout name is already set
+  const nameSection = document.getElementById('tpl-name')?.closest('div[style]') || document.getElementById('tpl-name')?.parentElement?.parentElement;
+  // Hide the top form sections (name + type) and "Días del machote" header — show only exercise editor
+  const scrollBody = document.querySelector('#screen-template-editor .scroll-body');
+  // Mark the screen
+  document.getElementById('screen-template-editor').dataset.mode = 'workout';
+  // Hide name/type wrappers (they're direct children of scroll-body)
+  const scrollBody2 = document.querySelector('#screen-template-editor .scroll-body');
+  if (scrollBody2) {
+    [...scrollBody2.children].forEach(child => {
+      if (child.id !== 'tpl-days-section-header' && child.id !== 'tpl-days-list' && !child.style.height) {
+        child.style.display = 'none';
+        child.dataset.hiddenByWorkoutMode = '1';
+      }
+    });
+  }
+  showScreen('screen-template-editor');
+  // Build a single fake "day" card pre-populated with workout exercises
+  const container = document.getElementById('tpl-days-list');
   container.innerHTML = '';
-  if (exs) { for (const ex of exs) { addWorkoutExerciseRow(ex); } }
-}
-
-function addWorkoutExerciseRow(prefill = null) {
-  wktEditorExCount++;
-  const id = wktEditorExCount;
-  const container = document.getElementById('wkt-editor-exercises');
-  const row = document.createElement('div');
-  row.id = 'wkt-ex-row-' + id;
-  row.dataset.dbId = prefill ? (prefill.id || '') : '';
-  row.style.cssText = 'background:var(--gray1);border-radius:10px;padding:12px;margin-bottom:8px;';
-  row.innerHTML = `
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-      <input class="form-input" style="flex:1;margin-bottom:0;font-size:13px;" id="wkt-ex-name-${id}" placeholder="Nombre del ejercicio" value="${prefill ? prefill.exercise_name : ''}">
-      <button onclick="removeWktExRow(${id})" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;">✕</button>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
-      <input class="form-input" style="margin-bottom:0;font-size:12px;" id="wkt-ex-reps-${id}" placeholder="Reps (ej: 10-12)" value="${prefill ? (prefill.reps||'') : ''}">
-      <input class="form-input" style="margin-bottom:0;font-size:12px;" id="wkt-ex-rest-${id}" placeholder="Descanso (seg)" type="number" value="${prefill ? (prefill.rest_seconds||90) : 90}">
-    </div>
-    <div style="font-size:10px;font-weight:700;color:var(--gray5);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Series por semana (opcional)</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;">
-      <div><div style="font-size:9px;color:var(--gray4);text-align:center;margin-bottom:2px;">S1</div><input class="tpl-prog-input" type="number" id="wkt-ex-w1-${id}" min="1" max="20" placeholder="—" value="${prefill && prefill.sets_week1 != null ? prefill.sets_week1 : ''}"></div>
-      <div><div style="font-size:9px;color:var(--gray4);text-align:center;margin-bottom:2px;">S2</div><input class="tpl-prog-input" type="number" id="wkt-ex-w2-${id}" min="1" max="20" placeholder="—" value="${prefill && prefill.sets_week2 != null ? prefill.sets_week2 : ''}"></div>
-      <div><div style="font-size:9px;color:var(--gray4);text-align:center;margin-bottom:2px;">S3</div><input class="tpl-prog-input" type="number" id="wkt-ex-w3-${id}" min="1" max="20" placeholder="—" value="${prefill && prefill.sets_week3 != null ? prefill.sets_week3 : ''}"></div>
-      <div><div style="font-size:9px;color:var(--gray4);text-align:center;margin-bottom:2px;">S4</div><input class="tpl-prog-input" type="number" id="wkt-ex-w4-${id}" min="1" max="20" placeholder="—" value="${prefill && prefill.sets_week4 != null ? prefill.sets_week4 : ''}"></div>
+  tplDayCount = 0; tplExCount = 0;
+  // Create a single day card (no day name header needed — it IS the workout)
+  const card = document.createElement('div');
+  card.className = 'tpl-day-card fade-up';
+  card.id = 'tpl-day-1';
+  card.dataset.dbId = 'workout-' + workoutId;
+  card.innerHTML = `
+    <div id="tpl-day-exs-1" style="margin-bottom:8px;"></div>
+    <div style="display:flex;gap:6px;">
+      <button class="add-ex-btn" style="flex:1;margin-top:0;font-size:12px;padding:9px;" onclick="addTemplateExercise(1)">+ Ejercicio</button>
+      <button class="add-ex-btn" style="flex:1;margin-top:0;font-size:12px;padding:9px;background:var(--orange-light);border-style:solid;" onclick="openLibraryForTemplate(1)">📚 Biblioteca</button>
     </div>
   `;
-  container.appendChild(row);
-}
-
-function addWorkoutExercise() { addWorkoutExerciseRow(); }
-function removeWktExRow(id) { document.getElementById('wkt-ex-row-' + id)?.remove(); }
-
-function openLibraryForWorkout() {
-  // Reuse existing library in a simple mode — just grab the name
-  const name = prompt('Nombre del ejercicio de biblioteca:');
-  if (name && name.trim()) { addWorkoutExerciseRow({ exercise_name: name.trim() }); }
-}
-
-async function saveWorkoutEdits() {
-  if (!wktEditorWorkoutId) return;
-  const rows = document.querySelectorAll('#wkt-editor-exercises > div[id^="wkt-ex-row-"]');
-  await sb.from('workout_exercises').delete().eq('workout_id', wktEditorWorkoutId);
-  const toInsert = [];
-  let order = 0;
-  rows.forEach(row => {
-    const rowId = row.id.replace('wkt-ex-row-', '');
-    const name = document.getElementById('wkt-ex-name-' + rowId)?.value.trim();
-    if (!name) return;
-    const w1 = document.getElementById('wkt-ex-w1-' + rowId)?.value;
-    const w2 = document.getElementById('wkt-ex-w2-' + rowId)?.value;
-    const w3 = document.getElementById('wkt-ex-w3-' + rowId)?.value;
-    const w4 = document.getElementById('wkt-ex-w4-' + rowId)?.value;
-    toInsert.push({
-      workout_id: wktEditorWorkoutId,
-      exercise_name: name,
-      reps: document.getElementById('wkt-ex-reps-' + rowId)?.value || '10-12',
-      rest_seconds: parseInt(document.getElementById('wkt-ex-rest-' + rowId)?.value) || 90,
-      sets_week1: w1 ? parseInt(w1) : null,
-      sets_week2: w2 ? parseInt(w2) : null,
-      sets_week3: w3 ? parseInt(w3) : null,
-      sets_week4: w4 ? parseInt(w4) : null,
-      exercise_order: order++
-    });
-  });
-  if (toInsert.length > 0) {
-    const { error } = await sb.from('workout_exercises').insert(toInsert);
-    if (error) { showToast('❌ ' + error.message); return; }
+  tplDayCount = 1;
+  container.appendChild(card);
+  // Load existing exercises
+  const { data: exs } = await sb.from('workout_exercises').select('*').eq('workout_id', workoutId).order('exercise_order');
+  if (exs) {
+    for (const ex of exs) {
+      addTemplateExercise(1, {
+        exercise_name: ex.exercise_name,
+        sets_week1: ex.sets_week1, sets_week2: ex.sets_week2,
+        sets_week3: ex.sets_week3, sets_week4: ex.sets_week4,
+        reps: ex.reps, rest_seconds: ex.rest_seconds,
+        notes: ex.notes, muscle_groups: ex.muscle_groups,
+        video_url: ex.video_url, superset_group: ex.superset_group,
+        circuit_rounds: ex.circuit_rounds, circuit_notes: ex.circuit_notes
+      });
+    }
   }
-  closeModal('modal-workout-editor');
-  showToast('✅ Workout guardado');
-  loadWorkouts();
 }
+
+// (workout editor now uses screen-template-editor — see openWorkoutEditor)
 
 // ===== PASTE WORKOUT TO CLIENT =====
 async function openPasteWorkoutModal() {
@@ -7938,19 +8005,6 @@ async function toggleHabit(habitId, checked) {
   </div>
 </div>
 
-<!-- ===== MODAL: WORKOUT EDITOR ===== -->
-<div class="modal-overlay" id="modal-workout-editor" style="align-items:flex-start;padding-top:0;">
-  <div class="modal-card" style="border-radius:20px 20px 0 0;max-height:95vh;overflow-y:auto;margin-top:auto;position:fixed;bottom:0;left:0;right:0;max-width:480px;margin-left:auto;margin-right:auto;">
-    <span class="modal-close" onclick="closeModal('modal-workout-editor')">×</span>
-    <div class="modal-title" id="wkt-editor-title">Editar Workout</div>
-    <div id="wkt-editor-exercises" style="margin-bottom:12px;"></div>
-    <div style="display:flex;gap:6px;margin-bottom:12px;">
-      <button class="add-ex-btn" style="flex:1;margin-top:0;font-size:12px;padding:9px;" onclick="addWorkoutExercise()">+ Ejercicio</button>
-      <button class="add-ex-btn" style="flex:1;margin-top:0;font-size:12px;padding:9px;background:var(--orange-light);border-style:solid;" onclick="openLibraryForWorkout()">📚 Biblioteca</button>
-    </div>
-    <button class="btn-primary" onclick="saveWorkoutEdits()">💾 Guardar cambios</button>
-  </div>
-</div>
 
 <!-- ===== MODAL: ASSIGN TEMPLATE TO CLIENT ===== -->
 <div class="modal-overlay" id="modal-assign-template">
