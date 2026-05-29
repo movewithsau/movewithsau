@@ -8224,6 +8224,7 @@ let aiGeneratorMode = 'bloque';
 let aiGeneratedData = null;
 let aiReviewHasNew = false;
 let aiExerciseDecisions = []; // {aiName, libMatch, decision: 'use'|'new'|'skip', videoUrl, muscleGroup}
+let aiSessions = []; // [{nombre, ejercicios}] for programa mode
 
 function openAIGenerator(mode) {
   aiGeneratorMode = mode;
@@ -8284,9 +8285,9 @@ async function runAIGenerator() {
     const allExercises = extractExercisesFromAI(parsed, aiGeneratorMode);
 
     // Build review decisions
+    aiSessions = extractSessionsFromAI(parsed, aiGeneratorMode);
     aiExerciseDecisions = allExercises.map(ex => {
       const match = findLibraryMatch(ex.nombre, library);
-      // If AI says es_nuevo:false and no lib match, auto-confirm as new exercise (no video needed)
       const decision = match ? 'pending' : (ex.es_nuevo ? 'new' : 'confirmed_new');
       return { aiName: ex.nombre, libMatch: match, decision, videoUrl: '', muscleGroup: ex.muscle_group || null, exData: ex };
     });
@@ -8330,11 +8331,36 @@ function deepFindEjercicios(obj, sessions, seen, depth) {
   }
 }
 
-function extractSessionsFromAI(parsed) {
+function extractSessionsFromAI(parsed, mode) {
+  // For bloque/workout: single session
+  if (mode !== 'programa') {
+    return [{ nombre: parsed.nombre || 'Sesión 1', ejercicios: parsed.ejercicios || [] }];
+  }
+  // For programa: find named sessions
   const sessions = [];
   const seen = new Set();
+  // Try direct array of sessions
+  if (parsed.sesiones && Array.isArray(parsed.sesiones)) {
+    parsed.sesiones.forEach((s, i) => {
+      const exs = (s.ejercicios || []).filter(e => e.nombre);
+      sessions.push({ nombre: s.nombre || s.dia || ('Día ' + (i+1)), ejercicios: exs });
+    });
+    return sessions.length > 0 ? sessions : [{ nombre: 'Día 1', ejercicios: [] }];
+  }
+  // Try sesion_1, sesion_2... or dia_1, dia_2... pattern
+  const sessionKeys = Object.keys(parsed).filter(k => 
+    (k.startsWith('sesion') || k.startsWith('dia') || k.startsWith('day') || k.startsWith('session')) 
+    && parsed[k] && typeof parsed[k] === 'object' && Array.isArray(parsed[k].ejercicios)
+  );
+  if (sessionKeys.length > 0) {
+    sessionKeys.forEach((k, i) => {
+      sessions.push({ nombre: parsed[k].nombre || parsed[k].dia || ('Día ' + (i+1)), ejercicios: parsed[k].ejercicios || [] });
+    });
+    return sessions;
+  }
+  // Deep search fallback
   deepFindEjercicios(parsed, sessions, seen, 0);
-  return sessions.length > 0 ? sessions : [{ nombre: 'Sesión 1', ejercicios: [] }];
+  return sessions.length > 0 ? sessions : [{ nombre: 'Día 1', ejercicios: [] }];
 }
 
 function extractExercisesFromAI(parsed, mode) {
@@ -8374,6 +8400,33 @@ function renderAIReviewExercises() {
   container.innerHTML = '';
   aiReviewHasNew = aiExerciseDecisions.some(d => d.decision === 'pending' || d.decision === 'new');
 
+  // For programa mode: show day headers
+  if (aiGeneratedData?._mode === 'programa' && aiSessions.length > 1) {
+    aiSessions.forEach(session => {
+      const header = document.createElement('div');
+      header.style.cssText = 'font-family:"DM Mono",monospace;font-size:10px;letter-spacing:0.12em;color:var(--orange);text-transform:uppercase;margin:16px 0 8px;font-weight:700;';
+      header.textContent = session.nombre;
+      container.appendChild(header);
+      session.ejercicios.forEach(ex => {
+        const idx = aiExerciseDecisions.findIndex(d => d.aiName === ex.nombre);
+        if (idx === -1) return;
+        renderDecisionCard(container, aiExerciseDecisions[idx], idx);
+      });
+    });
+  } else {
+    aiExerciseDecisions.forEach((dec, i) => { renderDecisionCard(container, dec, i); });
+  }
+
+  const hasPending = aiExerciseDecisions.some(d => d.decision === 'pending');
+  const saveBtn = document.getElementById('ai-review-save-btn');
+  saveBtn.disabled = hasPending;
+  saveBtn.style.opacity = hasPending ? '0.4' : '1';
+  saveBtn.textContent = hasPending ? '⏳ Confirmá todos los ejercicios' : '✅ Guardar machote';
+}
+
+function renderDecisionCard(container, dec, i) {
+  const card = document.createElement('div');
+  card.style.cssText = 'border:1.5px solid var(--gray2);border-radius:10px;padding:13px;margin-bottom:10px;background:var(--white);';
   aiExerciseDecisions.forEach((dec, i) => {
     const card = document.createElement('div');
     card.style.cssText = 'border:1.5px solid var(--gray2);border-radius:10px;padding:13px;margin-bottom:10px;background:var(--white);';
@@ -8423,12 +8476,6 @@ function renderAIReviewExercises() {
     container.appendChild(card);
   });
 
-  // Update save button state
-  const hasPending = aiExerciseDecisions.some(d => d.decision === 'pending');
-  const saveBtn = document.getElementById('ai-review-save-btn');
-  saveBtn.disabled = hasPending;
-  saveBtn.style.opacity = hasPending ? '0.4' : '1';
-  saveBtn.textContent = hasPending ? '⏳ Confirmá todos los ejercicios' : '✅ Guardar machote';
 }
 
 function setAIDecision(index, decision) {
@@ -8494,7 +8541,8 @@ async function saveAIBloque(name, data, resolveExName) {
   if (error) throw error;
   const toInsert = [];
   let order = 0;
-  for (const ex of (data.ejercicios || [])) {
+  const bloqueExs = aiSessions[0]?.ejercicios || data.ejercicios || [];
+  for (const ex of bloqueExs) {
     const resolved = resolveExName(ex.nombre);
     if (!resolved) continue;
     toInsert.push({ block_id: bloque.id, exercise_name: resolved, sets_week1: ex.series || 3, sets_week2: ex.series || 3, sets_week3: ex.series || 3, sets_week4: ex.series || 3, reps: ex.reps || '10-12', rest_seconds: 90, notes: [ex.cue, ex.nota].filter(Boolean).join(' | ') || null, exercise_order: order++ });
