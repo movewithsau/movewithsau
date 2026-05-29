@@ -8225,6 +8225,17 @@ let aiGeneratedData = null;
 let aiReviewHasNew = false;
 let aiExerciseDecisions = []; // {aiName, libMatch, decision: 'use'|'new'|'skip', videoUrl, muscleGroup}
 let aiSessions = []; // [{nombre, ejercicios}] for programa mode
+let aiDaysSelected = 3;
+
+function selectAIDays(n, el) {
+  aiDaysSelected = n;
+  document.querySelectorAll('[id^="ai-day-btn-"]').forEach(b => {
+    b.style.background = 'var(--gray1)';
+    b.style.color = 'var(--gray4)';
+    b.style.borderColor = 'var(--gray2)';
+  });
+  if (el) { el.style.background = '#111'; el.style.color = 'white'; el.style.borderColor = '#111'; }
+}
 
 function openAIGenerator(mode) {
   aiGeneratorMode = mode;
@@ -8239,7 +8250,19 @@ function openAIGenerator(mode) {
 
   // Extra fields por modo
   const extra = document.getElementById('ai-gen-extra-fields');
-  extra.innerHTML = '';
+  if (mode === 'programa') {
+    extra.innerHTML = `
+      <div style="margin-bottom:12px;">
+        <div style="font-size:11px;font-weight:700;color:var(--gray4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Días por semana</div>
+        <div style="display:flex;gap:8px;">
+          ${[2,3,4,5].map(d => `<button onclick="selectAIDays(${d},this)" id="ai-day-btn-${d}" style="flex:1;padding:11px 0;border-radius:9px;border:1.5px solid var(--gray2);background:var(--gray1);font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;color:var(--gray4);"\>${d}</button>`).join('')}
+        </div>
+      </div>`;
+    // Default select 3
+    setTimeout(() => selectAIDays(3, document.getElementById('ai-day-btn-3')), 50);
+  } else {
+    extra.innerHTML = '';
+  }
 }
 
 async function runAIGenerator() {
@@ -8263,6 +8286,7 @@ async function runAIGenerator() {
     const libCtx = libNames.length > 0 ? `\n\nEjercicios ya en mi biblioteca (usá estos nombres exactos cuando corresponda, marcá es_nuevo:false):\n${libNames.join(', ')}` : '';
 
     const modeLabel = aiGeneratorMode === 'bloque' ? 'BLOQUE' : aiGeneratorMode === 'workout' ? 'WORKOUT' : 'PROGRAMA';
+    if (aiGeneratorMode === 'programa') extraCtx = `\nDías por semana: ${aiDaysSelected}. Generá exactamente ${aiDaysSelected} sesiones.`;
     const userMsg = `[MODO: ${modeLabel}]\n\nNombre del machote: ${name}\n\nContexto del cliente / instrucción:\n${context}${extraCtx}${libCtx}`;
 
     const res = await fetch('/api/anthropic', {
