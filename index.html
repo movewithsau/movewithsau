@@ -8614,7 +8614,7 @@ async function saveAIPrograma(name, data, resolveExName) {
     for (const ex of (session.ejercicios || [])) {
       const resolved = resolveExName(ex.nombre);
       if (!resolved) continue;
-      await sb.from('template_exercises').insert([{ day_id: tDay.id, exercise_name: resolved, sets_week1: ex.series || 3, sets_week2: ex.series ? ex.series + 1 : 4, sets_week3: ex.series ? ex.series + 1 : 4, sets_week4: ex.series || 3, reps: ex.reps || '10-12', rest_seconds: 90, notes: [ex.cue, ex.nota].filter(Boolean).join(' | ') || null, exercise_order: exOrder++ }]);
+      await sb.from('template_exercises').insert([{ template_day_id: tDay.id, exercise_name: resolved, sets_week1: ex.series || 3, sets_week2: ex.series ? ex.series + 1 : 4, sets_week3: ex.series ? ex.series + 1 : 4, sets_week4: ex.series || 3, reps: ex.reps || '10-12', rest_seconds: 90, notes: [ex.cue, ex.nota].filter(Boolean).join(' | ') || null, exercise_order: exOrder++ }]);
     }
   }
 }
