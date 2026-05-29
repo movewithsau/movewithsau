@@ -8209,17 +8209,16 @@ async function toggleHabit(habitId, checked) {
 }
 
 // ===== AI GENERATOR (MOVE STRONG FLOW) =====
-// key vive en Vercel — no va en el código
+// key vive en Vercel como env var
 
-const MOVE_SYSTEM_PROMPT = `Eres el agente MOVE de Sau. Programas Strong Flow: fuerza+movilidad+yoga aplicado. "La posicion es el ejercicio." Circuitos 2 ejercicios x3 rondas, 20s entre ej, 1min entre rondas. Para BJJ: grip, frame, rotacion toracica. MEV→MAV→MRV progresion por semanas. Responde SOLO JSON puro sin texto extra ni markdown.
+const MOVE_SYSTEM_PROMPT = `Eres el agente MOVE de Sau. Metodologia Strong Flow: fuerza+movilidad+yoga. Circuitos 2 ejercicios x3 rondas. Para BJJ: grip, frame, rotacion toracica. Respeta lesiones del cliente.
 
-BLOQUE: {"nombre":"...","enfoque":"...","razonamiento":"...","ejercicios":[{"nombre":"...","series":3,"reps":"8-10","descanso":"20s/1min","cue":"max 6 palabras","nota":null,"es_nuevo":false}]}
+Responde SOLO con JSON puro. Sin texto. Sin markdown.
 
-WORKOUT: {"nombre":"...","enfoque":"...","duracion_estimada":"X min","razonamiento":"...","bloques":[{"nombre_bloque":"...","tipo":"activacion|principal|movilidad|cierre","ejercicios":[{"nombre":"...","series":3,"reps":"8-10","descanso":"20s/1min","cue":"max 6 palabras","nota":null,"es_nuevo":false}]}]}
+Formato para todos los modos:
+{"ejercicios":[{"nombre":"nombre","series":3,"reps":"8-10","cue":"max 5 palabras","es_nuevo":false}]}
 
-PROGRAMA (solo semana 1): {"nombre":"...","split":"...","razonamiento":"...","semana1":{"fase":"Adaptacion","rir_target":"3-4","dias":[{"dia":"Lunes","nombre":"...","ejercicios":[{"nombre":"...","series":3,"reps":"8-10","descanso":"90s","cue":"max 6 palabras","nota":null,"es_nuevo":false}]}]}}
-
-es_nuevo:true para ejercicios Strong Flow poco comunes. Max 5 ejercicios por dia.`
+es_nuevo:true para ejercicios poco comunes (Crab Reach, PAILs/RAILs, Dandasana curl). Max 8 ejercicios.`;
 
 let aiGeneratorMode = 'bloque';
 let aiGeneratedData = null;
@@ -8239,30 +8238,7 @@ function openAIGenerator(mode) {
 
   // Extra fields por modo
   const extra = document.getElementById('ai-gen-extra-fields');
-  if (mode === 'programa') {
-    extra.innerHTML = `
-      <div style="display:flex;gap:10px;margin-bottom:12px;">
-        <div style="flex:1;">
-          <div style="font-size:11px;font-weight:700;color:var(--gray4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Semanas</div>
-          <select id="ai-gen-weeks" style="width:100%;padding:11px 13px;border:1.5px solid var(--gray2);border-radius:9px;font-size:14px;font-family:'DM Sans',sans-serif;background:var(--gray1);">
-            <option value="4">4 semanas</option>
-            <option value="8" selected>8 semanas</option>
-            <option value="12">12 semanas</option>
-          </select>
-        </div>
-        <div style="flex:1;">
-          <div style="font-size:11px;font-weight:700;color:var(--gray4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Días / semana</div>
-          <select id="ai-gen-days" style="width:100%;padding:11px 13px;border:1.5px solid var(--gray2);border-radius:9px;font-size:14px;font-family:'DM Sans',sans-serif;background:var(--gray1);">
-            <option value="2">2 días</option>
-            <option value="3">3 días</option>
-            <option value="4" selected>4 días</option>
-            <option value="5">5 días</option>
-          </select>
-        </div>
-      </div>`;
-  } else {
-    extra.innerHTML = '';
-  }
+  extra.innerHTML = '';
 }
 
 async function runAIGenerator() {
@@ -8270,7 +8246,6 @@ async function runAIGenerator() {
   const context = document.getElementById('ai-gen-context').value.trim();
   if (!name) { showToast('⚠️ Escribe un nombre'); return; }
   if (!context) { showToast('⚠️ Agrega contexto del cliente'); return; }
-  
 
   const btn = document.getElementById('ai-gen-btn');
   btn.disabled = true;
@@ -8282,14 +8257,7 @@ async function runAIGenerator() {
     const library = libExs || [];
     const libNames = library.map(e => e.name);
 
-    // Build extra context
     let extraCtx = '';
-    if (aiGeneratorMode === 'programa') {
-      const weeks = document.getElementById('ai-gen-weeks')?.value || '8';
-      const days = document.getElementById('ai-gen-days')?.value || '4';
-      extraCtx = `\nPrograma de ${weeks} semanas, ${days} días por semana.`;
-    }
-
     // Include library names in prompt so AI can match
     const libCtx = libNames.length > 0 ? `\n\nEjercicios ya en mi biblioteca (usá estos nombres exactos cuando corresponda, marcá es_nuevo:false):\n${libNames.join(', ')}` : '';
 
@@ -8305,12 +8273,10 @@ async function runAIGenerator() {
     const data = await res.json();
     if (data.error) throw new Error(data.error.message);
     const raw = data.content?.[0]?.text || '';
-    // Robust JSON extraction — find first { and last } to handle extra text
     const jsonStart = raw.indexOf('{');
     const jsonEnd = raw.lastIndexOf('}');
-    if (jsonStart === -1 || jsonEnd === -1) throw new Error('No JSON found in response');
-    const cleanJson = raw.substring(jsonStart, jsonEnd + 1);
-    const parsed = JSON.parse(cleanJson);
+    if (jsonStart === -1 || jsonEnd === -1) throw new Error('No JSON found');
+    const parsed = JSON.parse(raw.substring(jsonStart, jsonEnd + 1));
 
     aiGeneratedData = { ...parsed, _name: name, _mode: aiGeneratorMode };
 
@@ -8335,15 +8301,7 @@ async function runAIGenerator() {
 }
 
 function extractExercisesFromAI(parsed, mode) {
-  const exs = [];
-  if (mode === 'bloque') {
-    (parsed.ejercicios || []).forEach(e => exs.push(e));
-  } else if (mode === 'workout') {
-    (parsed.bloques || []).forEach(b => (b.ejercicios || []).forEach(e => exs.push(e)));
-  } else if (mode === 'programa') {
-    const s1dias = parsed.semana1?.dias || (parsed.semanas?.[0]?.dias) || []; s1dias.forEach(d => (d.ejercicios || []).forEach(e => exs.push(e)));
-  }
-  return exs;
+  return parsed.ejercicios || [];
 }
 
 function findLibraryMatch(aiName, library) {
@@ -8526,7 +8484,7 @@ async function saveAIPrograma(name, data, resolveExName) {
   const { data: tpl, error } = await sb.from('routine_templates').insert([{ name, type: 'Gym' }]).select().single();
   if (error) throw error;
   // Save semana 1 days as template_days with exercises
-  const semana1 = data.semana1 || (data.semanas || [])[0];
+  const semana1 = (data.semanas || [])[0];
   if (!semana1) return;
   let dayOrder = 0;
   for (const dia of (semana1.dias || [])) {
