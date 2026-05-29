@@ -792,6 +792,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <button class="add-ex-btn" style="flex:1;min-width:120px;margin-top:0;" onclick="addExerciseForm()">+ Ejercicio</button>
       <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:var(--orange-light);border-style:solid;" onclick="openLibrary()">📚 Biblioteca</button>
       <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:var(--blue-light);border-color:var(--blue);color:var(--blue);border-style:solid;" onclick="showCopyDayModal()">📋 Copiar día</button>
+      <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:#f0fff4;border-color:#38a169;color:#38a169;border-style:solid;" onclick="openPasteWorkoutModal()">🏋️ Pegar Workout</button>
       <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:#fff0f0;border-color:#e53e3e;color:#e53e3e;border-style:solid;" onclick="deleteTrainingDay(builderDay, builderDay)">🗑️ Borrar día</button>
     </div>
     <button class="btn-primary" style="margin-top:10px;" onclick="savePlanDay()">Guardar día</button>
@@ -870,23 +871,48 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
   <div class="topbar">
     <div class="topbar-logo">Move With Sau</div>
     <div class="topbar-title" style="font-size:15px;">📋 Machotes</div>
-    <div class="topbar-action" onclick="openNewTemplateModal()">+ Nuevo</div>
+    <div class="topbar-action" id="machotes-new-btn" onclick="openNewTemplateModal()">+ Nuevo</div>
+  </div>
+  <!-- Machotes sub-tabs -->
+  <div style="display:flex;border-bottom:2px solid var(--gray2);background:var(--white);position:sticky;top:0;z-index:10;">
+    <div id="mtab-programas" onclick="switchMachotesTab('programas')" style="flex:1;text-align:center;padding:14px 8px 12px;font-size:13px;font-weight:700;color:var(--orange);border-bottom:2px solid var(--orange);margin-bottom:-2px;cursor:pointer;">📋 Programas</div>
+    <div id="mtab-workouts" onclick="switchMachotesTab('workouts')" style="flex:1;text-align:center;padding:14px 8px 12px;font-size:13px;font-weight:700;color:var(--gray4);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;">🏋️ Workouts</div>
   </div>
   <div class="scroll-body">
-    <div style="margin-bottom:6px;">
-      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Biblioteca</div>
-      <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;">Machotes</div>
-      <div style="font-size:12px;color:var(--gray4);margin-top:4px;">Crea plantillas reutilizables y asígnalas a clientes en segundos.</div>
+    <!-- PROGRAMAS PANEL -->
+    <div id="machotes-panel-programas">
+      <div style="margin-bottom:6px;margin-top:8px;">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Biblioteca</div>
+        <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;">Programas</div>
+        <div style="font-size:12px;color:var(--gray4);margin-top:4px;">Planes completos de 4 semanas con progresión.</div>
+      </div>
+      <div class="filter-chips" id="template-type-chips" style="margin-bottom:14px;margin-top:14px;">
+        <div class="filter-chip active" onclick="setTemplateFilter('',this)">Todos</div>
+        <div class="filter-chip" onclick="setTemplateFilter('Gym',this)">🏋️ Gym</div>
+        <div class="filter-chip" onclick="setTemplateFilter('Condominio',this)">🏠 Condominio</div>
+        <div class="filter-chip" onclick="setTemplateFilter('Peso Corporal',this)">💪 Peso Corporal</div>
+        <div class="filter-chip" onclick="setTemplateFilter('Cardio',this)">🏃 Cardio</div>
+        <div class="filter-chip" onclick="setTemplateFilter('Femenino',this)">🌸 Femenino</div>
+      </div>
+      <div id="templates-list"><div class="spinner"></div></div>
     </div>
-    <div class="filter-chips" id="template-type-chips" style="margin-bottom:14px;margin-top:14px;">
-      <div class="filter-chip active" onclick="setTemplateFilter('',this)">Todos</div>
-      <div class="filter-chip" onclick="setTemplateFilter('Gym',this)">🏋️ Gym</div>
-      <div class="filter-chip" onclick="setTemplateFilter('Condominio',this)">🏠 Condominio</div>
-      <div class="filter-chip" onclick="setTemplateFilter('Peso Corporal',this)">💪 Peso Corporal</div>
-      <div class="filter-chip" onclick="setTemplateFilter('Cardio',this)">🏃 Cardio</div>
-      <div class="filter-chip" onclick="setTemplateFilter('Femenino',this)">🌸 Femenino</div>
+    <!-- WORKOUTS PANEL -->
+    <div id="machotes-panel-workouts" style="display:none;">
+      <div style="margin-bottom:6px;margin-top:8px;">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Biblioteca</div>
+        <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;">Workouts</div>
+        <div style="font-size:12px;color:var(--gray4);margin-top:4px;">Días individuales listos para pegar en cualquier cliente.</div>
+      </div>
+      <div class="filter-chips" id="workout-type-chips" style="margin-bottom:14px;margin-top:14px;">
+        <div class="filter-chip active" onclick="setWorkoutFilter('',this)">Todos</div>
+        <div class="filter-chip" onclick="setWorkoutFilter('Gym',this)">🏋️ Gym</div>
+        <div class="filter-chip" onclick="setWorkoutFilter('Condominio',this)">🏠 Condominio</div>
+        <div class="filter-chip" onclick="setWorkoutFilter('Peso Corporal',this)">💪 Peso Corporal</div>
+        <div class="filter-chip" onclick="setWorkoutFilter('Cardio',this)">🏃 Cardio</div>
+        <div class="filter-chip" onclick="setWorkoutFilter('Femenino',this)">🌸 Femenino</div>
+      </div>
+      <div id="workouts-list"><div class="spinner"></div></div>
     </div>
-    <div id="templates-list"><div class="spinner"></div></div>
   </div>
   <div class="bottom-nav">
     <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon">👥</div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
@@ -3598,12 +3624,14 @@ function openDayOptionsMenu(dayValue, label, anchorEl) {
         <button id="pop-move-right" style="padding:12px;border-radius:12px;background:var(--gray1);border:1.5px solid var(--gray2);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Mover después →</button>
       </div>
       <button id="pop-rename" style="width:100%;padding:12px;border-radius:12px;background:var(--gray1);border:1.5px solid var(--gray2);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:10px;">✏️ Renombrar</button>
+      <button id="pop-save-workout" style="width:100%;padding:12px;border-radius:12px;background:var(--orange-light);border:1.5px solid var(--orange);color:var(--orange);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:10px;">💾 Guardar como Workout</button>
       <button id="pop-delete" style="width:100%;padding:12px;border-radius:12px;background:#fff0f0;border:1.5px solid var(--red);color:var(--red);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:10px;">🗑️ Borrar día</button>
       <button id="pop-cancel" style="width:100%;padding:12px;border-radius:12px;background:var(--gray1);border:1.5px solid var(--gray2);font-size:13px;color:var(--gray4);font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Cancelar</button>
     </div>`;
   pop.querySelector('#pop-move-left').onclick = () => { pop.remove(); moveDayOrder(dayValue, -1); };
   pop.querySelector('#pop-move-right').onclick = () => { pop.remove(); moveDayOrder(dayValue, 1); };
   pop.querySelector('#pop-rename').onclick = () => { pop.remove(); const n=prompt('Nuevo nombre:',label); if(n&&n.trim()&&n.trim()!==label) renameTrainingDay(dayValue,n.trim()); };
+  pop.querySelector('#pop-save-workout').onclick = () => { pop.remove(); saveDayAsWorkout(dayValue, label); };
   pop.querySelector('#pop-delete').onclick = () => { pop.remove(); deleteTrainingDay(dayValue, label); };
   pop.querySelector('#pop-cancel').onclick = () => pop.remove();
   pop.onclick = (e) => { if(e.target===pop) pop.remove(); };
@@ -4057,6 +4085,8 @@ async function tplDeleteDay(templateId, dayId, dayName) {
 }
 
 function openNewTemplateModal() {
+  // If on workouts tab, open workout modal instead
+  if (currentMachotesTab === 'workouts') { openNewWorkoutModal(); return; }
   showModal('modal-new-template');
   document.getElementById('new-tpl-name').value = '';
   document.getElementById('new-tpl-type').value = 'Gym';
@@ -4504,6 +4534,322 @@ async function assignTemplateToClient() {
   closeModal('modal-assign-template');
   showToast('✅ Plan de 5 semanas generado');
   loadCoachClientDetail(currentClient.id);
+}
+
+// ===== MACHOTES TABS =====
+let currentMachotesTab = 'programas';
+function switchMachotesTab(tab) {
+  currentMachotesTab = tab;
+  document.getElementById('machotes-panel-programas').style.display = tab === 'programas' ? 'block' : 'none';
+  document.getElementById('machotes-panel-workouts').style.display = tab === 'workouts' ? 'block' : 'none';
+  // Update tab styles
+  const tabs = ['programas','workouts'];
+  tabs.forEach(t => {
+    const el = document.getElementById('mtab-' + t);
+    if (!el) return;
+    const active = t === tab;
+    el.style.color = active ? 'var(--orange)' : 'var(--gray4)';
+    el.style.borderBottom = active ? '2px solid var(--orange)' : '2px solid transparent';
+  });
+  // Update "+ Nuevo" button action
+  const newBtn = document.getElementById('machotes-new-btn');
+  if (newBtn) {
+    if (tab === 'programas') { newBtn.onclick = () => openNewTemplateModal(); newBtn.textContent = '+ Nuevo'; }
+    else if (tab === 'workouts') { newBtn.onclick = () => openNewWorkoutModal(); newBtn.textContent = '+ Workout'; }
+  }
+  if (tab === 'workouts') loadWorkouts();
+}
+
+// ===== WORKOUT TEMPLATES =====
+let workoutFilter = '';
+let currentWorkoutId = null;
+let saveDayWorkoutDayValue = null;
+
+function setWorkoutFilter(type, el) {
+  workoutFilter = type;
+  document.querySelectorAll('#workout-type-chips .filter-chip').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+  loadWorkouts();
+}
+
+async function loadWorkouts() {
+  const list = document.getElementById('workouts-list');
+  if (!list) return;
+  list.innerHTML = '<div class="spinner"></div>';
+  let q = sb.from('workout_templates').select('*').order('created_at', {ascending: false});
+  if (workoutFilter) q = q.eq('type', workoutFilter);
+  const { data: workouts, error } = await q;
+  list.innerHTML = '';
+  if (error || !workouts || workouts.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--gray4);"><div style="font-size:32px;margin-bottom:8px;">🏋️</div><div style="font-size:14px;font-weight:600;">Sin workouts aún</div><div style="font-size:12px;margin-top:4px;">Crea tu primer workout o guarda un día de cliente</div></div>';
+    return;
+  }
+  const typeEmoji = {Gym:'🏋️',Condominio:'🏠','Peso Corporal':'💪',Cardio:'🏃',Femenino:'🌸'};
+  for (const w of workouts) {
+    const { data: exs } = await sb.from('workout_exercises').select('id,exercise_name,sets_week1,sets_week2,sets_week3,sets_week4,reps,superset_group').eq('workout_id', w.id).order('exercise_order');
+    const exCount = exs ? exs.length : 0;
+    const card = document.createElement('div');
+    card.className = 'tpl-card fade-up';
+    card.id = 'wkt-card-' + w.id;
+    const safeNameAttr = w.name.replace(/'/g, "\'").replace(/"/g, '&quot;');
+    card.innerHTML = `
+      <div onclick="toggleWorkoutCard('${w.id}')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
+            <div class="tpl-card-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${w.name}</div>
+            <div class="tpl-card-type" style="flex-shrink:0;">${typeEmoji[w.type]||''} ${w.type}</div>
+          </div>
+          <div class="tpl-card-meta" style="margin-bottom:0;">${exCount} ejercicio${exCount !== 1 ? 's' : ''}</div>
+        </div>
+        <div id="wkt-chevron-${w.id}" style="font-size:13px;color:var(--gray4);transition:transform 0.2s;flex-shrink:0;">▼</div>
+      </div>
+      <div id="wkt-body-${w.id}" style="display:none;margin-top:14px;">
+        <div id="wkt-ex-list-${w.id}" style="margin-bottom:12px;"></div>
+        <div style="display:flex;gap:6px;padding-top:10px;border-top:1.5px solid var(--gray2);">
+          <button class="tpl-btn" style="flex:1;background:var(--orange-light);color:var(--orange);border:1.5px solid var(--orange);" onclick="openWorkoutEditor('${w.id}','${safeNameAttr}')">✏️ Editar</button>
+          <button class="tpl-btn tpl-btn-delete" style="flex:1;" onclick="deleteWorkout('${w.id}','${safeNameAttr}')">🗑️ Borrar</button>
+        </div>
+      </div>
+    `;
+    list.appendChild(card);
+    // Render exercise preview
+    const exContainer = document.getElementById('wkt-ex-list-' + w.id);
+    if (exs && exs.length > 0 && exContainer) {
+      exContainer.innerHTML = exs.map(e => {
+        const s1 = e.sets_week1||'', s2 = e.sets_week2||'', s3 = e.sets_week3||'', s4 = e.sets_week4||'';
+        const prog = [s1,s2,s3,s4].filter(Boolean).join('→') || '—';
+        return `<div class="tpl-day-ex-preview"><div class="tpl-day-ex-name">${e.exercise_name}</div><div class="tpl-day-ex-prog">${e.reps||''} · ${prog} series</div></div>`;
+      }).join('');
+    } else if (exContainer) {
+      exContainer.innerHTML = '<div style="font-size:12px;color:var(--gray4);padding:8px 0;">Sin ejercicios — toca Editar para agregar</div>';
+    }
+  }
+}
+
+function toggleWorkoutCard(workoutId) {
+  const body = document.getElementById('wkt-body-' + workoutId);
+  const chevron = document.getElementById('wkt-chevron-' + workoutId);
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
+function openNewWorkoutModal() {
+  showModal('modal-new-workout');
+  document.getElementById('new-wkt-name').value = '';
+  document.getElementById('new-wkt-type').value = 'Gym';
+}
+
+async function createNewWorkout() {
+  const name = document.getElementById('new-wkt-name').value.trim();
+  const type = document.getElementById('new-wkt-type').value;
+  if (!name) { showToast('⚠️ Escribe un nombre'); return; }
+  const { data, error } = await sb.from('workout_templates').insert([{ name, type }]).select().single();
+  if (error) { showToast('❌ Error: ' + error.message); return; }
+  closeModal('modal-new-workout');
+  showToast('✅ Workout "' + name + '" creado');
+  openWorkoutEditor(data.id, name);
+}
+
+async function deleteWorkout(workoutId, name) {
+  if (!confirm('¿Borrar el workout "' + name + '"?')) return;
+  await sb.from('workout_exercises').delete().eq('workout_id', workoutId);
+  await sb.from('workout_templates').delete().eq('id', workoutId);
+  showToast('🗑️ Workout eliminado');
+  loadWorkouts();
+}
+
+// ===== WORKOUT EDITOR (modal bottom sheet) =====
+let wktEditorWorkoutId = null;
+let wktEditorExCount = 0;
+
+async function openWorkoutEditor(workoutId, name) {
+  wktEditorWorkoutId = workoutId;
+  wktEditorExCount = 0;
+  document.getElementById('wkt-editor-title').textContent = name || 'Editar Workout';
+  const container = document.getElementById('wkt-editor-exercises');
+  container.innerHTML = '<div class="spinner"></div>';
+  showModal('modal-workout-editor');
+  const { data: exs } = await sb.from('workout_exercises').select('*').eq('workout_id', workoutId).order('exercise_order');
+  container.innerHTML = '';
+  if (exs) { for (const ex of exs) { addWorkoutExerciseRow(ex); } }
+}
+
+function addWorkoutExerciseRow(prefill = null) {
+  wktEditorExCount++;
+  const id = wktEditorExCount;
+  const container = document.getElementById('wkt-editor-exercises');
+  const row = document.createElement('div');
+  row.id = 'wkt-ex-row-' + id;
+  row.dataset.dbId = prefill ? (prefill.id || '') : '';
+  row.style.cssText = 'background:var(--gray1);border-radius:10px;padding:12px;margin-bottom:8px;';
+  row.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <input class="form-input" style="flex:1;margin-bottom:0;font-size:13px;" id="wkt-ex-name-${id}" placeholder="Nombre del ejercicio" value="${prefill ? prefill.exercise_name : ''}">
+      <button onclick="removeWktExRow(${id})" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+      <input class="form-input" style="margin-bottom:0;font-size:12px;" id="wkt-ex-reps-${id}" placeholder="Reps (ej: 10-12)" value="${prefill ? (prefill.reps||'') : ''}">
+      <input class="form-input" style="margin-bottom:0;font-size:12px;" id="wkt-ex-rest-${id}" placeholder="Descanso (seg)" type="number" value="${prefill ? (prefill.rest_seconds||90) : 90}">
+    </div>
+    <div style="font-size:10px;font-weight:700;color:var(--gray5);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Series por semana (opcional)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;">
+      <div><div style="font-size:9px;color:var(--gray4);text-align:center;margin-bottom:2px;">S1</div><input class="tpl-prog-input" type="number" id="wkt-ex-w1-${id}" min="1" max="20" placeholder="—" value="${prefill && prefill.sets_week1 != null ? prefill.sets_week1 : ''}"></div>
+      <div><div style="font-size:9px;color:var(--gray4);text-align:center;margin-bottom:2px;">S2</div><input class="tpl-prog-input" type="number" id="wkt-ex-w2-${id}" min="1" max="20" placeholder="—" value="${prefill && prefill.sets_week2 != null ? prefill.sets_week2 : ''}"></div>
+      <div><div style="font-size:9px;color:var(--gray4);text-align:center;margin-bottom:2px;">S3</div><input class="tpl-prog-input" type="number" id="wkt-ex-w3-${id}" min="1" max="20" placeholder="—" value="${prefill && prefill.sets_week3 != null ? prefill.sets_week3 : ''}"></div>
+      <div><div style="font-size:9px;color:var(--gray4);text-align:center;margin-bottom:2px;">S4</div><input class="tpl-prog-input" type="number" id="wkt-ex-w4-${id}" min="1" max="20" placeholder="—" value="${prefill && prefill.sets_week4 != null ? prefill.sets_week4 : ''}"></div>
+    </div>
+  `;
+  container.appendChild(row);
+}
+
+function addWorkoutExercise() { addWorkoutExerciseRow(); }
+function removeWktExRow(id) { document.getElementById('wkt-ex-row-' + id)?.remove(); }
+
+function openLibraryForWorkout() {
+  // Reuse existing library in a simple mode — just grab the name
+  const name = prompt('Nombre del ejercicio de biblioteca:');
+  if (name && name.trim()) { addWorkoutExerciseRow({ exercise_name: name.trim() }); }
+}
+
+async function saveWorkoutEdits() {
+  if (!wktEditorWorkoutId) return;
+  const rows = document.querySelectorAll('#wkt-editor-exercises > div[id^="wkt-ex-row-"]');
+  await sb.from('workout_exercises').delete().eq('workout_id', wktEditorWorkoutId);
+  const toInsert = [];
+  let order = 0;
+  rows.forEach(row => {
+    const rowId = row.id.replace('wkt-ex-row-', '');
+    const name = document.getElementById('wkt-ex-name-' + rowId)?.value.trim();
+    if (!name) return;
+    const w1 = document.getElementById('wkt-ex-w1-' + rowId)?.value;
+    const w2 = document.getElementById('wkt-ex-w2-' + rowId)?.value;
+    const w3 = document.getElementById('wkt-ex-w3-' + rowId)?.value;
+    const w4 = document.getElementById('wkt-ex-w4-' + rowId)?.value;
+    toInsert.push({
+      workout_id: wktEditorWorkoutId,
+      exercise_name: name,
+      reps: document.getElementById('wkt-ex-reps-' + rowId)?.value || '10-12',
+      rest_seconds: parseInt(document.getElementById('wkt-ex-rest-' + rowId)?.value) || 90,
+      sets_week1: w1 ? parseInt(w1) : null,
+      sets_week2: w2 ? parseInt(w2) : null,
+      sets_week3: w3 ? parseInt(w3) : null,
+      sets_week4: w4 ? parseInt(w4) : null,
+      exercise_order: order++
+    });
+  });
+  if (toInsert.length > 0) {
+    const { error } = await sb.from('workout_exercises').insert(toInsert);
+    if (error) { showToast('❌ ' + error.message); return; }
+  }
+  closeModal('modal-workout-editor');
+  showToast('✅ Workout guardado');
+  loadWorkouts();
+}
+
+// ===== PASTE WORKOUT TO CLIENT =====
+async function openPasteWorkoutModal() {
+  if (!currentClient || !builderDay) { showToast('⚠️ Selecciona un día primero'); return; }
+  const { data: workouts } = await sb.from('workout_templates').select('id,name').order('name');
+  const sel = document.getElementById('paste-wkt-select');
+  sel.innerHTML = '<option value="">Selecciona un workout...</option>';
+  if (workouts) workouts.forEach(w => { const o = document.createElement('option'); o.value = w.id; o.textContent = w.name; sel.appendChild(o); });
+  sel.onchange = () => loadPasteWorkoutPreview(sel.value);
+  document.getElementById('paste-wkt-preview').innerHTML = '';
+  document.getElementById('paste-wkt-target-label').textContent = (currentClient.name || 'Cliente') + ' · ' + builderDay + ' · Semana ' + builderWeek;
+  // Uncheck all weeks by default
+  ['paste-wk1','paste-wk2','paste-wk3','paste-wk4'].forEach(id => { const el = document.getElementById(id); if(el) el.checked = false; });
+  showModal('modal-paste-workout');
+}
+
+async function loadPasteWorkoutPreview(workoutId) {
+  const preview = document.getElementById('paste-wkt-preview');
+  if (!workoutId) { preview.innerHTML = ''; return; }
+  const { data: exs } = await sb.from('workout_exercises').select('exercise_name,sets_week1,sets_week2,sets_week3,sets_week4,reps').eq('workout_id', workoutId).order('exercise_order');
+  if (!exs || exs.length === 0) { preview.innerHTML = '<div style="font-size:12px;color:var(--gray4);">Sin ejercicios en este workout</div>'; return; }
+  preview.innerHTML = '<div style="background:var(--gray1);border-radius:10px;padding:10px;margin-bottom:4px;">' +
+    exs.map(e => {
+      const prog = [e.sets_week1,e.sets_week2,e.sets_week3,e.sets_week4].filter(v => v != null).join('→') || '—';
+      return `<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--gray2);display:flex;justify-content:space-between;"><span>${e.exercise_name}</span><span style="color:var(--orange);font-family:'DM Mono',monospace;font-size:11px;">${e.reps||''} · ${prog}</span></div>`;
+    }).join('') + '</div>';
+}
+
+async function confirmPasteWorkout() {
+  const workoutId = document.getElementById('paste-wkt-select').value;
+  if (!workoutId) { showToast('⚠️ Selecciona un workout'); return; }
+  if (!currentClient || !builderDay) { showToast('⚠️ Sin cliente o día activo'); return; }
+  // Figure out which weeks to apply
+  const checkedWeeks = [1,2,3,4].filter(w => document.getElementById('paste-wk'+w)?.checked);
+  const weeksToApply = checkedWeeks.length > 0 ? checkedWeeks : [1,2,3,4];
+  const weekLabel = checkedWeeks.length > 0 ? 'S' + checkedWeeks.join(', S') : 'todas las semanas';
+  if (!confirm(`¿Pegar workout en "${builderDay}" (${weekLabel})? Esto reemplazará los ejercicios de ese día en las semanas seleccionadas.`)) return;
+  closeModal('modal-paste-workout');
+  showToast('⏳ Pegando workout...');
+  const { data: exs } = await sb.from('workout_exercises').select('*').eq('workout_id', workoutId).order('exercise_order');
+  if (!exs || exs.length === 0) { showToast('⚠️ El workout no tiene ejercicios'); return; }
+  for (const week of weeksToApply) {
+    // Get or create plan_day for this client + week + day
+    let { data: pd } = await sb.from('monthly_plans').select('id').eq('client_id', currentClient.id).eq('week_number', week).eq('day_of_week', builderDay).maybeSingle();
+    if (!pd) {
+      const { data: newPd } = await sb.from('monthly_plans').insert([{ client_id: currentClient.id, week_number: week, day_of_week: builderDay }]).select().single();
+      pd = newPd;
+    }
+    if (!pd) continue;
+    // Delete existing exercises for this day
+    await sb.from('exercises').delete().eq('plan_day_id', pd.id);
+    // Insert workout exercises
+    const setsKey = ['sets_week1','sets_week2','sets_week3','sets_week4'];
+    const toInsert = exs.map((e, idx) => ({
+      plan_day_id: pd.id,
+      name: e.exercise_name,
+      sets: e[setsKey[week-1]] != null ? e[setsKey[week-1]] : (e.sets_week1 || 3),
+      reps_range: e.reps || '10-12',
+      rest_seconds: e.rest_seconds || 90,
+      tag: 'Peso Libre',
+      order_index: idx
+    }));
+    await sb.from('exercises').insert(toInsert);
+  }
+  showToast('✅ Workout pegado en ' + weekLabel);
+  await buildDayStrip();
+  if (builderDay) await switchBuilderDay(builderDay);
+}
+
+// ===== SAVE DAY AS WORKOUT =====
+async function saveDayAsWorkout(dayValue, label) {
+  saveDayWorkoutDayValue = dayValue;
+  document.getElementById('save-as-wkt-name').value = label || dayValue;
+  document.getElementById('save-as-wkt-type').value = 'Gym';
+  showModal('modal-save-as-workout');
+}
+
+async function confirmSaveDayAsWorkout() {
+  const name = document.getElementById('save-as-wkt-name').value.trim();
+  const type = document.getElementById('save-as-wkt-type').value;
+  if (!name) { showToast('⚠️ Escribe un nombre'); return; }
+  if (!currentClient || !saveDayWorkoutDayValue) return;
+  // Get exercises from current builder week + day
+  const { data: pd } = await sb.from('monthly_plans').select('id').eq('client_id', currentClient.id).eq('week_number', builderWeek).eq('day_of_week', saveDayWorkoutDayValue).maybeSingle();
+  if (!pd) { showToast('⚠️ No hay ejercicios en ese día'); return; }
+  const { data: exs } = await sb.from('exercises').select('*').eq('plan_day_id', pd.id).order('order_index');
+  if (!exs || exs.length === 0) { showToast('⚠️ El día no tiene ejercicios'); return; }
+  // Create workout template
+  const { data: wkt, error } = await sb.from('workout_templates').insert([{ name, type }]).select().single();
+  if (error) { showToast('❌ ' + error.message); return; }
+  // Copy exercises
+  const toInsert = exs.map((e, idx) => ({
+    workout_id: wkt.id,
+    exercise_name: e.name,
+    reps: e.reps_range || '10-12',
+    rest_seconds: e.rest_seconds || 90,
+    sets_week1: e.sets || null,
+    sets_week2: null, sets_week3: null, sets_week4: null,
+    exercise_order: idx
+  }));
+  await sb.from('workout_exercises').insert(toInsert);
+  closeModal('modal-save-as-workout');
+  showToast('✅ Workout "' + name + '" guardado en Machotes');
 }
 
 // ===== PROGRESS DASHBOARD =====
@@ -7514,6 +7860,95 @@ async function toggleHabit(habitId, checked) {
     </div>
     <button class="btn-primary" onclick="createNewTemplate()">Crear Machote</button>
     <button onclick="closeModal('modal-new-template')" class="btn-secondary" style="margin-top:10px;">Cancelar</button>
+  </div>
+</div>
+
+<!-- ===== MODAL: NEW WORKOUT ===== -->
+<div class="modal-overlay" id="modal-new-workout">
+  <div class="modal-card">
+    <span class="modal-close" onclick="closeModal('modal-new-workout')">×</span>
+    <div class="modal-title">🏋️ Nuevo Workout</div>
+    <div class="form-group">
+      <label class="form-label">Nombre</label>
+      <input class="form-input" id="new-wkt-name" placeholder="ej: Pecho y Tríceps, Pierna Fuerza...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tipo</label>
+      <select class="form-select" id="new-wkt-type">
+        <option value="Gym">🏋️ Gym</option>
+        <option value="Condominio">🏠 Condominio</option>
+        <option value="Peso Corporal">💪 Peso Corporal</option>
+        <option value="Cardio">🏃 Cardio</option>
+        <option value="Femenino">🌸 Femenino</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="createNewWorkout()">Crear Workout</button>
+    <button onclick="closeModal('modal-new-workout')" class="btn-secondary" style="margin-top:10px;">Cancelar</button>
+  </div>
+</div>
+
+<!-- ===== MODAL: PASTE WORKOUT TO CLIENT DAY ===== -->
+<div class="modal-overlay" id="modal-paste-workout">
+  <div class="modal-card">
+    <span class="modal-close" onclick="closeModal('modal-paste-workout')">×</span>
+    <div class="modal-title">🏋️ Pegar Workout</div>
+    <div style="font-size:12px;color:var(--gray4);margin-bottom:16px;">Selecciona un workout para pegarlo en el día activo. <strong style="color:var(--red);">Reemplazará los ejercicios existentes de ese día.</strong></div>
+    <div class="form-group">
+      <label class="form-label">Workout</label>
+      <select class="form-select" id="paste-wkt-select">
+        <option value="">Selecciona un workout...</option>
+      </select>
+    </div>
+    <div id="paste-wkt-preview" style="margin-bottom:14px;"></div>
+    <div style="font-size:11px;color:var(--gray4);margin-bottom:14px;">Se pegará en: <strong id="paste-wkt-target-label" style="color:var(--black);"></strong></div>
+    <div style="font-size:11px;font-weight:700;color:var(--gray5);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Semanas a aplicar (opcional — vacío = todas)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:16px;">
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;cursor:pointer;"><input type="checkbox" id="paste-wk1" value="1" style="accent-color:var(--orange);"> S1</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;cursor:pointer;"><input type="checkbox" id="paste-wk2" value="2" style="accent-color:var(--orange);"> S2</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;cursor:pointer;"><input type="checkbox" id="paste-wk3" value="3" style="accent-color:var(--orange);"> S3</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;cursor:pointer;"><input type="checkbox" id="paste-wk4" value="4" style="accent-color:var(--orange);"> S4</label>
+    </div>
+    <button class="btn-primary" onclick="confirmPasteWorkout()">✅ Pegar Workout</button>
+    <button onclick="closeModal('modal-paste-workout')" class="btn-secondary" style="margin-top:10px;">Cancelar</button>
+  </div>
+</div>
+
+<!-- ===== MODAL: SAVE DAY AS WORKOUT ===== -->
+<div class="modal-overlay" id="modal-save-as-workout">
+  <div class="modal-card">
+    <span class="modal-close" onclick="closeModal('modal-save-as-workout')">×</span>
+    <div class="modal-title">💾 Guardar como Workout</div>
+    <div style="font-size:12px;color:var(--gray4);margin-bottom:16px;">Guarda este día en tu biblioteca de Workouts para reutilizarlo con otros clientes.</div>
+    <div class="form-group">
+      <label class="form-label">Nombre del Workout</label>
+      <input class="form-input" id="save-as-wkt-name" placeholder="ej: Pecho y Tríceps Semana 1...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tipo</label>
+      <select class="form-select" id="save-as-wkt-type">
+        <option value="Gym">🏋️ Gym</option>
+        <option value="Condominio">🏠 Condominio</option>
+        <option value="Peso Corporal">💪 Peso Corporal</option>
+        <option value="Cardio">🏃 Cardio</option>
+        <option value="Femenino">🌸 Femenino</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="confirmSaveDayAsWorkout()">💾 Guardar</button>
+    <button onclick="closeModal('modal-save-as-workout')" class="btn-secondary" style="margin-top:10px;">Cancelar</button>
+  </div>
+</div>
+
+<!-- ===== MODAL: WORKOUT EDITOR ===== -->
+<div class="modal-overlay" id="modal-workout-editor" style="align-items:flex-start;padding-top:0;">
+  <div class="modal-card" style="border-radius:20px 20px 0 0;max-height:95vh;overflow-y:auto;margin-top:auto;position:fixed;bottom:0;left:0;right:0;max-width:480px;margin-left:auto;margin-right:auto;">
+    <span class="modal-close" onclick="closeModal('modal-workout-editor')">×</span>
+    <div class="modal-title" id="wkt-editor-title">Editar Workout</div>
+    <div id="wkt-editor-exercises" style="margin-bottom:12px;"></div>
+    <div style="display:flex;gap:6px;margin-bottom:12px;">
+      <button class="add-ex-btn" style="flex:1;margin-top:0;font-size:12px;padding:9px;" onclick="addWorkoutExercise()">+ Ejercicio</button>
+      <button class="add-ex-btn" style="flex:1;margin-top:0;font-size:12px;padding:9px;background:var(--orange-light);border-style:solid;" onclick="openLibraryForWorkout()">📚 Biblioteca</button>
+    </div>
+    <button class="btn-primary" onclick="saveWorkoutEdits()">💾 Guardar cambios</button>
   </div>
 </div>
 
