@@ -8302,34 +8302,47 @@ async function runAIGenerator() {
   }
 }
 
-function extractExercisesFromAI(parsed, mode) {
-  // Direct flat list (bloque/workout)
-  if (parsed.ejercicios && parsed.ejercicios.length > 0) return parsed.ejercicios;
-  // Nested sessions (programa) — collect unique exercises across all sessions
-  const seen = new Set();
-  const exs = [];
-  for (const key of Object.keys(parsed)) {
-    const val = parsed[key];
-    if (val && typeof val === 'object' && Array.isArray(val.ejercicios)) {
-      val.ejercicios.forEach(e => {
-        if (!seen.has(e.nombre)) { seen.add(e.nombre); exs.push(e); }
-      });
+function deepFindEjercicios(obj, sessions, seen, depth) {
+  if (depth > 5 || !obj || typeof obj !== 'object') return;
+  if (Array.isArray(obj)) {
+    // Could be an array of sessions or exercises
+    if (obj.length > 0 && obj[0].nombre && obj[0].series) {
+      // It's an exercise array
+      const sessionName = 'Sesión ' + (sessions.length + 1);
+      const exs = [];
+      obj.forEach(e => { if (!seen.has(e.nombre)) { seen.add(e.nombre); exs.push(e); } });
+      if (exs.length > 0) sessions.push({ nombre: sessionName, ejercicios: exs });
+    } else {
+      obj.forEach(item => deepFindEjercicios(item, sessions, seen, depth + 1));
     }
+    return;
   }
-  return exs;
+  // Object — look for ejercicios key or recurse
+  if (obj.ejercicios && Array.isArray(obj.ejercicios) && obj.ejercicios.length > 0) {
+    const exs = [];
+    obj.ejercicios.forEach(e => { if (e.nombre && !seen.has(e.nombre)) { seen.add(e.nombre); exs.push(e); } });
+    if (exs.length > 0) sessions.push({ nombre: obj.nombre || obj.dia || ('Sesión ' + (sessions.length + 1)), ejercicios: exs });
+    return;
+  }
+  for (const key of Object.keys(obj)) {
+    if (['_name','_mode','notas','notas_lesiones','notas_generales','modificaciones_bjj','progresion_semana1'].includes(key)) continue;
+    deepFindEjercicios(obj[key], sessions, seen, depth + 1);
+  }
 }
 
 function extractSessionsFromAI(parsed) {
-  // Returns array of {nombre, ejercicios} for each session
-  if (parsed.ejercicios) return [{ nombre: parsed.nombre || 'Sesión 1', ejercicios: parsed.ejercicios }];
   const sessions = [];
-  for (const key of Object.keys(parsed)) {
-    const val = parsed[key];
-    if (val && typeof val === 'object' && Array.isArray(val.ejercicios)) {
-      sessions.push({ nombre: val.nombre || key, ejercicios: val.ejercicios });
-    }
-  }
-  return sessions;
+  const seen = new Set();
+  deepFindEjercicios(parsed, sessions, seen, 0);
+  return sessions.length > 0 ? sessions : [{ nombre: 'Sesión 1', ejercicios: [] }];
+}
+
+function extractExercisesFromAI(parsed, mode) {
+  const sessions = extractSessionsFromAI(parsed);
+  const seen = new Set();
+  const exs = [];
+  sessions.forEach(s => s.ejercicios.forEach(e => { if (!seen.has(e.nombre)) { seen.add(e.nombre); exs.push(e); } }));
+  return exs;
 }
 
 function findLibraryMatch(aiName, library) {
