@@ -8286,7 +8286,9 @@ async function runAIGenerator() {
     // Build review decisions
     aiExerciseDecisions = allExercises.map(ex => {
       const match = findLibraryMatch(ex.nombre, library);
-      return { aiName: ex.nombre, libMatch: match, decision: match ? 'pending' : 'new', videoUrl: '', muscleGroup: ex.muscle_group || null, exData: ex };
+      // If AI says es_nuevo:false and no lib match, auto-confirm as new exercise (no video needed)
+      const decision = match ? 'pending' : (ex.es_nuevo ? 'new' : 'confirmed_new');
+      return { aiName: ex.nombre, libMatch: match, decision, videoUrl: '', muscleGroup: ex.muscle_group || null, exData: ex };
     });
 
     closeModal('modal-ai-generator');
