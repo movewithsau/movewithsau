@@ -1,4 +1,7 @@
-export const config = { runtime: 'edge' };
+export const config = { 
+  runtime: 'edge',
+  maxDuration: 30
+};
 
 export default async function handler(req) {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
