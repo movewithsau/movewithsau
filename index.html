@@ -1564,7 +1564,7 @@ function showProgressionCelebration(msg) {
   }, 2800);
 }
 function showModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModal(id) { const el = document.getElementById(id); if (!el) return; el.classList.remove('open'); el.style.display = 'none'; }
 function getInitials(n) { if(!n)return'??'; return n.split(' ').map(x=>x[0]).join('').substring(0,2).toUpperCase(); }
 function getTagClass(tag) { return tag==='Peso Libre'?'tag-peso-libre':tag==='Máquina'?'tag-maquina':'tag-peso-corporal'; }
 
@@ -8209,7 +8209,7 @@ async function toggleHabit(habitId, checked) {
 }
 
 // ===== AI GENERATOR (MOVE STRONG FLOW) =====
-const ANTHROPIC_KEY = 'TU_KEY_AQUI'; // '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';
+const ANTHROPIC_KEY = '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';
 
 const MOVE_SYSTEM_PROMPT = `Eres el agente de programación de entrenamiento de MOVE, la marca de coaching exclusivo de Sau (@movewithsau). Eres un co-creador de programas individualizados, basados en evidencia, alineados con la metodología Strong Flow.
 
