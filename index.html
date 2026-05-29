@@ -8303,7 +8303,33 @@ async function runAIGenerator() {
 }
 
 function extractExercisesFromAI(parsed, mode) {
-  return parsed.ejercicios || [];
+  // Direct flat list (bloque/workout)
+  if (parsed.ejercicios && parsed.ejercicios.length > 0) return parsed.ejercicios;
+  // Nested sessions (programa) — collect unique exercises across all sessions
+  const seen = new Set();
+  const exs = [];
+  for (const key of Object.keys(parsed)) {
+    const val = parsed[key];
+    if (val && typeof val === 'object' && Array.isArray(val.ejercicios)) {
+      val.ejercicios.forEach(e => {
+        if (!seen.has(e.nombre)) { seen.add(e.nombre); exs.push(e); }
+      });
+    }
+  }
+  return exs;
+}
+
+function extractSessionsFromAI(parsed) {
+  // Returns array of {nombre, ejercicios} for each session
+  if (parsed.ejercicios) return [{ nombre: parsed.nombre || 'Sesión 1', ejercicios: parsed.ejercicios }];
+  const sessions = [];
+  for (const key of Object.keys(parsed)) {
+    const val = parsed[key];
+    if (val && typeof val === 'object' && Array.isArray(val.ejercicios)) {
+      sessions.push({ nombre: val.nombre || key, ejercicios: val.ejercicios });
+    }
+  }
+  return sessions;
 }
 
 function findLibraryMatch(aiName, library) {
