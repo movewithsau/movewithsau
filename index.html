@@ -8215,10 +8215,13 @@ const MOVE_SYSTEM_PROMPT = `Eres el agente MOVE de Sau. Metodologia Strong Flow:
 
 Responde SOLO con JSON puro. Sin texto. Sin markdown.
 
-Formato para todos los modos:
+Formato BLOQUE o WORKOUT:
 {"ejercicios":[{"nombre":"nombre","series":3,"reps":"8-10","cue":"max 5 palabras","es_nuevo":false}]}
 
-es_nuevo:true para ejercicios poco comunes (Crab Reach, PAILs/RAILs, Dandasana curl). Max 8 ejercicios.`;
+Formato PROGRAMA (usa EXACTAMENTE esta estructura, sin wrappers extra):
+{"sesiones":[{"nombre":"Día 1 — Push","ejercicios":[{"nombre":"nombre","series":3,"reps":"8-10","cue":"max 5 palabras","es_nuevo":false}]}]}
+
+es_nuevo:true para ejercicios poco comunes (Crab Reach, PAILs/RAILs, Dandasana curl). Max 8 ejercicios por sesión.`;
 
 let aiGeneratorMode = 'bloque';
 let aiGeneratedData = null;
