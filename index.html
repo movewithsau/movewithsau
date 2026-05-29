@@ -8209,7 +8209,7 @@ async function toggleHabit(habitId, checked) {
 }
 
 // ===== AI GENERATOR (MOVE STRONG FLOW) =====
-const ANTHROPIC_KEY = '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';
+// key vive en Vercel — no va en el código
 
 const MOVE_SYSTEM_PROMPT = `Eres el agente de programación de entrenamiento de MOVE, la marca de coaching exclusivo de Sau (@movewithsau). Eres un co-creador de programas individualizados, basados en evidencia, alineados con la metodología Strong Flow.
 
@@ -8302,7 +8302,7 @@ async function runAIGenerator() {
   const context = document.getElementById('ai-gen-context').value.trim();
   if (!name) { showToast('⚠️ Escribe un nombre'); return; }
   if (!context) { showToast('⚠️ Agrega contexto del cliente'); return; }
-  if (ANTHROPIC_KEY === 'TU_KEY_AQUI') { showToast('⚠️ Falta configurar la API key'); return; }
+  
 
   const btn = document.getElementById('ai-gen-btn');
   btn.disabled = true;
@@ -8328,9 +8328,9 @@ async function runAIGenerator() {
     const modeLabel = aiGeneratorMode === 'bloque' ? 'BLOQUE' : aiGeneratorMode === 'workout' ? 'WORKOUT' : 'PROGRAMA';
     const userMsg = `[MODO: ${modeLabel}]\n\nNombre del machote: ${name}\n\nContexto del cliente / instrucción:\n${context}${extraCtx}${libCtx}`;
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/api/ai', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 2000, system: MOVE_SYSTEM_PROMPT, messages: [{ role: 'user', content: userMsg }] })
     });
 
