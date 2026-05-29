@@ -8392,7 +8392,7 @@ function extractSessionsFromAI(parsed, mode) {
 }
 
 function extractExercisesFromAI(parsed, mode) {
-  const sessions = extractSessionsFromAI(parsed);
+  const sessions = extractSessionsFromAI(parsed, mode);
   const seen = new Set();
   const exs = [];
   sessions.forEach(s => s.ejercicios.forEach(e => { if (!seen.has(e.nombre)) { seen.add(e.nombre); exs.push(e); } }));
