@@ -8533,13 +8533,6 @@ async function confirmAIResult() {
         await saveExerciseToLibrary(nameToSave, 'Peso Libre', dec.muscleGroup || null, dec.videoUrl || null);
       }
     }
-    // Also save any exercises from sessions not in decisions
-    for (const session of aiSessions) {
-      for (const ex of (session.ejercicios || [])) {
-        await saveExerciseToLibrary(ex.nombre, 'Peso Libre', null, null);
-      }
-    }
-
     // 2. Build final exercise list (resolving names)
     const resolveExName = (aiName) => {
       const dec = aiExerciseDecisions.find(d => d.aiName === aiName);
@@ -8608,15 +8601,14 @@ async function saveAIWorkout(name, data, resolveExName) {
 async function saveAIPrograma(name, data, resolveExName) {
   const { data: tpl, error } = await sb.from('routine_templates').insert([{ name, type: 'Gym' }]).select().single();
   if (error) throw error;
-  // Save semana 1 days as template_days with exercises
-  const semana1 = (data.semanas || [])[0];
-  if (!semana1) return;
+  // Use aiSessions (already parsed by extractSessionsFromAI) — do NOT re-parse data.semanas
+  if (!aiSessions || aiSessions.length === 0) return;
   let dayOrder = 0;
-  for (const dia of (semana1.dias || [])) {
-    const { data: tDay, error: e2 } = await sb.from('template_days').insert([{ template_id: tpl.id, day_name: dia.dia + (dia.nombre ? ' — ' + dia.nombre : ''), day_order: dayOrder++ }]).select().single();
+  for (const session of aiSessions) {
+    const { data: tDay, error: e2 } = await sb.from('template_days').insert([{ template_id: tpl.id, day_name: session.nombre, day_order: dayOrder++ }]).select().single();
     if (e2) throw e2;
     let exOrder = 0;
-    for (const ex of (dia.ejercicios || [])) {
+    for (const ex of (session.ejercicios || [])) {
       const resolved = resolveExName(ex.nombre);
       if (!resolved) continue;
       await sb.from('template_exercises').insert([{ day_id: tDay.id, exercise_name: resolved, sets_week1: ex.series || 3, sets_week2: ex.series ? ex.series + 1 : 4, sets_week3: ex.series ? ex.series + 1 : 4, sets_week4: ex.series || 3, reps: ex.reps || '10-12', rest_seconds: 90, notes: [ex.cue, ex.nota].filter(Boolean).join(' | ') || null, exercise_order: exOrder++ }]);
