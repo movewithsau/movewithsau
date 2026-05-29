@@ -8264,7 +8264,7 @@ async function runAIGenerator() {
     const modeLabel = aiGeneratorMode === 'bloque' ? 'BLOQUE' : aiGeneratorMode === 'workout' ? 'WORKOUT' : 'PROGRAMA';
     const userMsg = `[MODO: ${modeLabel}]\n\nNombre del machote: ${name}\n\nContexto del cliente / instrucción:\n${context}${extraCtx}${libCtx}`;
 
-    const res = await fetch('/api/ai', {
+    const res = await fetch('/api/anthropic', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 2500, system: MOVE_SYSTEM_PROMPT, messages: [{ role: 'user', content: userMsg }] })
