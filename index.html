@@ -8249,7 +8249,8 @@ PARA [MODO: WORKOUT]:
 {"nombre":"nombre","enfoque":"descripción","duracion_estimada":"X min","razonamiento":"lógica científica","bloques":[{"nombre_bloque":"nombre","tipo":"activacion|principal|movilidad|cierre","ejercicios":[{"nombre":"nombre exacto","series":3,"reps":"8-10","descanso":"20s / 1min entre rondas","cue":"máx 5-6 palabras","nota":null,"es_nuevo":false}]}]}
 
 PARA [MODO: PROGRAMA]:
-{"nombre":"nombre","duracion_semanas":8,"split":"descripción del split","razonamiento":"lógica científica del programa","semanas":[{"semana":1,"fase":"Adaptación","rir_target":"3-4","dias":[{"dia":"Lunes","nombre":"nombre del día","ejercicios":[{"nombre":"nombre exacto","series":3,"reps":"8-10","descanso":"90s","cue":"máx 5-6 palabras","nota":null,"es_nuevo":false}]}]}]}
+Genera SOLO la semana 1 (Adaptación). El coach replica las semanas siguientes manualmente.
+{"nombre":"nombre","split":"descripción del split","razonamiento":"lógica científica del programa","semana1":{"fase":"Adaptación","rir_target":"3-4","dias":[{"dia":"Lunes","nombre":"nombre del día","ejercicios":[{"nombre":"nombre exacto","series":3,"reps":"8-10","descanso":"90s","cue":"máx 5-6 palabras","nota":null,"es_nuevo":false}]}]}}
 
 Usa "es_nuevo": true para ejercicios específicos de Strong Flow o poco comunes que podrían no estar en la librería (Dandasana curl, Crab Reach, PAILs/RAILs, etc).`;
 
@@ -8373,7 +8374,7 @@ function extractExercisesFromAI(parsed, mode) {
   } else if (mode === 'workout') {
     (parsed.bloques || []).forEach(b => (b.ejercicios || []).forEach(e => exs.push(e)));
   } else if (mode === 'programa') {
-    (parsed.semanas || []).forEach(s => (s.dias || []).forEach(d => (d.ejercicios || []).forEach(e => exs.push(e))));
+    const s1dias = parsed.semana1?.dias || (parsed.semanas?.[0]?.dias) || []; s1dias.forEach(d => (d.ejercicios || []).forEach(e => exs.push(e)));
   }
   return exs;
 }
@@ -8558,7 +8559,7 @@ async function saveAIPrograma(name, data, resolveExName) {
   const { data: tpl, error } = await sb.from('routine_templates').insert([{ name, type: 'Gym' }]).select().single();
   if (error) throw error;
   // Save semana 1 days as template_days with exercises
-  const semana1 = (data.semanas || [])[0];
+  const semana1 = data.semana1 || (data.semanas || [])[0];
   if (!semana1) return;
   let dayOrder = 0;
   for (const dia of (semana1.dias || [])) {
