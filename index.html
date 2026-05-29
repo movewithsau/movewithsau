@@ -8305,16 +8305,20 @@ async function runAIGenerator() {
 
     aiGeneratedData = { ...parsed, _name: name, _mode: aiGeneratorMode };
 
-    // Extract all exercises from the result (regardless of mode)
-    const allExercises = extractExercisesFromAI(parsed, aiGeneratorMode);
-
-    // Build review decisions
+    // Extract sessions first, then exercises from sessions
     aiSessions = extractSessionsFromAI(parsed, aiGeneratorMode);
+    const allExercises = extractExercisesFromAI(parsed, aiGeneratorMode);
+    console.log('[MOVE AI] Sessions found:', aiSessions.length, aiSessions.map(s=>s.nombre+':'+s.ejercicios.length+'exs'));
+    console.log('[MOVE AI] Exercises found:', allExercises.length);
+
+    // Build review decisions — only show pending for lib matches, skip confirmed_new to avoid clutter
     aiExerciseDecisions = allExercises.map(ex => {
       const match = findLibraryMatch(ex.nombre, library);
+      // confirmed_new = auto-add to library silently (no review needed unless explicitly new)
       const decision = match ? 'pending' : (ex.es_nuevo ? 'new' : 'confirmed_new');
       return { aiName: ex.nombre, libMatch: match, decision, videoUrl: '', muscleGroup: ex.muscle_group || null, exData: ex };
     });
+    console.log('[MOVE AI] Decisions:', aiExerciseDecisions.map(d=>d.aiName+':'+d.decision));
 
     closeModal('modal-ai-generator');
     openAIReview(parsed, name);
@@ -8522,17 +8526,25 @@ async function confirmAIResult() {
     const mode = aiGeneratedData._mode;
     const name = aiGeneratedData._name;
 
-    // 1. Save new exercises to library
+    // 1. Save all exercises to library (auto-save everything)
     for (const dec of aiExerciseDecisions) {
-      if (dec.decision === 'confirmed_new') {
-        await saveExerciseToLibrary(dec.aiName, 'Peso Libre', dec.muscleGroup || null, dec.videoUrl || null);
+      if (dec.decision !== 'skip') {
+        const nameToSave = dec.decision === 'use' ? dec.libMatch.name : dec.aiName;
+        await saveExerciseToLibrary(nameToSave, 'Peso Libre', dec.muscleGroup || null, dec.videoUrl || null);
+      }
+    }
+    // Also save any exercises from sessions not in decisions
+    for (const session of aiSessions) {
+      for (const ex of (session.ejercicios || [])) {
+        await saveExerciseToLibrary(ex.nombre, 'Peso Libre', null, null);
       }
     }
 
     // 2. Build final exercise list (resolving names)
     const resolveExName = (aiName) => {
       const dec = aiExerciseDecisions.find(d => d.aiName === aiName);
-      if (!dec || dec.decision === 'skip') return null;
+      if (!dec) return aiName; // no decision = use as-is
+      if (dec.decision === 'skip') return null;
       if (dec.decision === 'use') return dec.libMatch.name;
       if (dec.decision === 'confirmed_new') return dec.aiName;
       return aiName;
