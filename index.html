@@ -15,17 +15,17 @@
 <meta name="theme-color" content="#111111">
 <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIk1vdmUgV2l0aCBTYXUiLAogICJzaG9ydF9uYW1lIjogIk1PVkUiLAogICJkZXNjcmlwdGlvbiI6ICJUdSBwbGF0YWZvcm1hIGRlIGVudHJlbmFtaWVudG8gZXhjbHVzaXZhIiwKICAic3RhcnRfdXJsIjogIi8iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMTExMTEiLAogICJ0aGVtZV9jb2xvciI6ICIjRjc1QTBFIiwKICAib3JpZW50YXRpb24iOiAicG9ydHJhaXQiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJpY29ucy9pY29uLTE5MngxOTIucG5nIiwKICAgICAgInNpemVzIjogIjE5MngxOTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciLAogICAgICAicHVycG9zZSI6ICJhbnkgbWFza2FibGUiCiAgICB9LAogICAgewogICAgICAic3JjIjogImljb25zL2ljb24tNTEyeDUxMi5wbmciLAogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIsCiAgICAgICJwdXJwb3NlIjogImFueSBtYXNrYWJsZSIKICAgIH0KICBdCn0=">
 <!-- PWA icons embedded for offline/shortcut use -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    // Register inline service worker for PWA installability
-    const sw = `
-      self.addEventListener('fetch', e => e.respondWith(fetch(e.request)));
-    `;
-    const blob = new Blob([sw], {type: 'application/javascript'});
-    navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "ea0326eb-977e-4b7f-aaa1-ecf0f4cb355c",
+      safari_web_id: "web.onesignal.auto.ea0326eb-977e-4b7f-aaa1-ecf0f4cb355c",
+      notifyButton: { enable: false },
+      allowLocalhostAsSecureOrigin: true,
+    });
   });
-}
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1667,6 +1667,23 @@ function handleLogout() {
 }
 
 // ===== CLIENT =====
+async function requestPushPermission() {
+  try {
+    if (!window.OneSignal) return;
+    const permission = await OneSignal.Notifications.permission;
+    if (!permission) {
+      await OneSignal.Notifications.requestPermission();
+    }
+    // Tag the user with their username so we can target them individually
+    if (currentUser?.username) {
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.User.addTag('username', currentUser.username);
+        await OneSignal.User.addTag('role', currentUser.role || 'client');
+      });
+    }
+  } catch(e) { /* silently fail if notifications not supported */ }
+}
+
 async function initClient() {
   showScreen('screen-client-home');
   const {data:cd} = await sb.from('clients').select('*').eq('username',currentUser.username).single();
@@ -1698,6 +1715,8 @@ async function initClient() {
   if(localStorage.getItem('mws_timer_running') === '1') startTimerDisplay();
   updateStrongFlowBtn();
   loadAICounts();
+  // Request push notification permission (silent if already granted)
+  setTimeout(() => requestPushPermission(), 2000);
 }
 
 async function loadCoachAICounts(clientId) {
