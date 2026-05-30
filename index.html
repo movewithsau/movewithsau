@@ -749,6 +749,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div class="section-header">
       <div class="section-title">Plan mensual</div>
       <div style="display:flex;gap:6px;">
+        <div class="section-action" onclick="openQuickSeries()" style="background:#f0f4ff;color:#3b5bdb;border:1.5px solid #3b5bdb;padding:5px 10px;border-radius:6px;font-size:11px;">⚡ Series</div>
         <div class="section-action" onclick="openAssignTemplateModal()" style="background:var(--orange);color:white;padding:5px 10px;border-radius:6px;font-size:11px;">📋 Desde Template</div>
         <div class="section-action" onclick="showPlanBuilder()">+ Manual</div>
       </div>
@@ -1332,6 +1333,19 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
   </div>
 </div>
 
+<!-- ===== QUICK SERIES MODAL ===== -->
+<div class="modal-overlay" id="modal-quick-series">
+  <div class="modal-content" style="max-height:92vh;">
+    <div class="modal-header">
+      <div class="modal-title">⚡ Editar Series</div>
+      <span class="modal-close" onclick="closeModal('modal-quick-series')">×</span>
+    </div>
+    <div id="quick-series-body" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 12px;">
+      <div class="spinner" style="width:20px;height:20px;margin:30px auto;"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 const { createClient } = supabase;
 const sb = createClient(
@@ -1563,7 +1577,7 @@ function showProgressionCelebration(msg) {
     setTimeout(()=>el.remove(), 300);
   }, 2800);
 }
-function showModal(id) { document.getElementById(id).classList.add('open'); }
+function showModal(id) { const el = document.getElementById(id); if (!el) return; el.style.display = ''; el.classList.add('open'); }
 function closeModal(id) { const el = document.getElementById(id); if (!el) return; el.classList.remove('open'); el.style.display = 'none'; }
 function getInitials(n) { if(!n)return'??'; return n.split(' ').map(x=>x[0]).join('').substring(0,2).toUpperCase(); }
 function getTagClass(tag) { return tag==='Peso Libre'?'tag-peso-libre':tag==='Máquina'?'tag-maquina':'tag-peso-corporal'; }
@@ -3429,14 +3443,20 @@ function renderPlanOverview() {
   const weekNums = Object.keys(weeks).map(Number).sort();
   const selectedDays = weeks[planOverviewSelectedWeek] || [];
 
+  const selectedWeekLabel = planOverviewSelectedWeek === 5 ? 'Deload' : 'Semana ' + planOverviewSelectedWeek;
   container.innerHTML = `
     <!-- Week selector chips -->
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
       ${weekNums.map(w=>`
         <button onclick="selectPlanOverviewWeek(${w})" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid ${w===planOverviewSelectedWeek?'var(--orange)':'var(--gray2)'};background:${w===planOverviewSelectedWeek?'var(--orange)':'var(--gray1)'};color:${w===planOverviewSelectedWeek?'white':'var(--gray5)'};cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;">
           ${w===5?'Deload':'Semana '+w}
         </button>`).join('')}
       <button onclick="openBuilderForWeek(${planOverviewSelectedWeek})" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid var(--orange);background:var(--orange-light);color:var(--orange);cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:auto;">Editar</button>
+    </div>
+    <!-- Delete actions row -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+      <button onclick="deleteWeek(${planOverviewSelectedWeek})" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid #e53935;background:#fff0f0;color:#e53935;cursor:pointer;font-family:'DM Sans',sans-serif;">🗑 Borrar ${selectedWeekLabel}</button>
+      <button onclick="deleteEntireProgram()" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid #b71c1c;background:#fff0f0;color:#b71c1c;cursor:pointer;font-family:'DM Sans',sans-serif;">🗑 Borrar programa completo</button>
     </div>
     <!-- Days of selected week -->
     <div class="day-plan-card" style="margin-bottom:0;">
@@ -3525,6 +3545,133 @@ async function deleteAllExercises(planDayId) {
   if(error){showToast('❌ '+error.message);return;}
   showToast('🗑 Rutina completa eliminada');
   await reloadDayExercises(planDayId);
+}
+
+async function deleteWeek(weekNum) {
+  const weekLabel = weekNum === 5 ? 'Deload' : 'Semana ' + weekNum;
+  if (!confirm(`¿Borrar ${weekLabel} completa? Se eliminarán todos sus días y ejercicios. Esto no se puede deshacer.`)) return;
+  const {data: planDays} = await sb.from('monthly_plans').select('id').eq('client_id', currentClient.id).eq('week_number', weekNum);
+  if (planDays && planDays.length > 0) {
+    for (const pd of planDays) {
+      await sb.from('exercises').delete().eq('plan_day_id', pd.id);
+    }
+    await sb.from('monthly_plans').delete().eq('client_id', currentClient.id).eq('week_number', weekNum);
+  }
+  showToast('🗑 ' + weekLabel + ' eliminada');
+  planOverviewSelectedWeek = null;
+  loadCoachClientDetail(currentClient.id);
+}
+
+async function deleteEntireProgram() {
+  if (!confirm('¿Borrar el programa COMPLETO de este cliente? Se eliminarán todas las semanas y ejercicios. Esto no se puede deshacer.')) return;
+  const {data: planDays} = await sb.from('monthly_plans').select('id').eq('client_id', currentClient.id);
+  if (planDays && planDays.length > 0) {
+    for (const pd of planDays) {
+      await sb.from('exercises').delete().eq('plan_day_id', pd.id);
+    }
+    await sb.from('monthly_plans').delete().eq('client_id', currentClient.id);
+  }
+  showToast('🗑 Programa completo eliminado');
+  planOverviewAllPlans = null;
+  planOverviewSelectedWeek = null;
+  loadCoachClientDetail(currentClient.id);
+}
+
+// ===== QUICK SERIES =====
+async function openQuickSeries() {
+  showModal('modal-quick-series');
+  const body = document.getElementById('quick-series-body');
+  body.innerHTML = '<div class="spinner" style="width:20px;height:20px;margin:30px auto;"></div>';
+
+  const {data: planDays} = await sb.from('monthly_plans')
+    .select('id,week_number,day_of_week,day_order')
+    .eq('client_id', currentClient.id)
+    .order('day_order', {ascending:true, nullsFirst:false})
+    .order('id', {ascending:true});
+
+  if (!planDays || planDays.length === 0) {
+    body.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Sin plan mensual aún.</div></div>';
+    return;
+  }
+
+  const planDayIds = planDays.map(p => p.id);
+  const {data: exercises} = await sb.from('exercises').select('id,plan_day_id,name,sets,reps_range,order_index').in('plan_day_id', planDayIds).order('order_index');
+
+  // Build: { day_of_week: { exName: { reps_range, weeks: { weekNum: {id, sets} } } } }
+  const pdMap = {};
+  planDays.forEach(pd => { pdMap[pd.id] = pd; });
+
+  const dayOrderList = [];
+  const dayMap = {};
+  planDays.forEach(pd => {
+    if (!dayMap[pd.day_of_week]) {
+      dayMap[pd.day_of_week] = {};
+      dayOrderList.push(pd.day_of_week);
+    }
+  });
+
+  (exercises || []).forEach(ex => {
+    const pd = pdMap[ex.plan_day_id];
+    if (!pd) return;
+    const day = pd.day_of_week;
+    if (!dayMap[day][ex.name]) dayMap[day][ex.name] = { reps_range: ex.reps_range, order: ex.order_index, weeks: {} };
+    dayMap[day][ex.name].weeks[pd.week_number] = { id: ex.id, sets: ex.sets };
+  });
+
+  const weekNums = [...new Set(planDays.map(p => p.week_number))].sort((a,b)=>a-b);
+
+  // Header label
+  const weekLabel = w => w === 5 ? 'DL' : 'S' + w;
+
+  let html = `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+    <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif;">
+      <thead>
+        <tr style="border-bottom:2px solid var(--gray2);background:var(--gray1);">
+          <th style="text-align:left;padding:8px 8px;font-size:11px;color:var(--gray5);font-weight:700;min-width:130px;position:sticky;left:0;background:var(--gray1);z-index:2;">Ejercicio</th>
+          <th style="padding:8px 4px;font-size:10px;color:var(--gray5);font-weight:700;white-space:nowrap;min-width:52px;">Reps</th>
+          ${weekNums.map(w=>`<th style="padding:8px 6px;font-size:12px;color:#3b5bdb;font-weight:700;text-align:center;min-width:46px;">${weekLabel(w)}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>`;
+
+  dayOrderList.forEach(day => {
+    const exEntries = Object.entries(dayMap[day]).sort((a,b)=>(a[1].order||0)-(b[1].order||0));
+    if (!exEntries.length) return;
+    html += `<tr>
+      <td colspan="${2 + weekNums.length}" style="padding:10px 8px 5px;font-size:11px;font-weight:700;color:var(--orange);letter-spacing:0.05em;text-transform:uppercase;border-top:1px solid var(--gray2);">${day}</td>
+    </tr>`;
+    exEntries.forEach(([name, exData]) => {
+      const shortName = name.length > 22 ? name.substring(0,20)+'…' : name;
+      html += `<tr style="border-bottom:1px solid var(--gray1);">
+        <td style="padding:6px 8px;font-size:12px;font-weight:500;position:sticky;left:0;background:white;z-index:1;white-space:nowrap;" title="${name}">${shortName}</td>
+        <td style="padding:6px 4px;font-size:10px;color:var(--gray4);text-align:center;white-space:nowrap;">${exData.reps_range||'—'}</td>
+        ${weekNums.map(w => {
+          const wd = exData.weeks[w];
+          if (!wd) return `<td style="padding:6px 6px;text-align:center;color:var(--gray3);font-size:11px;">—</td>`;
+          return `<td style="padding:4px 4px;text-align:center;">
+            <input type="number" min="1" max="20" value="${wd.sets||''}"
+              onchange="saveQuickSet('${wd.id}',this.value,this)"
+              onfocus="this.select()"
+              style="width:40px;text-align:center;border:1.5px solid var(--gray2);border-radius:6px;padding:5px 2px;font-size:14px;font-weight:700;font-family:'DM Mono',monospace;outline:none;background:white;-moz-appearance:textfield;">
+          </td>`;
+        }).join('')}
+      </tr>`;
+    });
+  });
+
+  html += `</tbody></table></div>
+  <div style="font-size:11px;color:var(--gray4);text-align:center;margin-top:16px;padding-bottom:8px;">Toca un número para editar · Los cambios se guardan automáticamente ✓</div>`;
+  body.innerHTML = html;
+}
+
+async function saveQuickSet(exerciseId, newSets, inputEl) {
+  const sets = parseInt(newSets);
+  if (isNaN(sets) || sets < 1 || sets > 20) return;
+  const {error} = await sb.from('exercises').update({sets}).eq('id', exerciseId);
+  if (error) { showToast('❌ ' + error.message); return; }
+  inputEl.style.borderColor = '#3b5bdb';
+  inputEl.style.background = '#f0f4ff';
+  setTimeout(() => { inputEl.style.borderColor = 'var(--gray2)'; inputEl.style.background = 'white'; }, 700);
 }
 
 function openEditEx(ex) {
