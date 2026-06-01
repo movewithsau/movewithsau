@@ -8461,7 +8461,7 @@ async function runAIGenerator() {
     const res = await fetch('/api/anthropic', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 2500, system: MOVE_SYSTEM_PROMPT, messages: [{ role: 'user', content: userMsg }] })
+      body: JSON.stringify({ model: aiGeneratorMode === 'programa' ? 'claude-sonnet-4-6' : 'claude-haiku-4-5-20251001', max_tokens: aiGeneratorMode === 'programa' ? 8000 : 2500, system: MOVE_SYSTEM_PROMPT, messages: [{ role: 'user', content: userMsg }] })
     });
 
     const data = await res.json();
