@@ -4488,7 +4488,8 @@ function tplMoveEx(formId, direction) {
   const el = document.getElementById(formId);
   if (!el) return;
   const parent = el.parentNode;
-  const forms = [...parent.querySelectorAll('[id^="tpl-ex-"]')];
+  // Solo hijos directos cuyo id empiece con "tpl-ex-" (evita inputs internos)
+  const forms = [...parent.children].filter(c => c.id && /^tpl-ex-\d+$/.test(c.id));
   const idx = forms.indexOf(el);
   const targetIdx = idx + direction;
   if (targetIdx < 0 || targetIdx >= forms.length) return;
