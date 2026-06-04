@@ -8386,17 +8386,27 @@ async function toggleHabit(habitId, checked) {
 // ===== AI GENERATOR (MOVE STRONG FLOW) =====
 // key vive en Vercel como env var
 
-const MOVE_SYSTEM_PROMPT = `Eres el agente MOVE de Sau. Metodologia Strong Flow: fuerza+movilidad+yoga. Circuitos 2 ejercicios x3 rondas. Para BJJ: grip, frame, rotacion toracica. Respeta lesiones del cliente.
+const MOVE_SYSTEM_PROMPT = `Eres el agente generador de programas de entrenamiento del método MOVE de Sau.
 
-Responde SOLO con JSON puro. Sin texto. Sin markdown.
+METODOLOGÍA STRONG FLOW — 5 pilares: Estética, Fuerza, Movilidad, Longevidad, Atletismo.
+Estructura base: circuitos de 2 ejercicios x 3 rondas. Podés variar si el contexto lo justifica.
+El prompt del coach llega en 3 bloques: [CLIENTE] [SPLIT] [PARÁMETROS]. Leé los 3 antes de generar.
+
+REGLAS DE GENERACIÓN:
+- Respetá el split exacto indicado. No muevas músculos entre días.
+- Respetá duración, RIR, descansos y tune de pilares del bloque [PARÁMETROS].
+- Si hay restricciones de carga (running, lesión, pre-competencia): aplicalas sin excepción.
+- Cues: máximo 5-6 palabras. Técnicos, no motivacionales.
+- es_nuevo:true solo para ejercicios fuera de la biblioteca estándar de gym (ej: PAILs/RAILs, Crab Reach, Dandasana curl).
+- Máximo 8 ejercicios por sesión.
+
+RESPONDE SOLO CON JSON PURO. Sin texto. Sin markdown. Sin explicaciones.
 
 Formato BLOQUE o WORKOUT:
-{"ejercicios":[{"nombre":"nombre","series":3,"reps":"8-10","cue":"max 5 palabras","es_nuevo":false}]}
+{"ejercicios":[{"nombre":"nombre","series":3,"reps":"8-10","descanso_seg":60,"cue":"cue corto","es_nuevo":false}]}
 
-Formato PROGRAMA (usa EXACTAMENTE esta estructura, sin wrappers extra):
-{"sesiones":[{"nombre":"Día 1 — Push","ejercicios":[{"nombre":"nombre","series":3,"reps":"8-10","cue":"max 5 palabras","es_nuevo":false}]}]}
-
-es_nuevo:true para ejercicios poco comunes (Crab Reach, PAILs/RAILs, Dandasana curl). Max 8 ejercicios por sesión.`;
+Formato PROGRAMA:
+{"sesiones":[{"nombre":"Día 1 — Pecho + Espalda","ejercicios":[{"nombre":"nombre","series":3,"reps":"8-10","descanso_seg":60,"cue":"cue corto","es_nuevo":false}]}]}`;
 
 let aiGeneratorMode = 'bloque';
 let aiGeneratedData = null;
@@ -8467,15 +8477,50 @@ async function runAIGenerator() {
     if (aiGeneratorMode === 'programa') extraCtx = `\nDías por semana: ${aiDaysSelected}. Generá exactamente ${aiDaysSelected} sesiones.`;
     const userMsg = `[MODO: ${modeLabel}]\n\nNombre del machote: ${name}\n\nContexto del cliente / instrucción:\n${context}${extraCtx}${libCtx}`;
 
+    const isPrograma = aiGeneratorMode === 'programa';
     const res = await fetch('/api/anthropic', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: aiGeneratorMode === 'programa' ? 'claude-sonnet-4-6' : 'claude-haiku-4-5-20251001', max_tokens: aiGeneratorMode === 'programa' ? 8000 : 2500, system: MOVE_SYSTEM_PROMPT, messages: [{ role: 'user', content: userMsg }] })
+      body: JSON.stringify({
+        model: isPrograma ? 'claude-sonnet-4-6' : 'claude-haiku-4-5-20251001',
+        max_tokens: isPrograma ? 6000 : 2500,
+        stream: isPrograma,
+        system: MOVE_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: userMsg }]
+      })
     });
 
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
-    const raw = data.content?.[0]?.text || '';
+    let raw = '';
+    if (isPrograma) {
+      // Streaming: acumular text deltas del SSE
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const chunk = line.slice(6).trim();
+          if (!chunk || chunk === '[DONE]') continue;
+          try {
+            const ev = JSON.parse(chunk);
+            if (ev.type === 'content_block_delta' && ev.delta?.type === 'text_delta') {
+              raw += ev.delta.text;
+            }
+            if (ev.type === 'error') throw new Error(ev.error?.message || 'Stream error');
+          } catch(e) { if (e.message !== 'Unexpected end of JSON input') throw e; }
+        }
+      }
+    } else {
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
+      raw = data.content?.[0]?.text || '';
+    }
+
     const jsonStart = raw.indexOf('{');
     const jsonEnd = raw.lastIndexOf('}');
     if (jsonStart === -1 || jsonEnd === -1) throw new Error('No JSON found');
