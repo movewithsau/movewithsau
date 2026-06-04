@@ -8402,11 +8402,13 @@ REGLAS DE GENERACIÓN:
 
 RESPONDE SOLO CON JSON PURO. Sin texto. Sin markdown. Sin explicaciones.
 
+Grupos musculares válidos: Pecho, Espalda, Hombros, Bíceps, Tríceps, Cuádriceps, Isquiotibiales, Glúteos, Core, Pantorrillas, Movilidad, Cardio, Performance.
+
 Formato BLOQUE o WORKOUT:
-{"ejercicios":[{"nombre":"nombre","series":3,"reps":"8-10","descanso_seg":60,"cue":"cue corto","es_nuevo":false}]}
+{"ejercicios":[{"nombre":"nombre","series":3,"reps":"8-10","descanso_seg":60,"cue":"cue corto","muscle_group":"Pecho","video_url":null,"es_nuevo":false}]}
 
 Formato PROGRAMA:
-{"sesiones":[{"nombre":"Día 1 — Pecho + Espalda","ejercicios":[{"nombre":"nombre","series":3,"reps":"8-10","descanso_seg":60,"cue":"cue corto","es_nuevo":false}]}]}`;
+{"sesiones":[{"nombre":"Día 1 — Pecho + Espalda","ejercicios":[{"nombre":"nombre","series":3,"reps":"8-10","descanso_seg":60,"cue":"cue corto","muscle_group":"Pecho","video_url":null,"es_nuevo":false}]}]}`;
 
 let aiGeneratorMode = 'bloque';
 let aiGeneratedData = null;
