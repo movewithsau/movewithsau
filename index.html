@@ -450,7 +450,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 .tpl-ex-input:focus { border-color:var(--orange);outline:none; }
 .tpl-progression-row { display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;margin-bottom:6px; }
 .tpl-prog-label { font-size:10px;font-weight:700;color:var(--gray4);text-align:center;margin-bottom:2px; }
-.tpl-prog-input { width:100%;padding:6px 4px;border:1.5px solid var(--gray2);border-radius:6px;font-size:12px;font-family:'DM Mono',monospace;text-align:center;background:var(--white);box-sizing:border-box; }
+.tpl-prog-input { width:100%;padding:6px 4px;border:1.5px solid var(--gray2);border-radius:6px;font-size:12px;text-align:center;background:var(--white);box-sizing:border-box; }
 .tpl-prog-input:focus { border-color:var(--orange);outline:none; }
 /* Progress dashboard */
 .progress-summary-row { display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px; }
@@ -759,6 +759,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <div class="section-title">Plan mensual</div>
       <div style="display:flex;gap:6px;">
         <div class="section-action" onclick="openQuickSeries()" style="background:#f0f4ff;color:#3b5bdb;border:1.5px solid #3b5bdb;padding:5px 10px;border-radius:6px;font-size:11px;">⚡ Series</div>
+        <div class="section-action" onclick="openQuickRPE()" style="background:#fff3e0;color:#e65100;border:1.5px solid #e65100;padding:5px 10px;border-radius:6px;font-size:11px;">🎯 RPE</div>
         <div class="section-action" onclick="openAssignTemplateModal()" style="background:var(--orange);color:white;padding:5px 10px;border-radius:6px;font-size:11px;">📋 Desde Template</div>
         <div class="section-action" onclick="showPlanBuilder()">+ Manual</div>
       </div>
@@ -1350,6 +1351,18 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
       <span class="modal-close" onclick="closeModal('modal-quick-series')">×</span>
     </div>
     <div id="quick-series-body" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 12px;">
+      <div class="spinner" style="width:20px;height:20px;margin:30px auto;"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-quick-rpe">
+  <div class="modal-content" style="max-height:92vh;">
+    <div class="modal-header">
+      <div class="modal-title">🎯 Editar RPE</div>
+      <span class="modal-close" onclick="closeModal('modal-quick-rpe')">×</span>
+    </div>
+    <div id="quick-rpe-body" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 12px;">
       <div class="spinner" style="width:20px;height:20px;margin:30px auto;"></div>
     </div>
   </div>
@@ -2266,6 +2279,7 @@ async function loadClientExercises() {
             <button onclick="setSoloUnit('${ex.id}','lb',this)" class="unit-btn" style="padding:4px 9px;font-size:11px;">lb</button>
           </div>
         </div>
+        ${ex.rpe ? renderRPEGauge(ex.rpe) : ''}
         <!-- Inline table -->
         <table style="width:100%;border-collapse:collapse;">
           <tbody>${setRows}</tbody>
@@ -3700,6 +3714,161 @@ async function saveQuickSet(exerciseId, newSets, inputEl) {
   inputEl.style.borderColor = '#3b5bdb';
   inputEl.style.background = '#f0f4ff';
   setTimeout(() => { inputEl.style.borderColor = 'var(--gray2)'; inputEl.style.background = 'white'; }, 700);
+}
+
+// ===== QUICK RPE EDITOR =====
+async function openQuickRPE() {
+  showModal('modal-quick-rpe');
+  const body = document.getElementById('quick-rpe-body');
+  body.innerHTML = '<div class="spinner" style="width:20px;height:20px;margin:30px auto;"></div>';
+
+  const {data: planDays} = await sb.from('monthly_plans')
+    .select('id,week_number,day_of_week,day_order')
+    .eq('client_id', currentClient.id)
+    .order('day_order', {ascending:true, nullsFirst:false})
+    .order('id', {ascending:true});
+
+  if (!planDays || planDays.length === 0) {
+    body.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Sin plan mensual aún.</div></div>';
+    return;
+  }
+
+  const planDayIds = planDays.map(p => p.id);
+  const {data: exercises} = await sb.from('exercises')
+    .select('id,plan_day_id,name,reps_range,order_index,rpe')
+    .in('plan_day_id', planDayIds)
+    .order('order_index');
+
+  const pdMap = {};
+  planDays.forEach(pd => { pdMap[pd.id] = pd; });
+
+  const dayOrderList = [];
+  const dayMap = {};
+  planDays.forEach(pd => {
+    if (!dayMap[pd.day_of_week]) {
+      dayMap[pd.day_of_week] = {};
+      dayOrderList.push(pd.day_of_week);
+    }
+  });
+
+  (exercises || []).forEach(ex => {
+    const pd = pdMap[ex.plan_day_id];
+    if (!pd) return;
+    const day = pd.day_of_week;
+    if (!dayMap[day][ex.name]) dayMap[day][ex.name] = { reps_range: ex.reps_range, order: ex.order_index, weeks: {} };
+    dayMap[day][ex.name].weeks[pd.week_number] = { id: ex.id, rpe: ex.rpe };
+  });
+
+  const weekNums = [...new Set(planDays.map(p => p.week_number))].sort((a,b)=>a-b);
+  const weekLabel = w => w === 5 ? 'DL' : 'S' + w;
+
+  let html = '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">' +
+    '<table style="width:100%;border-collapse:collapse;">' +
+    '<thead><tr style="border-bottom:2px solid var(--gray2);background:var(--gray1);">' +
+    '<th style="text-align:left;padding:8px 8px;font-size:11px;color:var(--gray5);font-weight:700;min-width:130px;position:sticky;left:0;background:var(--gray1);z-index:2;">Ejercicio</th>' +
+    '<th style="padding:8px 4px;font-size:10px;color:var(--gray5);font-weight:700;white-space:nowrap;min-width:52px;">Reps</th>' +
+    weekNums.map(w => '<th style="padding:8px 6px;font-size:12px;color:#e65100;font-weight:700;text-align:center;min-width:50px;">' + weekLabel(w) + '</th>').join('') +
+    '</tr></thead><tbody>';
+
+  dayOrderList.forEach(day => {
+    const exEntries = Object.entries(dayMap[day]).sort((a,b)=>(a[1].order||0)-(b[1].order||0));
+    if (!exEntries.length) return;
+    html += '<tr><td colspan="' + (2 + weekNums.length) + '" style="padding:10px 8px 5px;font-size:11px;font-weight:700;color:var(--orange);letter-spacing:0.05em;text-transform:uppercase;border-top:1px solid var(--gray2);">' + day + '</td></tr>';
+    exEntries.forEach(([name, exData]) => {
+      const shortName = name.length > 22 ? name.substring(0,20)+'…' : name;
+      html += '<tr style="border-bottom:1px solid var(--gray1);">' +
+        '<td style="padding:6px 8px;font-size:12px;font-weight:500;position:sticky;left:0;background:white;z-index:1;white-space:nowrap;" title="' + name + '">' + shortName + '</td>' +
+        '<td style="padding:6px 4px;font-size:10px;color:var(--gray4);text-align:center;white-space:nowrap;">' + (exData.reps_range||'—') + '</td>' +
+        weekNums.map(w => {
+          const wd = exData.weeks[w];
+          if (!wd) return '<td style="padding:6px 6px;text-align:center;color:var(--gray3);font-size:11px;">—</td>';
+          const rpeVal = wd.rpe || '';
+          return '<td style="padding:4px 4px;text-align:center;">' +
+            '<input type="number" min="6" max="10" value="' + rpeVal + '"' +
+            ' onchange="saveQuickRPE(\'' + wd.id + '\',this.value,this)"' +
+            ' onfocus="this.select()"' +
+            ' style="width:44px;text-align:center;border:1.5px solid ' + (rpeVal ? '#e65100' : 'var(--gray2)') + ';border-radius:6px;padding:5px 2px;font-size:14px;font-weight:700;outline:none;background:' + (rpeVal ? '#fff3e0' : 'white') + ';-moz-appearance:textfield;">' +
+            '</td>';
+        }).join('') +
+        '</tr>';
+    });
+  });
+
+  html += '</tbody></table></div>' +
+    '<div style="font-size:11px;color:var(--gray4);text-align:center;margin-top:12px;padding-bottom:4px;">Valores válidos: 6–10 · Vacío = sin RPE asignado</div>' +
+    '<div style="margin:12px 14px 4px;padding:10px 12px;background:#fff3e0;border-radius:8px;border:1px solid #f59e0b;">' +
+    '<div style="font-size:11px;color:#92400e;font-weight:700;margin-bottom:4px;">Guía rápida RPE</div>' +
+    '<div style="font-size:10px;color:#92400e;line-height:1.6;">' +
+    '🟢 6 — Activación · 🟡 7 — Trabajo · 🟠 8 — Intenso · 🔴 9 — Al límite · ⛔ 10 — Máximo' +
+    '</div></div>';
+
+  body.innerHTML = html;
+}
+
+async function saveQuickRPE(exerciseId, newRpe, inputEl) {
+  const trimmed = newRpe.trim();
+  if (trimmed === '') {
+    const {error} = await sb.from('exercises').update({rpe: null}).eq('id', exerciseId);
+    if (error) { showToast('❌ ' + error.message); return; }
+    inputEl.style.borderColor = 'var(--gray2)';
+    inputEl.style.background = 'white';
+    showToast('✓ RPE eliminado');
+    return;
+  }
+  const rpe = parseInt(trimmed);
+  if (isNaN(rpe) || rpe < 6 || rpe > 10) { showToast('⚠️ RPE debe ser entre 6 y 10'); return; }
+  const {error} = await sb.from('exercises').update({rpe}).eq('id', exerciseId);
+  if (error) { showToast('❌ ' + error.message); return; }
+  inputEl.style.borderColor = '#e65100';
+  inputEl.style.background = '#fff3e0';
+  setTimeout(() => { inputEl.style.borderColor = '#e65100'; inputEl.style.background = '#fff3e0'; }, 700);
+}
+
+function renderRPEGauge(rpe) {
+  if (!rpe || rpe < 6 || rpe > 10) return '';
+  var cx = 44, cy = 48, r = 38, sw = 9;
+  var segColors = ['#22c55e','#a3e635','#f59e0b','#f97316','#ef4444'];
+  var rpeColors = {6:'#22c55e',7:'#84cc16',8:'#f59e0b',9:'#f97316',10:'#ef4444'};
+  var rpeLabels = {6:'Activación',7:'Trabajo',8:'Intenso',9:'Al límite',10:'Máximo'};
+  var midAngles = {6:288,7:324,8:0,9:36,10:72};
+  var boundaries = [270,306,342,18,54,90];
+
+  function ptAt(deg, rad) {
+    var a = deg * Math.PI / 180;
+    return [+(cx + rad * Math.sin(a)).toFixed(1), +(cy - rad * Math.cos(a)).toFixed(1)];
+  }
+
+  var arcs = '';
+  for (var i = 0; i < 5; i++) {
+    var p1 = ptAt(boundaries[i], r);
+    var p2 = ptAt(boundaries[i+1], r);
+    var opacity = (i + 6) <= rpe ? '1' : '0.2';
+    arcs += '<path d="M ' + p1[0] + ' ' + p1[1] + ' A ' + r + ' ' + r + ' 0 0 0 ' + p2[0] + ' ' + p2[1] + '" fill="none" stroke="' + segColors[i] + '" stroke-width="' + sw + '" stroke-linecap="butt" opacity="' + opacity + '"/>';
+  }
+
+  var ticks = '';
+  [1,2,3,4].forEach(function(idx) {
+    var outer = ptAt(boundaries[idx], r + sw/2 + 1);
+    var inner = ptAt(boundaries[idx], r - sw/2 - 1);
+    ticks += '<line x1="' + outer[0] + '" y1="' + outer[1] + '" x2="' + inner[0] + '" y2="' + inner[1] + '" stroke="#fff" stroke-width="1.5"/>';
+  });
+
+  var nAngle = midAngles[rpe];
+  var nPt = ptAt(nAngle, 30);
+  var activeColor = rpeColors[rpe];
+  var needle = '<line x1="' + cx + '" y1="' + cy + '" x2="' + nPt[0] + '" y2="' + nPt[1] + '" stroke="' + activeColor + '" stroke-width="3" stroke-linecap="round"/>';
+  var hub = '<circle cx="' + cx + '" cy="' + cy + '" r="4.5" fill="white" stroke="' + activeColor + '" stroke-width="2"/>';
+
+  var svgStr = '<svg viewBox="0 0 88 54" style="width:70px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg">' + arcs + ticks + needle + hub + '</svg>';
+
+  return '<div style="padding:6px 14px 10px;display:flex;align-items:center;gap:10px;border-top:1px solid var(--gray1);">' +
+    svgStr +
+    '<div>' +
+      '<div style="font-size:9px;color:var(--gray4);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;">Intensidad objetivo</div>' +
+      '<div style="font-size:13px;font-weight:700;color:' + activeColor + ';">' + rpeLabels[rpe] + '</div>' +
+      '<div style="font-size:10px;color:var(--gray4);margin-top:1px;">RPE ' + rpe + ' / 10</div>' +
+    '</div>' +
+  '</div>';
 }
 
 function openEditEx(ex) {
