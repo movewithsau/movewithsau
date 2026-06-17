@@ -1859,10 +1859,8 @@ async function loadClientDayStrip() {
   const strip = document.getElementById('c-day-strip');
   strip.innerHTML='';
   const hasDays = planDays ? planDays.map(p=>p.day_of_week) : [];
-  if(!clientDay || !hasDays.includes(clientDay)) {
-    const today = getTodayName();
-    clientDay = hasDays.includes(today) ? today : (hasDays[0]||null);
-  }
+  // Flag: does clientDay need auto-selection? Resolve AFTER we know completed days
+  const needsAutoSelect = !clientDay || !hasDays.includes(clientDay);
 
   // ── Check which days have been trained (via exercise_logs) ──
   const completedDayIds = new Set();
@@ -1879,6 +1877,12 @@ async function loadClientDayStrip() {
         });
       }
     }
+  }
+
+  // Auto-select: first incomplete day, fallback to first day
+  if(needsAutoSelect) {
+    const firstIncomplete = planDays ? planDays.find(p => !completedDayIds.has(p.id)) : null;
+    clientDay = firstIncomplete ? firstIncomplete.day_of_week : (hasDays[0]||null);
   }
 
   // ── Combined week + day card ──
