@@ -2002,7 +2002,13 @@ async function loadClientDayStrip() {
   const list = document.createElement('div');
   list.style.cssText = 'display:none;position:absolute;top:4px;left:0;right:0;background:var(--white);border:1.5px solid var(--gray2);border-radius:14px;overflow:hidden;z-index:100;box-shadow:0 8px 28px rgba(0,0,0,0.12);';
 
-  planDays.forEach((pd, idx) => {
+  // Incomplete days first, completed days at the bottom
+  const sortedDays = [...planDays].sort((a, b) => {
+    const aDone = completedDayIds.has(a.id) ? 1 : 0;
+    const bDone = completedDayIds.has(b.id) ? 1 : 0;
+    return aDone - bDone;
+  });
+  sortedDays.forEach((pd, idx) => {
     const day = pd.day_of_week;
     const label = getDayShortLabel(day, idx);
     const isActive = day === clientDay;
@@ -2011,7 +2017,7 @@ async function loadClientDayStrip() {
     item.style.cssText = `padding:13px 16px;font-size:15px;font-weight:${isActive?'700':'500'};cursor:pointer;`
       + `color:${isActive?'var(--orange)':'var(--black)'};background:${isActive?'var(--orange-light)':'var(--white)'};`
       + `display:flex;align-items:center;gap:10px;`
-      + (idx < planDays.length-1 ? 'border-bottom:1px solid var(--gray1);' : '');
+      + (idx < sortedDays.length-1 ? 'border-bottom:1px solid var(--gray1);' : '');
 
     // Status dot per item
     const dot = document.createElement('div');
