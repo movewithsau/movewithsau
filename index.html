@@ -1830,14 +1830,30 @@ function updateClientWeekUI() {
   document.getElementById('c-week-num').textContent = clientWeek;
 }
 
+function getVisibleWeeks() {
+  const hidden = currentClient?.hidden_weeks || [];
+  return [1,2,3,4,5].filter(w => !hidden.includes(w));
+}
+function getNextVisibleWeek(current, dir) {
+  const visible = getVisibleWeeks();
+  if(dir > 0) return visible.find(w => w > current) || current;
+  return [...visible].reverse().find(w => w < current) || current;
+}
+
 function changeClientWeek(dir) {
-  clientWeek = Math.max(1,Math.min(5,clientWeek+dir));
+  clientWeek = getNextVisibleWeek(clientWeek, dir);
   updateClientWeekUI();
   loadClientDayStrip();
 }
 
 async function loadClientDayStrip() {
   if(!currentClient)return;
+  // Auto-skip hidden weeks
+  const _hw = currentClient?.hidden_weeks || [];
+  if(_hw.length > 0 && _hw.includes(clientWeek)) {
+    const _vw = [1,2,3,4,5].filter(w => !_hw.includes(w));
+    if(_vw.length > 0) { clientWeek = _vw[0]; updateClientWeekUI(); }
+  }
   const {data:planDays} = await sb.from('monthly_plans').select('day_of_week,id,day_order').eq('client_id',currentClient.id).eq('week_number',clientWeek).order('day_order',{ascending:true,nullsFirst:false}).order('id',{ascending:true});
 
   const strip = document.getElementById('c-day-strip');
@@ -1882,9 +1898,10 @@ async function loadClientDayStrip() {
   const prevBtn = document.createElement('button');
   prevBtn.style.cssText = 'width:30px;height:30px;border-radius:50%;border:1.5px solid var(--gray2);background:var(--gray1);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
   prevBtn.textContent = '‹';
-  prevBtn.disabled = clientWeek <= 1;
-  if(clientWeek <= 1) prevBtn.style.opacity = '0.3';
-  prevBtn.onclick = () => { clientWeek = Math.max(1, clientWeek-1); clientDay=null; updateClientWeekUI(); loadClientDayStrip(); };
+  const _hasPrev = getVisibleWeeks().some(w => w < clientWeek);
+  prevBtn.disabled = !_hasPrev;
+  if(!_hasPrev) prevBtn.style.opacity = '0.3';
+  prevBtn.onclick = () => { clientWeek = getNextVisibleWeek(clientWeek, -1); clientDay=null; updateClientWeekUI(); loadClientDayStrip(); };
 
   const weekCenter = document.createElement('div');
   weekCenter.style.cssText = 'text-align:center;flex:1;';
@@ -1900,9 +1917,10 @@ async function loadClientDayStrip() {
   const nextBtn = document.createElement('button');
   nextBtn.style.cssText = 'width:30px;height:30px;border-radius:50%;border:1.5px solid var(--gray2);background:var(--gray1);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
   nextBtn.textContent = '›';
-  nextBtn.disabled = clientWeek >= 5;
-  if(clientWeek >= 5) nextBtn.style.opacity = '0.3';
-  nextBtn.onclick = () => { clientWeek = Math.min(5, clientWeek+1); clientDay=null; updateClientWeekUI(); loadClientDayStrip(); };
+  const _hasNext = getVisibleWeeks().some(w => w > clientWeek);
+  nextBtn.disabled = !_hasNext;
+  if(!_hasNext) nextBtn.style.opacity = '0.3';
+  nextBtn.onclick = () => { clientWeek = getNextVisibleWeek(clientWeek, 1); clientDay=null; updateClientWeekUI(); loadClientDayStrip(); };
 
   weekRow.appendChild(prevBtn);
   weekRow.appendChild(weekCenter);
@@ -3484,21 +3502,30 @@ function renderPlanOverview() {
   const weeks = planOverviewAllPlans;
   const weekNums = Object.keys(weeks).map(Number).sort();
   const selectedDays = weeks[planOverviewSelectedWeek] || [];
+  const hiddenWeeks = currentClient?.hidden_weeks || [];
+  const isSelectedHidden = hiddenWeeks.includes(planOverviewSelectedWeek);
 
   const selectedWeekLabel = planOverviewSelectedWeek === 5 ? 'Deload' : 'Semana ' + planOverviewSelectedWeek;
   container.innerHTML = `
     <!-- Week selector chips -->
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
-      ${weekNums.map(w=>`
-        <button onclick="selectPlanOverviewWeek(${w})" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid ${w===planOverviewSelectedWeek?'var(--orange)':'var(--gray2)'};background:${w===planOverviewSelectedWeek?'var(--orange)':'var(--gray1)'};color:${w===planOverviewSelectedWeek?'white':'var(--gray5)'};cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;">
-          ${w===5?'Deload':'Semana '+w}
-        </button>`).join('')}
+      ${weekNums.map(w=>{
+        const isHid = hiddenWeeks.includes(w);
+        const isSel = w === planOverviewSelectedWeek;
+        const bg = isSel ? (isHid ? '#9e9e9e' : 'var(--orange)') : (isHid ? '#f5f5f5' : 'var(--gray1)');
+        const border = isSel ? (isHid ? '#9e9e9e' : 'var(--orange)') : (isHid ? '#bdbdbd' : 'var(--gray2)');
+        const color = isSel ? 'white' : (isHid ? '#9e9e9e' : 'var(--gray5)');
+        const baseLabel = w===5?'Deload':'Semana '+w;
+        const label = isHid ? `<span style="text-decoration:line-through;opacity:0.7;">${baseLabel}</span>` : baseLabel;
+        return `<button onclick="selectPlanOverviewWeek(${w})" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid ${border};background:${bg};color:${color};cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;">${label}</button>`;
+      }).join('')}
       <button onclick="openBuilderForWeek(${planOverviewSelectedWeek})" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid var(--orange);background:var(--orange-light);color:var(--orange);cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:auto;">Editar</button>
     </div>
-    <!-- Delete actions row -->
+    <!-- Delete + visibility actions row -->
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
       <button onclick="deleteWeek(${planOverviewSelectedWeek})" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid #e53935;background:#fff0f0;color:#e53935;cursor:pointer;font-family:'DM Sans',sans-serif;">🗑 Borrar ${selectedWeekLabel}</button>
       <button onclick="deleteEntireProgram()" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid #b71c1c;background:#fff0f0;color:#b71c1c;cursor:pointer;font-family:'DM Sans',sans-serif;">🗑 Borrar programa completo</button>
+      <button onclick="toggleHiddenWeek(${planOverviewSelectedWeek})" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${isSelectedHidden?'#43a047':'#757575'};background:${isSelectedHidden?'#f1f8e9':'#f5f5f5'};color:${isSelectedHidden?'#43a047':'#757575'};cursor:pointer;font-family:'DM Sans',sans-serif;">${isSelectedHidden?'👁️ Mostrar al cliente':'👁️ Ocultar al cliente'}</button>
     </div>
     <!-- Days of selected week -->
     <div class="day-plan-card" style="margin-bottom:0;">
@@ -3518,6 +3545,19 @@ function selectPlanOverviewWeek(w) {
   weeklyTrackerWeek = w;
   renderPlanOverview();
   if(currentClient) renderWeeklyTracker(currentClient.id);
+}
+
+async function toggleHiddenWeek(w) {
+  const hidden = [...(currentClient?.hidden_weeks || [])];
+  const idx = hidden.indexOf(w);
+  if(idx >= 0) hidden.splice(idx, 1);
+  else hidden.push(w);
+  const {error} = await sb.from('clients').update({hidden_weeks: hidden}).eq('id', currentClient.id);
+  if(error){ showToast('❌ Error guardando'); return; }
+  currentClient.hidden_weeks = hidden;
+  const label = w===5?'Deload':'Semana '+w;
+  showToast(hidden.includes(w) ? '👁️ '+label+' oculta pa\' el cliente' : '👁️ '+label+' visible pa\' el cliente');
+  renderPlanOverview();
 }
 
 async function togglePlanDay(planDayId, chipEl) {
