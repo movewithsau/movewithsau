@@ -3526,6 +3526,7 @@ function renderPlanOverview() {
       <button onclick="deleteWeek(${planOverviewSelectedWeek})" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid #e53935;background:#fff0f0;color:#e53935;cursor:pointer;font-family:'DM Sans',sans-serif;">🗑 Borrar ${selectedWeekLabel}</button>
       <button onclick="deleteEntireProgram()" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid #b71c1c;background:#fff0f0;color:#b71c1c;cursor:pointer;font-family:'DM Sans',sans-serif;">🗑 Borrar programa completo</button>
       <button onclick="toggleHiddenWeek(${planOverviewSelectedWeek})" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${isSelectedHidden?'#43a047':'#757575'};background:${isSelectedHidden?'#f1f8e9':'#f5f5f5'};color:${isSelectedHidden?'#43a047':'#757575'};cursor:pointer;font-family:'DM Sans',sans-serif;">${isSelectedHidden?'👁️ Mostrar al cliente':'👁️ Ocultar al cliente'}</button>
+      <button onclick="restartClientProgress()" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid #e65100;background:#fff3e0;color:#e65100;cursor:pointer;font-family:'DM Sans',sans-serif;">🔄 Reiniciar progreso</button>
     </div>
     <!-- Days of selected week -->
     <div class="day-plan-card" style="margin-bottom:0;">
@@ -3657,6 +3658,22 @@ async function deleteEntireProgram() {
   planOverviewAllPlans = null;
   planOverviewSelectedWeek = null;
   loadCoachClientDetail(currentClient.id);
+}
+
+// ===== RESTART PROGRESS =====
+async function restartClientProgress() {
+  const name = currentClient?.name || 'este cliente';
+  if (!confirm(`¿Reiniciar el progreso de ${name}?\n\nSe borrarán:\n• Todos los logs de ejercicios\n• Sesiones completadas\n• Ratings de workouts\n• Logs de hábitos\n• Contador de días entrenados\n\nEl programa queda intacto. Esto no se puede deshacer.`)) return;
+  showToast('⏳ Reiniciando...');
+  const cid = currentClient.id;
+  await sb.from('exercise_logs').delete().eq('client_id', cid);
+  await sb.from('workout_sessions').delete().eq('client_id', cid);
+  await sb.from('workout_ratings').delete().eq('client_id', cid);
+  await sb.from('habit_logs').delete().eq('client_id', cid);
+  await sb.from('clients').update({ days_trained: 0 }).eq('id', cid);
+  currentClient.days_trained = 0;
+  showToast('✅ Progreso reiniciado — programa intacto');
+  openCoachClient(cid);
 }
 
 // ===== QUICK SERIES =====
