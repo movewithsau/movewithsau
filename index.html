@@ -483,7 +483,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:900;color:var(--black);margin-bottom:10px;line-height:1.2;">Suscripcion pausada</div>
     <div style="font-size:14px;color:var(--gray4);line-height:1.6;margin-bottom:24px;">Habla con Sau para reactivar tu suscripcion y continuar tu entrenamiento.</div>
     <div onclick="window.open('https://wa.me/50672083564','_blank')" style="background:#25D366;color:white;border-radius:12px;padding:14px 20px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;">💬 Escribirle a Sau</div>
-    <div onclick="handleLogout()" style="color:var(--gray4);font-size:13px;font-weight:600;cursor:pointer;padding:8px;">Cerrar sesion</div>
+    <div onclick="document.getElementById('churn-overlay').classList.remove('active');handleLogout()" style="color:var(--gray4);font-size:13px;font-weight:600;cursor:pointer;padding:8px;">Cerrar sesion</div>
   </div>
 </div>
 
