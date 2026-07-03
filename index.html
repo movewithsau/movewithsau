@@ -6723,6 +6723,16 @@ async function loadFoodScreen() {
   const {data:chatHistory} = await sb.from('nutrition_chats').select('*').eq('client_id',currentClient.id).order('created_at',{ascending:true}).limit(60);
   foodChatHistory = (chatHistory||[]).map(m=>({role:m.role,content:m.content}));
 
+  // Load nutrition plan days if dynamic mode
+  window._clientNutritionDays = [];
+  window._clientNutritionDay = window._clientNutritionDay || null;
+  if ((currentClient.menu_mode||'estandar') === 'dinamico') {
+    const {data:ndays} = await sb.from('nutrition_plans').select('id,day_of_week,day_order').eq('client_id',currentClient.id).order('day_order',{ascending:true,nullsFirst:false}).order('id',{ascending:true});
+    window._clientNutritionDays = ndays || [];
+    if (!window._clientNutritionDay || !window._clientNutritionDays.find(d=>d.day_of_week===window._clientNutritionDay))
+      window._clientNutritionDay = window._clientNutritionDays[0]?.day_of_week || null;
+  }
+
   renderFoodScreen();
 }
 
@@ -6779,6 +6789,7 @@ function renderFoodScreen() {
       </div>
       ${macrosHtml}${inBodyHtml}
     </div>` : ''}
+    ${(currentClient.menu_mode||'estandar')==='dinamico'?'<div id="client-nutrition-plan" style="margin-bottom:10px;"></div>':''}
     <div id="food-chat-messages" style="margin-bottom:10px;">${messagesHtml}</div>
     <div style="background:var(--white);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow);margin-bottom:8px;">
       <div style="display:flex;gap:8px;align-items:flex-end;">
@@ -6788,7 +6799,194 @@ function renderFoodScreen() {
     </div>`;
 
   scrollFoodChat();
+  if ((currentClient.menu_mode||'estandar') === 'dinamico') renderClientNutritionPlan();
 }
+
+async function renderClientNutritionPlan() {
+  const wrap = document.getElementById('client-nutrition-plan');
+  if (!wrap) return;
+  const days = window._clientNutritionDays || [];
+  if (days.length === 0) { wrap.innerHTML = '<div style="font-size:12px;color:var(--gray4);text-align:center;padding:16px 0;">Tu coach aún no configuró días de menú.</div>'; return; }
+
+  // Day chips
+  let html = '<div class="card" style="margin-bottom:0;padding-bottom:10px;">';
+  html += '<div style="font-family:\'DM Mono\',monospace;font-size:10px;letter-spacing:0.12em;color:var(--orange);text-transform:uppercase;margin-bottom:10px;">Tu menú semanal</div>';
+  html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">';
+  days.forEach(d => {
+    const active = d.day_of_week === window._clientNutritionDay;
+    html += `<button onclick="selectClientNutritionDay('${d.day_of_week}')" style="padding:7px 14px;border-radius:20px;border:1.5px solid ${active?'var(--orange)':'var(--gray2)'};background:${active?'var(--orange)':'var(--white)'};color:${active?'white':'var(--black)'};font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">${d.day_of_week}</button>`;
+  });
+  html += '</div><div id="client-meal-list"></div></div>';
+  wrap.innerHTML = html;
+  await buildClientMealList();
+}
+
+async function selectClientNutritionDay(dayName) {
+  window._clientNutritionDay = dayName;
+  await renderClientNutritionPlan();
+}
+
+async function buildClientMealList() {
+  const el = document.getElementById('client-meal-list');
+  if (!el || !window._clientNutritionDay) return;
+  const {data: pd} = await sb.from('nutrition_plans').select('id').eq('client_id', currentClient.id).eq('day_of_week', window._clientNutritionDay).maybeSingle();
+  if (!pd) { el.innerHTML = ''; return; }
+  const {data: meals} = await sb.from('nutrition_meals').select('id,meal_slot,meal_order,target_kcal,target_proteina,target_carbs,target_grasas').eq('nutrition_plan_id', pd.id).order('meal_order', {ascending:true}).order('id', {ascending:true});
+  if (!meals || meals.length === 0) { el.innerHTML = '<div style="font-size:12px;color:var(--gray4);text-align:center;padding:12px 0;">Sin comidas cargadas para este día.</div>'; return; }
+  el.innerHTML = meals.map(m => {
+    const hasTarget = m.target_kcal || m.target_proteina || m.target_carbs || m.target_grasas;
+    const targetPill = hasTarget ? `<div style="font-size:10px;color:var(--gray5);margin-top:1px;">Objetivo: ${m.target_kcal||0} kcal · P ${m.target_proteina||0}g · C ${m.target_carbs||0}g · G ${m.target_grasas||0}g</div>` : '';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--gray1);">
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:700;">${m.meal_slot}</div>
+        ${targetPill}
+      </div>
+      <button onclick="openClientMealBuilder('${m.id}','${pd.id}','${m.meal_slot.replace(/'/g,"\\'")}',${m.target_kcal||0},${m.target_proteina||0},${m.target_carbs||0},${m.target_grasas||0})" style="padding:8px 14px;border-radius:20px;background:var(--orange);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;flex-shrink:0;">🍳 Armar</button>
+    </div>`;
+  }).join('');
+}
+
+async function openClientMealBuilder(mealId, planId, mealSlot, tKcal, tProt, tCarbs, tFat) {
+  document.getElementById('client-meal-builder')?.remove();
+  const {data: foodLib} = await sb.from('food_library').select('id,name,kcal,proteina,carbs,grasas').order('name');
+  if (!foodLib || !foodLib.length) { showToast('⚠️ Biblioteca vacía'); return; }
+
+  const hasTarget = tKcal || tProt || tCarbs || tFat;
+  let selected = []; // [{food, qty}]
+  let activeTab = 'all';
+
+  function classify(f) {
+    const p=(f.proteina||0)*4, c=(f.carbs||0)*4, g=(f.grasas||0)*9;
+    const mx=Math.max(p,c,g); if(!mx) return 'otro';
+    return p===mx?'proteina':c===mx?'carbs':'grasas';
+  }
+
+  const sheet = document.createElement('div');
+  sheet.id = 'client-meal-builder';
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:flex;align-items:flex-end;justify-content:center;';
+  sheet.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;padding:20px 20px 0;width:100%;max-width:480px;max-height:92vh;display:flex;flex-direction:column;">
+      <div style="font-size:16px;font-weight:700;margin-bottom:2px;">🍳 Armá tu ${mealSlot}</div>
+      ${hasTarget?`<div style="font-size:11px;color:var(--gray5);margin-bottom:10px;">Objetivo: ${tKcal} kcal · P ${tProt}g · C ${tCarbs}g · G ${tFat}g</div>`:'<div style="margin-bottom:10px;"></div>'}
+      <div id="cmb-totals" style="border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:8px;background:var(--gray1);border:1.5px solid var(--gray2);min-height:44px;"></div>
+      <div id="cmb-selected" style="margin-bottom:6px;max-height:140px;overflow-y:auto;"></div>
+      <div id="cmb-tabs" style="display:flex;gap:6px;margin-bottom:8px;overflow-x:auto;padding-bottom:2px;">
+        <button data-tab="all"      style="white-space:nowrap;padding:6px 12px;border-radius:20px;border:1.5px solid var(--orange);background:var(--orange);color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">🔍 Todos</button>
+        <button data-tab="proteina" style="white-space:nowrap;padding:6px 12px;border-radius:20px;border:1.5px solid var(--gray2);background:var(--white);color:var(--black);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">🥩 Proteína</button>
+        <button data-tab="carbs"    style="white-space:nowrap;padding:6px 12px;border-radius:20px;border:1.5px solid var(--gray2);background:var(--white);color:var(--black);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">🍚 Carbs</button>
+        <button data-tab="grasas"   style="white-space:nowrap;padding:6px 12px;border-radius:20px;border:1.5px solid var(--gray2);background:var(--white);color:var(--black);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">🥑 Grasas</button>
+      </div>
+      <input id="cmb-search" class="form-input" placeholder="🔍 Buscar alimento..." style="font-size:13px;padding:9px 12px;margin-bottom:8px;">
+      <div id="cmb-results" style="flex:1;overflow-y:auto;margin:0 -20px;padding:0 20px;"></div>
+      <div style="padding:10px 0 36px;display:flex;gap:8px;">
+        <button id="cmb-save" class="btn-primary" style="flex:1;padding:12px;">💾 Guardar comida</button>
+        <button onclick="document.getElementById('client-meal-builder').remove()" style="padding:12px 16px;border-radius:var(--radius-sm);background:var(--gray1);border:1.5px solid var(--gray2);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>
+      </div>
+    </div>`;
+
+  function getTotals() {
+    return selected.reduce((acc,s)=>({
+      kcal:acc.kcal+(s.food.kcal||0)*s.qty, proteina:acc.proteina+(s.food.proteina||0)*s.qty,
+      carbs:acc.carbs+(s.food.carbs||0)*s.qty, grasas:acc.grasas+(s.food.grasas||0)*s.qty
+    }),{kcal:0,proteina:0,carbs:0,grasas:0});
+  }
+
+  function bar(val,tgt) {
+    if(!tgt) return '';
+    const pct=Math.min(Math.round(val/tgt*100),100), col=pct>110?'var(--red)':pct>=85?'#38a169':'var(--orange)';
+    return `<div style="background:var(--gray2);border-radius:3px;height:4px;margin-top:3px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:${col};border-radius:3px;transition:width 0.3s;"></div></div>`;
+  }
+
+  function renderTotals() {
+    const t=getTotals(), el=sheet.querySelector('#cmb-totals');
+    if(!selected.length){el.innerHTML='<div style="font-size:12px;color:var(--gray4);text-align:center;padding:4px 0;">Seleccioná alimentos para calcular tus macros</div>';return;}
+    const gap=hasTarget?{kcal:Math.round(tKcal-t.kcal),proteina:Math.round(tProt-t.proteina),carbs:Math.round(tCarbs-t.carbs),grasas:Math.round(tFat-t.grasas)}:null;
+    const allMet=gap&&gap.kcal<=20&&gap.proteina<=2&&gap.carbs<=2&&gap.grasas<=2;
+    const parts=gap&&!allMet?[gap.kcal>0?gap.kcal+' kcal':null,gap.proteina>0?'P '+gap.proteina+'g':null,gap.carbs>0?'C '+gap.carbs+'g':null,gap.grasas>0?'G '+gap.grasas+'g':null].filter(Boolean):[];
+    el.innerHTML=`
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center;margin-bottom:${hasTarget?'8px':'0'};">
+        <div><div style="font-size:15px;font-weight:900;font-family:'Playfair Display',serif;">${Math.round(t.kcal)}</div><div style="font-size:9px;color:var(--gray5);">kcal${tKcal?' /'+tKcal:''}</div>${bar(t.kcal,tKcal)}</div>
+        <div><div style="font-size:15px;font-weight:900;font-family:'Playfair Display',serif;">${Math.round(t.proteina)}g</div><div style="font-size:9px;color:var(--gray5);">prot${tProt?' /'+tProt+'g':''}</div>${bar(t.proteina,tProt)}</div>
+        <div><div style="font-size:15px;font-weight:900;font-family:'Playfair Display',serif;">${Math.round(t.carbs)}g</div><div style="font-size:9px;color:var(--gray5);">carbs${tCarbs?' /'+tCarbs+'g':''}</div>${bar(t.carbs,tCarbs)}</div>
+        <div><div style="font-size:15px;font-weight:900;font-family:'Playfair Display',serif;">${Math.round(t.grasas)}g</div><div style="font-size:9px;color:var(--gray5);">grasas${tFat?' /'+tFat+'g':''}</div>${bar(t.grasas,tFat)}</div>
+      </div>
+      ${allMet?'<div style="font-size:11px;color:#38a169;font-weight:700;text-align:center;">✅ ¡Objetivo cumplido!</div>':parts.length?`<div style="font-size:10px;color:var(--orange);font-weight:600;">Te faltan: ${parts.join(' · ')}</div>`:''}`;
+  }
+
+  function renderSelected() {
+    const el=sheet.querySelector('#cmb-selected');
+    if(!selected.length){el.innerHTML='';return;}
+    el.innerHTML=selected.map((s,i)=>{
+      const k=Math.round((s.food.kcal||0)*s.qty),p=Math.round((s.food.proteina||0)*s.qty*10)/10,
+            c=Math.round((s.food.carbs||0)*s.qty*10)/10,g=Math.round((s.food.grasas||0)*s.qty*10)/10;
+      return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--gray1);border:1.5px solid var(--gray2);border-radius:var(--radius-sm);margin-bottom:5px;">
+        <div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.food.name}</div>
+        <div style="font-size:10px;color:var(--gray5);">${k} kcal · P ${p}g · C ${c}g · G ${g}g</div></div>
+        <span style="font-size:10px;color:var(--gray4);">×</span>
+        <input data-si="${i}" type="number" min="0.25" step="0.25" value="${s.qty}" style="width:52px;padding:4px 6px;border:1.5px solid var(--gray2);border-radius:6px;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;text-align:center;">
+        <button data-ri="${i}" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:15px;padding:2px 4px;line-height:1;">✕</button>
+      </div>`;
+    }).join('');
+    el.querySelectorAll('[data-si]').forEach(inp=>{inp.oninput=()=>{const v=parseFloat(inp.value);if(v>0){selected[+inp.dataset.si].qty=v;renderTotals();}};});
+    el.querySelectorAll('[data-ri]').forEach(btn=>{btn.onclick=()=>{selected.splice(+btn.dataset.ri,1);renderSelected();renderTotals();renderResults();};});
+  }
+
+  function renderResults() {
+    const q=(sheet.querySelector('#cmb-search')?.value||'').trim().toLowerCase();
+    let filtered=q?foodLib.filter(f=>f.name.toLowerCase().includes(q)):foodLib;
+    if(activeTab!=='all') filtered=filtered.filter(f=>classify(f)===activeTab);
+    const res=sheet.querySelector('#cmb-results');
+    const ci={proteina:'🥩',carbs:'🍚',grasas:'🥑',otro:'•'};
+    if(!filtered.length){res.innerHTML='<div style="font-size:12px;color:var(--gray4);padding:16px 0;text-align:center;">Sin resultados</div>';return;}
+    res.innerHTML=filtered.map(f=>{
+      const isSel=selected.some(s=>s.food.id===f.id);
+      return `<div data-fid="${f.id}" style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--gray1);cursor:pointer;${isSel?'opacity:0.45;':''}">
+        <div style="width:22px;height:22px;border-radius:50%;border:2px solid ${isSel?'var(--orange)':'var(--gray3)'};background:${isSel?'var(--orange)':'transparent'};flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+          ${isSel?'<svg width="11" height="9" viewBox="0 0 11 9"><polyline points="1,4.5 4.5,8 10,1" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}
+        </div>
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:5px;"><span style="font-size:13px;font-weight:600;">${f.name}</span><span style="font-size:11px;">${ci[classify(f)]||''}</span></div>
+          <div style="font-size:10px;color:var(--gray5);margin-top:1px;">${f.kcal||0} kcal · P ${f.proteina||0}g · C ${f.carbs||0}g · G ${f.grasas||0}g</div>
+        </div>
+      </div>`;
+    }).join('');
+    res.querySelectorAll('[data-fid]').forEach(row=>{
+      row.onclick=()=>{
+        if(selected.some(s=>s.food.id===row.dataset.fid)) return;
+        selected.push({food:foodLib.find(f=>f.id===row.dataset.fid),qty:1});
+        renderSelected();renderTotals();renderResults();
+      };
+    });
+  }
+
+  sheet.querySelectorAll('[data-tab]').forEach(btn=>{
+    btn.onclick=()=>{
+      activeTab=btn.dataset.tab;
+      sheet.querySelectorAll('[data-tab]').forEach(b=>{const on=b.dataset.tab===activeTab;b.style.background=on?'var(--orange)':'var(--white)';b.style.color=on?'white':'var(--black)';b.style.borderColor=on?'var(--orange)':'var(--gray2)';});
+      renderResults();
+    };
+  });
+
+  sheet.querySelector('#cmb-search').oninput=renderResults;
+  sheet.querySelector('#cmb-save').onclick=async()=>{
+    if(!selected.length){showToast('⚠️ Seleccioná al menos un alimento');return;}
+    const t=getTotals();
+    const {error}=await sb.from('nutrition_logs').insert([{
+      client_id:currentClient.id, log_date:new Date().toISOString().split('T')[0],
+      meal_slot:mealSlot, nutrition_plan_id:planId||null,
+      foods:selected.map(s=>({name:s.food.name,qty:s.qty,kcal:Math.round((s.food.kcal||0)*s.qty),proteina:Math.round((s.food.proteina||0)*s.qty*10)/10,carbs:Math.round((s.food.carbs||0)*s.qty*10)/10,grasas:Math.round((s.food.grasas||0)*s.qty*10)/10})),
+      total_kcal:Math.round(t.kcal), total_proteina:Math.round(t.proteina*10)/10,
+      total_carbs:Math.round(t.carbs*10)/10, total_grasas:Math.round(t.grasas*10)/10,
+    }]);
+    if(error){showToast('❌ '+error.message);return;}
+    showToast('✅ Comida guardada');sheet.remove();
+  };
+  sheet.onclick=e=>{if(e.target===sheet)sheet.remove();};
+  document.body.appendChild(sheet);
+  renderTotals();renderResults();
+  setTimeout(()=>sheet.querySelector('#cmb-search').focus(),100);
+}
+
 
 function renderFoodMessage(m) {
   const isUser = m.role === 'user';
@@ -6957,6 +7155,22 @@ async function loadCoachFoodPanel() {
         ${hasAccess?'Desactivar':'Dar acceso'}
       </button>
     </div>
+    <!-- Menu mode toggle -->
+    <div style="background:var(--gray1);border:1.5px solid var(--gray2);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--black);">Modo de menú</div>
+        <div style="font-size:11px;color:var(--gray5);margin-top:2px;">${(currentClient.menu_mode||'estandar')==='dinamico'?'Builder interactivo de días y comidas':'Distribución por macros (NutriFlex)'}</div>
+      </div>
+      <button onclick="toggleMenuMode()" style="background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">
+        ${(currentClient.menu_mode||'estandar')==='dinamico'?'Estándar':'Dinámico'}
+      </button>
+    </div>
+    ${(currentClient.menu_mode||'estandar')==='dinamico'?`
+    <div class="card" style="margin-bottom:10px;">
+      <div class="notes-label" style="margin-bottom:8px;">Días del Menú</div>
+      <div id="nutrition-day-strip"></div>
+      <div id="nutrition-meal-list" style="margin-top:10px;"></div>
+    </div>`:''}
     <div class="card" style="margin-bottom:10px;">
       <div class="notes-label" style="margin-bottom:12px;">InBody</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
@@ -6998,6 +7212,453 @@ Comida 5 (Cena): 350 kcal | P: 35g | C: 30g | G: 9g">${currentClient.macros_dist
       </div>
       <button onclick="saveMacros()" class="btn-primary" style="padding:11px;margin-top:10px;">Guardar macros</button>
     </div>`;
+  if ((currentClient.menu_mode||'estandar') === 'dinamico') {
+    await buildNutritionDayStrip();
+  }
+}
+
+// ===== NUTRITION DAY BUILDER =====
+let nutritionBuilderDay = null;
+
+async function buildNutritionDayStrip() {
+  const strip = document.getElementById('nutrition-day-strip');
+  if (!strip || !currentClient) return;
+  const {data: days} = await sb.from('nutrition_plans')
+    .select('id,day_of_week,day_order')
+    .eq('client_id', currentClient.id)
+    .order('day_order', {ascending: true, nullsFirst: false})
+    .order('id', {ascending: true});
+  strip.innerHTML = '';
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;';
+  if (days && days.length > 0) {
+    if (!nutritionBuilderDay || !days.find(d => d.day_of_week === nutritionBuilderDay))
+      nutritionBuilderDay = days[0].day_of_week;
+    days.forEach(pd => {
+      const active = pd.day_of_week === nutritionBuilderDay;
+      const chip = document.createElement('div');
+      chip.style.cssText = `display:flex;align-items:center;border-radius:20px;border:1.5px solid ${active?'var(--orange)':'var(--gray2)'};background:${active?'var(--orange)':'var(--white)'};color:${active?'white':'var(--black)'};font-size:12px;font-weight:700;cursor:pointer;overflow:hidden;`;
+      const lbl = document.createElement('span');
+      lbl.style.cssText = 'padding:7px 10px 7px 12px;';
+      lbl.textContent = pd.day_of_week;
+      lbl.onclick = () => { nutritionBuilderDay = pd.day_of_week; buildNutritionDayStrip(); };
+      const opt = document.createElement('span');
+      opt.style.cssText = 'padding:7px 10px 7px 4px;font-size:11px;opacity:0.7;';
+      opt.textContent = '⚙';
+      opt.onclick = e => { e.stopPropagation(); openNutritionDayOptions(pd.day_of_week, chip); };
+      chip.appendChild(lbl); chip.appendChild(opt);
+      row.appendChild(chip);
+    });
+  } else {
+    nutritionBuilderDay = null;
+  }
+  const addChip = document.createElement('button');
+  addChip.style.cssText = 'padding:7px 14px;border-radius:20px;border:1.5px dashed var(--gray3);background:transparent;font-size:12px;font-weight:700;color:var(--gray4);cursor:pointer;font-family:"DM Sans",sans-serif;';
+  addChip.textContent = '+ Día';
+  addChip.onclick = () => openAddNutritionDaySheet();
+  row.appendChild(addChip);
+  strip.appendChild(row);
+  await buildNutritionMealList();
+}
+
+function openAddNutritionDaySheet(existingName) {
+  document.getElementById('nutrition-add-day-sheet')?.remove();
+  const isRename = !!existingName;
+  const sheet = document.createElement('div');
+  sheet.id = 'nutrition-add-day-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:500;display:flex;align-items:flex-end;justify-content:center;';
+  sheet.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;max-width:480px;">
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px;">${isRename?'Renombrar día':'Nuevo día'}</div>
+      <div style="font-size:12px;color:var(--gray4);margin-bottom:16px;">${isRename?'Ingresá el nuevo nombre':'Ingresá el nombre del día'}</div>
+      <input id="nutrition-add-day-input" class="form-input" placeholder="ej: Lunes, Día de entreno, Off..." value="${existingName||''}" style="font-size:14px;padding:11px 14px;margin-bottom:14px;">
+      <button id="nutrition-add-day-confirm" class="btn-primary" style="padding:12px;margin-bottom:10px;">Confirmar</button>
+      <button id="nutrition-add-day-cancel" style="width:100%;padding:12px;border-radius:var(--radius-sm);background:var(--gray1);border:1.5px solid var(--gray2);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Cancelar</button>
+    </div>`;
+  const confirm = sheet.querySelector('#nutrition-add-day-confirm');
+  const input = sheet.querySelector('#nutrition-add-day-input');
+  const doAction = () => {
+    const val = input.value.trim();
+    if (!val) return;
+    sheet.remove();
+    if (isRename) renameNutritionDay(existingName, val);
+    else addNewNutritionDay(val);
+  };
+  confirm.onclick = doAction;
+  input.onkeydown = e => { if (e.key === 'Enter') doAction(); };
+  sheet.querySelector('#nutrition-add-day-cancel').onclick = () => sheet.remove();
+  sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  document.body.appendChild(sheet);
+  setTimeout(() => input.focus(), 100);
+}
+
+async function addNewNutritionDay(dayName) {
+  if (!currentClient) return;
+  const {data: ex} = await sb.from('nutrition_plans').select('id').eq('client_id', currentClient.id).eq('day_of_week', dayName).maybeSingle();
+  if (ex) { showToast('⚠️ Ya existe ese día'); return; }
+  const {error} = await sb.from('nutrition_plans').insert([{client_id: currentClient.id, day_of_week: dayName, day_order: 999}]);
+  if (error) { showToast('❌ ' + error.message); return; }
+  nutritionBuilderDay = dayName;
+  showToast('✅ Día "' + dayName + '" creado');
+  await buildNutritionDayStrip();
+}
+
+async function moveNutritionDayOrder(dayValue, direction) {
+  const {data: days} = await sb.from('nutrition_plans').select('id,day_of_week,day_order').eq('client_id', currentClient.id).order('day_order', {ascending: true, nullsFirst: false}).order('id', {ascending: true});
+  if (!days || days.length < 2) return;
+  const idx = days.findIndex(d => d.day_of_week === dayValue);
+  const swapIdx = idx + direction;
+  if (swapIdx < 0 || swapIdx >= days.length) { showToast('Ya está en el extremo'); return; }
+  try {
+    for (let i = 0; i < days.length; i++) { await sb.from('nutrition_plans').update({day_order: i}).eq('id', days[i].id); days[i].day_order = i; }
+    const a = days[idx], b = days[swapIdx];
+    await sb.from('nutrition_plans').update({day_order: b.day_order}).eq('id', a.id);
+    await sb.from('nutrition_plans').update({day_order: a.day_order}).eq('id', b.id);
+  } catch(e) { console.warn('nutrition day_order error:', e); }
+  nutritionBuilderDay = dayValue;
+  await buildNutritionDayStrip();
+}
+
+async function renameNutritionDay(oldName, newName) {
+  await sb.from('nutrition_plans').update({day_of_week: newName}).eq('client_id', currentClient.id).eq('day_of_week', oldName);
+  if (nutritionBuilderDay === oldName) nutritionBuilderDay = newName;
+  await buildNutritionDayStrip();
+}
+
+async function deleteNutritionDay(dayValue) {
+  if (!confirm('¿Borrar el día "' + dayValue + '" y todas sus comidas?')) return;
+  const {data: pd} = await sb.from('nutrition_plans').select('id').eq('client_id', currentClient.id).eq('day_of_week', dayValue).maybeSingle();
+  if (pd) {
+    const {data: meals} = await sb.from('nutrition_meals').select('id').eq('nutrition_plan_id', pd.id);
+    if (meals) for (const m of meals) await sb.from('nutrition_meal_options').delete().eq('nutrition_meal_id', m.id);
+    await sb.from('nutrition_meals').delete().eq('nutrition_plan_id', pd.id);
+    await sb.from('nutrition_plans').delete().eq('id', pd.id);
+  }
+  if (nutritionBuilderDay === dayValue) nutritionBuilderDay = null;
+  await buildNutritionDayStrip();
+}
+
+function openNutritionDayOptions(dayValue, anchorEl) {
+  document.getElementById('nutrition-day-opt-pop')?.remove();
+  const pop = document.createElement('div');
+  pop.id = 'nutrition-day-opt-pop';
+  pop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:500;display:flex;align-items:flex-end;justify-content:center;';
+  pop.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;max-width:480px;">
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px;">${dayValue}</div>
+      <div style="font-size:12px;color:var(--gray4);margin-bottom:20px;">Opciones del día</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        <button id="ndop-l" style="padding:12px;border-radius:12px;background:var(--gray1);border:1.5px solid var(--gray2);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">← Mover antes</button>
+        <button id="ndop-r" style="padding:12px;border-radius:12px;background:var(--gray1);border:1.5px solid var(--gray2);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Mover después →</button>
+      </div>
+      <button id="ndop-ren" style="width:100%;padding:12px;border-radius:12px;background:var(--gray1);border:1.5px solid var(--gray2);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:10px;">✏️ Renombrar</button>
+      <button id="ndop-del" style="width:100%;padding:12px;border-radius:12px;background:#fff0f0;border:1.5px solid var(--red);color:var(--red);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:10px;">🗑️ Borrar día</button>
+      <button id="ndop-can" style="width:100%;padding:12px;border-radius:12px;background:var(--gray1);border:1.5px solid var(--gray2);font-size:13px;color:var(--gray4);font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Cancelar</button>
+    </div>`;
+  pop.querySelector('#ndop-l').onclick = () => { pop.remove(); moveNutritionDayOrder(dayValue, -1); };
+  pop.querySelector('#ndop-r').onclick = () => { pop.remove(); moveNutritionDayOrder(dayValue, 1); };
+  pop.querySelector('#ndop-ren').onclick = () => { pop.remove(); openAddNutritionDaySheet(dayValue); };
+  pop.querySelector('#ndop-del').onclick = () => { pop.remove(); deleteNutritionDay(dayValue); };
+  pop.querySelector('#ndop-can').onclick = () => pop.remove();
+  pop.onclick = e => { if(e.target===pop) pop.remove(); };
+  document.body.appendChild(pop);
+}
+
+// --- Meal slots ---
+
+const nutritionExpandedMeals = new Set();
+
+async function buildNutritionMealList() {
+  const listEl = document.getElementById('nutrition-meal-list');
+  if (!listEl || !currentClient || !nutritionBuilderDay) { if(listEl) listEl.innerHTML=''; return; }
+  const {data: pd} = await sb.from('nutrition_plans').select('id').eq('client_id', currentClient.id).eq('day_of_week', nutritionBuilderDay).maybeSingle();
+  if (!pd) { listEl.innerHTML = ''; return; }
+  const planId = pd.id;
+  const {data: meals} = await sb.from('nutrition_meals').select('id,meal_slot,meal_order').eq('nutrition_plan_id', planId).order('meal_order', {ascending: true}).order('id', {ascending: true});
+  let html = `<div style="font-size:11px;font-weight:700;color:var(--gray5);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">Comidas — ${nutritionBuilderDay}</div>`;
+  if (meals && meals.length > 0) {
+    meals.forEach(m => {
+      const expanded = nutritionExpandedMeals.has(m.id);
+      html += `
+        <div style="background:var(--gray1);border:1.5px solid var(--gray2);border-radius:var(--radius-sm);margin-bottom:6px;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:6px;padding:10px 12px;">
+            <button onclick="toggleNutritionMealExpand('${m.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--orange);padding:0 2px;font-weight:700;line-height:1;">${expanded?'▾':'▸'}</button>
+            <div style="flex:1;font-size:13px;font-weight:600;">${m.meal_slot}</div>
+            <button onclick="moveNutritionMealOrder('${planId}','${m.id}',-1)" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--gray4);padding:2px 4px;">↑</button>
+            <button onclick="moveNutritionMealOrder('${planId}','${m.id}',1)" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--gray4);padding:2px 4px;">↓</button>
+            <button onclick="deleteNutritionMeal('${planId}','${m.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--red);padding:2px 4px;">✕</button>
+          </div>
+          <div id="nutrition-opts-${m.id}" style="padding:${expanded?'0 12px 12px':'0'};display:${expanded?'block':'none'};border-top:${expanded?'1px solid var(--gray2)':'none'};"></div>
+        </div>`;
+    });
+  } else {
+    html += `<div style="font-size:12px;color:var(--gray4);text-align:center;padding:12px 0;">Sin comidas — agregá la primera abajo</div>`;
+  }
+  html += `<div style="display:flex;gap:6px;margin-top:4px;">
+    <input id="nutrition-meal-input" class="form-input" placeholder="ej: Desayuno, Almuerzo..." style="flex:1;font-size:13px;padding:9px 12px;" onkeydown="if(event.key==='Enter'){addNutritionMeal('${planId}');}">
+    <button onclick="addNutritionMeal('${planId}')" style="padding:9px 16px;border-radius:var(--radius-sm);background:var(--orange);color:white;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Agregar</button>
+  </div>`;
+  listEl.innerHTML = html;
+  if (meals) for (const m of meals) {
+    if (nutritionExpandedMeals.has(m.id)) await buildNutritionMealOptions(m.id);
+  }
+}
+
+async function addNutritionMeal(planId) {
+  const input = document.getElementById('nutrition-meal-input');
+  const slot = input?.value.trim();
+  if (!slot) return;
+  const {data: last} = await sb.from('nutrition_meals').select('meal_order').eq('nutrition_plan_id', planId).order('meal_order', {ascending: false}).limit(1);
+  const nextOrder = last && last.length > 0 ? last[0].meal_order + 1 : 0;
+  const {error} = await sb.from('nutrition_meals').insert([{nutrition_plan_id: planId, meal_slot: slot, meal_order: nextOrder}]);
+  if (error) { showToast('❌ ' + error.message); return; }
+  input.value = '';
+  await buildNutritionMealList();
+}
+
+async function deleteNutritionMeal(planId, mealId) {
+  await sb.from('nutrition_meal_options').delete().eq('nutrition_meal_id', mealId);
+  await sb.from('nutrition_meals').delete().eq('id', mealId);
+  await buildNutritionMealList();
+}
+
+async function moveNutritionMealOrder(planId, mealId, direction) {
+  const {data: meals} = await sb.from('nutrition_meals').select('id,meal_order').eq('nutrition_plan_id', planId).order('meal_order', {ascending: true}).order('id', {ascending: true});
+  if (!meals || meals.length < 2) return;
+  const idx = meals.findIndex(m => m.id === mealId);
+  const swapIdx = idx + direction;
+  if (swapIdx < 0 || swapIdx >= meals.length) return;
+  for (let i = 0; i < meals.length; i++) { await sb.from('nutrition_meals').update({meal_order: i}).eq('id', meals[i].id); meals[i].meal_order = i; }
+  const a = meals[idx], b = meals[swapIdx];
+  await sb.from('nutrition_meals').update({meal_order: b.meal_order}).eq('id', a.id);
+  await sb.from('nutrition_meals').update({meal_order: a.meal_order}).eq('id', b.id);
+  await buildNutritionMealList();
+}
+
+async function toggleNutritionMealExpand(mealId) {
+  if (nutritionExpandedMeals.has(mealId)) nutritionExpandedMeals.delete(mealId);
+  else nutritionExpandedMeals.add(mealId);
+  await buildNutritionMealList();
+}
+
+async function buildNutritionMealOptions(mealId) {
+  const container = document.getElementById('nutrition-opts-' + mealId);
+  if (!container) return;
+  const {data: meal} = await sb.from('nutrition_meals').select('id,target_kcal,target_proteina,target_carbs,target_grasas').eq('id', mealId).maybeSingle();
+  const {data: opts} = await sb.from('nutrition_meal_options').select('id,title,order_index,kcal,proteina,carbs,grasas').eq('nutrition_meal_id', mealId).order('order_index', {ascending: true}).order('id', {ascending: true});
+  let html = `<div style="padding-top:10px;">
+    <div style="background:var(--orange-light);border:1.5px solid var(--orange);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:10px;">
+      <div style="font-size:10px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Macros objetivo de esta comida</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:8px;">
+        <div><div style="font-size:9px;color:var(--gray5);margin-bottom:2px;">Kcal</div><input id="nmtgt-kcal-${mealId}" type="number" class="form-input" value="${meal?.target_kcal||''}" placeholder="400" style="font-size:12px;padding:6px 8px;"></div>
+        <div><div style="font-size:9px;color:var(--gray5);margin-bottom:2px;">Proteína (g)</div><input id="nmtgt-prot-${mealId}" type="number" class="form-input" value="${meal?.target_proteina||''}" placeholder="35" style="font-size:12px;padding:6px 8px;"></div>
+        <div><div style="font-size:9px;color:var(--gray5);margin-bottom:2px;">Carbs (g)</div><input id="nmtgt-carbs-${mealId}" type="number" class="form-input" value="${meal?.target_carbs||''}" placeholder="45" style="font-size:12px;padding:6px 8px;"></div>
+        <div><div style="font-size:9px;color:var(--gray5);margin-bottom:2px;">Grasas (g)</div><input id="nmtgt-fat-${mealId}" type="number" class="form-input" value="${meal?.target_grasas||''}" placeholder="8" style="font-size:12px;padding:6px 8px;"></div>
+      </div>
+      <button onclick="saveNutritionMealTargets('${mealId}')" style="width:100%;padding:7px;border-radius:var(--radius-sm);background:var(--orange);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Guardar objetivo</button>
+    </div>`;
+  if (opts && opts.length > 0) {
+    opts.forEach(opt => {
+      const hasMacros = opt.kcal || opt.proteina || opt.carbs || opt.grasas;
+      const macrosPill = hasMacros
+        ? `<div style="font-size:10px;color:var(--gray5);margin-top:2px;">${opt.kcal?opt.kcal+' kcal':''}${opt.proteina?' · P '+opt.proteina+'g':''}${opt.carbs?' · C '+opt.carbs+'g':''}${opt.grasas?' · G '+opt.grasas+'g':''}</div>`
+        : '';
+      html += `<div style="display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--white);border:1.5px solid var(--gray2);border-radius:var(--radius-sm);margin-bottom:5px;">
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:600;">${opt.title}</div>
+          ${macrosPill}
+        </div>
+        <button onclick="openNutritionOptSheet('${mealId}','${opt.id}','${opt.title.replace(/'/g,"\\'")}',${opt.kcal||0},${opt.proteina||0},${opt.carbs||0},${opt.grasas||0})" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--orange);padding:1px 4px;font-weight:700;">✎</button>
+        <button onclick="moveNutritionOptOrder('${mealId}','${opt.id}',-1)" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--gray4);padding:1px 3px;">↑</button>
+        <button onclick="moveNutritionOptOrder('${mealId}','${opt.id}',1)" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--gray4);padding:1px 3px;">↓</button>
+        <button onclick="deleteNutritionOpt('${mealId}','${opt.id}')" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--red);padding:1px 3px;">✕</button>
+      </div>`;
+    });
+  } else {
+    html += `<div style="font-size:11px;color:var(--gray4);padding:2px 0 8px;">Sin opciones todavía</div>`;
+  }
+  html += `<div style="display:flex;gap:6px;margin-top:2px;">
+    <button onclick="openNutritionFoodPickerSheet('${mealId}')" style="flex:1;padding:9px 14px;border-radius:var(--radius-sm);background:var(--orange);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Opción desde biblioteca</button>
+    <button onclick="openNutritionOptSheet('${mealId}',null,'',0,0,0,0)" style="padding:9px 12px;border-radius:var(--radius-sm);background:var(--gray1);border:1.5px solid var(--gray2);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--gray5);">Manual</button>
+  </div></div>`;
+  container.innerHTML = html;
+}
+
+async function openNutritionFoodPickerSheet(mealId) {
+  document.getElementById('nutrition-food-picker')?.remove();
+  const {data: foodLib} = await sb.from('food_library').select('id,name,kcal,proteina,carbs,grasas').order('name');
+  if (!foodLib || foodLib.length === 0) { showToast('⚠️ Biblioteca vacía'); return; }
+  let selected = []; // [{id, name, kcal, proteina, carbs, grasas}]
+  const sheet = document.createElement('div');
+  sheet.id = 'nutrition-food-picker';
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:500;display:flex;align-items:flex-end;justify-content:center;';
+  sheet.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;padding:20px 20px 0;width:100%;max-width:480px;max-height:90vh;display:flex;flex-direction:column;">
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px;">Biblioteca de alimentos</div>
+      <div style="font-size:12px;color:var(--gray4);margin-bottom:12px;">Seleccioná uno o varios — los macros se suman</div>
+      <input id="nfp-search" class="form-input" placeholder="🔍 Buscar alimento..." style="font-size:13px;padding:9px 12px;margin-bottom:10px;">
+      <div id="nfp-selected" style="display:flex;flex-wrap:wrap;gap:5px;min-height:0;margin-bottom:8px;"></div>
+      <div id="nfp-totals" style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:8px;min-height:16px;"></div>
+      <div id="nfp-results" style="flex:1;overflow-y:auto;margin:0 -20px;padding:0 20px 8px;"></div>
+      <div style="padding:12px 0 32px;display:flex;gap:8px;">
+        <button id="nfp-confirm" class="btn-primary" style="flex:1;padding:12px;">Confirmar selección</button>
+        <button id="nfp-cancel" style="padding:12px 18px;border-radius:var(--radius-sm);background:var(--gray1);border:1.5px solid var(--gray2);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>
+      </div>
+    </div>`;
+
+  function renderTotals() {
+    const t = selected.reduce((acc, f) => ({ kcal: acc.kcal+(f.kcal||0), proteina: acc.proteina+(f.proteina||0), carbs: acc.carbs+(f.carbs||0), grasas: acc.grasas+(f.grasas||0) }), {kcal:0,proteina:0,carbs:0,grasas:0});
+    sheet.querySelector('#nfp-totals').textContent = selected.length ? `Total: ${Math.round(t.kcal)} kcal · P ${Math.round(t.proteina)}g · C ${Math.round(t.carbs)}g · G ${Math.round(t.grasas)}g` : '';
+    const selEl = sheet.querySelector('#nfp-selected');
+    selEl.innerHTML = selected.map(f => `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--orange-light);color:var(--orange);border:1.5px solid var(--orange);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;">${f.name}<span data-id="${f.id}" style="cursor:pointer;font-size:13px;line-height:1;margin-left:2px;">✕</span></span>`).join('');
+    selEl.querySelectorAll('span[data-id]').forEach(x => x.onclick = () => { selected = selected.filter(f => f.id !== x.dataset.id); renderTotals(); renderResults(sheet.querySelector('#nfp-search').value); });
+  }
+
+  function renderResults(q) {
+    const q2 = q.trim().toLowerCase();
+    const filtered = q2 ? foodLib.filter(f => f.name.toLowerCase().includes(q2)) : foodLib;
+    const res = sheet.querySelector('#nfp-results');
+    if (filtered.length === 0) { res.innerHTML = '<div style="font-size:12px;color:var(--gray4);padding:12px 0;text-align:center;">Sin resultados</div>'; return; }
+    res.innerHTML = filtered.map(f => {
+      const isSel = selected.some(s => s.id === f.id);
+      return `<div data-food-id="${f.id}" style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--gray1);cursor:pointer;">
+        <div style="width:18px;height:18px;border-radius:50%;border:2px solid ${isSel?'var(--orange)':'var(--gray3)'};background:${isSel?'var(--orange)':'transparent'};flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+          ${isSel?'<svg width="10" height="8" viewBox="0 0 10 8"><polyline points="1,4 4,7 9,1" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>':''}
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:600;">${f.name}</div>
+          <div style="font-size:10px;color:var(--gray5);">${f.kcal||0} kcal · P ${f.proteina||0}g · C ${f.carbs||0}g · G ${f.grasas||0}g</div>
+        </div>
+      </div>`;
+    }).join('');
+    res.querySelectorAll('[data-food-id]').forEach(row => {
+      row.onclick = () => {
+        const food = foodLib.find(f => f.id === row.dataset.foodId);
+        if (!food) return;
+        const idx = selected.findIndex(s => s.id === food.id);
+        if (idx >= 0) selected.splice(idx, 1); else selected.push(food);
+        renderTotals();
+        renderResults(sheet.querySelector('#nfp-search').value);
+      };
+    });
+  }
+
+  sheet.querySelector('#nfp-search').oninput = e => renderResults(e.target.value);
+  sheet.querySelector('#nfp-cancel').onclick = () => sheet.remove();
+  sheet.querySelector('#nfp-confirm').onclick = () => {
+    if (selected.length === 0) { showToast('⚠️ Seleccioná al menos un alimento'); return; }
+    const t = selected.reduce((acc, f) => ({ kcal: acc.kcal+(f.kcal||0), proteina: acc.proteina+(f.proteina||0), carbs: acc.carbs+(f.carbs||0), grasas: acc.grasas+(f.grasas||0) }), {kcal:0,proteina:0,carbs:0,grasas:0});
+    const title = selected.map(f => f.name).join(' + ');
+    sheet.remove();
+    openNutritionOptSheet(mealId, null, title, Math.round(t.kcal), Math.round(t.proteina), Math.round(t.carbs), Math.round(t.grasas));
+  };
+  document.body.appendChild(sheet);
+  renderResults('');
+  setTimeout(() => sheet.querySelector('#nfp-search').focus(), 100);
+}
+
+function openNutritionOptSheet(mealId, optId, title, kcal, proteina, carbs, grasas) {
+  document.getElementById('nutrition-opt-sheet')?.remove();
+  const sheet = document.createElement('div');
+  sheet.id = 'nutrition-opt-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:500;display:flex;align-items:flex-end;justify-content:center;';
+  sheet.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;max-width:480px;">
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px;">Editar opción</div>
+      <div style="font-size:12px;color:var(--gray4);margin-bottom:16px;">Título y macros</div>
+      <label class="form-label">Título</label>
+      <input id="nopt-title" class="form-input" value="${title}" style="margin-bottom:12px;font-size:14px;padding:10px 12px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+        <div><label class="form-label">Kcal</label><input id="nopt-kcal" class="form-input" type="number" value="${kcal||''}" placeholder="320" style="font-size:13px;padding:9px 12px;"></div>
+        <div><label class="form-label">Proteína (g)</label><input id="nopt-prot" class="form-input" type="number" value="${proteina||''}" placeholder="30" style="font-size:13px;padding:9px 12px;"></div>
+        <div><label class="form-label">Carbs (g)</label><input id="nopt-carbs" class="form-input" type="number" value="${carbs||''}" placeholder="28" style="font-size:13px;padding:9px 12px;"></div>
+        <div><label class="form-label">Grasas (g)</label><input id="nopt-fat" class="form-input" type="number" value="${grasas||''}" placeholder="8" style="font-size:13px;padding:9px 12px;"></div>
+      </div>
+      <button id="nopt-save" class="btn-primary" style="padding:12px;margin-bottom:10px;">Guardar</button>
+      <button id="nopt-cancel" style="width:100%;padding:12px;border-radius:var(--radius-sm);background:var(--gray1);border:1.5px solid var(--gray2);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Cancelar</button>
+    </div>`;
+  sheet.querySelector('#nopt-save').onclick = () => saveNutritionOpt(mealId, optId, sheet);
+  sheet.querySelector('#nopt-cancel').onclick = () => sheet.remove();
+  sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  document.body.appendChild(sheet);
+  setTimeout(() => sheet.querySelector('#nopt-title').focus(), 100);
+}
+
+async function saveNutritionOpt(mealId, optId, sheet) {
+  const title = document.getElementById('nopt-title').value.trim();
+  if (!title) { showToast('⚠️ El título no puede estar vacío'); return; }
+  const payload = {
+    title,
+    kcal: parseFloat(document.getElementById('nopt-kcal').value) || null,
+    proteina: parseFloat(document.getElementById('nopt-prot').value) || null,
+    carbs: parseFloat(document.getElementById('nopt-carbs').value) || null,
+    grasas: parseFloat(document.getElementById('nopt-fat').value) || null,
+  };
+  let error;
+  if (optId) {
+    ({ error } = await sb.from('nutrition_meal_options').update(payload).eq('id', optId));
+  } else {
+    const {data: last} = await sb.from('nutrition_meal_options').select('order_index').eq('nutrition_meal_id', mealId).order('order_index', {ascending: false}).limit(1);
+    payload.nutrition_meal_id = mealId;
+    payload.order_index = last && last.length > 0 ? last[0].order_index + 1 : 0;
+    ({ error } = await sb.from('nutrition_meal_options').insert([payload]));
+  }
+  if (error) { showToast('❌ ' + error.message); return; }
+  sheet.remove();
+  showToast('✅ Opción guardada');
+  await buildNutritionMealOptions(mealId);
+}
+
+async function saveNutritionMealTargets(mealId) {
+  const payload = {
+    target_kcal: parseFloat(document.getElementById('nmtgt-kcal-'+mealId).value)||null,
+    target_proteina: parseFloat(document.getElementById('nmtgt-prot-'+mealId).value)||null,
+    target_carbs: parseFloat(document.getElementById('nmtgt-carbs-'+mealId).value)||null,
+    target_grasas: parseFloat(document.getElementById('nmtgt-fat-'+mealId).value)||null,
+  };
+  const {error} = await sb.from('nutrition_meals').update(payload).eq('id', mealId);
+  if (error) { showToast('❌ '+error.message); return; }
+  showToast('✅ Objetivo guardado');
+}
+
+async function addNutritionOpt(mealId) {
+  const input = document.getElementById('nutrition-opt-input-' + mealId);
+  const title = input?.value.trim();
+  if (!title) return;
+  const {data: last} = await sb.from('nutrition_meal_options').select('order_index').eq('nutrition_meal_id', mealId).order('order_index', {ascending: false}).limit(1);
+  const nextOrder = last && last.length > 0 ? last[0].order_index + 1 : 0;
+  const {error} = await sb.from('nutrition_meal_options').insert([{nutrition_meal_id: mealId, title, order_index: nextOrder}]);
+  if (error) { showToast('❌ ' + error.message); return; }
+  input.value = '';
+  await buildNutritionMealOptions(mealId);
+}
+
+async function deleteNutritionOpt(mealId, optId) {
+  await sb.from('nutrition_meal_options').delete().eq('id', optId);
+  await buildNutritionMealOptions(mealId);
+}
+
+async function moveNutritionOptOrder(mealId, optId, direction) {
+  const {data: opts} = await sb.from('nutrition_meal_options').select('id,order_index').eq('nutrition_meal_id', mealId).order('order_index', {ascending: true}).order('id', {ascending: true});
+  if (!opts || opts.length < 2) return;
+  const idx = opts.findIndex(o => o.id === optId);
+  const swapIdx = idx + direction;
+  if (swapIdx < 0 || swapIdx >= opts.length) return;
+  for (let i = 0; i < opts.length; i++) { await sb.from('nutrition_meal_options').update({order_index: i}).eq('id', opts[i].id); opts[i].order_index = i; }
+  const a = opts[idx], b = opts[swapIdx];
+  await sb.from('nutrition_meal_options').update({order_index: b.order_index}).eq('id', a.id);
+  await sb.from('nutrition_meal_options').update({order_index: a.order_index}).eq('id', b.id);
+  await buildNutritionMealOptions(mealId);
+}
+
+async function toggleMenuMode() {
+  if(!currentClient) return;
+  const current = currentClient.menu_mode || 'estandar';
+  const next = current === 'dinamico' ? 'estandar' : 'dinamico';
+  await sb.from('clients').update({menu_mode: next}).eq('id', currentClient.id);
+  currentClient.menu_mode = next;
+  showToast(next === 'dinamico' ? '🥗 Modo Dinámico activado' : '📊 Modo Estándar activado');
+  loadCoachFoodPanel();
 }
 
 async function toggleFoodAccess() {
