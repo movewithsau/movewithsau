@@ -6816,7 +6816,9 @@ async function renderClientNutritionPlan() {
     const active = d.day_of_week === window._clientNutritionDay;
     html += `<button onclick="selectClientNutritionDay('${d.day_of_week}')" style="padding:7px 14px;border-radius:20px;border:1.5px solid ${active?'var(--orange)':'var(--gray2)'};background:${active?'var(--orange)':'var(--white)'};color:${active?'white':'var(--black)'};font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">${d.day_of_week}</button>`;
   });
-  html += '</div><div id="client-meal-list"></div></div>';
+  html += '</div><div id="client-meal-list"></div>';
+  html += '<button onclick="downloadNutritionPDF()" style="width:100%;margin-top:12px;padding:11px;border-radius:var(--radius-sm);background:var(--black);color:white;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:\'DM Sans\',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;">📄 Descargar menú como PDF</button>';
+  html += '</div>';
   wrap.innerHTML = html;
   await buildClientMealList();
 }
@@ -6881,6 +6883,85 @@ async function buildClientMealList() {
       </div>
     </div>`;
   }).join('');
+}
+
+async function downloadNutritionPDF() {
+  if (!window._clientNutritionDay) { showToast('⚠️ Seleccioná un día primero'); return; }
+  const {data: pd} = await sb.from('nutrition_plans').select('id').eq('client_id', currentClient.id).eq('day_of_week', window._clientNutritionDay).maybeSingle();
+  if (!pd) { showToast('⚠️ Sin plan para este día'); return; }
+  const {data: meals} = await sb.from('nutrition_meals').select('id,meal_slot,target_kcal,target_proteina,target_carbs,target_grasas,meal_order').eq('nutrition_plan_id', pd.id).order('meal_order',{ascending:true});
+  if (!meals||!meals.length) { showToast('⚠️ Sin comidas cargadas'); return; }
+  const mealIds = meals.map(m=>m.id);
+  const {data: allOpts} = await sb.from('nutrition_meal_options').select('nutrition_meal_id,title,kcal,proteina,carbs,grasas,order_index').in('nutrition_meal_id', mealIds).order('order_index',{ascending:true});
+  const optsByMeal = {};
+  (allOpts||[]).forEach(o=>{ if(!optsByMeal[o.nutrition_meal_id]) optsByMeal[o.nutrition_meal_id]=[]; optsByMeal[o.nutrition_meal_id].push(o); });
+
+  const clientName = currentClient.name || 'Tu plan';
+  const mealsHtml = meals.map(m => {
+    const opts = optsByMeal[m.id] || [];
+    const hasTarget = m.target_kcal||m.target_proteina||m.target_carbs||m.target_grasas;
+    const optRows = opts.map((o,i) => `
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:${i%2===0?'#fff':'#fafafa'};border-radius:8px;margin-bottom:6px;border:1px solid #f0f0f0;">
+        <div style="width:24px;height:24px;border-radius:50%;background:#E8571A;color:white;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">${i+1}</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;color:#111;margin-bottom:3px;">${o.title}</div>
+          <div style="font-size:11px;color:#888;">${o.kcal||0} kcal &nbsp;·&nbsp; P ${o.proteina||0}g &nbsp;·&nbsp; C ${o.carbs||0}g &nbsp;·&nbsp; G ${o.grasas||0}g</div>
+        </div>
+      </div>`).join('');
+    return `
+      <div style="margin-bottom:28px;page-break-inside:avoid;">
+        <div style="background:#E8571A;border-radius:10px 10px 0 0;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-size:15px;font-weight:900;color:white;letter-spacing:0.02em;">${m.meal_slot}</div>
+          ${hasTarget?`<div style="font-size:11px;color:rgba(255,255,255,0.85);">Objetivo: ${m.target_kcal||0} kcal · P ${m.target_proteina||0}g · C ${m.target_carbs||0}g · G ${m.target_grasas||0}g</div>`:''}
+        </div>
+        <div style="border:1px solid #f0f0f0;border-top:none;border-radius:0 0 10px 10px;padding:10px 10px 4px;">
+          ${opts.length ? optRows : '<div style="font-size:12px;color:#aaa;padding:8px;">Sin opciones cargadas</div>'}
+        </div>
+      </div>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+  <title>Menú ${clientName}</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;background:white;color:#111;padding:0;}
+    @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}@page{margin:18mm 14mm;}}
+  </style></head><body>
+  <div style="max-width:680px;margin:0 auto;padding:24px 20px;">
+    <!-- HEADER -->
+    <div style="background:#111;border-radius:14px;padding:22px 24px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-size:28px;font-weight:900;color:#E8571A;letter-spacing:-0.5px;line-height:1;">EAT</div>
+        <div style="font-size:28px;font-weight:900;color:white;letter-spacing:-0.5px;line-height:1;">WITH</div>
+        <div style="font-size:28px;font-weight:900;color:#E8571A;letter-spacing:-0.5px;line-height:1;">SAU</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:13px;color:#aaa;margin-bottom:4px;">Plan de alimentación</div>
+        <div style="font-size:18px;font-weight:800;color:white;">${clientName}</div>
+        <div style="font-size:12px;color:#E8571A;font-weight:700;margin-top:4px;">${window._clientNutritionDay}</div>
+      </div>
+    </div>
+    <!-- MEALS -->
+    ${mealsHtml}
+    <!-- FOOTER -->
+    <div style="margin-top:32px;border-top:2px solid #E8571A;padding-top:16px;display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-size:11px;color:#888;margin-bottom:2px;">¿Querés tu propio plan personalizado?</div>
+        <div style="font-size:14px;font-weight:900;color:#111;">Consigue tu PLAN PERSONALIZADO</div>
+        <div style="font-size:14px;font-weight:900;color:#E8571A;">en Instagram <span style="text-decoration:underline;">@movewithsau</span></div>
+      </div>
+      <div style="background:#E8571A;border-radius:10px;padding:10px 14px;text-align:center;">
+        <div style="font-size:10px;font-weight:700;color:white;letter-spacing:0.05em;">EATWITHSAU</div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.8);margin-top:2px;">@movewithsau</div>
+      </div>
+    </div>
+  </div>
+  <script>window.onload=()=>{window.print();}<\/script>
+  </body></html>`;
+
+  const win = window.open('','_blank');
+  win.document.write(html);
+  win.document.close();
 }
 
 function toggleClientMealSlot(id) {
