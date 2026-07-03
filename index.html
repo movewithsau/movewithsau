@@ -6982,7 +6982,7 @@ async function deleteNutritionLog(logId) {
 
 async function openClientMealBuilder(mealId, planId, mealSlot, tKcal, tProt, tCarbs, tFat) {
   document.getElementById('client-meal-builder')?.remove();
-  const {data: foodLib} = await sb.from('food_library').select('id,name,kcal,proteina,carbs,grasas').order('name');
+  const {data: foodLib} = await sb.from('food_library').select('id,name,kcal,proteina,carbs,grasas,categoria').order('name');
   if (!foodLib || !foodLib.length) { showToast('⚠️ Biblioteca vacía'); return; }
 
   const hasTarget = tKcal || tProt || tCarbs || tFat;
@@ -6990,6 +6990,8 @@ async function openClientMealBuilder(mealId, planId, mealSlot, tKcal, tProt, tCa
   let activeTab = 'all';
 
   function classify(f) {
+    const catMap = {'Proteína':'proteina','Carbohidrato':'carbs','Grasa':'grasas','Lácteo':'proteina','Suplemento':'proteina','Fruta':'carbs'};
+    if(f.categoria && catMap[f.categoria]) return catMap[f.categoria];
     const p=(f.proteina||0)*4, c=(f.carbs||0)*4, g=(f.grasas||0)*9;
     const mx=Math.max(p,c,g); if(!mx) return 'otro';
     return p===mx?'proteina':c===mx?'carbs':'grasas';
