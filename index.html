@@ -6833,32 +6833,48 @@ async function buildClientMealList() {
   if (!pd) { el.innerHTML = ''; return; }
   const {data: meals} = await sb.from('nutrition_meals').select('id,meal_slot,meal_order,target_kcal,target_proteina,target_carbs,target_grasas').eq('nutrition_plan_id', pd.id).order('meal_order', {ascending:true}).order('id', {ascending:true});
   if (!meals || meals.length === 0) { el.innerHTML = '<div style="font-size:12px;color:var(--gray4);text-align:center;padding:12px 0;">Sin comidas cargadas para este día.</div>'; return; }
+  const mealIds = meals.map(m=>m.id);
+  const {data: allOpts} = await sb.from('nutrition_meal_options').select('id,nutrition_meal_id,title,kcal,proteina,carbs,grasas,opt_order').in('nutrition_meal_id', mealIds).order('opt_order',{ascending:true});
+  const optsByMeal = {};
+  (allOpts||[]).forEach(o=>{ if(!optsByMeal[o.nutrition_meal_id]) optsByMeal[o.nutrition_meal_id]=[]; optsByMeal[o.nutrition_meal_id].push(o); });
   const today = new Date().toISOString().split('T')[0];
-  const {data: logs} = await sb.from('nutrition_logs').select('id,meal_slot,foods,total_kcal,total_proteina,total_carbs,total_grasas,log_date').eq('client_id', currentClient.id).eq('log_date', today);
+  const {data: logs} = await sb.from('nutrition_logs').select('id,meal_slot,foods,total_kcal,total_proteina,total_carbs,total_grasas').eq('client_id', currentClient.id).eq('log_date', today);
   const logsBySlot = {};
-  (logs||[]).forEach(l => { if(!logsBySlot[l.meal_slot]) logsBySlot[l.meal_slot]=[]; logsBySlot[l.meal_slot].push(l); });
+  (logs||[]).forEach(l=>{ if(!logsBySlot[l.meal_slot]) logsBySlot[l.meal_slot]=[]; logsBySlot[l.meal_slot].push(l); });
   el.innerHTML = meals.map(m => {
     const hasTarget = m.target_kcal || m.target_proteina || m.target_carbs || m.target_grasas;
-    const targetPill = hasTarget ? `<div style="font-size:10px;color:var(--gray5);margin-top:1px;">Objetivo: ${m.target_kcal||0} kcal · P ${m.target_proteina||0}g · C ${m.target_carbs||0}g · G ${m.target_grasas||0}g</div>` : '';
+    const targetPill = hasTarget ? `<div style="font-size:10px;color:var(--gray5);margin-top:2px;">Objetivo: ${m.target_kcal||0} kcal · P ${m.target_proteina||0}g · C ${m.target_carbs||0}g · G ${m.target_grasas||0}g</div>` : '';
+    const opts = optsByMeal[m.id] || [];
+    const optsHtml = opts.length ? `<div style="margin-top:8px;">
+      <div style="font-size:10px;font-weight:700;color:var(--gray4);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Opciones del plan</div>
+      ${opts.map(o=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--gray1);border-radius:var(--radius-sm);margin-bottom:4px;">
+        <div style="flex:1;"><div style="font-size:12px;font-weight:600;">${o.title}</div>
+        <div style="font-size:10px;color:var(--gray5);">${o.kcal||0} kcal · P ${o.proteina||0}g · C ${o.carbs||0}g · G ${o.grasas||0}g</div></div>
+      </div>`).join('')}
+    </div>` : '';
     const slotLogs = logsBySlot[m.meal_slot] || [];
-    const logsHtml = slotLogs.map(log => {
-      const foods = (log.foods||[]).map(f=>`<div style="font-size:11px;color:var(--gray5);padding-left:8px;">• ${f.name} ×${f.qty} — ${f.kcal||0} kcal</div>`).join('');
-      return `<div style="margin-top:6px;padding:8px 10px;background:var(--gray1);border-radius:var(--radius-sm);border:1.5px solid var(--gray2);">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
-          <div style="font-size:11px;font-weight:700;color:var(--orange);">${log.total_kcal||0} kcal · P ${log.total_proteina||0}g · C ${log.total_carbs||0}g · G ${log.total_grasas||0}g</div>
-          <button onclick="deleteNutritionLog('${log.id}')" style="background:none;border:none;cursor:pointer;color:var(--gray4);font-size:13px;padding:0 2px;line-height:1;">✕</button>
-        </div>
-        ${foods}
-      </div>`;
-    }).join('');
-    return `<div style="padding:10px 0;border-bottom:1px solid var(--gray1);">
+    const logsHtml = slotLogs.length ? `<div style="margin-top:8px;">
+      <div style="font-size:10px;font-weight:700;color:var(--gray4);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Lo que comiste hoy</div>
+      ${slotLogs.map(log=>{
+        const foods = (log.foods||[]).map(f=>`<div style="font-size:11px;color:var(--gray5);">• ${f.name} ×${f.qty} — ${f.kcal||0} kcal</div>`).join('');
+        return `<div style="padding:8px 10px;background:#fff8f0;border-radius:var(--radius-sm);border:1.5px solid var(--orange);margin-bottom:4px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+            <div style="font-size:11px;font-weight:700;color:var(--orange);">${log.total_kcal||0} kcal · P ${log.total_proteina||0}g · C ${log.total_carbs||0}g · G ${log.total_grasas||0}g</div>
+            <button onclick="deleteNutritionLog('${log.id}')" style="background:none;border:none;cursor:pointer;color:var(--gray4);font-size:13px;padding:0;line-height:1;">✕</button>
+          </div>
+          ${foods}
+        </div>`;
+      }).join('')}
+    </div>` : '';
+    return `<div style="padding:12px 0;border-bottom:1px solid var(--gray1);">
       <div style="display:flex;align-items:center;gap:8px;">
         <div style="flex:1;">
-          <div style="font-size:13px;font-weight:700;">${m.meal_slot}</div>
+          <div style="font-size:14px;font-weight:700;">${m.meal_slot}</div>
           ${targetPill}
         </div>
         <button onclick="openClientMealBuilder('${m.id}','${pd.id}','${m.meal_slot.replace(/'/g,"\\'")}',${m.target_kcal||0},${m.target_proteina||0},${m.target_carbs||0},${m.target_grasas||0})" style="padding:8px 14px;border-radius:20px;background:var(--orange);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;flex-shrink:0;">🍳 Armar</button>
       </div>
+      ${optsHtml}
       ${logsHtml}
     </div>`;
   }).join('');
