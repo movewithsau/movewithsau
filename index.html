@@ -6834,7 +6834,7 @@ async function buildClientMealList() {
   const {data: meals} = await sb.from('nutrition_meals').select('id,meal_slot,meal_order,target_kcal,target_proteina,target_carbs,target_grasas').eq('nutrition_plan_id', pd.id).order('meal_order', {ascending:true}).order('id', {ascending:true});
   if (!meals || meals.length === 0) { el.innerHTML = '<div style="font-size:12px;color:var(--gray4);text-align:center;padding:12px 0;">Sin comidas cargadas para este día.</div>'; return; }
   const mealIds = meals.map(m=>m.id);
-  const {data: allOpts} = await sb.from('nutrition_meal_options').select('id,nutrition_meal_id,title,kcal,proteina,carbs,grasas,opt_order').in('nutrition_meal_id', mealIds).order('opt_order',{ascending:true});
+  const {data: allOpts} = await sb.from('nutrition_meal_options').select('id,nutrition_meal_id,title,kcal,proteina,carbs,grasas,order_index').in('nutrition_meal_id', mealIds).order('order_index',{ascending:true});
   const optsByMeal = {};
   (allOpts||[]).forEach(o=>{ if(!optsByMeal[o.nutrition_meal_id]) optsByMeal[o.nutrition_meal_id]=[]; optsByMeal[o.nutrition_meal_id].push(o); });
   const today = new Date().toISOString().split('T')[0];
