@@ -830,6 +830,8 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <button class="add-ex-btn" style="flex:1;min-width:120px;margin-top:0;" onclick="addExerciseForm()">+ Ejercicio</button>
       <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:var(--orange-light);border-style:solid;" onclick="openLibrary()">📚 Biblioteca</button>
       <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:var(--blue-light);border-color:var(--blue);color:var(--blue);border-style:solid;" onclick="showCopyDayModal()">📋 Copiar día</button>
+      <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:#e8f4fd;border-color:#2b6cb0;color:#2b6cb0;border-style:solid;" onclick="showCopyWeekModal()">📅 Copiar semana</button>
+      <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:#fef9e7;border-color:#d69e2e;color:#d69e2e;border-style:solid;" onclick="showSaveAsTemplateModal()">⭐ Guardar Machote</button>
       <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:#f0fff4;border-color:#38a169;color:#38a169;border-style:solid;" onclick="openPasteWorkoutModal()">🏋️ Pegar Workout</button>
       <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:#f5f0ff;border-color:#7c3aed;color:#7c3aed;border-style:solid;" onclick="openPasteBloqueModal()">🧱 Agregar Bloque</button>
       <button class="add-ex-btn" style="flex:1;min-width:100px;margin-top:0;background:#fff0f0;border-color:#e53e3e;color:#e53e3e;border-style:solid;" onclick="deleteTrainingDay(builderDay, builderDay)">🗑️ Borrar día</button>
@@ -9396,6 +9398,139 @@ async function executeCopyDay() {
   closeCopyDayModal();
   showToast(`✅ Copiado a Semana ${copyTargetWeek} · ${copyTargetDay} 🔥`);
   await buildWeekTabs(); await buildDayStrip();
+}
+
+// ===== COPY WEEK =====
+let copyWeekTarget = null, copyWeekTargetClientId = null;
+
+async function showCopyWeekModal() {
+  if (!builderWeek) { showToast('⚠️ Seleccioná una semana primero'); return; }
+  const {data: allClients} = await sb.from('clients').select('id,name').eq('coach_id', currentUser.id).order('name');
+  copyWeekTarget = null;
+  copyWeekTargetClientId = currentClient.id;
+  const html = `
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;display:flex;align-items:flex-end;justify-content:center;" id="copy-week-overlay" onclick="if(event.target===this)closeCopyWeekModal()">
+      <div style="background:var(--white);border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+          <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;">Copiar semana completa</div>
+          <div onclick="closeCopyWeekModal()" style="font-size:24px;color:var(--gray4);cursor:pointer;">×</div>
+        </div>
+        <div style="font-size:12px;color:var(--gray5);margin-bottom:14px;">Copiando: Semana ${builderWeek} completa (todos los días)</div>
+        <div class="notes-label" style="margin-bottom:8px;">Semana destino</div>
+        <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+          ${[1,2,3,4,5].map(w=>`<button onclick="selectCopyWeekTarget(${w},this)" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid var(--gray2);background:var(--gray1);color:var(--gray5);cursor:pointer;font-family:'DM Sans',sans-serif;" id="cw-w-${w}">${w===5?'Deload':'Semana '+w}</button>`).join('')}
+        </div>
+        <div class="notes-label" style="margin-bottom:8px;">Cliente destino</div>
+        <select id="cw-client-sel" class="form-select" style="margin-bottom:18px;" onchange="copyWeekTargetClientId=this.value">
+          <option value="${currentClient.id}">${currentClient.name} (actual)</option>
+          ${(allClients||[]).filter(c=>c.id!==currentClient.id).map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}
+        </select>
+        <button onclick="executeCopyWeek()" class="btn-primary">📅 Copiar semana completa</button>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function selectCopyWeekTarget(w, btn) {
+  copyWeekTarget = w;
+  document.querySelectorAll('[id^="cw-w-"]').forEach(b=>{b.style.background='var(--gray1)';b.style.color='var(--gray5)';b.style.borderColor='var(--gray2)';});
+  btn.style.background='var(--orange)'; btn.style.color='white'; btn.style.borderColor='var(--orange)';
+}
+
+function closeCopyWeekModal() {
+  document.getElementById('copy-week-overlay')?.remove();
+  copyWeekTarget = null;
+}
+
+async function executeCopyWeek() {
+  if (!copyWeekTarget) { showToast('⚠️ Seleccioná semana destino'); return; }
+  const targetClientId = document.getElementById('cw-client-sel').value;
+  // Fetch all source days + exercises
+  const {data: srcDays} = await sb.from('monthly_plans').select('id,day_of_week,day_order').eq('client_id', currentClient.id).eq('week_number', builderWeek).order('day_order',{ascending:true});
+  if (!srcDays || !srcDays.length) { showToast('⚠️ La semana origen no tiene días'); return; }
+  // Check if destination has content
+  const {data: destDays} = await sb.from('monthly_plans').select('id,day_of_week').eq('client_id', targetClientId).eq('week_number', copyWeekTarget);
+  if (destDays && destDays.length > 0) {
+    const confirmed = window.confirm(`Semana ${copyWeekTarget} ya tiene contenido en ${destDays.length} día(s). ¿Sobreescribir todo?`);
+    if (!confirmed) return;
+    // Delete existing content
+    for (const d of destDays) {
+      await sb.from('exercises').delete().eq('plan_day_id', d.id);
+      await sb.from('monthly_plans').delete().eq('id', d.id);
+    }
+  }
+  // Copy each day
+  for (const srcDay of srcDays) {
+    const {data: srcExs} = await sb.from('exercises').select('*').eq('plan_day_id', srcDay.id).order('order_index');
+    const {data: newPd, error} = await sb.from('monthly_plans').insert([{client_id: targetClientId, week_number: copyWeekTarget, day_of_week: srcDay.day_of_week, day_order: srcDay.day_order}]).select().single();
+    if (error || !newPd) continue;
+    if (srcExs && srcExs.length) {
+      const newExs = srcExs.map(e=>({plan_day_id:newPd.id, name:e.name, sets:e.sets, reps_range:e.reps_range, rpe:e.rpe, rest_seconds:e.rest_seconds, tag:e.tag, muscle_group:e.muscle_group, superset_group:e.superset_group, circuit_rounds:e.circuit_rounds, circuit_notes:e.circuit_notes, video_url:e.video_url, notes:e.notes, order_index:e.order_index}));
+      await sb.from('exercises').insert(newExs);
+    }
+  }
+  closeCopyWeekModal();
+  showToast(`✅ Semana ${builderWeek} copiada a Semana ${copyWeekTarget} 🔥`);
+  await buildWeekTabs(); await buildDayStrip();
+}
+
+// ===== SAVE WEEK AS TEMPLATE =====
+async function showSaveAsTemplateModal() {
+  if (!builderWeek) { showToast('⚠️ Seleccioná una semana primero'); return; }
+  const {data: srcDays} = await sb.from('monthly_plans').select('id,day_of_week,day_order').eq('client_id', currentClient.id).eq('week_number', builderWeek).order('day_order',{ascending:true});
+  if (!srcDays || !srcDays.length) { showToast('⚠️ La semana no tiene días'); return; }
+  const html = `
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;display:flex;align-items:flex-end;justify-content:center;" id="save-template-overlay" onclick="if(event.target===this)closeSaveTemplateModal()">
+      <div style="background:var(--white);border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;max-width:480px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+          <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;">Guardar como Machote</div>
+          <div onclick="closeSaveTemplateModal()" style="font-size:24px;color:var(--gray4);cursor:pointer;">×</div>
+        </div>
+        <div style="font-size:12px;color:var(--gray5);margin-bottom:14px;">Guardando Semana ${builderWeek} · ${srcDays.length} día(s)</div>
+        <div class="form-group">
+          <label class="form-label">Nombre del machote</label>
+          <input class="form-input" id="st-name" placeholder="ej: PPL Femenino 4 días..." value="${currentClient.name} S${builderWeek}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo</label>
+          <select class="form-select" id="st-type">
+            <option value="Gym">🏋️ Gym</option>
+            <option value="Condominio">🏠 Condominio</option>
+            <option value="Peso Corporal">💪 Peso Corporal</option>
+            <option value="Cardio">🏃 Cardio</option>
+            <option value="Femenino">🌸 Femenino</option>
+          </select>
+        </div>
+        <button onclick="executeSaveAsTemplate()" class="btn-primary">⭐ Guardar Machote</button>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function closeSaveTemplateModal() {
+  document.getElementById('save-template-overlay')?.remove();
+}
+
+async function executeSaveAsTemplate() {
+  const name = document.getElementById('st-name').value.trim();
+  const type = document.getElementById('st-type').value;
+  if (!name) { showToast('⚠️ Escribe un nombre'); return; }
+  const {data: srcDays} = await sb.from('monthly_plans').select('id,day_of_week,day_order').eq('client_id', currentClient.id).eq('week_number', builderWeek).order('day_order',{ascending:true});
+  if (!srcDays || !srcDays.length) { showToast('⚠️ Sin días para guardar'); return; }
+  const {data: tpl, error} = await sb.from('routine_templates').insert([{name, type}]).select().single();
+  if (error || !tpl) { showToast('❌ '+(error?.message||'Error')); return; }
+  for (let i = 0; i < srcDays.length; i++) {
+    const srcDay = srcDays[i];
+    const {data: newDay, error: e2} = await sb.from('template_days').insert([{template_id: tpl.id, day_name: srcDay.day_of_week, day_order: srcDay.day_order ?? i}]).select().single();
+    if (e2 || !newDay) continue;
+    const {data: srcExs} = await sb.from('exercises').select('*').eq('plan_day_id', srcDay.id).order('order_index');
+    if (srcExs && srcExs.length) {
+      const newExs = srcExs.map((e,idx)=>({template_day_id: newDay.id, exercise_name: e.name, sets_week1: e.sets||3, sets_week2: e.sets||3, sets_week3: e.sets||3, sets_week4: e.sets||3, reps: e.reps_range, rest_seconds: e.rest_seconds, notes: e.notes, muscle_groups: e.muscle_group, video_url: e.video_url, superset_group: e.superset_group, circuit_rounds: e.circuit_rounds, circuit_notes: e.circuit_notes, exercise_order: idx}));
+      await sb.from('template_exercises').insert(newExs);
+    }
+  }
+  closeSaveTemplateModal();
+  showToast(`⭐ Machote "${name}" guardado 🔥`);
 }
 
 // ===== HABITS SYSTEM =====
