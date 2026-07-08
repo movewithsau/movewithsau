@@ -8873,7 +8873,7 @@ async function loadCoachContractPanel() {
     </div>
     <div class="contract-highlight" style="margin-bottom:10px;">
       <div class="contract-highlight-row"><span class="contract-highlight-key">Total</span><span class="contract-highlight-val">$${contract.total_amount}</span></div>
-      <div class="contract-highlight-row" style="border:none;padding-bottom:0;"><span class="contract-highlight-key">Cuotas</span><span class="contract-highlight-val">${(contract.installments||[]).length}</span></div>
+      <div class="contract-highlight-row" style="border:none;padding-bottom:0;">${contract.duration==='Mensual' ? `<span class="contract-highlight-key">Día de pago</span><span class="contract-highlight-val">Día ${contract.payment_day||'—'} de cada mes</span>` : `<span class="contract-highlight-key">Cuotas</span><span class="contract-highlight-val">${(contract.installments||[]).length}</span>`}</div>
     </div>
     ${installHtml ? `<table class="installment-table"><thead><tr><th>Cuota</th><th>Fecha</th><th style="text-align:right;">Monto</th></tr></thead><tbody>${installHtml}</tbody></table>` : ''}
     <button onclick="openContractEditor()" style="margin-top:14px;width:100%;padding:11px;background:transparent;color:var(--orange);border:1.5px solid var(--orange);border-radius:var(--radius-sm);font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;">✏️ Editar contrato</button>
@@ -8907,7 +8907,7 @@ async function openContractEditor() {
     </div>
     <div class="form-group">
       <label class="form-label">Duración</label>
-      <select class="form-select" id="ce-duration">
+      <select class="form-select" id="ce-duration" onchange="toggleContractDurationFields()">
         <option value="Mensual">Mensual</option>
         <option value="Trimestral">Trimestral (3 meses)</option>
         <option value="Semestral">Semestral (6 meses)</option>
@@ -8921,7 +8921,13 @@ async function openContractEditor() {
       <label class="form-label">Método de pago</label>
       <input class="form-input" id="ce-payment-method" placeholder="ej: SINPE Móvil, Tarjeta...">
     </div>
-    <div class="form-group">
+    <div id="ce-payment-day-section" class="form-group" style="display:none;">
+      <label class="form-label">Día de pago</label>
+      <select class="form-select" id="ce-payment-day">
+        ${Array.from({length:31},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}
+      </select>
+    </div>
+    <div id="ce-installments-section" class="form-group">
       <label class="form-label">Cuotas de pago</label>
       <div id="ce-installments-list"></div>
       <button class="add-installment-btn" onclick="addInstallmentRow()">+ Agregar cuota</button>
@@ -8937,10 +8943,20 @@ async function openContractEditor() {
     document.getElementById('ce-duration').value = existing.duration || 'Trimestral';
     document.getElementById('ce-total').value = existing.total_amount || '';
     document.getElementById('ce-payment-method').value = existing.payment_method || '';
+    if (existing.payment_day) document.getElementById('ce-payment-day').value = existing.payment_day;
     (existing.installments || []).forEach((inst, i) => addInstallmentRow(inst));
   } else {
     addInstallmentRow(); // start with one empty row
   }
+  toggleContractDurationFields();
+}
+
+function toggleContractDurationFields() {
+  const isMensual = document.getElementById('ce-duration')?.value === 'Mensual';
+  const daySection = document.getElementById('ce-payment-day-section');
+  const instSection = document.getElementById('ce-installments-section');
+  if (daySection) daySection.style.display = isMensual ? '' : 'none';
+  if (instSection) instSection.style.display = isMensual ? 'none' : '';
 }
 
 function addInstallmentRow(data = {}) {
@@ -8973,9 +8989,11 @@ async function saveContract() {
   const duration = document.getElementById('ce-duration').value;
   const total_amount = parseFloat(document.getElementById('ce-total').value);
   const payment_method = document.getElementById('ce-payment-method').value.trim();
-  const installments = getInstallmentsFromForm();
+  const isMensual = duration === 'Mensual';
+  const installments = isMensual ? [] : getInstallmentsFromForm();
+  const payment_day = isMensual ? parseInt(document.getElementById('ce-payment-day').value) : null;
   if (!program || !duration || isNaN(total_amount) || !payment_method) { showToast('⚠️ Completá todos los campos'); return; }
-  const payload = { client_id: currentClient.id, program, duration, total_amount, payment_method, installments };
+  const payload = { client_id: currentClient.id, program, duration, total_amount, payment_method, installments, payment_day };
   let error;
   if (currentContractId) {
     ({ error } = await sb.from('contracts').update(payload).eq('id', currentContractId));
@@ -9036,9 +9054,10 @@ async function loadClientContractPanel() {
 
 function renderContractBody(contract) {
   const clientName = currentClient?.name || '—';
-  const installHtml = (contract.installments || []).map((inst, i) =>
+  const isMensual = contract.duration === 'Mensual';
+  const installHtml = !isMensual ? (contract.installments || []).map((inst, i) =>
     `<tr><td style="padding:6px 0;border-bottom:1px solid var(--gray2);font-size:13px;">${inst.label||'Cuota '+(i+1)}</td><td style="padding:6px 0;border-bottom:1px solid var(--gray2);font-size:13px;">${inst.date}</td><td style="padding:6px 0;border-bottom:1px solid var(--gray2);font-size:13px;font-weight:700;color:var(--orange);text-align:right;">$${inst.amount}</td></tr>`
-  ).join('');
+  ).join('') : '';
 
   return `<div class="contract-body">
     <h2>Contrato de Membresía y Acuerdo de Pago</h2>
@@ -9050,6 +9069,7 @@ function renderContractBody(contract) {
       <div class="contract-highlight-row"><span class="contract-highlight-key">Total</span><span class="contract-highlight-val">$${contract.total_amount} USD</span></div>
       <div class="contract-highlight-row" style="border:none;padding-bottom:0;"><span class="contract-highlight-key">Método de pago</span><span class="contract-highlight-val">${contract.payment_method}</span></div>
     </div>
+    ${isMensual ? `<div style="margin:10px 0;padding:10px 14px;background:var(--orange-light);border-radius:var(--radius-sm);font-size:13px;color:var(--orange);font-weight:700;">📅 Día ${contract.payment_day||'—'} de cada mes</div>` : ''}
     ${installHtml ? `<h3>Plan de pagos</h3><table style="width:100%;border-collapse:collapse;"><thead><tr><th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;color:var(--gray4);text-transform:uppercase;text-align:left;padding-bottom:6px;">Cuota</th><th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;color:var(--gray4);text-transform:uppercase;text-align:left;padding-bottom:6px;">Fecha</th><th style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;color:var(--gray4);text-transform:uppercase;text-align:right;padding-bottom:6px;">Monto</th></tr></thead><tbody>${installHtml}</tbody></table>` : ''}
     <h2>Términos de Pago</h2>
     <p>El Cliente se compromete a realizar el pago completo de la membresía adquirida. El pago deberá realizarse dentro de un plazo máximo de <strong>5 días</strong> siguientes a la fecha estipulada. En caso de incumplimiento, el Proveedor podrá suspender el acceso o rescindir el contrato.</p>
