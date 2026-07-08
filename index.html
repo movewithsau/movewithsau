@@ -9570,6 +9570,8 @@ async function loadCoachExtras(clientId) {
         <div style="font-size:11px;color:var(--gray4);">${countMap[s.id]||0} ejercicio(s)</div>
       </div>
       <button onclick="openRenameExtraSession('${s.id}','${s.name.replace(/'/g,"\\'")}')" style="background:var(--gray1);border:none;border-radius:6px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--gray5);">✏️</button>
+      <button onclick="openCopyExtraSessionSheet('${s.id}','${s.name.replace(/'/g,"\\'")}')" style="background:#e8f4fd;color:#2b6cb0;border:none;border-radius:6px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">📋</button>
+      <button onclick="saveExtraAsTemplate('${s.id}','${s.name.replace(/'/g,"\\'")}')" style="background:#fef9e7;color:#d69e2e;border:none;border-radius:6px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">⭐</button>
       <button onclick="deleteExtraSession('${s.id}')" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>
     </div>`).join('');
 }
@@ -9796,6 +9798,97 @@ function toggleClientExtra(id) {
   const open = body.style.display === 'none';
   body.style.display = open ? 'block' : 'none';
   if (arr) arr.style.transform = open ? 'rotate(90deg)' : '';
+}
+
+async function openCopyExtraSessionSheet(sessionId, sessionName) {
+  document.getElementById('copy-extra-sheet')?.remove();
+  const {data: allClients} = await sb.from('clients').select('id,name').eq('coach_id', currentUser.id).order('name');
+  const sheet = document.createElement('div');
+  sheet.id = 'copy-extra-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:flex;align-items:flex-end;justify-content:center;';
+  sheet.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;max-width:480px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;">Copiar sesión</div>
+        <button onclick="document.getElementById('copy-extra-sheet').remove()" style="background:var(--gray1);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;">✕</button>
+      </div>
+      <div style="font-size:12px;color:var(--gray5);margin-bottom:16px;">Copiando: <strong>${sessionName}</strong></div>
+      <label class="form-label">Cliente destino</label>
+      <select id="copy-extra-client-sel" class="form-select" style="margin-bottom:18px;">
+        <option value="${currentClient.id}">${currentClient.name} (actual)</option>
+        ${(allClients||[]).filter(c=>c.id!==currentClient.id).map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}
+      </select>
+      <button onclick="executeCopyExtraSession('${sessionId}','${sessionName.replace(/'/g,"\\'")}')" class="btn-primary" style="width:100%;">📋 Copiar sesión</button>
+    </div>`;
+  sheet.onclick = e => { if(e.target===sheet) sheet.remove(); };
+  document.body.appendChild(sheet);
+}
+
+async function executeCopyExtraSession(sessionId, sessionName) {
+  const targetClientId = document.getElementById('copy-extra-client-sel').value;
+  const {data: srcExs} = await sb.from('extra_exercises').select('*').eq('extra_session_id', sessionId).order('order_index',{ascending:true});
+  const {data: last} = await sb.from('extra_sessions').select('order_index').eq('client_id', targetClientId).order('order_index',{ascending:false}).limit(1);
+  const nextOrder = last?.length ? last[0].order_index+1 : 0;
+  const {data: newSess, error} = await sb.from('extra_sessions').insert([{client_id: targetClientId, name: sessionName, order_index: nextOrder}]).select().single();
+  if (error) { showToast('❌ '+error.message); return; }
+  if (srcExs && srcExs.length) {
+    const newExs = srcExs.map(e => ({extra_session_id: newSess.id, name: e.name, sets: e.sets, reps_range: e.reps_range, rest_seconds: e.rest_seconds, tag: e.tag, muscle_group: e.muscle_group, video_url: e.video_url, notes: e.notes, superset_group: e.superset_group, circuit_rounds: e.circuit_rounds, circuit_notes: e.circuit_notes, order_index: e.order_index}));
+    await sb.from('extra_exercises').insert(newExs);
+  }
+  document.getElementById('copy-extra-sheet')?.remove();
+  const targetName = document.getElementById('copy-extra-client-sel').options[document.getElementById('copy-extra-client-sel').selectedIndex].text;
+  showToast(`✅ "${sessionName}" copiada a ${targetName} 🔥`);
+  if (targetClientId === currentClient.id) loadCoachExtras(currentClient.id);
+}
+
+async function saveExtraAsTemplate(sessionId, sessionName) {
+  const {data: exs} = await sb.from('extra_exercises').select('*').eq('extra_session_id', sessionId).order('order_index',{ascending:true});
+  document.getElementById('extra-to-tpl-sheet')?.remove();
+  const sheet = document.createElement('div');
+  sheet.id = 'extra-to-tpl-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:flex;align-items:flex-end;justify-content:center;';
+  sheet.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;max-width:480px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;">Guardar como Machote</div>
+        <button onclick="document.getElementById('extra-to-tpl-sheet').remove()" style="background:var(--gray1);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;">✕</button>
+      </div>
+      <div style="font-size:12px;color:var(--gray5);margin-bottom:16px;">${exs?.length||0} ejercicio(s) · se guardará como 1 día en el machote</div>
+      <div class="form-group">
+        <label class="form-label">Nombre del machote</label>
+        <input class="form-input" id="extra-tpl-name" value="${sessionName.replace(/"/g,'&quot;')}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select class="form-select" id="extra-tpl-type">
+          <option value="Gym">🏋️ Gym</option>
+          <option value="Condominio">🏠 Condominio</option>
+          <option value="Peso Corporal">💪 Peso Corporal</option>
+          <option value="Cardio">🏃 Cardio</option>
+          <option value="Femenino">🌸 Femenino</option>
+        </select>
+      </div>
+      <button onclick="executeExtraAsTemplate('${sessionId}')" class="btn-primary" style="width:100%;">⭐ Guardar Machote</button>
+    </div>`;
+  sheet.onclick = e => { if(e.target===sheet) sheet.remove(); };
+  document.body.appendChild(sheet);
+}
+
+async function executeExtraAsTemplate(sessionId) {
+  const name = document.getElementById('extra-tpl-name')?.value.trim();
+  const type = document.getElementById('extra-tpl-type')?.value;
+  if (!name) { showToast('⚠️ Escribe un nombre'); return; }
+  const {data: srcExs} = await sb.from('extra_exercises').select('*').eq('extra_session_id', sessionId).order('order_index',{ascending:true});
+  const {data: tpl, error} = await sb.from('routine_templates').insert([{name, type}]).select().single();
+  if (error) { showToast('❌ '+error.message); return; }
+  const {data: tDay, error: e2} = await sb.from('template_days').insert([{template_id: tpl.id, day_name: name, day_order: 0}]).select().single();
+  if (e2 || !tDay) { showToast('❌ '+(e2?.message||'Error')); return; }
+  if (srcExs && srcExs.length) {
+    const newExs = srcExs.map((e,i) => ({template_day_id: tDay.id, exercise_name: e.name, sets_week1: e.sets||3, sets_week2: e.sets||3, sets_week3: e.sets||3, sets_week4: e.sets||3, reps: e.reps_range, rest_seconds: e.rest_seconds, notes: e.notes, muscle_groups: e.muscle_group, video_url: e.video_url, superset_group: e.superset_group, circuit_rounds: e.circuit_rounds, circuit_notes: e.circuit_notes, exercise_order: i}));
+    await sb.from('template_exercises').insert(newExs);
+  }
+  document.getElementById('extra-to-tpl-sheet')?.remove();
+  showToast(`⭐ Machote "${name}" guardado 🔥`);
 }
 
 // ===== HABITS SYSTEM =====
