@@ -8481,6 +8481,14 @@ function addFromLibrary(ex) {
     closeModal('modal-ex-library');
     return;
   }
+  // Extras mode — pre-fill extra exercise form
+  if (window._extrasLibrarySessionId) {
+    const sid = window._extrasLibrarySessionId;
+    window._extrasLibrarySessionId = null;
+    closeModal('modal-ex-library');
+    openEditExtraExSheet(sid, {name:ex.name, tag:ex.tag, muscle_group:ex.muscle_group, sets:null, reps_range:'', rest_seconds:null, video_url:ex.video_url||'', notes:''});
+    return;
+  }
   // Normal builder mode
   addExerciseForm({name:ex.name,tag:ex.tag,muscle_group:ex.muscle_group,sets:'',reps_range:'',rest_seconds:60,video_url:ex.video_url||'',notes:'',superset_group:null});
   closeModal('modal-ex-library');
@@ -9649,8 +9657,9 @@ async function openExtraSessionEditor(sessionId, sessionName) {
         <button onclick="document.getElementById('extra-editor-sheet').remove();loadCoachExtras(currentClient.id);" style="background:var(--gray1);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;">✕</button>
       </div>
       <div id="extra-ex-list" style="flex:1;overflow-y:auto;padding:12px 20px;"></div>
-      <div style="padding:12px 20px 32px;border-top:1px solid var(--gray1);flex-shrink:0;">
-        <button onclick="openAddExtraExerciseSheet('${sessionId}')" class="btn-primary" style="width:100%;padding:13px;">+ Agregar ejercicio</button>
+      <div style="padding:12px 20px 32px;border-top:1px solid var(--gray1);flex-shrink:0;display:flex;gap:8px;">
+        <button onclick="openLibraryForExtras('${sessionId}')" style="flex:1;padding:13px;border-radius:var(--radius-sm);background:var(--orange-light);color:var(--orange);border:1.5px solid var(--orange);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">📚 Biblioteca</button>
+        <button onclick="openAddExtraExerciseSheet('${sessionId}')" class="btn-primary" style="flex:1;padding:13px;">+ Nuevo</button>
       </div>
     </div>`;
   sheet.onclick = e => { if(e.target===sheet){ sheet.remove(); loadCoachExtras(currentClient.id); } };
@@ -9677,6 +9686,20 @@ async function refreshExtraExList(sessionId) {
 }
 
 function openAddExtraExerciseSheet(sessionId) { openEditExtraExSheet(sessionId, null); }
+
+async function openLibraryForExtras(sessionId) {
+  window._extrasLibrarySessionId = sessionId;
+  librarySwapTargetId = null;
+  libraryFilterCategory = '';
+  window._tplLibraryTargetDayId = null;
+  window._tplSwapTargetExId = null;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  document.querySelector('.filter-chip').classList.add('active');
+  const title = document.getElementById('library-modal-title');
+  if(title) title.textContent = '📚 Biblioteca';
+  showModal('modal-ex-library');
+  await loadLibrary();
+}
 
 function openEditExtraExSheet(sessionId, ex) {
   document.getElementById('extra-ex-form-sheet')?.remove();
@@ -9738,6 +9761,7 @@ async function saveExtraExercise(sessionId, exId) {
     const {data: last} = await sb.from('extra_exercises').select('order_index').eq('extra_session_id', sessionId).order('order_index',{ascending:false}).limit(1);
     payload.order_index = last?.length ? last[0].order_index+1 : 0;
     ({error} = await sb.from('extra_exercises').insert([payload]));
+    if (!error) await saveExerciseToLibrary(payload.name, payload.tag, payload.muscle_group, payload.video_url);
   }
   if (error) { showToast('❌ '+error.message); return; }
   document.getElementById('extra-ex-form-sheet')?.remove();
