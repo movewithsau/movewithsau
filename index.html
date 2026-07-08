@@ -9698,6 +9698,7 @@ async function openLibraryForExtras(sessionId) {
   const title = document.getElementById('library-modal-title');
   if(title) title.textContent = '📚 Biblioteca';
   showModal('modal-ex-library');
+  document.getElementById('modal-ex-library').style.zIndex = '600';
   await loadLibrary();
 }
 
