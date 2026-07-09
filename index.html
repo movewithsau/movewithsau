@@ -6178,7 +6178,7 @@ function switchCoachingTab(tab) {
 
 function handleCoachingTopbarAction() {
   if(coachingActiveTab === 'nutrition') showAddFoodModal();
-  else showModal('modal-ex-library');
+  else openAddExCoachingSheet();
 }
 function formatClientShortName(fullName) {
   const parts = fullName.trim().split(' ');
@@ -9353,6 +9353,62 @@ async function deleteExCoaching(id) {
   if(!confirm('¿Eliminar este ejercicio de la biblioteca?')) return;
   await sb.from('exercise_library').delete().eq('id',id);
   showToast('🗑️ Eliminado');
+  loadExCoaching();
+}
+
+function openAddExCoachingSheet() {
+  document.getElementById('add-ex-coaching-sheet')?.remove();
+  const sheet = document.createElement('div');
+  sheet.id = 'add-ex-coaching-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:flex;align-items:flex-end;justify-content:center;';
+  const muscleOptions = ['','Pecho','Espalda','Hombros','Bíceps','Tríceps','Cuádriceps','Isquiotibiales','Glúteos','Core','Pantorrillas','Movilidad','Cardio','Performance'];
+  sheet.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:22px 20px 40px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;">Nuevo ejercicio</div>
+        <button onclick="document.getElementById('add-ex-coaching-sheet').remove()" style="background:var(--gray1);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;">✕</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nombre</label>
+        <input class="form-input" id="aec-name" placeholder="Ej: Sentadilla búlgara...">
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <div style="flex:1;">
+          <label class="form-label">Tipo</label>
+          <select class="form-select" id="aec-tag">
+            <option value="Peso Libre">Peso Libre</option>
+            <option value="Máquina">Máquina</option>
+            <option value="Peso Corporal">Peso Corporal</option>
+          </select>
+        </div>
+        <div style="flex:1;">
+          <label class="form-label">Músculo</label>
+          <select class="form-select" id="aec-muscle">
+            ${muscleOptions.map(m=>`<option value="${m}">${m||'—'}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">URL Video (opcional)</label>
+        <input class="form-input" id="aec-video" placeholder="https://youtube.com/..." type="url">
+      </div>
+      <button onclick="saveAddExCoaching()" style="width:100%;padding:14px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:4px;">Guardar ejercicio</button>
+    </div>`;
+  document.body.appendChild(sheet);
+  sheet.addEventListener('click', e => { if(e.target===sheet) sheet.remove(); });
+  setTimeout(()=>document.getElementById('aec-name')?.focus(), 100);
+}
+
+async function saveAddExCoaching() {
+  const name = document.getElementById('aec-name')?.value.trim();
+  const tag = document.getElementById('aec-tag')?.value;
+  const muscle = document.getElementById('aec-muscle')?.value;
+  const video = document.getElementById('aec-video')?.value.trim();
+  if(!name){ showToast('⚠️ El nombre es obligatorio'); return; }
+  const {error} = await sb.from('exercise_library').insert([{coach_id:currentUser.id,name,tag:tag||'Peso Libre',muscle_group:muscle||null,video_url:video||null}]);
+  if(error){ showToast('❌ '+error.message); return; }
+  document.getElementById('add-ex-coaching-sheet')?.remove();
+  showToast('✅ Ejercicio agregado');
   loadExCoaching();
 }
 
