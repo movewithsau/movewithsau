@@ -1318,6 +1318,19 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
     <div class="form-group" id="edit-custom-muscle-group" style="display:none;"><input class="form-input" id="edit-custom-muscle" placeholder="Escribe el grupo muscular"></div>
     <div class="form-group"><label class="form-label">URL video</label><input class="form-input" id="edit-ex-video" placeholder="https://..."></div>
     <div class="form-group"><label class="form-label">Notas del coach</label><textarea class="form-textarea" id="edit-ex-notes" rows="3" placeholder="Instrucciones, cues, etc."></textarea></div>
+    <input type="hidden" id="edit-ex-plan-day-id">
+    <input type="hidden" id="edit-ex-order-index">
+    <div class="form-group" id="edit-ex-circuit-section" style="display:none;">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;">
+        <input type="checkbox" id="edit-ex-link" onchange="toggleEditExLink()">
+        <label for="edit-ex-link" style="font-size:12px;font-weight:600;color:var(--gray5);cursor:pointer;">🔗 Vincular a circuito anterior</label>
+        <div id="edit-ex-link-rounds" style="display:none;align-items:center;gap:4px;">
+          <span style="font-size:11px;color:var(--gray4);">Rounds:</span>
+          <input class="form-input" type="number" id="edit-ex-circuit-rounds" placeholder="3" min="1" max="10" style="width:60px;">
+        </div>
+      </div>
+    </div>
+    <button onclick="openEditExLibrarySwap()" style="width:100%;background:var(--blue-light);color:var(--blue);border:1.5px solid var(--blue);border-radius:10px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:8px;">🔄 Cambiar desde Biblioteca</button>
     <button class="btn-primary" onclick="saveEditedExercise()">Guardar cambios</button>
   </div>
 </div>
@@ -1344,6 +1357,16 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
       <div class="filter-chip" onclick="setLibraryFilter('Performance',this)">Performance</div>
     </div>
     <div id="library-list" style="max-height:50vh;overflow-y:auto;"></div>
+    <div id="day-lib-chain-section" style="display:none;padding-top:10px;border-top:1px solid var(--gray2);margin-top:6px;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" id="day-lib-link" onchange="toggleDayLibLink()">
+        <span style="font-size:12px;font-weight:600;color:var(--gray5);">🔗 Vincular al ejercicio anterior</span>
+      </label>
+      <div id="day-lib-rounds" style="display:none;align-items:center;gap:6px;margin-top:6px;">
+        <span style="font-size:11px;color:var(--gray4);">Rounds:</span>
+        <input class="form-input" type="number" id="day-lib-rounds-input" value="3" min="1" max="10" style="width:60px;">
+      </div>
+    </div>
   </div>
 </div>
 
@@ -3647,7 +3670,8 @@ async function togglePlanDay(planDayId, chipEl) {
 
 function renderDayExercises(exList, exs, planDayId) {
   exList.innerHTML = `
-    <div style="display:flex;justify-content:flex-end;margin-bottom:5px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;gap:6px;">
+      <button onclick="openDayLibrarySheet('${planDayId}')" style="background:var(--orange-light);color:var(--orange);border:1.5px solid var(--orange);font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Agregar ejercicio</button>
       <button onclick="deleteAllExercises('${planDayId}')" style="background:#fff0f0;border:1.5px solid #e53935;color:#e53935;font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px;cursor:pointer;font-family:'DM Sans',sans-serif;">🗑 Borrar rutina completa</button>
     </div>
     ${exs.map(ex=>{
@@ -3679,6 +3703,48 @@ async function reloadDayExercises(planDayId) {
   const {data:exs} = await sb.from('exercises').select('*').eq('plan_day_id',planDayId).order('order_index');
   if(!exs||exs.length===0){exList.innerHTML='<div style="font-size:12px;color:var(--gray4);padding:4px 0;">Sin ejercicios</div>';return;}
   renderDayExercises(exList, exs, planDayId);
+}
+
+async function openDayLibrarySheet(planDayId) {
+  window._dayLibraryPlanDayId = planDayId;
+  const chainSection = document.getElementById('day-lib-chain-section');
+  if(chainSection){
+    chainSection.style.display='block';
+    document.getElementById('day-lib-link').checked=false;
+    document.getElementById('day-lib-rounds').style.display='none';
+  }
+  document.getElementById('library-modal-title').textContent='+ Agregar ejercicio';
+  showModal('modal-ex-library');
+  document.getElementById('library-search').value='';
+  await loadLibrary();
+}
+
+async function addExerciseToDayFromLibrary(planDayId, ex, linked, rounds) {
+  const {data:exs}=await sb.from('exercises').select('id,superset_group,circuit_rounds,order_index').eq('plan_day_id',planDayId).order('order_index');
+  const nextOrder=(exs&&exs.length>0)?exs[exs.length-1].order_index+1:0;
+  let superset_group=null, circuit_rounds=null, sets=3;
+  if(linked&&exs&&exs.length>0){
+    const prev=exs[exs.length-1];
+    if(prev.superset_group){
+      superset_group=prev.superset_group;
+      circuit_rounds=prev.circuit_rounds;
+    } else {
+      const used=new Set(exs.map(e=>e.superset_group).filter(Boolean));
+      const letter='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').find(l=>!used.has(l))||'A';
+      superset_group=letter;
+      circuit_rounds=rounds;
+      await sb.from('exercises').update({superset_group:letter,circuit_rounds:rounds,sets:1}).eq('id',prev.id);
+    }
+    sets=1;
+  }
+  await sb.from('exercises').insert([{
+    plan_day_id:planDayId,
+    name:ex.name,tag:ex.tag||'Peso Libre',muscle_group:ex.muscle_group||null,
+    video_url:ex.video_url||null,sets,reps_range:'8-12',rest_seconds:60,
+    notes:null,circuit_notes:null,superset_group,circuit_rounds,order_index:nextOrder
+  }]);
+  showToast('✅ Ejercicio agregado');
+  await reloadDayExercises(planDayId);
 }
 
 async function deleteExercise(exId, planDayId) {
@@ -4030,6 +4096,8 @@ function renderRPEGauge(rpe) {
 
 function openEditEx(ex) {
   document.getElementById('edit-ex-id').value=ex.id;
+  document.getElementById('edit-ex-plan-day-id').value=ex.plan_day_id||'';
+  document.getElementById('edit-ex-order-index').value=ex.order_index??'';
   document.getElementById('edit-ex-name').value=ex.name;
   document.getElementById('edit-ex-sets').value=ex.sets;
   document.getElementById('edit-ex-reps').value=ex.reps_range||ex.reps||'';
@@ -4041,6 +4109,16 @@ function openEditEx(ex) {
   if(MUSCLES.includes(ex.muscle_group)){mSel.value=ex.muscle_group;document.getElementById('edit-custom-muscle-group').style.display='none';}
   else if(ex.muscle_group){mSel.value='custom';document.getElementById('edit-custom-muscle').value=ex.muscle_group;document.getElementById('edit-custom-muscle-group').style.display='block';}
   else{mSel.value='';}
+  const circSec=document.getElementById('edit-ex-circuit-section');
+  if((ex.order_index??0)>0){
+    circSec.style.display='block';
+    const linked=!!ex.superset_group;
+    document.getElementById('edit-ex-link').checked=linked;
+    document.getElementById('edit-ex-link-rounds').style.display=linked?'flex':'none';
+    document.getElementById('edit-ex-circuit-rounds').value=ex.circuit_rounds||'';
+  } else {
+    circSec.style.display='none';
+  }
   showModal('modal-edit-ex');
 }
 
@@ -4051,17 +4129,43 @@ function toggleCustomMuscle(sel) {
 
 async function saveEditedExercise() {
   const id=document.getElementById('edit-ex-id').value;
+  const planDayId=document.getElementById('edit-ex-plan-day-id').value;
+  const orderIndex=parseInt(document.getElementById('edit-ex-order-index').value)||0;
   const muscle_sel=document.getElementById('edit-ex-muscle').value;
   const muscle=muscle_sel==='custom'?document.getElementById('edit-custom-muscle').value:muscle_sel;
-  const {error} = await sb.from('exercises').update({
+  let superset_group=null, circuit_rounds=null;
+  let sets_val=parseInt(document.getElementById('edit-ex-sets').value)||3;
+  const circSec=document.getElementById('edit-ex-circuit-section');
+  if(circSec.style.display!=='none'&&orderIndex>0&&planDayId){
+    const linked=document.getElementById('edit-ex-link').checked;
+    if(linked){
+      const {data:prevEx}=await sb.from('exercises').select('id,superset_group,circuit_rounds').eq('plan_day_id',planDayId).eq('order_index',orderIndex-1).maybeSingle();
+      if(prevEx){
+        if(prevEx.superset_group){
+          superset_group=prevEx.superset_group;
+          circuit_rounds=prevEx.circuit_rounds;
+        } else {
+          const {data:allExs}=await sb.from('exercises').select('superset_group').eq('plan_day_id',planDayId);
+          const used=new Set(allExs?.map(e=>e.superset_group).filter(Boolean)||[]);
+          const nextLetter='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').find(l=>!used.has(l))||'A';
+          superset_group=nextLetter;
+          circuit_rounds=parseInt(document.getElementById('edit-ex-circuit-rounds').value)||3;
+          await sb.from('exercises').update({superset_group:nextLetter,circuit_rounds,sets:1}).eq('id',prevEx.id);
+        }
+        sets_val=1;
+      }
+    }
+  }
+  const {error}=await sb.from('exercises').update({
     name:document.getElementById('edit-ex-name').value,
-    sets:parseInt(document.getElementById('edit-ex-sets').value),
+    sets:sets_val,
     reps_range:document.getElementById('edit-ex-reps').value,
     rest_seconds:parseInt(document.getElementById('edit-ex-rest').value)||60,
     tag:document.getElementById('edit-ex-tag').value,
     video_url:document.getElementById('edit-ex-video').value||null,
     notes:document.getElementById('edit-ex-notes').value||null,
-    muscle_group:muscle||null
+    muscle_group:muscle||null,
+    superset_group,circuit_rounds
   }).eq('id',id);
   if(error){showToast('❌ '+error.message);return;}
   closeModal('modal-edit-ex');
@@ -4298,6 +4402,7 @@ function addExerciseForm(prefill=null) {
         <button onclick="moveExForm('ex-form-${id}',1)" title="Bajar" style="background:var(--gray1);color:var(--gray5);border:1.5px solid var(--gray2);border-radius:6px;padding:4px 8px;font-size:13px;cursor:pointer;line-height:1;">↓</button>
         <button onclick="saveOneToLibrary(${id})" style="background:var(--green-light);color:var(--green);border:none;border-radius:6px;padding:5px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">📚 Guardar</button>
         <button onclick="openLibrarySwap(${id})" style="background:var(--blue-light);color:var(--blue);border:1.5px solid var(--blue);border-radius:6px;padding:5px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">🔄 Cambiar</button>
+        <button onclick="insertExFormAfter(${id})" title="Insertar ejercicio debajo" style="background:var(--orange-light);color:var(--orange);border:1.5px solid var(--orange);border-radius:6px;padding:4px 8px;font-size:14px;font-weight:700;cursor:pointer;line-height:1;">+</button>
         <button class="remove-btn" onclick="document.getElementById('ex-form-${id}').remove();renumberForms()">✕</button>
       </div>
     </div>
@@ -4332,17 +4437,13 @@ function addExerciseForm(prefill=null) {
     </div>
     <div class="form-group"><input class="builder-input" style="width:100%;" placeholder="URL video (opcional)" id="bv-${id}" value="${prefill&&prefill.video_url?prefill.video_url:''}"></div>
     <div class="form-group"><textarea class="form-textarea" placeholder="Notas del coach (opcional)" id="bno-${id}" rows="2">${prefill&&prefill.notes?prefill.notes:''}</textarea></div>
-    <div class="superset-toggle">
-      <input type="checkbox" id="bss-${id}" ${prefill&&prefill.superset_group?'checked':''} onchange="toggleSupersetInput(${id})">
-      <label for="bss-${id}">Parte de un Circuito</label>
-      <input class="superset-group-input" id="bssg-${id}" placeholder="Ej: A" style="display:${prefill&&prefill.superset_group?'inline-block':'none'};" value="${prefill&&prefill.superset_group?prefill.superset_group:''}">
-    </div>
-    <div id="bcn-${id}" style="display:${prefill&&prefill.superset_group?'block':'none'};margin-top:6px;">
-      <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;">
-        <label style="font-size:11px;font-weight:600;color:var(--gray5);white-space:nowrap;">Rounds del circuito:</label>
-        <input class="builder-input" type="number" id="bcr-${id}" placeholder="3" min="1" max="10" value="${prefill&&prefill.circuit_rounds?prefill.circuit_rounds:''}" style="width:70px;flex:none;">
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 0 4px;border-top:1px solid var(--gray2);margin-top:4px;flex-wrap:wrap;">
+      <input type="checkbox" id="blink-${id}" ${prefill&&prefill.superset_group?'checked':''} onchange="toggleChainInput(${id})">
+      <label for="blink-${id}" style="font-size:12px;font-weight:600;color:var(--gray5);cursor:pointer;">🔗 Vincular a circuito anterior</label>
+      <div id="bchain-${id}" style="display:${prefill&&prefill.superset_group?'flex':'none'};align-items:center;gap:4px;">
+        <span style="font-size:11px;color:var(--gray4);">Rounds:</span>
+        <input class="builder-input" type="number" id="bcr-${id}" placeholder="3" min="1" max="10" value="${prefill&&prefill.circuit_rounds?prefill.circuit_rounds:''}" style="width:55px;flex:none;">
       </div>
-      <textarea class="form-textarea" id="bcn-input-${id}" rows="2" placeholder="Notas del circuito (ej: Sin descanso entre ejercicios, mantén el tempo)">${prefill&&prefill.circuit_notes?prefill.circuit_notes:''}</textarea>
     </div>`;
   document.getElementById('builder-exercises-list').appendChild(div);
 }
@@ -4363,15 +4464,36 @@ function setRepMode(id, mode) {
     input.value = input.value && !isNaN(input.value) ? input.value+'s' : input.value;
   }
 }
-function toggleSupersetInput(id) {
-  const cb = document.getElementById('bss-'+id);
-  document.getElementById('bssg-'+id).style.display = cb.checked ? 'inline-block' : 'none';
-  document.getElementById('bcn-'+id).style.display = cb.checked ? 'block' : 'none';
-  // Hide Series field when it's a circuit — rounds control that instead
+function toggleChainInput(id) {
+  const cb = document.getElementById('blink-'+id);
+  document.getElementById('bchain-'+id).style.display = cb.checked ? 'flex' : 'none';
   const wrap = document.getElementById('bs-wrap-'+id);
-  if(wrap) {
-    wrap.style.display = cb.checked ? 'none' : 'block';
-  }
+  if(wrap) wrap.style.display = cb.checked ? 'none' : 'block';
+}
+
+function toggleEditExLink() {
+  const linked = document.getElementById('edit-ex-link').checked;
+  document.getElementById('edit-ex-link-rounds').style.display = linked ? 'flex' : 'none';
+}
+
+function toggleDayLibLink() {
+  const linked = document.getElementById('day-lib-link').checked;
+  document.getElementById('day-lib-rounds').style.display = linked ? 'flex' : 'none';
+}
+
+function openEditExLibrarySwap() {
+  window._editExLibraryMode = true;
+  document.getElementById('library-modal-title').textContent = 'Cambiar ejercicio';
+  showModal('modal-ex-library');
+  loadLibrary();
+}
+
+function insertExFormAfter(afterId) {
+  addExerciseForm();
+  const newEl = document.getElementById('ex-form-'+exFormCount);
+  const afterEl = document.getElementById('ex-form-'+afterId);
+  if(newEl && afterEl) afterEl.parentNode.insertBefore(newEl, afterEl.nextSibling);
+  renumberForms();
 }
 
 function moveExForm(formId, direction) {
@@ -4393,7 +4515,7 @@ async function savePlanDay() {
   if(!builderDay){showToast('⚠️ Selecciona un día');return;}
   const forms=document.querySelectorAll('[id^="ex-form-"]');
   if(forms.length===0){showToast('⚠️ Agrega al menos un ejercicio');return;}
-  const exercises=[];
+  const rawItems=[];
   let valid=true;
   forms.forEach((f,idx)=>{
     const fid=f.id.replace('ex-form-','');
@@ -4406,14 +4528,44 @@ async function savePlanDay() {
     const muscle=mSel==='custom'?document.getElementById('bmc-input-'+fid)?.value:mSel;
     const video=document.getElementById('bv-'+fid)?.value.trim();
     const notes=document.getElementById('bno-'+fid)?.value.trim();
-    const ssCheck=document.getElementById('bss-'+fid)?.checked;
-    const ssGroup=document.getElementById('bssg-'+fid)?.value.trim();
-    const circuitNotes=document.getElementById('bcn-input-'+fid)?.value.trim()||null;
-    const circuitRounds=parseInt(document.getElementById('bcr-'+fid)?.value)||null;
-    if(!name||(!ssCheck&&!sets)||!reps){valid=false;return;}
-    exercises.push({name,sets:ssCheck?1:parseInt(sets),reps_range:reps,rest_seconds:parseInt(rest)||60,tag,muscle_group:muscle||null,video_url:video||null,notes:notes||null,circuit_notes:ssCheck&&ssGroup?circuitNotes:null,circuit_rounds:ssCheck&&ssGroup?circuitRounds:null,superset_group:ssCheck&&ssGroup?ssGroup:null,order_index:idx});
+    const linked=document.getElementById('blink-'+fid)?.checked||false;
+    const rounds=parseInt(document.getElementById('bcr-'+fid)?.value)||3;
+    if(!name||(!linked&&!sets)||!reps){valid=false;return;}
+    rawItems.push({name,sets:parseInt(sets)||1,reps,rest,tag,muscle,video,notes,linked,rounds,idx});
   });
   if(!valid){showToast('⚠️ Completa nombre, series y reps');return;}
+  // Chain algorithm — same logic as qdbComputeGroups
+  const letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let letterIdx=0;
+  const groupRounds={};
+  rawItems.forEach(item=>{item.group=null;});
+  for(let i=1;i<rawItems.length;i++){
+    if(!rawItems[i].linked) continue;
+    const prev=rawItems[i-1];
+    if(!prev.group){
+      const letter=letters[letterIdx++];
+      prev.group=letter;
+      rawItems[i].group=letter;
+      if(!groupRounds[letter]) groupRounds[letter]=rawItems[i].rounds;
+    } else {
+      rawItems[i].group=prev.group;
+      if(!groupRounds[rawItems[i].group]) groupRounds[rawItems[i].group]=rawItems[i].rounds;
+    }
+  }
+  const exercises=rawItems.map((item,idx)=>({
+    name:item.name,
+    sets:item.group?1:item.sets,
+    reps_range:item.reps,
+    rest_seconds:parseInt(item.rest)||60,
+    tag:item.tag,
+    muscle_group:item.muscle||null,
+    video_url:item.video||null,
+    notes:item.notes||null,
+    circuit_notes:null,
+    circuit_rounds:item.group?(groupRounds[item.group]||3):null,
+    superset_group:item.group||null,
+    order_index:idx
+  }));
   const {data:existPd} = await sb.from('monthly_plans').select('id').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',builderDay).maybeSingle();
   const preservedOrder = existPd?.day_order ?? null;
   if(existPd){ await sb.from('exercises').delete().eq('plan_day_id',existPd.id); await sb.from('monthly_plans').delete().eq('id',existPd.id); }
@@ -8756,6 +8908,33 @@ function addFromLibrary(ex) {
     });
     window._tplLibraryTargetDayId = null;
     closeModal('modal-ex-library');
+    return;
+  }
+  // Edit-modal swap mode — fill edit modal with library exercise
+  if (window._editExLibraryMode) {
+    window._editExLibraryMode = false;
+    closeModal('modal-ex-library');
+    document.getElementById('library-modal-title').textContent = 'Biblioteca de ejercicios';
+    document.getElementById('edit-ex-name').value = ex.name;
+    document.getElementById('edit-ex-tag').value = ex.tag || 'Peso Libre';
+    const mSel = document.getElementById('edit-ex-muscle');
+    if(MUSCLES.includes(ex.muscle_group)){mSel.value=ex.muscle_group;document.getElementById('edit-custom-muscle-group').style.display='none';}
+    else if(ex.muscle_group){mSel.value='custom';document.getElementById('edit-custom-muscle').value=ex.muscle_group;document.getElementById('edit-custom-muscle-group').style.display='block';}
+    else{mSel.value='';}
+    document.getElementById('edit-ex-video').value = ex.video_url || '';
+    showToast('✅ Ejercicio cambiado desde biblioteca');
+    return;
+  }
+  // Day-view add mode — add exercise directly to plan day
+  if (window._dayLibraryPlanDayId) {
+    const planDayId = window._dayLibraryPlanDayId;
+    const linked = document.getElementById('day-lib-link')?.checked || false;
+    const rounds = parseInt(document.getElementById('day-lib-rounds-input')?.value) || 3;
+    window._dayLibraryPlanDayId = null;
+    closeModal('modal-ex-library');
+    document.getElementById('library-modal-title').textContent = 'Biblioteca de ejercicios';
+    document.getElementById('day-lib-chain-section').style.display = 'none';
+    addExerciseToDayFromLibrary(planDayId, ex, linked, rounds);
     return;
   }
   // Extras mode — pre-fill extra exercise form
