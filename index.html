@@ -1786,6 +1786,16 @@ async function initClient() {
   const totalMin = cd?.total_training_minutes||0;
   document.getElementById('c-total-time').textContent = `${Math.floor(totalMin/60)}h ${totalMin%60}min`;
   document.getElementById('c-greeting-week').textContent = 'Semana 1 de tu plan mensual 💪';
+  // evoluTion appearance
+  const greetingCard = document.querySelector('#screen-client-home .greeting-card');
+  const topbarLogo = document.querySelector('#screen-client-home .topbar-logo');
+  if (cd?.is_evolution) {
+    if (greetingCard) greetingCard.style.background = '#111';
+    if (topbarLogo) topbarLogo.innerHTML = 'Move With Sau <span style="font-family:\'DM Mono\',monospace;font-size:10px;font-weight:800;color:var(--orange);letter-spacing:0.08em;">evoluTion</span>';
+  } else {
+    if (greetingCard) greetingCard.style.background = '';
+    if (topbarLogo) topbarLogo.textContent = 'Move With Sau';
+  }
   loadGoalDisplay(cd?.goal_text);
   updateClientWeekUI();
   loadClientDayStrip();
@@ -3423,11 +3433,12 @@ function renderCoachClients(clients) {
     const badgeText = getPaymentBadgeText(d);
     const startDateStr = c.start_date ? formatDate(c.start_date) : (c.created_at ? new Date(c.created_at).toLocaleDateString('es-CR',{day:'numeric',month:'short',year:'numeric'}) : null);
     const typeTag = c.client_type ? `<span class="client-type-tag">${c.client_type==='Virtual'?'V':'H'}</span>` : '';
+    const evolutionBadge = `<span onclick="event.stopPropagation();toggleEvolutionClient('${c.id}',${!c.is_evolution})" title="${c.is_evolution?'Desactivar evoluTion':'Activar evoluTion'}" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:10px;font-weight:800;background:${c.is_evolution?'#111':'var(--gray1)'};color:${c.is_evolution?'var(--orange)':'var(--gray3)'};border:1.5px solid ${c.is_evolution?'var(--orange)':'var(--gray2)'};font-family:'DM Mono',monospace;cursor:pointer;flex-shrink:0;">T</span>`;
     const churnBadge = c.is_churn ? `<div style="background:#f3f4f6;color:var(--gray4);border-radius:8px;padding:6px 10px;text-align:center;font-size:11px;font-weight:700;line-height:1.2;border:1.5px solid var(--gray2);">👋<div style="font-size:8px;margin-top:1px;">CHURN</div></div>` : `<div class="payment-badge ${badgeClass}"><div style="font-size:8px;opacity:0.7;margin-bottom:1px;">PAGO</div>${badgeText}</div>`;
     return `<div class="client-card fade-up" onclick="openCoachClient('${c.id}')">
       <div class="client-avatar" style="${c.is_churn ? 'opacity:0.5;' : ''}">${getInitials(c.name)}</div>
       <div class="client-info">
-        <div class="client-name" style="display:flex;align-items:center;gap:6px;${c.is_churn ? 'color:var(--gray4);' : ''}">${c.name}${typeTag}</div>
+        <div class="client-name" style="display:flex;align-items:center;gap:6px;${c.is_churn ? 'color:var(--gray4);' : ''}">${c.name}${typeTag}${evolutionBadge}</div>
         <div class="client-meta">@${c.username} · ${c.days_trained||0} días${startDateStr?` · Inicio: ${startDateStr}`:''}${clientSortMode==='last_active'?(c.last_active?` · 🟢 ${new Date(c.last_active).toLocaleDateString('es-CR',{weekday:'short',day:'numeric',month:'short'})}`:' · ⚫ Sin sesión'):''}</div>
       </div>
       ${churnBadge}
@@ -3474,10 +3485,11 @@ async function openCoachClient(clientId) {
   currentClient=c;
   const startDateStr = c.start_date ? formatDate(c.start_date) : null;
   const typeTag = c.client_type ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:10px;font-weight:800;background:var(--orange-light);color:var(--orange);border:1.5px solid var(--orange-mid);font-family:'DM Mono',monospace;margin-left:6px;">${c.client_type==='Virtual'?'V':'H'}</span>` : '';
+  const evoTag = `<span onclick="toggleEvolutionClient('${c.id}',${!c.is_evolution})" title="${c.is_evolution?'Desactivar evoluTion':'Activar evoluTion'}" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:10px;font-weight:800;background:${c.is_evolution?'#111':'var(--gray1)'};color:${c.is_evolution?'var(--orange)':'var(--gray3)'};border:1.5px solid ${c.is_evolution?'var(--orange)':'var(--gray2)'};font-family:'DM Mono',monospace;margin-left:6px;cursor:pointer;">T</span>`;
   document.getElementById('coach-profile-header').innerHTML=`
     <div class="profile-avatar-lg">${getInitials(c.name)}</div>
     <div>
-      <div class="profile-name" style="display:flex;align-items:center;">${c.name}${typeTag}</div>
+      <div class="profile-name" style="display:flex;align-items:center;">${c.name}${typeTag}${evoTag}</div>
       <div class="profile-username">@${c.username}${c.client_type?' · '+c.client_type:''}</div>
       ${startDateStr?`<div style="font-size:11px;color:var(--orange);margin-top:2px;">📅 Inicio: ${startDateStr}</div>`:''}
     </div>`;
@@ -6442,6 +6454,22 @@ async function updatePayment() {
   openCoachClient(currentClient.id);
 }
 
+async function toggleEvolutionClient(clientId, newVal) {
+  const { error } = await sb.from('clients').update({ is_evolution: newVal }).eq('id', clientId);
+  if (error) { showToast('❌ ' + error.message); return; }
+  if (window._cachedClientsAll) {
+    const c = window._cachedClientsAll.find(x => x.id === clientId);
+    if (c) c.is_evolution = newVal;
+    renderCoachClients(window._cachedClientsAll);
+  }
+  if (currentClient?.id === clientId) {
+    currentClient.is_evolution = newVal;
+    // Refresh profile header T badge
+    openCoachClient(clientId);
+  }
+  showToast(newVal ? '✅ evoluTion activado' : '✅ evoluTion desactivado');
+}
+
 async function toggleChurnClient(makeChurn) {
   if (!currentClient) return;
   const msg = makeChurn
@@ -9345,6 +9373,7 @@ async function openContractEditor() {
   const { data: existing } = await sb.from('contracts').select('*').eq('client_id', currentClient.id).maybeSingle();
   currentContractId = existing?.id || null;
   contractEditorMode = existing ? 'edit' : 'create';
+  window._existingContractSnapshot = existing ? { program: existing.program, duration: existing.duration, total_amount: existing.total_amount, signed_at: existing.signed_at } : null;
 
   // Build modal HTML dynamically and inject into page
   let modal = document.getElementById('modal-contract-editor');
@@ -9363,6 +9392,7 @@ async function openContractEditor() {
         <option value="StrongFlow + NutriFlex">StrongFlow + NutriFlex</option>
         <option value="StrongFlow">StrongFlow</option>
         <option value="NutriFlex">NutriFlex</option>
+        <option value="evoluTion">evoluTion</option>
       </select>
     </div>
     <div class="form-group">
@@ -9454,6 +9484,13 @@ async function saveContract() {
   const payment_day = isMensual ? parseInt(document.getElementById('ce-payment-day').value) : null;
   if (!program || !duration || isNaN(total_amount) || !payment_method) { showToast('⚠️ Completá todos los campos'); return; }
   const payload = { client_id: currentClient.id, program, duration, total_amount, payment_method, installments, payment_day };
+  if (currentContractId && window._existingContractSnapshot) {
+    const snap = window._existingContractSnapshot;
+    if (snap.signed_at) {
+      const changed = snap.program !== program || snap.duration !== duration || parseFloat(snap.total_amount) !== total_amount;
+      if (changed) { payload.signed_at = null; payload.signed_by = null; payload.status = 'pendiente'; }
+    }
+  }
   let error;
   if (currentContractId) {
     ({ error } = await sb.from('contracts').update(payload).eq('id', currentContractId));
