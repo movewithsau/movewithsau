@@ -4453,11 +4453,12 @@ async function copyWeekFromPrevious() {
 let quickDayItems = [];   // [{name, tag, muscle_group, video_url, linked, superset_group}]
 let qdbLibraryData = [];
 let qdbFilter = '';
+let qdbDay = null;
 
 async function openQuickDayBuilder() {
-  if (!builderDay) { showToast('⚠️ Selecciona un día primero'); return; }
   quickDayItems = [];
   qdbFilter = '';
+  qdbDay = builderDay || null;
   document.getElementById('quick-day-builder-sheet')?.remove();
 
   const sheet = document.createElement('div');
@@ -4468,15 +4469,20 @@ async function openQuickDayBuilder() {
   const muscleChips = muscles.map((m,i) =>
     `<div onclick="qdbSetFilter('${m}',this)" class="filter-chip${i===0?' active':''}" style="font-size:10px;padding:4px 9px;">${m||'Todos'}</div>`
   ).join('');
+  const dayChips = DAYS.map(d =>
+    `<div onclick="qdbSetDay('${d}',this)" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid ${d===qdbDay?'var(--orange)':'var(--gray2)'};background:${d===qdbDay?'var(--orange)':'var(--white)'};color:${d===qdbDay?'white':'var(--gray5)'};white-space:nowrap;font-family:'DM Sans',sans-serif;">${d}</div>`
+  ).join('');
 
   sheet.innerHTML = `
     <div style="background:var(--white);border-radius:20px 20px 0 0;width:100%;max-width:480px;height:92vh;display:flex;flex-direction:column;overflow:hidden;">
       <!-- Header -->
       <div style="padding:16px 18px 10px;flex-shrink:0;border-bottom:1px solid var(--gray2);">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-          <div style="font-family:'Playfair Display',serif;font-size:17px;font-weight:700;">🚀 Armar día — ${builderDay}</div>
+          <div style="font-family:'Playfair Display',serif;font-size:17px;font-weight:700;">🚀 Armar día rápido</div>
           <button onclick="document.getElementById('quick-day-builder-sheet').remove()" style="background:var(--gray1);border:none;border-radius:50%;width:28px;height:28px;font-size:15px;cursor:pointer;">✕</button>
         </div>
+        <!-- Day picker -->
+        <div style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:8px;" id="qdb-day-chips">${dayChips}</div>
         <input id="qdb-search" class="form-input" placeholder="🔍 Buscar ejercicio..." oninput="qdbFilterLibrary()" style="margin-bottom:8px;padding:8px 12px;font-size:13px;">
         <div style="display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;" id="qdb-filter-chips">${muscleChips}</div>
       </div>
@@ -4494,7 +4500,7 @@ async function openQuickDayBuilder() {
       </div>
       <!-- Save -->
       <div style="padding:10px 18px 30px;flex-shrink:0;border-top:1px solid var(--gray2);">
-        <button onclick="saveQuickDay()" style="width:100%;padding:13px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">💾 Guardar día</button>
+        <button onclick="saveQuickDay()" style="width:100%;padding:13px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">${qdbDay ? `💾 Guardar — ${qdbDay}` : '💾 Guardar día'}</button>
       </div>
     </div>`;
 
@@ -4505,6 +4511,16 @@ async function openQuickDayBuilder() {
   const {data} = await sb.from('exercise_library').select('*').eq('coach_id', currentUser.id).order('name');
   qdbLibraryData = data || [];
   qdbFilterLibrary();
+}
+
+function qdbSetDay(day, el) {
+  qdbDay = day;
+  document.querySelectorAll('#qdb-day-chips div').forEach(c => {
+    c.style.background = 'var(--white)'; c.style.color = 'var(--gray5)'; c.style.borderColor = 'var(--gray2)';
+  });
+  el.style.background = 'var(--orange)'; el.style.color = 'white'; el.style.borderColor = 'var(--orange)';
+  const btn = document.querySelector('#quick-day-builder-sheet button[onclick="saveQuickDay()"]');
+  if (btn) btn.textContent = `💾 Guardar — ${day}`;
 }
 
 function qdbSetFilter(cat, el) {
@@ -4620,7 +4636,7 @@ function qdbRenderPlan() {
 }
 
 async function saveQuickDay() {
-  if (!builderDay) { showToast('⚠️ Selecciona un día primero'); return; }
+  if (!qdbDay) { showToast('⚠️ Selecciona un día'); return; }
   if (!quickDayItems.length) { showToast('⚠️ Agrega al menos un ejercicio'); return; }
   qdbComputeGroups();
 
@@ -4639,18 +4655,19 @@ async function saveQuickDay() {
     order_index: idx
   }));
 
-  const {data: existPd} = await sb.from('monthly_plans').select('id').eq('client_id', currentClient.id).eq('week_number', builderWeek).eq('day_of_week', builderDay).maybeSingle();
+  const {data: existPd} = await sb.from('monthly_plans').select('id').eq('client_id', currentClient.id).eq('week_number', builderWeek).eq('day_of_week', qdbDay).maybeSingle();
   const preservedOrder = existPd?.day_order ?? null;
   if (existPd) {
     await sb.from('exercises').delete().eq('plan_day_id', existPd.id);
     await sb.from('monthly_plans').delete().eq('id', existPd.id);
   }
-  const {data: pd, error} = await sb.from('monthly_plans').insert([{client_id: currentClient.id, week_number: builderWeek, day_of_week: builderDay}]).select().single();
+  const {data: pd, error} = await sb.from('monthly_plans').insert([{client_id: currentClient.id, week_number: builderWeek, day_of_week: qdbDay}]).select().single();
   if (error) { showToast('❌ ' + error.message); return; }
   if (pd && preservedOrder !== null) await sb.from('monthly_plans').update({day_order: preservedOrder}).eq('id', pd.id);
   await sb.from('exercises').insert(exercises.map(e => ({...e, plan_day_id: pd.id})));
   for (const e of exercises) await saveExerciseToLibrary(e.name, e.tag, e.muscle_group, e.video_url);
 
+  builderDay = qdbDay;
   document.getElementById('quick-day-builder-sheet')?.remove();
   showToast('✅ Día guardado');
   await buildWeekTabs();
