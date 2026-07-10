@@ -3674,11 +3674,15 @@ function renderDayExercises(exList, exs, planDayId) {
       <button onclick="openDayLibrarySheet('${planDayId}')" style="background:var(--orange-light);color:var(--orange);border:1.5px solid var(--orange);font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Agregar ejercicio</button>
       <button onclick="deleteAllExercises('${planDayId}')" style="background:#fff0f0;border:1.5px solid #e53935;color:#e53935;font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px;cursor:pointer;font-family:'DM Sans',sans-serif;">🗑 Borrar rutina completa</button>
     </div>
-    ${exs.map(ex=>{
+    ${exs.map((ex,i)=>{
       const seriesVal = ex.superset_group && ex.circuit_rounds ? ex.circuit_rounds : ex.sets;
       const circuitBadge = ex.superset_group ? ` 🔄 ${ex.superset_group}` : '';
       return `
-    <div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--gray2);">
+    <div style="display:flex;align-items:center;gap:4px;padding:5px 0;border-bottom:1px solid var(--gray2);">
+      <div style="display:flex;flex-direction:column;gap:1px;">
+        <button onclick="moveDayExercise('${ex.id}','${planDayId}',-1)" ${i===0?'disabled':''} style="background:none;border:none;color:${i===0?'var(--gray2)':'var(--gray4)'};font-size:10px;cursor:${i===0?'default':'pointer'};padding:0 2px;line-height:1;">↑</button>
+        <button onclick="moveDayExercise('${ex.id}','${planDayId}',1)" ${i===exs.length-1?'disabled':''} style="background:none;border:none;color:${i===exs.length-1?'var(--gray2)':'var(--gray4)'};font-size:10px;cursor:${i===exs.length-1?'default':'pointer'};padding:0 2px;line-height:1;">↓</button>
+      </div>
       <span class="ex-tag ${getTagClass(ex.tag)}" style="font-size:8px;">${ex.tag}</span>
       <span style="font-size:12px;font-weight:500;flex:1;">${ex.name}</span>
       <span style="font-size:10px;color:var(--gray4);">${seriesVal}×${ex.reps_range}${circuitBadge}</span>
@@ -3744,6 +3748,20 @@ async function addExerciseToDayFromLibrary(planDayId, ex, linked, rounds) {
     notes:null,circuit_notes:null,superset_group,circuit_rounds,order_index:nextOrder
   }]);
   showToast('✅ Ejercicio agregado');
+  await reloadDayExercises(planDayId);
+}
+
+async function moveDayExercise(exId, planDayId, direction) {
+  const {data:exs} = await sb.from('exercises').select('id,order_index').eq('plan_day_id',planDayId).order('order_index');
+  if(!exs) return;
+  const idx = exs.findIndex(e=>e.id===exId);
+  const targetIdx = idx + direction;
+  if(idx<0||targetIdx<0||targetIdx>=exs.length) return;
+  const a = exs[idx], b = exs[targetIdx];
+  await Promise.all([
+    sb.from('exercises').update({order_index:b.order_index}).eq('id',a.id),
+    sb.from('exercises').update({order_index:a.order_index}).eq('id',b.id)
+  ]);
   await reloadDayExercises(planDayId);
 }
 
