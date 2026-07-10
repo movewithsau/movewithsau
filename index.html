@@ -2239,14 +2239,17 @@ async function loadClientExercises() {
           const wVal = saved.w||'';
           const rVal = saved.r||'';
           const isDone = saved.w && saved.r;
+          const prevC = prevByEx[se.name]?.[r];
+          const phCW = prevC?.weight || 'kg';
+          const phCR = prevC?.reps || 'reps';
           return `<td style="padding:4px;text-align:center;border-bottom:1px solid var(--gray2);">
             <div style="display:flex;gap:3px;justify-content:center;align-items:center;">
-              <input type="number" inputmode="decimal" placeholder="kg" value="${wVal}"
+              <input type="number" inputmode="decimal" placeholder="${phCW}" value="${wVal}"
                 style="width:46px;padding:5px 4px;border:1.5px solid ${isDone?'var(--green)':'var(--gray2)'};border-radius:6px;font-size:12px;text-align:center;font-family:'DM Sans',sans-serif;outline:none;background:${isDone?'var(--green-light)':'var(--white)'};color:var(--black);"
                 id="clog-w-${se.id}-r${r}"
                 onchange="saveCircuitLog('${se.id}',${r},'${circuitLogsKey}')"
                 onfocus="this.style.borderColor='var(--orange)'">
-              <input type="number" inputmode="numeric" placeholder="reps" value="${rVal}"
+              <input type="number" inputmode="numeric" placeholder="${phCR}" value="${rVal}"
                 style="width:46px;padding:5px 4px;border:1.5px solid ${isDone?'var(--green)':'var(--gray2)'};border-radius:6px;font-size:12px;text-align:center;font-family:'DM Sans',sans-serif;outline:none;background:${isDone?'var(--green-light)':'var(--white)'};color:var(--black);"
                 id="clog-r-${se.id}-r${r}"
                 onchange="saveCircuitLog('${se.id}',${r},'${circuitLogsKey}')"
@@ -2313,24 +2316,22 @@ async function loadClientExercises() {
         const rVal = saved.r||'';
         const filled = saved.w && saved.r;
         const prev = prevByEx[ex.name]?.[s];
-        const prevHint = prev
-          ? `<span style="font-size:10px;color:var(--orange);font-weight:700;white-space:nowrap;margin-left:4px;">↑ ${prev.weight||'—'}${prev.unit} × ${prev.reps||'—'}</span>`
-          : '';
+        const phW = prev?.weight || currentWeightUnit;
+        const phR = prev?.reps || 'reps';
         setRows += `<tr>
           <td style="padding:5px 6px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:var(--gray4);white-space:nowrap;border-bottom:1px solid var(--gray2);">Set ${s}</td>
           <td style="padding:4px;border-bottom:1px solid var(--gray2);">
             <div style="display:flex;gap:3px;align-items:center;flex-wrap:wrap;">
-              <input type="number" inputmode="decimal" placeholder="${currentWeightUnit}" value="${wVal}"
+              <input type="number" inputmode="decimal" placeholder="${phW}" value="${wVal}"
                 style="width:52px;padding:5px 4px;border:1.5px solid ${filled?'var(--green)':'var(--gray2)'};border-radius:6px;font-size:12px;text-align:center;font-family:'DM Sans',sans-serif;outline:none;background:${filled?'var(--green-light)':'var(--white)'};color:var(--black);"
                 id="slog-w-${ex.id}-s${s}"
                 onchange="saveSoloLog('${ex.id}',${s},'${soloLogsKey}')"
                 onfocus="this.style.borderColor='var(--orange)'">
-              <input type="number" inputmode="numeric" placeholder="reps" value="${rVal}"
+              <input type="number" inputmode="numeric" placeholder="${phR}" value="${rVal}"
                 style="width:52px;padding:5px 4px;border:1.5px solid ${filled?'var(--green)':'var(--gray2)'};border-radius:6px;font-size:12px;text-align:center;font-family:'DM Sans',sans-serif;outline:none;background:${filled?'var(--green-light)':'var(--white)'};color:var(--black);"
                 id="slog-r-${ex.id}-s${s}"
                 onchange="saveSoloLog('${ex.id}',${s},'${soloLogsKey}')"
                 onfocus="this.style.borderColor='var(--orange)'">
-              ${prevHint}
             </div>
           </td>
         </tr>`;
