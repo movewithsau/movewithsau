@@ -3649,14 +3649,17 @@ function renderDayExercises(exList, exs, planDayId) {
     <div style="display:flex;justify-content:flex-end;margin-bottom:5px;">
       <button onclick="deleteAllExercises('${planDayId}')" style="background:#fff0f0;border:1.5px solid #e53935;color:#e53935;font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px;cursor:pointer;font-family:'DM Sans',sans-serif;">🗑 Borrar rutina completa</button>
     </div>
-    ${exs.map(ex=>`
+    ${exs.map(ex=>{
+      const seriesVal = ex.superset_group && ex.circuit_rounds ? ex.circuit_rounds : ex.sets;
+      const circuitBadge = ex.superset_group ? ` 🔄 ${ex.superset_group}` : '';
+      return `
     <div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--gray2);">
       <span class="ex-tag ${getTagClass(ex.tag)}" style="font-size:8px;">${ex.tag}</span>
       <span style="font-size:12px;font-weight:500;flex:1;">${ex.name}</span>
-      <span style="font-size:10px;color:var(--gray4);">${ex.sets}×${ex.reps_range}</span>
+      <span style="font-size:10px;color:var(--gray4);">${seriesVal}×${ex.reps_range}${circuitBadge}</span>
       <button onclick="openEditEx(${JSON.stringify(ex).replace(/"/g,'&quot;')})" style="background:none;border:none;color:var(--orange);font-size:11px;font-weight:700;cursor:pointer;padding:2px 4px;">Editar</button>
       <button onclick="deleteExercise('${ex.id}','${planDayId}')" style="background:none;border:none;color:#e53935;font-size:11px;font-weight:700;cursor:pointer;padding:2px 4px;">🗑</button>
-    </div>`).join('')}`;
+    </div>`;}).join('')}`;
 }
 
 async function deleteOrphanPlanDay(planDayId) {
@@ -3757,9 +3760,9 @@ async function openQuickSeries() {
   }
 
   const planDayIds = planDays.map(p => p.id);
-  const {data: exercises} = await sb.from('exercises').select('id,plan_day_id,name,sets,reps_range,order_index').in('plan_day_id', planDayIds).order('order_index');
+  const {data: exercises} = await sb.from('exercises').select('id,plan_day_id,name,sets,reps_range,order_index,circuit_rounds,superset_group').in('plan_day_id', planDayIds).order('order_index');
 
-  // Build: { day_of_week: { exName: { reps_range, weeks: { weekNum: {id, sets} } } } }
+  // Build: { day_of_week: { exName: { reps_range, weeks: { weekNum: {id, sets, circuit_rounds, superset_group} } } } }
   const pdMap = {};
   planDays.forEach(pd => { pdMap[pd.id] = pd; });
 
@@ -3777,7 +3780,7 @@ async function openQuickSeries() {
     if (!pd) return;
     const day = pd.day_of_week;
     if (!dayMap[day][ex.name]) dayMap[day][ex.name] = { reps_range: ex.reps_range, order: ex.order_index, weeks: {} };
-    dayMap[day][ex.name].weeks[pd.week_number] = { id: ex.id, sets: ex.sets };
+    dayMap[day][ex.name].weeks[pd.week_number] = { id: ex.id, sets: ex.sets, circuit_rounds: ex.circuit_rounds, superset_group: ex.superset_group };
   });
 
   const weekNums = [...new Set(planDays.map(p => p.week_number))].sort((a,b)=>a-b);
@@ -3810,9 +3813,11 @@ async function openQuickSeries() {
         ${weekNums.map(w => {
           const wd = exData.weeks[w];
           if (!wd) return `<td style="padding:6px 6px;text-align:center;color:var(--gray3);font-size:11px;">—</td>`;
+          const isCircuit = !!(wd.superset_group && wd.circuit_rounds != null);
+          const displayVal = isCircuit ? (wd.circuit_rounds || '') : (wd.sets || '');
           return `<td style="padding:4px 4px;text-align:center;">
-            <input type="number" min="1" max="20" value="${wd.sets||''}"
-              onchange="saveQuickSet('${wd.id}',this.value,this)"
+            <input type="number" min="1" max="20" value="${displayVal}"
+              onchange="saveQuickSet('${wd.id}',this.value,this,${isCircuit})"
               onfocus="this.select()"
               style="width:40px;text-align:center;border:1.5px solid var(--gray2);border-radius:6px;padding:5px 2px;font-size:14px;font-weight:700;font-family:'DM Mono',monospace;outline:none;background:white;-moz-appearance:textfield;">
           </td>`;
@@ -3826,10 +3831,11 @@ async function openQuickSeries() {
   body.innerHTML = html;
 }
 
-async function saveQuickSet(exerciseId, newSets, inputEl) {
+async function saveQuickSet(exerciseId, newSets, inputEl, isCircuit) {
   const sets = parseInt(newSets);
   if (isNaN(sets) || sets < 1 || sets > 20) return;
-  const {error} = await sb.from('exercises').update({sets}).eq('id', exerciseId);
+  const payload = isCircuit ? {circuit_rounds: sets} : {sets};
+  const {error} = await sb.from('exercises').update(payload).eq('id', exerciseId);
   if (error) { showToast('❌ ' + error.message); return; }
   inputEl.style.borderColor = '#3b5bdb';
   inputEl.style.background = '#f0f4ff';
