@@ -3805,17 +3805,47 @@ async function openQuickSeries() {
     html += `<tr>
       <td colspan="${2 + weekNums.length}" style="padding:10px 8px 5px;font-size:11px;font-weight:700;color:var(--orange);letter-spacing:0.05em;text-transform:uppercase;border-top:1px solid var(--gray2);">${day}</td>
     </tr>`;
+    // Track circuit groups seen in this day to assign alternating colors by order of appearance
+    const circuitColorIndex = {}; // superset_group letter → color index (0=orange, 1=blue, ...)
+    const circuitLabelsInserted = new Set();
+    const circuitTints = ['#FBEEE4','#E7F2FA'];
+    const circuitLabelColors = ['#C0632E','#2E7FB8'];
+    let circuitCount = 0;
+
     exEntries.forEach(([name, exData]) => {
+      // Determine if this exercise belongs to a circuit group
+      const anyWd = Object.values(exData.weeks)[0];
+      const circuitGroup = (anyWd?.superset_group && anyWd?.circuit_rounds != null) ? anyWd.superset_group : null;
+
+      let rowBg = 'white';
+      let labelColor = '';
+      if (circuitGroup) {
+        if (!(circuitGroup in circuitColorIndex)) {
+          circuitColorIndex[circuitGroup] = circuitCount++;
+        }
+        const ci = circuitColorIndex[circuitGroup] % 2;
+        rowBg = circuitTints[ci];
+        labelColor = circuitLabelColors[ci];
+
+        // Insert circuit label row once, before the first exercise of this group
+        if (!circuitLabelsInserted.has(circuitGroup)) {
+          circuitLabelsInserted.add(circuitGroup);
+          html += `<tr>
+            <td colspan="${2 + weekNums.length}" style="padding:5px 8px 2px;font-size:10px;font-weight:700;color:${labelColor};letter-spacing:0.1em;text-transform:uppercase;background:${rowBg};border-top:1px solid var(--gray2);">CIRCUITO ${circuitGroup}</td>
+          </tr>`;
+        }
+      }
+
       const shortName = name.length > 22 ? name.substring(0,20)+'…' : name;
-      html += `<tr style="border-bottom:1px solid var(--gray1);">
-        <td style="padding:6px 8px;font-size:12px;font-weight:500;position:sticky;left:0;background:white;z-index:1;white-space:nowrap;" title="${name}">${shortName}</td>
+      html += `<tr style="border-bottom:1px solid var(--gray1);background:${rowBg};">
+        <td style="padding:6px 8px;font-size:12px;font-weight:500;position:sticky;left:0;background:${rowBg};z-index:1;white-space:nowrap;" title="${name}">${shortName}</td>
         <td style="padding:6px 4px;font-size:10px;color:var(--gray4);text-align:center;white-space:nowrap;">${exData.reps_range||'—'}</td>
         ${weekNums.map(w => {
           const wd = exData.weeks[w];
-          if (!wd) return `<td style="padding:6px 6px;text-align:center;color:var(--gray3);font-size:11px;">—</td>`;
+          if (!wd) return `<td style="padding:6px 6px;text-align:center;color:var(--gray3);font-size:11px;background:${rowBg};">—</td>`;
           const isCircuit = !!(wd.superset_group && wd.circuit_rounds != null);
           const displayVal = isCircuit ? (wd.circuit_rounds || '') : (wd.sets || '');
-          return `<td style="padding:4px 4px;text-align:center;">
+          return `<td style="padding:4px 4px;text-align:center;background:${rowBg};">
             <input type="number" min="1" max="20" value="${displayVal}"
               onchange="saveQuickSet('${wd.id}',this.value,this,${isCircuit})"
               onfocus="this.select()"
