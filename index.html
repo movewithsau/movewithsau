@@ -722,27 +722,6 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Coach</div>
       <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;" id="coach-name-display">—</div>
     </div>
-    <!-- EVALUACIONES inline section -->
-    <div id="coach-evaluaciones-inline" style="margin-bottom:8px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0 10px;">
-        <div onclick="toggleEvalSection()" style="display:flex;align-items:center;gap:7px;cursor:pointer;flex:1;">
-          <div class="section-title" style="margin-bottom:0;">🔬 Mis Evaluaciones</div>
-          <div id="eval-section-chevron" style="font-size:11px;color:var(--gray4);transition:transform 0.25s;line-height:1;">▼</div>
-        </div>
-        <div class="section-action" onclick="openCreateTestModal()">+ Nueva Evaluación</div>
-      </div>
-      <div id="eval-section-body" style="display:none;">
-        <div style="display:flex;gap:8px;margin-bottom:16px;padding-bottom:12px;border-top:1.5px solid var(--gray2);padding-top:12px;">
-          <div class="eval-filter-chip active" onclick="filterCoachTests('all', this)" style="cursor:pointer;padding:6px 12px;border-radius:6px;background:var(--gray1);color:var(--black);font-size:12px;font-weight:600;transition:all 0.2s;">Todas</div>
-          <div class="eval-filter-chip" onclick="filterCoachTests('pending', this)" style="cursor:pointer;padding:6px 12px;border-radius:6px;color:var(--gray4);font-size:12px;font-weight:600;transition:all 0.2s;">⏳ Pendientes</div>
-          <div class="eval-filter-chip" onclick="filterCoachTests('completed', this)" style="cursor:pointer;padding:6px 12px;border-radius:6px;color:var(--gray4);font-size:12px;font-weight:600;transition:all 0.2s;">✅ Completadas</div>
-        </div>
-        <div id="coach-tests-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
-          <div class="spinner"></div>
-        </div>
-      </div>
-      <div style="height:1.5px;background:var(--gray2);"></div>
-    </div>
     <!-- Client tabs: Activos / Churn -->
     <div style="display:flex;margin:0 -20px 0;border-bottom:2px solid var(--gray2);background:var(--white);position:sticky;top:0;z-index:10;margin-bottom:0;">
       <div id="ctab-active" onclick="setClientTab('active')" style="flex:1;text-align:center;padding:13px 8px 11px;font-size:13px;font-weight:700;color:var(--orange);border-bottom:2px solid var(--orange);margin-bottom:-2px;cursor:pointer;">💪 Activos <span id="coach-count-active" style="font-size:11px;font-weight:600;color:var(--orange);"></span></div>
@@ -794,6 +773,20 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <div class="section-action" onclick="toggleProgressDashboard()">Ver</div>
     </div>
     <div id="coach-progress-dashboard" style="display:none;"></div>
+
+    <div class="section-header" style="margin-top:4px;">
+      <div class="section-title">🔬 Evaluaciones</div>
+      <div class="section-action" onclick="openCreateTestModal()">+ Nueva</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <div class="eval-filter-chip active" onclick="filterClientTests('all', this)" style="cursor:pointer;padding:6px 12px;border-radius:6px;background:var(--gray1);color:var(--black);font-size:12px;font-weight:600;transition:all 0.2s;">Todas</div>
+      <div class="eval-filter-chip" onclick="filterClientTests('pending', this)" style="cursor:pointer;padding:6px 12px;border-radius:6px;color:var(--gray4);font-size:12px;font-weight:600;transition:all 0.2s;">⏳ Pendientes</div>
+      <div class="eval-filter-chip" onclick="filterClientTests('completed', this)" style="cursor:pointer;padding:6px 12px;border-radius:6px;color:var(--gray4);font-size:12px;font-weight:600;transition:all 0.2s;">✅ Completadas</div>
+    </div>
+    <div id="coach-client-tests-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+      <div class="spinner"></div>
+    </div>
+
     <div class="section-header">
       <div class="section-title">📝 Trainer Notes</div>
       <div class="section-action" id="trainer-notes-save-btn" onclick="saveTrainerNotes()" style="display:none;">Guardar</div>
@@ -1076,9 +1069,7 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
   <div class="topbar"><div class="topbar-logo">Move With Sau</div><div class="topbar-action" onclick="handleLogout()">Salir</div></div>
   <div class="scroll-body">
     <div style="margin-bottom:18px;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Configuración</div><div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;">Ajustes</div></div>
-    <div class="section-header"><div class="section-title">Gestión de clientes</div></div>
-    <div id="settings-list"><div class="spinner"></div></div>
-    <div class="section-header" style="margin-top:28px;"><div class="section-title">📣 Notificaciones</div></div>
+    <div class="section-header"><div class="section-title">📣 Notificaciones</div></div>
     <div class="card" style="margin-bottom:8px;">
       <div style="margin-bottom:10px;">
         <label class="form-label">Destinatario</label>
@@ -1095,6 +1086,13 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
         <textarea id="push-message" class="form-textarea" rows="3" placeholder="Escribí el mensaje aquí..." style="font-size:13px;line-height:1.5;resize:vertical;"></textarea>
       </div>
       <button id="push-send-btn" onclick="sendPushNotification()" class="btn-primary" style="padding:12px;">📣 Enviar notificación</button>
+    </div>
+    <div class="section-header" style="margin-top:28px;cursor:pointer;user-select:none;" onclick="toggleSettingsClients()">
+      <div class="section-title">Gestión de clientes</div>
+      <div id="settings-clients-chevron" style="font-size:14px;color:var(--gray4);transition:transform 0.2s;">▶</div>
+    </div>
+    <div id="settings-clients-body" style="display:none;">
+      <div id="settings-list"><div class="spinner"></div></div>
     </div>
     <div class="section-header" style="margin-top:28px;"><div class="section-title">Cuenta</div></div>
     <button class="btn-secondary" onclick="handleLogout()" style="margin-top:8px;">Cerrar sesión</button>
@@ -3138,6 +3136,66 @@ function filterCoachTests(filter, chipEl) {
   loadCoachTests(filter);
 }
 
+async function loadCoachClientTests(clientId) {
+  const list = document.getElementById('coach-client-tests-list');
+  if (!list) return;
+  list.innerHTML = '<div class="spinner"></div>';
+  const {data: tests} = await sb.from('tests')
+    .select('*, client:clients(name, username)')
+    .eq('client_id', clientId)
+    .order('test_date', {ascending: false});
+  window._clientTestsAll = tests || [];
+  renderClientTestsList(window._clientTestsAll);
+}
+
+function renderClientTestsList(tests) {
+  const list = document.getElementById('coach-client-tests-list');
+  if (!list) return;
+  if (!tests || !tests.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">🔬</div><div class="empty-text">Sin evaluaciones aún.</div></div>';
+    return;
+  }
+  list.innerHTML = tests.map(test => `
+    <div class="test-card fade-up" style="background:var(--gray1);border:1.5px solid var(--gray2);border-radius:var(--radius-sm);overflow:hidden;">
+      <div onclick="toggleTestCard('${test.id}')" style="display:flex;justify-content:space-between;align-items:center;padding:13px 14px;cursor:pointer;gap:10px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:700;color:var(--black);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${test.test_name}</div>
+          <div style="font-size:11px;color:var(--gray4);margin-top:2px;">📅 ${new Date(test.test_date).toLocaleDateString('es-CR')}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;flex-shrink:0;">
+          <div style="padding:4px 9px;background:var(--orange-light);color:var(--orange);border-radius:6px;font-size:11px;font-weight:700;">${test.status === 'pending' ? '⏳ Pendiente' : '✅ Completado'}</div>
+          <div id="test-chevron-${test.id}" style="font-size:11px;color:var(--gray4);transition:transform 0.2s;">▼</div>
+        </div>
+      </div>
+      <div id="test-body-${test.id}" style="display:none;padding:0 14px 14px;border-top:1px solid var(--gray2);">
+        ${test.context_notes ? `<div style="padding:9px 11px;background:var(--white);border-radius:8px;margin:10px 0 8px;font-size:12px;color:var(--gray5);border-left:3px solid var(--orange);">📝 ${test.context_notes}</div>` : '<div style="height:10px;"></div>'}
+        <div style="display:flex;gap:8px;">
+          <button onclick="viewCoachTestDetails('${test.id}')" style="flex:1;padding:10px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Ver Detalles</button>
+          <button onclick="openCopyTestModal(this)" data-test-id="${test.id}" data-test-name="${test.test_name}" style="padding:10px 13px;background:var(--gray2);color:var(--black);border:none;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;" title="Copiar a otro cliente">📋</button>
+          <button onclick="openEditTestModal('${test.id}')" style="padding:10px 13px;background:var(--gray2);color:var(--black);border:none;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;">✏️</button>
+          <button onclick="confirmDeleteTest('${test.id}','${test.test_name.replace(/'/g,"\\'")}')" style="padding:10px 13px;background:var(--red-light);color:var(--red);border:none;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;">🗑️</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterClientTests(filter, chipEl) {
+  document.querySelectorAll('#screen-coach-client .eval-filter-chip').forEach(c => {
+    c.style.background = '';
+    c.style.color = 'var(--gray4)';
+    c.classList.remove('active');
+  });
+  chipEl.style.background = 'var(--gray1)';
+  chipEl.style.color = 'var(--black)';
+  chipEl.classList.add('active');
+  const all = window._clientTestsAll || [];
+  let filtered = all;
+  if (filter === 'pending')   filtered = all.filter(t => !t.completed_at && t.status !== 'completed');
+  if (filter === 'completed') filtered = all.filter(t => !!t.completed_at || t.status === 'completed');
+  renderClientTestsList(filtered);
+}
+
 function toggleEvalSection() {
   const body = document.getElementById('eval-section-body');
   const chevron = document.getElementById('eval-section-chevron');
@@ -3238,7 +3296,7 @@ async function saveEditTest() {
   }
 
   closeModal('modal-edit-test');
-  loadCoachTests();
+  if (currentClient) loadCoachClientTests(currentClient.id);
 }
 
 
@@ -3309,7 +3367,7 @@ async function executeCopyTest() {
     }
 
     closeModal('modal-copy-test');
-    loadCoachTests();
+    if (currentClient) loadCoachClientTests(currentClient.id);
     alert('✅ ¡Evaluación copiada exitosamente!');
   } catch(err) {
     alert('Error: ' + err.message);
@@ -3324,7 +3382,7 @@ async function confirmDeleteTest(testId, testName) {
   await sb.from('test_exercises').delete().eq('test_id', testId);
   const {error} = await sb.from('tests').delete().eq('id', testId);
   if (error) { alert('Error: ' + error.message); return; }
-  loadCoachTests();
+  if (currentClient) loadCoachClientTests(currentClient.id);
 }
 
 function resetTestForm() {
@@ -3402,7 +3460,7 @@ async function saveCoachTest() {
 
   closeModal('modal-create-test');
   resetTestForm();
-  loadCoachTests();
+  if (currentClient) loadCoachClientTests(currentClient.id);
   alert('¡Evaluación creada! 💪');
 }
 
@@ -3420,13 +3478,24 @@ async function initCoach() {
   showScreen('screen-coach-home');
   document.getElementById('coach-name-display').textContent = currentUser.name.split(' ')[0];
   loadCoachClients();
-  loadCoachTests();
 }
 
-function setSortClients(mode, el) {
+async function setSortClients(mode, el) {
   clientSortMode = mode;
   document.querySelectorAll('.sort-chip').forEach(c=>c.classList.remove('active'));
   el.classList.add('active');
+  if (mode === 'last_active') {
+    const ids = (window._cachedClients||[]).map(c=>c.id);
+    if (ids.length) {
+      const {data:logs} = await sb.from('exercise_logs')
+        .select('client_id,logged_at')
+        .in('client_id', ids)
+        .order('logged_at', {ascending:false});
+      const map = {};
+      (logs||[]).forEach(l => { if (!map[l.client_id]) map[l.client_id] = l.logged_at; });
+      window._lastTrainedMap = map;
+    }
+  }
   renderCoachClients(window._cachedClients || []);
 }
 
@@ -3449,7 +3518,8 @@ function renderCoachClients(clients) {
   } else if(clientSortMode==='start_date') {
     sorted.sort((a,b)=>{const da=a.start_date||a.created_at||'',db=b.start_date||b.created_at||'';return da.localeCompare(db);});
   } else if(clientSortMode==='last_active') {
-    sorted.sort((a,b)=>{const da=a.last_active||'',db=b.last_active||'';if(!da&&!db)return 0;if(!da)return 1;if(!db)return-1;return db.localeCompare(da);});
+    const m = window._lastTrainedMap||{};
+    sorted.sort((a,b)=>{const da=m[a.id]||'',db=m[b.id]||'';if(!da&&!db)return 0;if(!da)return 1;if(!db)return-1;return db.localeCompare(da);});
   }
 
   list.innerHTML = sorted.map(c=>{
@@ -3464,7 +3534,7 @@ function renderCoachClients(clients) {
       <div class="client-avatar" style="${c.is_churn ? 'opacity:0.5;' : ''}">${getInitials(c.name)}</div>
       <div class="client-info">
         <div class="client-name" style="display:flex;align-items:center;gap:6px;${c.is_churn ? 'color:var(--gray4);' : ''}">${c.name}${typeTag}${evolutionBadge}</div>
-        <div class="client-meta">@${c.username} · ${c.days_trained||0} días${startDateStr?` · Inicio: ${startDateStr}`:''}${clientSortMode==='last_active'?(c.last_active?` · 🟢 ${new Date(c.last_active).toLocaleDateString('es-CR',{weekday:'short',day:'numeric',month:'short'})}`:' · ⚫ Sin sesión'):''}</div>
+        <div class="client-meta">@${c.username} · ${c.days_trained||0} días${startDateStr?` · Inicio: ${startDateStr}`:''}${clientSortMode==='last_active'?(()=>{const t=(window._lastTrainedMap||{})[c.id];return t?` · 🟢 ${new Date(t).toLocaleDateString('es-CR',{weekday:'short',day:'numeric',month:'short'})}`:' · ⚫ Sin entreno';})():''}</div>
       </div>
       ${churnBadge}
     </div>`;
@@ -3619,6 +3689,7 @@ async function loadCoachClientDetail(clientId) {
   if(!planOverviewSelectedWeek || !weeks[planOverviewSelectedWeek]) planOverviewSelectedWeek = weekNums[0];
 
   renderPlanOverview();
+  await loadCoachClientTests(clientId);
 }
 
 function renderPlanOverview() {
@@ -6617,6 +6688,14 @@ async function loadSettings() {
       sel.appendChild(opt);
     });
   }
+}
+
+function toggleSettingsClients() {
+  const body = document.getElementById('settings-clients-body');
+  const chevron = document.getElementById('settings-clients-chevron');
+  const open = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  chevron.style.transform = open ? 'rotate(90deg)' : '';
 }
 
 async function sendPushNotification() {
