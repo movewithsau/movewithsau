@@ -11216,7 +11216,7 @@ async function analyzeTrainingJSON() {
     })
   }));
 
-  _tImport = { days: processedDays, library, activeDay: 0, searchActive: null, searchQuery: '', newFormActive: null };
+  _tImport = { days: processedDays, library, activeDay: 0, searchActive: null, searchQuery: '', newFormActive: null, renamingDay: false };
   renderTrainingPreview();
 }
 
@@ -11236,24 +11236,39 @@ function renderTrainingPreview() {
   const tabs = _tImport.days.map((d,i) => {
     const pending = d.exercises.filter(e=>e.status==='pending').length;
     const active = i===di;
-    return `<div onclick="_tImport.activeDay=${i};_tImport.searchActive=null;_tImport.newFormActive=null;renderTrainingPreview()"
+    return `<div onclick="_tImport.activeDay=${i};_tImport.searchActive=null;_tImport.newFormActive=null;_tImport.renamingDay=false;renderTrainingPreview()"
       style="padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;
       border-bottom:2px solid ${active?'var(--blue)':'transparent'};color:${active?'var(--blue)':'var(--gray5)'};">
       ${_esc(d.day_name)}${pending?` <span style="background:var(--orange);color:white;border-radius:20px;font-size:9px;padding:1px 5px;">${pending}</span>`:''}
     </div>`;
   }).join('');
 
-  // Mode toggle
-  const toggle = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:10px 12px;background:var(--gray1);border-radius:var(--radius-sm);">
-    <span style="font-size:11px;font-weight:700;color:var(--gray5);">Modo:</span>
-    <button onclick="_tImport.days[${di}].replaceMode=true;renderTrainingPreview()"
-      style="font-size:11px;padding:5px 12px;border-radius:20px;cursor:pointer;font-family:'DM Sans',sans-serif;
-      border:1.5px solid ${day.replaceMode?'var(--red)':'var(--gray2)'};
-      background:${day.replaceMode?'var(--red)':'transparent'};color:${day.replaceMode?'white':'var(--gray5)'};">🔄 Reemplazar</button>
-    <button onclick="_tImport.days[${di}].replaceMode=false;renderTrainingPreview()"
-      style="font-size:11px;padding:5px 12px;border-radius:20px;cursor:pointer;font-family:'DM Sans',sans-serif;
-      border:1.5px solid ${!day.replaceMode?'var(--blue)':'var(--gray2)'};
-      background:${!day.replaceMode?'var(--blue)':'transparent'};color:${!day.replaceMode?'white':'var(--gray5)'};">➕ Agregar/Actualizar</button>
+  // Day rename + mode toggle
+  const isRenaming = !!_tImport.renamingDay;
+  const toggle = `<div style="background:var(--gray1);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:14px;">
+    ${isRenaming ? `
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
+        <input class="form-input" id="ti-day-name-inp" style="flex:1;font-size:13px;font-weight:600;padding:7px 10px;"
+          value="${_esc(day.day_name)}" placeholder="Nombre del día">
+        <button onclick="_tImportSaveDayName(${di})" class="btn-primary" style="width:auto;padding:7px 14px;font-size:12px;">✅</button>
+        <button onclick="_tImport.renamingDay=false;renderTrainingPreview()" class="btn-secondary" style="width:auto;padding:7px 10px;font-size:12px;">✕</button>
+      </div>` : `
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+        <span style="font-size:13px;font-weight:600;flex:1;">${_esc(day.day_name)}</span>
+        <button onclick="_tImport.renamingDay=true;renderTrainingPreview();setTimeout(()=>{const i=document.getElementById('ti-day-name-inp');if(i){i.focus();i.select();}},50)"
+          style="font-size:11px;padding:4px 10px;border-radius:20px;border:1.5px solid var(--gray3);background:white;color:var(--gray5);cursor:pointer;font-family:'DM Sans',sans-serif;">✏️ Renombrar</button>
+      </div>`}
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:11px;font-weight:700;color:var(--gray5);">Modo:</span>
+      <button onclick="_tImport.days[${di}].replaceMode=true;renderTrainingPreview()"
+        style="font-size:11px;padding:5px 12px;border-radius:20px;cursor:pointer;font-family:'DM Sans',sans-serif;
+        border:1.5px solid ${day.replaceMode?'var(--red)':'var(--gray2)'};
+        background:${day.replaceMode?'var(--red)':'transparent'};color:${day.replaceMode?'white':'var(--gray5)'};">🔄 Reemplazar</button>
+      <button onclick="_tImport.days[${di}].replaceMode=false;renderTrainingPreview()"
+        style="font-size:11px;padding:5px 12px;border-radius:20px;cursor:pointer;font-family:'DM Sans',sans-serif;
+        border:1.5px solid ${!day.replaceMode?'var(--blue)':'var(--gray2)'};
+        background:${!day.replaceMode?'var(--blue)':'transparent'};color:${!day.replaceMode?'white':'var(--gray5)'};">➕ Agregar/Actualizar</button>
+    </div>
   </div>`;
 
   // Exercise rows
@@ -11274,10 +11289,18 @@ function renderTrainingPreview() {
           <div id="ti-search-results-${di}-${exIdx}"></div>
         </div>`;
       } else if (nAct) {
+        const muscleOpts = MUSCLES.map(m=>`<option value="${m}">${m}</option>`).join('');
         actionHtml = `<div style="margin-top:6px;padding:10px;background:var(--orange-light);border:1px solid var(--orange);border-radius:var(--radius-sm);">
-          <div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:8px;">Nuevo — ${displayName}</div>
+          <div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:8px;">Nuevo ejercicio</div>
+          <div style="margin-bottom:6px;"><label class="form-label">Nombre</label>
+            <input class="form-input" id="ti-new-name" style="font-size:12px;padding:7px 10px;" value="${_esc(ex.jsonName)}"></div>
           <div style="margin-bottom:6px;"><label class="form-label">Grupo muscular</label>
-            <input class="form-input" id="ti-new-muscle" style="font-size:12px;padding:7px 10px;" placeholder="ej: Espalda"></div>
+            <select class="form-input" id="ti-new-muscle-sel" style="font-size:12px;padding:7px 10px;" onchange="_tImportToggleMuscleCustom(this)">
+              <option value="">Sin especificar</option>
+              ${muscleOpts}
+              <option value="custom">Otro...</option>
+            </select>
+            <input class="form-input" id="ti-new-muscle-custom" style="font-size:12px;padding:7px 10px;margin-top:4px;display:none;" placeholder="Escribí el grupo muscular"></div>
           <div style="margin-bottom:6px;"><label class="form-label">Video URL (opcional)</label>
             <input class="form-input" id="ti-new-video" style="font-size:12px;padding:7px 10px;" placeholder="https://..."></div>
           <div style="margin-bottom:8px;"><label class="form-label">Tag</label>
@@ -11362,7 +11385,7 @@ function _tImportUpdateSearch(dayIdx, exIdx, query) {
   if (!el) return;
   const filtered = (_tImport.library||[]).filter(l=>_normStr(l.name).includes(_normStr(query))).slice(0,8);
   el.innerHTML = filtered.length
-    ? filtered.map(l=>`<div onclick="_tImportSelectLibrary(${dayIdx},${exIdx},${l.id})"
+    ? filtered.map(l=>`<div onclick="_tImportSelectLibrary(${dayIdx},${exIdx},'${l.id}')"
         style="padding:7px 10px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--gray2);"
         onmouseover="this.style.background='var(--blue-light)'" onmouseout="this.style.background=''">
         ${_esc(l.name)}<span style="color:var(--gray4);font-size:10px;margin-left:6px;">${_esc(l.tag||'')}</span>
@@ -11371,7 +11394,7 @@ function _tImportUpdateSearch(dayIdx, exIdx, query) {
 }
 
 function _tImportSelectLibrary(dayIdx, exIdx, libId) {
-  const lib = (_tImport.library||[]).find(l=>l.id===libId);
+  const lib = (_tImport.library||[]).find(l=>String(l.id)===String(libId));
   if (!lib) return;
   const ex = _tImport.days[dayIdx].exercises[exIdx];
   ex.status = 'resolved';
@@ -11382,15 +11405,39 @@ function _tImportSelectLibrary(dayIdx, exIdx, libId) {
   renderTrainingPreview();
 }
 
+function _tImportToggleMuscleCustom(sel) {
+  const customInp = document.getElementById('ti-new-muscle-custom');
+  if (!customInp) return;
+  customInp.style.display = sel.value === 'custom' ? '' : 'none';
+}
+
 function _tImportSaveNew(dayIdx, exIdx) {
-  const muscle = (document.getElementById('ti-new-muscle')?.value||'').trim() || null;
+  const name = (document.getElementById('ti-new-name')?.value||'').trim();
+  if (!name) { showToast('⚠️ El nombre no puede estar vacío', 2500); return; }
+  const sel = document.getElementById('ti-new-muscle-sel');
+  let muscle = null;
+  if (sel) {
+    if (sel.value === 'custom') {
+      muscle = (document.getElementById('ti-new-muscle-custom')?.value||'').trim() || null;
+    } else if (sel.value) {
+      muscle = sel.value;
+    }
+  }
   const video = (document.getElementById('ti-new-video')?.value||'').trim() || null;
   const tag = document.getElementById('ti-new-tag')?.value || 'Peso Libre';
   const ex = _tImport.days[dayIdx].exercises[exIdx];
   ex.status = 'resolved';
   ex.resolvedType = 'new';
-  ex.resolvedData = {name: ex.jsonName, muscle_group: muscle, video_url: video, tag};
+  ex.resolvedData = {name, muscle_group: muscle, video_url: video, tag};
   _tImport.newFormActive = null;
+  renderTrainingPreview();
+}
+
+function _tImportSaveDayName(dayIdx) {
+  const val = (document.getElementById('ti-day-name-inp')?.value||'').trim();
+  if (!val) { showToast('⚠️ El nombre no puede estar vacío', 2000); return; }
+  _tImport.days[dayIdx].day_name = val;
+  _tImport.renamingDay = false;
   renderTrainingPreview();
 }
 
