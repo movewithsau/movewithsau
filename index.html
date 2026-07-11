@@ -1929,7 +1929,7 @@ async function loadClientDayStrip() {
   // Flag: does clientDay need auto-selection? Resolve AFTER we know completed days
   const needsAutoSelect = !clientDay || !hasDays.includes(clientDay);
 
-  // ── Check which days have been trained (via exercise_logs) ──
+  // ── Check which days have been trained (via exercise_logs OR workout_sessions) ──
   const completedDayIds = new Set();
   if(planDays && planDays.length > 0) {
     const planDayIds = planDays.map(p=>p.id);
@@ -1944,6 +1944,9 @@ async function loadClientDayStrip() {
         });
       }
     }
+    // Also count workout_sessions (coach manual marks)
+    const {data:ws} = await sb.from('workout_sessions').select('plan_day_id').eq('client_id',currentClient.id).in('plan_day_id',planDayIds);
+    if(ws) ws.forEach(s=>completedDayIds.add(s.plan_day_id));
   }
 
   // Auto-select: first incomplete day, fallback to first day
@@ -3723,6 +3726,7 @@ async function reloadDayExercises(planDayId) {
 
 async function openDayLibrarySheet(planDayId) {
   window._dayLibraryPlanDayId = planDayId;
+  librarySwapTargetId = null; // ensure day-add mode, not swap mode
   const chainSection = document.getElementById('day-lib-chain-section');
   if(chainSection){
     chainSection.style.display='block';
@@ -3753,12 +3757,13 @@ async function addExerciseToDayFromLibrary(planDayId, ex, linked, rounds) {
     }
     sets=1;
   }
-  await sb.from('exercises').insert([{
+  const {error}=await sb.from('exercises').insert([{
     plan_day_id:planDayId,
     name:ex.name,tag:ex.tag||'Peso Libre',muscle_group:ex.muscle_group||null,
     video_url:ex.video_url||null,sets,reps_range:'8-12',rest_seconds:60,
     notes:null,circuit_notes:null,superset_group,circuit_rounds,order_index:nextOrder
   }]);
+  if(error){showToast('❌ '+error.message);return;}
   showToast('✅ Ejercicio agregado');
   await reloadDayExercises(planDayId);
 }
@@ -6827,7 +6832,7 @@ async function renderWeeklyTracker(clientId) {
     const label = getDayShortLabel(pd.day_of_week, idx);
     const loggedAt = logsMap[pd.id];
     const sess = sessMap[pd.id];
-    const completed = !!loggedAt;
+    const completed = !!loggedAt || !!sess;
 
     let dateStr = '';
     if(loggedAt) {
@@ -6876,6 +6881,7 @@ async function renderWeeklyTracker(clientId) {
             <div style="font-size:13px;font-weight:500;color:var(--gray4);">${label}</div>
             <div style="font-size:10px;color:var(--gray3);">pendiente</div>
           </div>
+          <button onclick="markDayTrained('${pd.id}','${clientId}',${week})" style="background:var(--gray1);color:var(--gray5);border:1.5px solid var(--gray2);font-size:9px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;flex-shrink:0;">✓ Marcar</button>
         </div>`;
     }
   }).join('');
@@ -6911,6 +6917,22 @@ function buildTrackerWeekNav(clientId, weekLabel, weekSub, week) {
       </div>
       <button onclick="changeTrackerWeek(${week+1},'${clientId}')" ${week>=5?'disabled':''} style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--gray2);background:var(--gray1);font-size:15px;cursor:pointer;${week>=5?'opacity:0.3;':''};display:flex;align-items:center;justify-content:center;">›</button>
     </div>`;
+}
+
+async function markDayTrained(planDayId, clientId, week) {
+  const today = new Date().toISOString().split('T')[0];
+  const {data:existing} = await sb.from('workout_sessions').select('id').eq('client_id',clientId).eq('plan_day_id',planDayId).maybeSingle();
+  if(existing){ showToast('⚠️ Este día ya está registrado'); return; }
+  const {error} = await sb.from('workout_sessions').insert([{client_id:clientId,plan_day_id:planDayId,week_number:week,session_date:today,duration_minutes:0}]);
+  if(error){ showToast('❌ '+error.message); return; }
+  // Increment days_trained on the client record
+  const newDays = (currentClient?.days_trained||0)+1;
+  await sb.from('clients').update({days_trained:newDays}).eq('id',clientId);
+  if(currentClient) currentClient.days_trained = newDays;
+  const daysEl = document.getElementById('coach-c-days');
+  if(daysEl) daysEl.textContent = newDays;
+  showToast('✅ Día marcado como entrenado');
+  await renderWeeklyTracker(clientId);
 }
 
 async function changeTrackerWeek(week, clientId) {
