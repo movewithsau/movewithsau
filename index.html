@@ -3780,6 +3780,7 @@ function renderDayExercises(exList, exs, planDayId) {
   exList.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;gap:6px;">
       <button onclick="openDayLibrarySheet('${planDayId}')" style="background:var(--orange-light);color:var(--orange);border:1.5px solid var(--orange);font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Agregar ejercicio</button>
+      <button onclick="enterCircuitMode('${planDayId}')" style="border:1.5px solid var(--orange);background:var(--white);color:var(--orange);border-radius:var(--radius-sm);padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">⬡ Circuitos</button>
       <button onclick="deleteAllExercises('${planDayId}')" style="background:#fff0f0;border:1.5px solid #e53935;color:#e53935;font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px;cursor:pointer;font-family:'DM Sans',sans-serif;">🗑 Borrar rutina completa</button>
     </div>
     ${exs.map((ex,i)=>{
@@ -3815,6 +3816,110 @@ async function reloadDayExercises(planDayId) {
   const {data:exs} = await sb.from('exercises').select('*').eq('plan_day_id',planDayId).order('order_index');
   if(!exs||exs.length===0){exList.innerHTML='<div style="font-size:12px;color:var(--gray4);padding:4px 0;">Sin ejercicios</div>';return;}
   renderDayExercises(exList, exs, planDayId);
+}
+
+function enterCircuitMode(planDayId) {
+  window._circuitModePlanDayId = planDayId;
+  window._circuitSelected = new Set();
+  window._circuitRounds = null;
+  document.getElementById('circuit-mode-bar')?.remove();
+  _renderCircuitModeList(planDayId);
+  const bar = document.createElement('div');
+  bar.id = 'circuit-mode-bar';
+  bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:1000;background:var(--white);border-top:2px solid var(--orange);padding:12px 16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 -4px 16px rgba(0,0,0,0.12);';
+  bar.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:13px;font-weight:700;color:var(--black);"><span id="circuit-select-count">0</span> seleccionados</span>
+      <button onclick="exitCircuitMode()" style="font-size:12px;font-weight:600;color:var(--gray4);background:none;border:none;cursor:pointer;padding:4px 8px;font-family:'DM Sans',sans-serif;">Cancelar</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <span style="font-size:11px;font-weight:700;color:var(--gray5);">Rondas:</span>
+      ${[2,3,4].map(r=>`<button class="circuit-rounds-btn" onclick="selectCircuitRounds(${r},this)"
+        style="padding:6px 14px;border-radius:20px;border:1.5px solid var(--gray2);background:var(--gray1);color:var(--black);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">${r} rondas</button>`).join('')}
+    </div>
+    <button id="circuit-group-confirm-btn" onclick="confirmCircuitGroup()"
+      style="width:100%;padding:12px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;opacity:0.4;"
+      disabled>✓ Agrupar en circuito</button>`;
+  document.body.appendChild(bar);
+}
+
+async function _renderCircuitModeList(planDayId) {
+  const exList = document.getElementById('coach-day-exs-' + planDayId);
+  if (!exList) return;
+  const {data: exs} = await sb.from('exercises').select('*').eq('plan_day_id', planDayId).order('order_index');
+  if (!exs || !exs.length) { exList.innerHTML = '<div style="font-size:12px;color:var(--gray4);padding:6px;">Sin ejercicios</div>'; return; }
+  exList.innerHTML = `
+    <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">⬡ Modo circuito — seleccioná ejercicios</div>
+    ${exs.map(ex => {
+      const seriesVal = ex.superset_group && ex.circuit_rounds ? ex.circuit_rounds : ex.sets;
+      const circuitBadge = ex.superset_group ? ` 🔄 ${ex.superset_group}` : '';
+      return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--gray2);">
+        <input type="checkbox" onchange="toggleCircuitSelect(this,'${ex.id}')"
+          style="width:18px;height:18px;accent-color:var(--orange);cursor:pointer;flex-shrink:0;">
+        <span class="ex-tag ${getTagClass(ex.tag)}" style="font-size:8px;">${ex.tag}</span>
+        <span style="font-size:12px;font-weight:500;flex:1;">${ex.name}</span>
+        <span style="font-size:10px;color:var(--gray4);">${seriesVal}×${ex.reps_range}${circuitBadge}</span>
+      </div>`;
+    }).join('')}`;
+}
+
+function toggleCircuitSelect(checkbox, exId) {
+  if (checkbox.checked) window._circuitSelected.add(exId);
+  else window._circuitSelected.delete(exId);
+  const el = document.getElementById('circuit-select-count');
+  if (el) el.textContent = window._circuitSelected.size;
+  updateCircuitGroupBtn();
+}
+
+function selectCircuitRounds(rounds, btnEl) {
+  window._circuitRounds = rounds;
+  document.querySelectorAll('.circuit-rounds-btn').forEach(b => {
+    b.style.background = 'var(--gray1)'; b.style.color = 'var(--black)';
+  });
+  btnEl.style.background = 'var(--orange)'; btnEl.style.color = 'white';
+  updateCircuitGroupBtn();
+}
+
+function updateCircuitGroupBtn() {
+  const btn = document.getElementById('circuit-group-confirm-btn');
+  if (!btn) return;
+  const ready = (window._circuitSelected?.size||0) >= 2 && window._circuitRounds != null;
+  btn.disabled = !ready;
+  btn.style.opacity = ready ? '1' : '0.4';
+}
+
+async function confirmCircuitGroup() {
+  const planDayId = window._circuitModePlanDayId;
+  const ids = [...(window._circuitSelected||[])];
+  const rounds = window._circuitRounds;
+  if (!planDayId || ids.length < 2 || !rounds) return;
+
+  const {data: exs} = await sb.from('exercises').select('superset_group').eq('plan_day_id', planDayId);
+  const used = new Set((exs||[]).map(e=>e.superset_group).filter(Boolean));
+  const letter = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').find(l=>!used.has(l)) || 'A';
+
+  await Promise.all(ids.map(id =>
+    sb.from('exercises').update({superset_group:letter, circuit_rounds:rounds, sets:1}).eq('id', id)
+  ));
+
+  showToast('✅ Circuito ' + letter + ' creado (' + rounds + ' rondas)');
+
+  window._circuitSelected = new Set();
+  window._circuitRounds = null;
+  document.querySelectorAll('.circuit-rounds-btn').forEach(b => { b.style.background='var(--gray1)'; b.style.color='var(--black)'; });
+  const countEl = document.getElementById('circuit-select-count');
+  if (countEl) countEl.textContent = '0';
+  updateCircuitGroupBtn();
+  await _renderCircuitModeList(planDayId);
+}
+
+function exitCircuitMode() {
+  const planDayId = window._circuitModePlanDayId;
+  window._circuitSelected = new Set();
+  window._circuitRounds = null;
+  window._circuitModePlanDayId = null;
+  document.getElementById('circuit-mode-bar')?.remove();
+  if (planDayId) reloadDayExercises(planDayId);
 }
 
 async function openDayLibrarySheet(planDayId) {
@@ -11461,6 +11566,8 @@ async function analyzeTrainingJSON() {
         reps_range: ex.reps_range || '',
         order_index: ex.order_index != null ? ex.order_index : i,
         by_week: ex.by_week || {},
+        circuit_group: ex.circuit_group || null,
+        circuit_rounds: ex.circuit_group ? (ex.circuit_rounds || null) : null,
         status: m ? 'match' : 'pending',
         resolvedType: m ? 'library' : null,
         resolvedData: m ? {name:m.name, muscle_group:m.muscle_group, video_url:m.video_url, tag:m.tag} : null
@@ -11483,6 +11590,20 @@ function renderTrainingPreview() {
   )].sort((a,b)=>a-b);
   const wLabel = w => w===5?'DL':'S'+w;
   const allResolved = _tImport.days.every(d => d.exercises.every(ex => ex.status !== 'pending'));
+
+  // Circuit validation
+  const circuitGroups = {};
+  day.exercises.forEach(ex => {
+    if (ex.circuit_group) {
+      if (!circuitGroups[ex.circuit_group]) circuitGroups[ex.circuit_group] = [];
+      circuitGroups[ex.circuit_group].push(ex);
+    }
+  });
+  const circuitErrors = [];
+  Object.entries(circuitGroups).forEach(([grp, exList]) => {
+    if (exList.length < 2) circuitErrors.push(`Circuito ${grp} tiene solo 1 ejercicio — los circuitos necesitan al menos 2`);
+    else if (exList.some(ex => !ex.circuit_rounds)) circuitErrors.push(`Circuito ${grp} no tiene circuit_rounds`);
+  });
 
   // Tabs
   const tabs = _tImport.days.map((d,i) => {
@@ -11578,10 +11699,16 @@ function renderTrainingPreview() {
       }
     }
 
-    exListHtml += `<div style="padding:8px 10px;margin-bottom:6px;border-radius:var(--radius-sm);
-      background:${isPending?'#fff8f0':'var(--gray1)'};border:1px solid ${isPending?'var(--orange)':'transparent'};">
+    const circuitBadgeHtml = ex.circuit_group
+      ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:var(--orange-light);color:var(--orange);border-radius:20px;font-size:10px;font-weight:700;">🔄 ${_esc(ex.circuit_group)}${ex.circuit_rounds?` ×${ex.circuit_rounds}`:''}</span>`
+      : '';
+    const isFirstOfGroup = ex.circuit_group && day.exercises.findIndex(e=>e.circuit_group===ex.circuit_group)===exIdx;
+    const groupBorderTop = (ex.circuit_group && !isFirstOfGroup) ? 'border-top:1px dashed var(--orange);' : '';
+    exListHtml += `<div style="padding:8px 10px;margin-bottom:${ex.circuit_group?'0':'6px'};border-radius:${isFirstOfGroup?'var(--radius-sm) var(--radius-sm) 0 0':ex.circuit_group?'0':'var(--radius-sm)'};
+      background:${isPending?'#fff8f0':ex.circuit_group?'#fff4ec':'var(--gray1)'};border:1px solid ${isPending?'var(--orange)':ex.circuit_group?'var(--orange)':'transparent'};${groupBorderTop}">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
         <span style="font-size:13px;">${isPending?'⚠️':'✅'}</span>
+        ${circuitBadgeHtml}
         <span style="font-size:13px;font-weight:600;">${displayName}</span>
         ${ex.reps_range?`<span style="font-size:11px;color:var(--gray4);">${_esc(ex.reps_range)} reps</span>`:''}
       </div>
@@ -11619,9 +11746,11 @@ function renderTrainingPreview() {
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:16px;">${tblHdr}${rpeRows}</tbody></table></div>
     <div style="padding-top:14px;border-top:1px solid var(--gray2);">
       ${!allResolved?`<div style="font-size:12px;color:var(--orange);margin-bottom:10px;">⚠️ Resolvé todos los ejercicios sin match antes de confirmar.</div>`:''}
+      ${circuitErrors.map(e=>`<div style="font-size:12px;color:var(--red,#e53935);margin-bottom:8px;">⚠️ ${_esc(e)}</div>`).join('')}
       <div style="display:flex;gap:8px;">
         <button onclick="confirmTrainingImport()" class="btn-primary"
-          style="flex:1;padding:14px;${allResolved?'':'opacity:0.5;'}">✅ Confirmar todo el plan</button>
+          style="flex:1;padding:14px;${(allResolved && !circuitErrors.length)?'':'opacity:0.5;'}"
+          ${(allResolved && !circuitErrors.length)?'':'disabled'}>✅ Confirmar todo el plan</button>
         <button onclick="closeModal('modal-training-import')" class="btn-secondary" style="flex:0.4;padding:14px;">Cancelar</button>
       </div>
     </div>`;
@@ -11764,13 +11893,17 @@ async function confirmTrainingImport() {
           const bw = ex.by_week[String(weekNum)];
           if (!bw) continue;
           const exName = ex.resolvedData?.name || ex.jsonName;
+          const isCircuit = !!ex.circuit_group;
           const payload = {
             plan_day_id: planDayId, name: exName,
-            sets: bw.sets||3, rpe: bw.rpe??null, reps_range: ex.reps_range||'',
+            sets: isCircuit ? 1 : (bw.sets||3),
+            rpe: bw.rpe??null, reps_range: ex.reps_range||'',
             tag: ex.resolvedData?.tag||'Peso Libre',
             muscle_group: ex.resolvedData?.muscle_group||null,
             video_url: ex.resolvedData?.video_url||null,
-            rest_seconds: 60
+            rest_seconds: 60,
+            superset_group: isCircuit ? ex.circuit_group : null,
+            circuit_rounds: isCircuit ? ex.circuit_rounds : null
           };
           if (day.replaceMode) {
             const {error} = await sb.from('exercises').insert([{...payload, order_index: nextOrder++}]);
@@ -11779,7 +11912,13 @@ async function confirmTrainingImport() {
           } else {
             const found = existingExs.find(e=>_normStr(e.name)===_normStr(exName));
             if (found) {
-              const {error} = await sb.from('exercises').update({sets:bw.sets||3, rpe:bw.rpe??null, reps_range:ex.reps_range||''}).eq('id', found.id);
+              const isCircuitU = !!ex.circuit_group;
+              const {error} = await sb.from('exercises').update({
+                sets: isCircuitU ? 1 : (bw.sets||3),
+                rpe: bw.rpe??null, reps_range: ex.reps_range||'',
+                superset_group: isCircuitU ? ex.circuit_group : null,
+                circuit_rounds: isCircuitU ? ex.circuit_rounds : null
+              }).eq('id', found.id);
               if (error) throw error;
             } else {
               const {error} = await sb.from('exercises').insert([{...payload, order_index: nextOrder++}]);
