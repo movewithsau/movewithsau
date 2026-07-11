@@ -7339,6 +7339,7 @@ async function renderClientNutritionPlan() {
   });
   html += '</div><div id="client-meal-list"></div>';
   html += '<button onclick="downloadNutritionPDF()" style="width:100%;margin-top:12px;padding:11px;border-radius:var(--radius-sm);background:var(--black);color:white;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:\'DM Sans\',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;">📄 Descargar menú como PDF</button>';
+  html += '<button onclick="shareMenuWhatsApp()" style="width:100%;margin-top:8px;padding:11px;border-radius:var(--radius-sm);background:#25D366;color:white;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:\'DM Sans\',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;">📲 Enviar por WhatsApp</button>';
   html += '</div>';
   wrap.innerHTML = html;
   await buildClientMealList();
@@ -7510,6 +7511,31 @@ async function downloadNutritionPDF() {
   const win = window.open('','_blank');
   win.document.write(html);
   win.document.close();
+}
+
+async function shareMenuWhatsApp() {
+  if (!window._clientNutritionDay) { showToast('⚠️ Seleccioná un día primero'); return; }
+  const {data: pd} = await sb.from('nutrition_plans').select('id').eq('client_id', currentClient.id).eq('day_of_week', window._clientNutritionDay).maybeSingle();
+  if (!pd) { showToast('⚠️ Sin plan para este día'); return; }
+  const {data: meals} = await sb.from('nutrition_meals').select('id,meal_slot,meal_order').eq('nutrition_plan_id', pd.id).order('meal_order',{ascending:true});
+  if (!meals||!meals.length) { showToast('⚠️ Sin comidas cargadas'); return; }
+  const mealIds = meals.map(m=>m.id);
+  const {data: allOpts} = await sb.from('nutrition_meal_options').select('nutrition_meal_id,title,order_index').in('nutrition_meal_id', mealIds).order('order_index',{ascending:true});
+  const optsByMeal = {};
+  (allOpts||[]).forEach(o=>{ if(!optsByMeal[o.nutrition_meal_id]) optsByMeal[o.nutrition_meal_id]=[]; optsByMeal[o.nutrition_meal_id].push(o); });
+
+  const slotEmoji = s => ({'Desayuno':'☀️','Almuerzo':'🍽','Cafecito':'☕','Cena':'🌙','Snack':'🥜'}[s]||'🍽');
+  const numEmoji = n => ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣'][n] || String(n+1);
+
+  let text = `🍽 MENÚ ${window._clientNutritionDay} — ${currentClient.name||''}`;
+  meals.forEach(m => {
+    const opts = optsByMeal[m.id]||[];
+    text += `\n\n${slotEmoji(m.meal_slot)} ${m.meal_slot.toUpperCase()}`;
+    opts.forEach((o,i) => { text += `\n${numEmoji(i)} ${o.title}`; });
+  });
+  text += '\n\n💪 Plan personalizado por @movewithsau';
+
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
 }
 
 function toggleClientMealSlot(id) {
