@@ -3832,10 +3832,11 @@ function enterCircuitMode(planDayId) {
       <span style="font-size:13px;font-weight:700;color:var(--black);"><span id="circuit-select-count">0</span> seleccionados</span>
       <button onclick="exitCircuitMode()" style="font-size:12px;font-weight:600;color:var(--gray4);background:none;border:none;cursor:pointer;padding:4px 8px;font-family:'DM Sans',sans-serif;">Cancelar</button>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <div style="display:flex;gap:10px;align-items:center;">
       <span style="font-size:11px;font-weight:700;color:var(--gray5);">Rondas:</span>
-      ${[2,3,4].map(r=>`<button class="circuit-rounds-btn" onclick="selectCircuitRounds(${r},this)"
-        style="padding:6px 14px;border-radius:20px;border:1.5px solid var(--gray2);background:var(--gray1);color:var(--black);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">${r} rondas</button>`).join('')}
+      <input type="number" id="circuit-rounds-input" min="2" max="20" placeholder="Ej: 3"
+        oninput="window._circuitRounds=this.value?parseInt(this.value):null;updateCircuitGroupBtn()"
+        style="width:80px;padding:8px 12px;border:1.5px solid var(--gray2);border-radius:var(--radius-sm);font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;text-align:center;outline:none;">
     </div>
     <button id="circuit-group-confirm-btn" onclick="confirmCircuitGroup()"
       style="width:100%;padding:12px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;opacity:0.4;"
