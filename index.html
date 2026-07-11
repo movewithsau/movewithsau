@@ -783,6 +783,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
         <div class="section-action" onclick="openQuickRPE()" style="background:#fff3e0;color:#e65100;border:1.5px solid #e65100;padding:5px 10px;border-radius:6px;font-size:11px;">🎯 RPE</div>
         <div class="section-action" onclick="openQuickDayBuilder()" style="background:#f0fff4;color:#276749;border:1.5px solid #276749;padding:5px 10px;border-radius:6px;font-size:11px;">🚀 Rápido</div>
         <div class="section-action" onclick="openAssignTemplateModal()" style="background:var(--orange);color:white;padding:5px 10px;border-radius:6px;font-size:11px;">📋 Desde Template</div>
+        <div class="section-action" onclick="openTrainingImportModal()" style="background:#f0fff4;color:#276749;border:1.5px solid #276749;padding:5px 10px;border-radius:6px;font-size:11px;">📥 Pegar Plan</div>
         <div class="section-action" onclick="showPlanBuilder()">+ Manual</div>
       </div>
     </div>
@@ -817,7 +818,10 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       <div class="section-action" onclick="openAddExtraSessionSheet()">+ Sesión</div>
     </div>
     <div id="coach-extras-panel" style="margin-bottom:4px;"></div>
-    <div class="section-header"><div class="section-title">Módulo Food</div></div>
+    <div class="section-header">
+      <div class="section-title">Módulo Food</div>
+      <div class="section-action" onclick="openNutritionImportModal()" style="background:#f0fff4;color:#276749;border:1.5px solid #276749;padding:5px 10px;border-radius:6px;font-size:11px;">📥 Pegar Menú</div>
+    </div>
     <div id="coach-food-panel"></div>
     <!-- CONTRACT SECTION (coach view) -->
     <div class="section-header" style="margin-top:8px;">
@@ -11148,6 +11152,544 @@ async function saveAIPrograma(name, data, resolveExName) {
   }
 }
 
+// ===== PLAN IMPORT — TRAINING + NUTRITION =====
+
+let _tImport = null;
+let _nImport = null;
+
+function _normStr(s) {
+  return (s||'').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+}
+function _esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── TRAINING IMPORT ──────────────────────────────────────────────────
+
+function openTrainingImportModal() {
+  if (!currentClient) return;
+  document.getElementById('training-import-body').innerHTML = `
+    <p style="font-size:13px;color:var(--gray5);margin-bottom:10px;">Pegá el JSON del plan de entrenamiento:</p>
+    <textarea id="ti-json" class="form-textarea" rows="12"
+      style="width:100%;box-sizing:border-box;font-family:monospace;font-size:11px;resize:vertical;"
+      placeholder='{"type":"training","days":[...]}'></textarea>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button onclick="analyzeTrainingJSON()" class="btn-primary" style="flex:1;">Analizar</button>
+      <button onclick="closeModal('modal-training-import')" class="btn-secondary" style="flex:0.4;">Cancelar</button>
+    </div>`;
+  showModal('modal-training-import');
+}
+
+async function analyzeTrainingJSON() {
+  const raw = (document.getElementById('ti-json')?.value||'').trim();
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch(e) {
+    showToast('❌ JSON inválido: '+e.message, 4000); return;
+  }
+  if (parsed.type !== 'training' || !Array.isArray(parsed.days)) {
+    showToast('❌ Falta type:"training" o el array "days"', 4000); return;
+  }
+
+  const {data: lib} = await sb.from('exercise_library')
+    .select('id,name,muscle_group,video_url,tag')
+    .eq('coach_id', currentUser.id);
+  const library = lib || [];
+  const libMap = {};
+  library.forEach(ex => { libMap[_normStr(ex.name)] = ex; });
+
+  const days = [...parsed.days].sort((a,b)=>(a.day_order||0)-(b.day_order||0));
+  const processedDays = days.map(day => ({
+    day_name: day.day_name,
+    day_order: day.day_order || 0,
+    replaceMode: true,
+    exercises: (day.exercises||[]).map((ex,i) => {
+      const m = libMap[_normStr(ex.name)];
+      return {
+        jsonName: ex.name,
+        reps_range: ex.reps_range || '',
+        order_index: ex.order_index != null ? ex.order_index : i,
+        by_week: ex.by_week || {},
+        status: m ? 'match' : 'pending',
+        resolvedType: m ? 'library' : null,
+        resolvedData: m ? {name:m.name, muscle_group:m.muscle_group, video_url:m.video_url, tag:m.tag} : null
+      };
+    })
+  }));
+
+  _tImport = { days: processedDays, library, activeDay: 0, searchActive: null, searchQuery: '', newFormActive: null };
+  renderTrainingPreview();
+}
+
+function renderTrainingPreview() {
+  if (!_tImport) return;
+  const body = document.getElementById('training-import-body');
+  const di = _tImport.activeDay;
+  const day = _tImport.days[di];
+
+  const allWeeks = [...new Set(
+    day.exercises.flatMap(ex => Object.keys(ex.by_week).map(Number))
+  )].sort((a,b)=>a-b);
+  const wLabel = w => w===5?'DL':'S'+w;
+  const allResolved = _tImport.days.every(d => d.exercises.every(ex => ex.status !== 'pending'));
+
+  // Tabs
+  const tabs = _tImport.days.map((d,i) => {
+    const pending = d.exercises.filter(e=>e.status==='pending').length;
+    const active = i===di;
+    return `<div onclick="_tImport.activeDay=${i};_tImport.searchActive=null;_tImport.newFormActive=null;renderTrainingPreview()"
+      style="padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;
+      border-bottom:2px solid ${active?'var(--blue)':'transparent'};color:${active?'var(--blue)':'var(--gray5)'};">
+      ${_esc(d.day_name)}${pending?` <span style="background:var(--orange);color:white;border-radius:20px;font-size:9px;padding:1px 5px;">${pending}</span>`:''}
+    </div>`;
+  }).join('');
+
+  // Mode toggle
+  const toggle = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:10px 12px;background:var(--gray1);border-radius:var(--radius-sm);">
+    <span style="font-size:11px;font-weight:700;color:var(--gray5);">Modo:</span>
+    <button onclick="_tImport.days[${di}].replaceMode=true;renderTrainingPreview()"
+      style="font-size:11px;padding:5px 12px;border-radius:20px;cursor:pointer;font-family:'DM Sans',sans-serif;
+      border:1.5px solid ${day.replaceMode?'var(--red)':'var(--gray2)'};
+      background:${day.replaceMode?'var(--red)':'transparent'};color:${day.replaceMode?'white':'var(--gray5)'};">🔄 Reemplazar</button>
+    <button onclick="_tImport.days[${di}].replaceMode=false;renderTrainingPreview()"
+      style="font-size:11px;padding:5px 12px;border-radius:20px;cursor:pointer;font-family:'DM Sans',sans-serif;
+      border:1.5px solid ${!day.replaceMode?'var(--blue)':'var(--gray2)'};
+      background:${!day.replaceMode?'var(--blue)':'transparent'};color:${!day.replaceMode?'white':'var(--gray5)'};">➕ Agregar/Actualizar</button>
+  </div>`;
+
+  // Exercise rows
+  let exListHtml = '';
+  day.exercises.forEach((ex, exIdx) => {
+    const sAct = _tImport.searchActive?.dayIdx===di && _tImport.searchActive?.exIdx===exIdx;
+    const nAct = _tImport.newFormActive?.dayIdx===di && _tImport.newFormActive?.exIdx===exIdx;
+    const isPending = ex.status==='pending';
+    const displayName = _esc(ex.resolvedData?.name || ex.jsonName);
+    let actionHtml = '';
+
+    if (isPending) {
+      if (sAct) {
+        actionHtml = `<div style="margin-top:6px;padding:8px;background:white;border:1px solid var(--gray2);border-radius:var(--radius-sm);">
+          <input class="form-input" id="ti-search-inp" style="font-size:12px;padding:7px 10px;margin-bottom:6px;"
+            placeholder="Buscar ejercicio..." value="${_esc(_tImport.searchQuery)}"
+            oninput="_tImportUpdateSearch(${di},${exIdx},this.value)">
+          <div id="ti-search-results-${di}-${exIdx}"></div>
+        </div>`;
+      } else if (nAct) {
+        actionHtml = `<div style="margin-top:6px;padding:10px;background:var(--orange-light);border:1px solid var(--orange);border-radius:var(--radius-sm);">
+          <div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:8px;">Nuevo — ${displayName}</div>
+          <div style="margin-bottom:6px;"><label class="form-label">Grupo muscular</label>
+            <input class="form-input" id="ti-new-muscle" style="font-size:12px;padding:7px 10px;" placeholder="ej: Espalda"></div>
+          <div style="margin-bottom:6px;"><label class="form-label">Video URL (opcional)</label>
+            <input class="form-input" id="ti-new-video" style="font-size:12px;padding:7px 10px;" placeholder="https://..."></div>
+          <div style="margin-bottom:8px;"><label class="form-label">Tag</label>
+            <select class="form-input" id="ti-new-tag" style="font-size:12px;padding:7px 10px;">
+              <option value="Peso Libre">Peso Libre</option>
+              <option value="Máquina">Máquina</option>
+              <option value="Peso Corporal">Peso Corporal</option>
+            </select></div>
+          <div style="display:flex;gap:6px;">
+            <button onclick="_tImportSaveNew(${di},${exIdx})" class="btn-primary" style="flex:1;font-size:12px;padding:8px;">✅ Guardar</button>
+            <button onclick="_tImport.newFormActive=null;renderTrainingPreview()" class="btn-secondary" style="flex:0.4;font-size:12px;padding:8px;">✕</button>
+          </div>
+        </div>`;
+      } else {
+        actionHtml = `<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+          <button onclick="_tImport.searchActive={dayIdx:${di},exIdx:${exIdx}};_tImport.newFormActive=null;_tImport.searchQuery='';renderTrainingPreview();setTimeout(()=>{const i=document.getElementById('ti-search-inp');if(i)i.focus();},50)"
+            style="font-size:11px;padding:5px 10px;background:var(--blue-light);border:1.5px solid var(--blue);color:var(--blue);border-radius:var(--radius-sm);cursor:pointer;font-family:'DM Sans',sans-serif;">
+            🔍 Buscar en biblioteca</button>
+          <button onclick="_tImport.newFormActive={dayIdx:${di},exIdx:${exIdx}};_tImport.searchActive=null;renderTrainingPreview()"
+            style="font-size:11px;padding:5px 10px;background:var(--orange-light);border:1.5px solid var(--orange);color:var(--orange);border-radius:var(--radius-sm);cursor:pointer;font-family:'DM Sans',sans-serif;">
+            ➕ Es nuevo</button>
+        </div>`;
+      }
+    }
+
+    exListHtml += `<div style="padding:8px 10px;margin-bottom:6px;border-radius:var(--radius-sm);
+      background:${isPending?'#fff8f0':'var(--gray1)'};border:1px solid ${isPending?'var(--orange)':'transparent'};">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span style="font-size:13px;">${isPending?'⚠️':'✅'}</span>
+        <span style="font-size:13px;font-weight:600;">${displayName}</span>
+        ${ex.reps_range?`<span style="font-size:11px;color:var(--gray4);">${_esc(ex.reps_range)} reps</span>`:''}
+      </div>
+      ${actionHtml}
+    </div>`;
+  });
+
+  // Tables
+  const thCols = allWeeks.map(w=>`<th style="text-align:center;padding:4px 6px;font-size:11px;font-weight:700;">${wLabel(w)}</th>`).join('');
+  const mkRow = (ex, colorFn) => {
+    const name = ex.resolvedData?.name || ex.jsonName;
+    const cols = allWeeks.map(w=>{const d=ex.by_week[String(w)];return`<td style="text-align:center;padding:4px 6px;font-size:12px;">${colorFn(d)}</td>`;}).join('');
+    return `<tr><td style="padding:4px 8px;font-size:11px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_esc(name)}">${_esc(name.length>20?name.slice(0,19)+'…':name)}</td>${cols}</tr>`;
+  };
+  const tblHdr = `<table style="width:100%;border-collapse:collapse;"><thead><tr>
+    <th style="text-align:left;padding:4px 8px;font-size:11px;color:var(--gray5);">Ejercicio</th>${thCols}
+  </tr></thead><tbody>`;
+  const setsRows = day.exercises.map(ex=>mkRow(ex,d=>d?d.sets:'-')).join('');
+  const rpeRows = day.exercises.map(ex=>mkRow(ex,d=>`<span style="color:var(--orange);">${d&&d.rpe!=null?d.rpe:'-'}</span>`)).join('');
+
+  const pendingCount = day.exercises.filter(e=>e.status==='pending').length;
+
+  body.innerHTML = `
+    <div style="display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;border-bottom:2px solid var(--gray2);margin:-16px -16px 14px -16px;padding:0 16px;">${tabs}</div>
+    ${toggle}
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px;font-weight:700;color:var(--gray5);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">
+        Ejercicios · ${day.exercises.length-pendingCount}/${day.exercises.length} listos
+      </div>
+      ${exListHtml||'<div style="color:var(--gray4);font-size:12px;">Sin ejercicios en este día</div>'}
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">⚡ Series</div>
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:14px;">${tblHdr}${setsRows}</tbody></table></div>
+    <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">🎯 RPE</div>
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:16px;">${tblHdr}${rpeRows}</tbody></table></div>
+    <div style="padding-top:14px;border-top:1px solid var(--gray2);">
+      ${!allResolved?`<div style="font-size:12px;color:var(--orange);margin-bottom:10px;">⚠️ Resolvé todos los ejercicios sin match antes de confirmar.</div>`:''}
+      <div style="display:flex;gap:8px;">
+        <button onclick="confirmTrainingImport()" class="btn-primary"
+          style="flex:1;padding:14px;${allResolved?'':'opacity:0.5;'}">✅ Confirmar todo el plan</button>
+        <button onclick="closeModal('modal-training-import')" class="btn-secondary" style="flex:0.4;padding:14px;">Cancelar</button>
+      </div>
+    </div>`;
+
+  if (_tImport.searchActive?.dayIdx===di) {
+    _tImportUpdateSearch(di, _tImport.searchActive.exIdx, _tImport.searchQuery);
+  }
+}
+
+function _tImportUpdateSearch(dayIdx, exIdx, query) {
+  _tImport.searchQuery = query;
+  const el = document.getElementById(`ti-search-results-${dayIdx}-${exIdx}`);
+  if (!el) return;
+  const filtered = (_tImport.library||[]).filter(l=>_normStr(l.name).includes(_normStr(query))).slice(0,8);
+  el.innerHTML = filtered.length
+    ? filtered.map(l=>`<div onclick="_tImportSelectLibrary(${dayIdx},${exIdx},${l.id})"
+        style="padding:7px 10px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--gray2);"
+        onmouseover="this.style.background='var(--blue-light)'" onmouseout="this.style.background=''">
+        ${_esc(l.name)}<span style="color:var(--gray4);font-size:10px;margin-left:6px;">${_esc(l.tag||'')}</span>
+      </div>`).join('')
+    : `<div style="color:var(--gray4);font-size:12px;padding:6px;">Sin resultados en biblioteca</div>`;
+}
+
+function _tImportSelectLibrary(dayIdx, exIdx, libId) {
+  const lib = (_tImport.library||[]).find(l=>l.id===libId);
+  if (!lib) return;
+  const ex = _tImport.days[dayIdx].exercises[exIdx];
+  ex.status = 'resolved';
+  ex.resolvedType = 'library';
+  ex.resolvedData = {name:lib.name, muscle_group:lib.muscle_group, video_url:lib.video_url, tag:lib.tag};
+  _tImport.searchActive = null;
+  _tImport.searchQuery = '';
+  renderTrainingPreview();
+}
+
+function _tImportSaveNew(dayIdx, exIdx) {
+  const muscle = (document.getElementById('ti-new-muscle')?.value||'').trim() || null;
+  const video = (document.getElementById('ti-new-video')?.value||'').trim() || null;
+  const tag = document.getElementById('ti-new-tag')?.value || 'Peso Libre';
+  const ex = _tImport.days[dayIdx].exercises[exIdx];
+  ex.status = 'resolved';
+  ex.resolvedType = 'new';
+  ex.resolvedData = {name: ex.jsonName, muscle_group: muscle, video_url: video, tag};
+  _tImport.newFormActive = null;
+  renderTrainingPreview();
+}
+
+async function confirmTrainingImport() {
+  if (!_tImport || !currentClient) return;
+  const anyPending = _tImport.days.some(d=>d.exercises.some(ex=>ex.status==='pending'));
+  if (anyPending) { showToast('⚠️ Resolvé todos los ejercicios sin match primero', 3000); return; }
+
+  showToast('⏳ Importando plan...', 60000);
+  const stats = {newDays:0, exercises:0};
+
+  try {
+    // Step 1 — insert new exercises to library
+    const libInserted = new Set();
+    for (const day of _tImport.days) {
+      for (const ex of day.exercises) {
+        if (ex.resolvedType === 'new') {
+          const key = _normStr(ex.resolvedData.name);
+          if (libInserted.has(key)) continue;
+          const {data:exists} = await sb.from('exercise_library')
+            .select('id').eq('coach_id', currentUser.id).eq('name', ex.resolvedData.name).maybeSingle();
+          if (!exists) {
+            await sb.from('exercise_library').insert([{
+              coach_id: currentUser.id, name: ex.resolvedData.name,
+              tag: ex.resolvedData.tag||'Peso Libre',
+              muscle_group: ex.resolvedData.muscle_group||null,
+              video_url: ex.resolvedData.video_url||null
+            }]);
+          }
+          libInserted.add(key);
+        }
+      }
+    }
+
+    // Step 2 — iterate days → weeks → exercises
+    for (const day of _tImport.days) {
+      const allWeeks = [...new Set(
+        day.exercises.flatMap(ex=>Object.keys(ex.by_week).map(Number))
+      )].sort((a,b)=>a-b);
+
+      for (const weekNum of allWeeks) {
+        const {data:existing} = await sb.from('monthly_plans')
+          .select('id').eq('client_id', currentClient.id)
+          .eq('week_number', weekNum).eq('day_of_week', day.day_name).maybeSingle();
+
+        let planDayId;
+        if (existing) {
+          planDayId = existing.id;
+        } else {
+          const {data:newPd, error:pdErr} = await sb.from('monthly_plans')
+            .insert([{client_id:currentClient.id, week_number:weekNum, day_of_week:day.day_name, day_order:day.day_order}])
+            .select().single();
+          if (pdErr) throw pdErr;
+          planDayId = newPd.id;
+          stats.newDays++;
+        }
+
+        if (day.replaceMode) {
+          const {error:delErr} = await sb.from('exercises').delete().eq('plan_day_id', planDayId);
+          if (delErr) throw delErr;
+        }
+
+        let existingExs = [];
+        if (!day.replaceMode) {
+          const {data:exs} = await sb.from('exercises').select('id,name,order_index')
+            .eq('plan_day_id', planDayId).order('order_index');
+          existingExs = exs||[];
+        }
+        let nextOrder = day.replaceMode ? 0 : (existingExs.length ? Math.max(...existingExs.map(e=>e.order_index))+1 : 0);
+
+        for (const ex of day.exercises) {
+          const bw = ex.by_week[String(weekNum)];
+          if (!bw) continue;
+          const exName = ex.resolvedData?.name || ex.jsonName;
+          const payload = {
+            plan_day_id: planDayId, name: exName,
+            sets: bw.sets||3, rpe: bw.rpe??null, reps_range: ex.reps_range||'',
+            tag: ex.resolvedData?.tag||'Peso Libre',
+            muscle_group: ex.resolvedData?.muscle_group||null,
+            video_url: ex.resolvedData?.video_url||null,
+            rest_seconds: 60
+          };
+          if (day.replaceMode) {
+            const {error} = await sb.from('exercises').insert([{...payload, order_index: nextOrder++}]);
+            if (error) throw error;
+            stats.exercises++;
+          } else {
+            const found = existingExs.find(e=>_normStr(e.name)===_normStr(exName));
+            if (found) {
+              const {error} = await sb.from('exercises').update({sets:bw.sets||3, rpe:bw.rpe??null, reps_range:ex.reps_range||''}).eq('id', found.id);
+              if (error) throw error;
+            } else {
+              const {error} = await sb.from('exercises').insert([{...payload, order_index: nextOrder++}]);
+              if (error) throw error;
+              stats.exercises++;
+            }
+          }
+        }
+      }
+    }
+
+    closeModal('modal-training-import');
+    _tImport = null;
+    showToast(`✅ Plan importado: ${stats.newDays} días nuevos, ${stats.exercises} ejercicios`, 4000);
+    loadCoachClientDetail(currentClient.id);
+
+  } catch(e) {
+    showToast('❌ Error: '+(e.message||String(e)), 5000);
+  }
+}
+
+// ─── NUTRITION IMPORT ─────────────────────────────────────────────────
+
+function openNutritionImportModal() {
+  if (!currentClient) return;
+  document.getElementById('nutrition-import-body').innerHTML = `
+    <p style="font-size:13px;color:var(--gray5);margin-bottom:10px;">Pegá el JSON del plan de nutrición:</p>
+    <textarea id="ni-json" class="form-textarea" rows="12"
+      style="width:100%;box-sizing:border-box;font-family:monospace;font-size:11px;resize:vertical;"
+      placeholder='{"type":"nutrition","day_groups":[...]}'></textarea>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button onclick="analyzeNutritionJSON()" class="btn-primary" style="flex:1;">Analizar</button>
+      <button onclick="closeModal('modal-nutrition-import')" class="btn-secondary" style="flex:0.4;">Cancelar</button>
+    </div>`;
+  showModal('modal-nutrition-import');
+}
+
+async function analyzeNutritionJSON() {
+  const raw = (document.getElementById('ni-json')?.value||'').trim();
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch(e) {
+    showToast('❌ JSON inválido: '+e.message, 4000); return;
+  }
+  if (parsed.type !== 'nutrition' || !Array.isArray(parsed.day_groups)) {
+    showToast('❌ Falta type:"nutrition" o el array "day_groups"', 4000); return;
+  }
+  _nImport = {
+    day_groups: [...parsed.day_groups].sort((a,b)=>(a.day_order||0)-(b.day_order||0)),
+    activeDay: 0,
+    mealToggles: {}
+  };
+  renderNutritionPreview();
+}
+
+function renderNutritionPreview() {
+  if (!_nImport) return;
+  const body = document.getElementById('nutrition-import-body');
+  const di = _nImport.activeDay;
+  const dg = _nImport.day_groups[di];
+
+  const tabs = _nImport.day_groups.map((d,i) => {
+    const active = i===di;
+    return `<div onclick="_nImport.activeDay=${i};renderNutritionPreview()"
+      style="padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;
+      border-bottom:2px solid ${active?'var(--orange)':'transparent'};color:${active?'var(--orange)':'var(--gray5)'};">
+      ${_esc(d.day_label)}</div>`;
+  }).join('');
+
+  let mealsHtml = '';
+  (dg.meals||[]).forEach((meal, mi) => {
+    const tKey = `${di}_${mi}`;
+    const isReplace = _nImport.mealToggles[tKey] !== 'add';
+    const t = meal.target;
+    const targetHtml = t ? `<div style="font-size:11px;color:var(--gray5);margin-bottom:8px;">
+      Target:${t.kcal!=null?' '+t.kcal+' kcal':''}${t.proteina!=null?' · P '+t.proteina+'g':''}${t.carbs!=null?' · C '+t.carbs+'g':''}${t.grasas!=null?' · G '+t.grasas+'g':''}
+    </div>` : '';
+    const optsHtml = (meal.options||[]).map(opt => {
+      const macros = [opt.kcal!=null?opt.kcal+' kcal':'', opt.proteina!=null?'P '+opt.proteina+'g':'', opt.carbs!=null?'C '+opt.carbs+'g':'', opt.grasas!=null?'G '+opt.grasas+'g':''].filter(Boolean).join(' · ');
+      return `<div style="padding:10px;background:var(--gray1);border-radius:var(--radius-sm);margin-bottom:6px;">
+        <div style="font-size:12px;font-weight:600;margin-bottom:3px;">${_esc(opt.title||'')}</div>
+        ${macros?`<div style="font-size:11px;color:var(--gray5);">${macros}</div>`:''}
+      </div>`;
+    }).join('');
+    mealsHtml += `<div style="margin-bottom:12px;padding:12px;background:white;border:1px solid var(--gray2);border-radius:var(--radius);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;flex-wrap:wrap;">
+        <div style="font-size:13px;font-weight:700;">${_esc(meal.meal_slot||'')}</div>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+          <button onclick="_nImport.mealToggles['${tKey}']='replace';renderNutritionPreview()"
+            style="font-size:10px;padding:3px 8px;border-radius:20px;cursor:pointer;font-family:'DM Sans',sans-serif;
+            border:1.5px solid ${isReplace?'var(--red)':'var(--gray2)'};
+            background:${isReplace?'var(--red)':'transparent'};color:${isReplace?'white':'var(--gray5)'};">🔄 Reemplazar</button>
+          <button onclick="_nImport.mealToggles['${tKey}']='add';renderNutritionPreview()"
+            style="font-size:10px;padding:3px 8px;border-radius:20px;cursor:pointer;font-family:'DM Sans',sans-serif;
+            border:1.5px solid ${!isReplace?'var(--blue)':'var(--gray2)'};
+            background:${!isReplace?'var(--blue)':'transparent'};color:${!isReplace?'white':'var(--gray5)'};">➕ Agregar</button>
+        </div>
+      </div>
+      ${targetHtml}
+      ${optsHtml||'<div style="color:var(--gray4);font-size:12px;">Sin opciones</div>'}
+    </div>`;
+  });
+
+  body.innerHTML = `
+    <div style="display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;border-bottom:2px solid var(--gray2);margin:-16px -16px 14px -16px;padding:0 16px;">${tabs}</div>
+    ${mealsHtml||'<div style="color:var(--gray4);font-size:12px;">Sin comidas en este día</div>'}
+    <div style="padding-top:14px;border-top:1px solid var(--gray2);">
+      <div style="display:flex;gap:8px;">
+        <button onclick="confirmNutritionImport()" class="btn-primary" style="flex:1;padding:14px;">✅ Confirmar todo el menú</button>
+        <button onclick="closeModal('modal-nutrition-import')" class="btn-secondary" style="flex:0.4;padding:14px;">Cancelar</button>
+      </div>
+    </div>`;
+}
+
+async function confirmNutritionImport() {
+  if (!_nImport || !currentClient) return;
+  showToast('⏳ Importando menú...', 60000);
+  const stats = {days:0, meals:0, options:0};
+
+  try {
+    for (let di=0; di<_nImport.day_groups.length; di++) {
+      const dg = _nImport.day_groups[di];
+
+      const {data:existingPlan} = await sb.from('nutrition_plans')
+        .select('id').eq('client_id', currentClient.id).eq('day_of_week', dg.day_label).maybeSingle();
+
+      let planId;
+      if (existingPlan) {
+        planId = existingPlan.id;
+      } else {
+        const {data:newPlan, error:planErr} = await sb.from('nutrition_plans')
+          .insert([{client_id:currentClient.id, day_of_week:dg.day_label, day_order:dg.day_order||di}])
+          .select().single();
+        if (planErr) throw planErr;
+        planId = newPlan.id;
+        stats.days++;
+      }
+
+      for (let mi=0; mi<(dg.meals||[]).length; mi++) {
+        const meal = dg.meals[mi];
+        const tKey = `${di}_${mi}`;
+        const isReplace = _nImport.mealToggles[tKey] !== 'add';
+
+        const {data:existingMeal} = await sb.from('nutrition_meals')
+          .select('id').eq('nutrition_plan_id', planId).eq('meal_slot', meal.meal_slot).maybeSingle();
+
+        let mealId;
+        if (existingMeal) {
+          mealId = existingMeal.id;
+          if (meal.target) {
+            const upd = {};
+            if (meal.target.kcal != null) upd.target_kcal = meal.target.kcal;
+            if (meal.target.proteina != null) upd.target_proteina = meal.target.proteina;
+            if (meal.target.carbs != null) upd.target_carbs = meal.target.carbs;
+            if (meal.target.grasas != null) upd.target_grasas = meal.target.grasas;
+            if (Object.keys(upd).length) await sb.from('nutrition_meals').update(upd).eq('id', mealId);
+          }
+        } else {
+          const ins = {nutrition_plan_id:planId, meal_slot:meal.meal_slot, meal_order:meal.meal_order||mi};
+          if (meal.target) {
+            if (meal.target.kcal != null) ins.target_kcal = meal.target.kcal;
+            if (meal.target.proteina != null) ins.target_proteina = meal.target.proteina;
+            if (meal.target.carbs != null) ins.target_carbs = meal.target.carbs;
+            if (meal.target.grasas != null) ins.target_grasas = meal.target.grasas;
+          }
+          const {data:newMeal, error:mealErr} = await sb.from('nutrition_meals').insert([ins]).select().single();
+          if (mealErr) throw mealErr;
+          mealId = newMeal.id;
+          stats.meals++;
+        }
+
+        if (isReplace) {
+          const {error:delErr} = await sb.from('nutrition_meal_options').delete().eq('nutrition_meal_id', mealId);
+          if (delErr) throw delErr;
+        }
+
+        let nextOptOrder = 0;
+        if (!isReplace) {
+          const {data:lastOpt} = await sb.from('nutrition_meal_options')
+            .select('order_index').eq('nutrition_meal_id', mealId).order('order_index', {ascending:false}).limit(1);
+          nextOptOrder = lastOpt?.length ? (lastOpt[0].order_index+1) : 0;
+        }
+
+        for (let oi=0; oi<(meal.options||[]).length; oi++) {
+          const opt = meal.options[oi];
+          const {error:optErr} = await sb.from('nutrition_meal_options').insert([{
+            nutrition_meal_id: mealId,
+            title: opt.title||'',
+            kcal: opt.kcal??null,
+            proteina: opt.proteina??null,
+            carbs: opt.carbs??null,
+            grasas: opt.grasas??null,
+            order_index: isReplace ? oi : (nextOptOrder+oi)
+          }]);
+          if (optErr) throw optErr;
+          stats.options++;
+        }
+      }
+    }
+
+    closeModal('modal-nutrition-import');
+    _nImport = null;
+    showToast(`✅ Menú importado: ${stats.days} días nuevos, ${stats.meals} comidas, ${stats.options} opciones`, 4000);
+    loadCoachFoodPanel();
+
+  } catch(e) {
+    showToast('❌ Error: '+(e.message||String(e)), 5000);
+  }
+}
+
 </script>
 
 <!-- Add/Edit Food Modal -->
@@ -11558,6 +12100,32 @@ async function saveAIPrograma(name, data, resolveExName) {
   </div>
 </div>
 
+
+<!-- ===== MODAL: TRAINING IMPORT ===== -->
+<div class="modal-overlay" id="modal-training-import">
+  <div class="modal-content" style="max-height:92vh;">
+    <div class="modal-header">
+      <div class="modal-title">📥 Pegar Plan de Entrenamiento</div>
+      <span class="modal-close" onclick="closeModal('modal-training-import')">×</span>
+    </div>
+    <div id="training-import-body" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;">
+      <div class="spinner" style="width:20px;height:20px;margin:30px auto;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: NUTRITION IMPORT ===== -->
+<div class="modal-overlay" id="modal-nutrition-import">
+  <div class="modal-content" style="max-height:92vh;">
+    <div class="modal-header">
+      <div class="modal-title">📥 Pegar Plan de Nutrición</div>
+      <span class="modal-close" onclick="closeModal('modal-nutrition-import')">×</span>
+    </div>
+    <div id="nutrition-import-body" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;">
+      <div class="spinner" style="width:20px;height:20px;margin:30px auto;"></div>
+    </div>
+  </div>
+</div>
 
 <!-- ===== MODAL: ADD HABIT ===== -->
 <div class="modal-overlay" id="modal-add-habit">
