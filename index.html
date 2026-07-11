@@ -1078,6 +1078,24 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
     <div style="margin-bottom:18px;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Configuración</div><div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;">Ajustes</div></div>
     <div class="section-header"><div class="section-title">Gestión de clientes</div></div>
     <div id="settings-list"><div class="spinner"></div></div>
+    <div class="section-header" style="margin-top:28px;"><div class="section-title">📣 Notificaciones</div></div>
+    <div class="card" style="margin-bottom:8px;">
+      <div style="margin-bottom:10px;">
+        <label class="form-label">Destinatario</label>
+        <select id="push-target" class="form-input" style="font-size:13px;padding:9px 12px;">
+          <option value="all">👥 Todos los clientes</option>
+        </select>
+      </div>
+      <div style="margin-bottom:10px;">
+        <label class="form-label">Título</label>
+        <input id="push-title" class="form-input" style="font-size:13px;padding:9px 12px;" placeholder="Ej: Tu nuevo plan está listo 🔥">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label class="form-label">Mensaje</label>
+        <textarea id="push-message" class="form-textarea" rows="3" placeholder="Escribí el mensaje aquí..." style="font-size:13px;line-height:1.5;resize:vertical;"></textarea>
+      </div>
+      <button id="push-send-btn" onclick="sendPushNotification()" class="btn-primary" style="padding:12px;">📣 Enviar notificación</button>
+    </div>
     <div class="section-header" style="margin-top:28px;"><div class="section-title">Cuenta</div></div>
     <button class="btn-secondary" onclick="handleLogout()" style="margin-top:8px;">Cerrar sesión</button>
   </div>
@@ -6587,6 +6605,51 @@ async function loadSettings() {
         <button onclick="deleteClient('${c.id}','${c.name}')" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Eliminar</button>
       </div>
     </div>`).join('');
+
+  // Populate push notification target selector with active clients
+  const sel = document.getElementById('push-target');
+  if (sel) {
+    const active = (clients||[]).filter(c => !c.is_churn);
+    active.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.username;
+      opt.textContent = c.name + ' (@' + c.username + ')';
+      sel.appendChild(opt);
+    });
+  }
+}
+
+async function sendPushNotification() {
+  const target  = document.getElementById('push-target')?.value;
+  const title   = (document.getElementById('push-title')?.value||'').trim();
+  const message = (document.getElementById('push-message')?.value||'').trim();
+  if (!title)   { showToast('⚠️ Escribí un título'); return; }
+  if (!message) { showToast('⚠️ Escribí un mensaje'); return; }
+
+  const btn = document.getElementById('push-send-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Enviando...'; }
+
+  try {
+    const res = await fetch('/api/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        message,
+        target: target === 'all' ? 'all' : { username: target }
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error desconocido');
+    const dest = target === 'all' ? 'todos los clientes' : target;
+    showToast('✅ Notificación enviada a ' + dest, 3500);
+    document.getElementById('push-title').value = '';
+    document.getElementById('push-message').value = '';
+  } catch(e) {
+    showToast('❌ ' + e.message, 4000);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '📣 Enviar notificación'; }
+  }
 }
 
 async function editPaymentSettings(clientId) {
