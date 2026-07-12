@@ -8294,15 +8294,24 @@ async function saveProtocolToLibrary(p) {
   }
 }
 
-function _renderProtoLibRows(items) {
+function _renderProtoLibRows(items, clientTitles) {
+  const titles = clientTitles || window._clientProtoTitles || new Set();
   if (!items.length) return '<div style="font-size:13px;color:var(--gray4);text-align:center;padding:24px 16px;">Aún no tenés protocolos en tu biblioteca.<br>Guardá uno desde el perfil de cualquier cliente con el botón 📚.</div>';
   window._protoLibFiltered = items;
-  return items.map((p, i) => `
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--gray1);">
-      <div style="flex:1;font-size:13px;font-weight:600;">${(p.title||'').replace(/</g,'&lt;')}</div>
+  return items.map((p, i) => {
+    const alreadyHas = titles.has((p.title||'').trim().toLowerCase());
+    const titleHtml = (p.title||'').replace(/</g,'&lt;');
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--gray1);">
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;">${titleHtml}</div>
+        ${alreadyHas?`<div style="font-size:11px;color:#38a169;font-weight:600;margin-top:2px;">✓ Ya lo tiene</div>`:''}
+      </div>
       <button onclick="addProtocolFromLibrary(window._protoLibFiltered[${i}])"
-        style="background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">+ Agregar</button>
-    </div>`).join('');
+        style="background:${alreadyHas?'var(--gray1)':'var(--orange-light)'};color:${alreadyHas?'var(--gray5)':'var(--orange)'};border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
+        ${alreadyHas?'Agregar igual':'+ Agregar'}
+      </button>
+    </div>`;
+  }).join('');
 }
 
 function _filterProtoLib(q) {
@@ -8310,7 +8319,7 @@ function _filterProtoLib(q) {
   if (!rows) return;
   const filtered = (window._protoLibCache||[]).filter(p => p.title.toLowerCase().includes(q.toLowerCase()));
   rows.innerHTML = filtered.length
-    ? _renderProtoLibRows(filtered)
+    ? _renderProtoLibRows(filtered, window._clientProtoTitles)
     : '<div style="font-size:13px;color:var(--gray4);text-align:center;padding:16px;">Sin resultados</div>';
 }
 
@@ -8318,9 +8327,12 @@ async function openProtocolLibraryPicker() {
   if (!currentUser) return;
   document.getElementById('protocol-library-sheet')?.remove();
 
-  const {data: lib} = await sb.from('protocol_library')
-    .select('id,title,content').eq('coach_id', currentUser.id).order('title', {ascending: true});
+  const [{data: lib}, {data: clientProtos}] = await Promise.all([
+    sb.from('protocol_library').select('id,title,content').eq('coach_id', currentUser.id).order('title', {ascending: true}),
+    sb.from('nutrition_protocols').select('title').eq('client_id', currentClient.id)
+  ]);
   window._protoLibCache = lib || [];
+  window._clientProtoTitles = new Set((clientProtos||[]).map(p => p.title.trim().toLowerCase()));
 
   const sheet = document.createElement('div');
   sheet.id = 'protocol-library-sheet';
@@ -8335,7 +8347,7 @@ async function openProtocolLibraryPicker() {
         <input class="form-input" placeholder="Buscar protocolo..." style="font-size:13px;padding:9px 12px;width:100%;box-sizing:border-box;"
           oninput="_filterProtoLib(this.value)">
       </div>
-      <div id="proto-lib-rows" style="flex:1;overflow-y:auto;padding:0 20px;">${_renderProtoLibRows(window._protoLibCache)}</div>
+      <div id="proto-lib-rows" style="flex:1;overflow-y:auto;padding:0 20px;">${_renderProtoLibRows(window._protoLibCache, window._clientProtoTitles)}</div>
     </div>`;
   sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
   document.body.appendChild(sheet);
@@ -10800,7 +10812,19 @@ function toggleClientExtra(id) {
 
 async function openCopyExtraSessionSheet(sessionId, sessionName) {
   document.getElementById('copy-extra-sheet')?.remove();
-  const {data: allClients} = await sb.from('clients').select('id,name').eq('coach_id', currentUser.id).order('name');
+  const {data: allClients} = await sb.from('clients').select('id,name')
+    .eq('coach_id', currentUser.id).neq('is_churn', true).order('name');
+  const others = (allClients||[]).filter(c => c.id !== currentClient.id);
+  const allIds = others.map(c => c.id).concat([currentClient.id]);
+  const {data: existingSessions} = await sb.from('extra_sessions')
+    .select('client_id,name').in('client_id', allIds);
+  const sessionsByClient = {};
+  (existingSessions||[]).forEach(s => {
+    if (!sessionsByClient[s.client_id]) sessionsByClient[s.client_id] = new Set();
+    sessionsByClient[s.client_id].add(s.name.trim().toLowerCase());
+  });
+  const normName = sessionName.trim().toLowerCase();
+  const currentAlready = sessionsByClient[currentClient.id]?.has(normName);
   const sheet = document.createElement('div');
   sheet.id = 'copy-extra-sheet';
   sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:flex;align-items:flex-end;justify-content:center;';
@@ -10813,8 +10837,13 @@ async function openCopyExtraSessionSheet(sessionId, sessionName) {
       <div style="font-size:12px;color:var(--gray5);margin-bottom:16px;">Copiando: <strong>${sessionName}</strong></div>
       <label class="form-label">Cliente destino</label>
       <select id="copy-extra-client-sel" class="form-select" style="margin-bottom:18px;">
-        <option value="${currentClient.id}">${currentClient.name} (actual)</option>
-        ${(allClients||[]).filter(c=>c.id!==currentClient.id).map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}
+        <option value="${currentClient.id}" ${currentAlready?'disabled':''}>
+          ${currentClient.name} (actual)${currentAlready?' ✓ ya la tiene':''}
+        </option>
+        ${others.map(c => {
+          const has = sessionsByClient[c.id]?.has(normName);
+          return `<option value="${c.id}" ${has?'disabled':''}>${c.name}${has?' ✓ ya la tiene':''}</option>`;
+        }).join('')}
       </select>
       <button onclick="executeCopyExtraSession('${sessionId}','${sessionName.replace(/'/g,"\\'")}')" class="btn-primary" style="width:100%;">📋 Copiar sesión</button>
     </div>`;
