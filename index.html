@@ -8837,6 +8837,8 @@ async function buildNutritionMealList() {
           <div style="display:flex;align-items:center;gap:6px;padding:10px 12px;">
             <button onclick="toggleNutritionMealExpand('${m.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--orange);padding:0 2px;font-weight:700;line-height:1;">${expanded?'▾':'▸'}</button>
             <div style="flex:1;font-size:13px;font-weight:600;">${m.meal_slot}</div>
+            <button onclick="openRenameMealSlot('${planId}','${m.id}','${m.meal_slot.replace(/'/g,"\\'")}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--gray4);padding:2px 4px;">✏️</button>
+            <button onclick="promoteMealToDay('${planId}','${m.id}','${m.meal_slot.replace(/'/g,"\\'")}')" title="Promover a tab propio" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--gray4);padding:2px 4px;">↗</button>
             <button onclick="moveNutritionMealOrder('${planId}','${m.id}',-1)" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--gray4);padding:2px 4px;">↑</button>
             <button onclick="moveNutritionMealOrder('${planId}','${m.id}',1)" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--gray4);padding:2px 4px;">↓</button>
             <button onclick="deleteNutritionMeal('${planId}','${m.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--red);padding:2px 4px;">✕</button>
@@ -8866,6 +8868,66 @@ async function addNutritionMeal(planId) {
   const {error} = await sb.from('nutrition_meals').insert([{nutrition_plan_id: planId, meal_slot: slot, meal_order: nextOrder}]);
   if (error) { showToast('❌ ' + error.message); return; }
   input.value = '';
+  await buildNutritionMealList();
+}
+
+function openRenameMealSlot(planId, mealId, currentSlot) {
+  document.getElementById('rename-meal-sheet')?.remove();
+  const sheet = document.createElement('div');
+  sheet.id = 'rename-meal-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:600;display:flex;align-items:flex-end;justify-content:center;';
+  sheet.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;max-width:480px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;">Renombrar tiempo de comida</div>
+        <button onclick="document.getElementById('rename-meal-sheet').remove()" style="background:var(--gray1);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;">✕</button>
+      </div>
+      <div class="form-group" style="margin-bottom:18px;">
+        <label class="form-label">Nombre</label>
+        <input id="rename-meal-input" class="form-input" value="${currentSlot.replace(/"/g,'&quot;')}" style="font-size:13px;">
+      </div>
+      <button onclick="saveRenameMealSlot('${planId}','${mealId}')" class="btn-primary" style="width:100%;padding:13px;">💾 Guardar</button>
+    </div>`;
+  sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  document.body.appendChild(sheet);
+  setTimeout(() => { const i = document.getElementById('rename-meal-input'); if(i){i.focus();i.select();} }, 100);
+}
+
+async function saveRenameMealSlot(planId, mealId) {
+  const newSlot = (document.getElementById('rename-meal-input')?.value || '').trim();
+  if (!newSlot) { showToast('⚠️ Escribí un nombre'); return; }
+  const {error} = await sb.from('nutrition_meals').update({meal_slot: newSlot}).eq('id', mealId);
+  if (error) { showToast('❌ ' + error.message); return; }
+  showToast('✅ Renombrado');
+  document.getElementById('rename-meal-sheet')?.remove();
+  await buildNutritionMealList();
+}
+
+async function promoteMealToDay(sourcePlanId, mealId, mealSlot) {
+  const {data: mealsInPlan} = await sb.from('nutrition_meals').select('id').eq('nutrition_plan_id', sourcePlanId);
+  if (mealsInPlan && mealsInPlan.length === 1) {
+    showToast('⚠️ No podés promover el único tiempo de este día. Agregá otro primero.');
+    return;
+  }
+  const {data: existing} = await sb.from('nutrition_plans')
+    .select('id').eq('client_id', currentClient.id).eq('day_of_week', mealSlot).maybeSingle();
+  if (existing) {
+    showToast('⚠️ Ya existe un tab con ese nombre. Renombrá el tiempo primero.');
+    return;
+  }
+  const {data: allPlans} = await sb.from('nutrition_plans')
+    .select('day_order').eq('client_id', currentClient.id)
+    .order('day_order', {ascending: false}).limit(1);
+  const nextOrder = allPlans?.length ? (allPlans[0].day_order ?? 0) + 1 : 1;
+  const {data: newPlan, error: planErr} = await sb.from('nutrition_plans')
+    .insert([{client_id: currentClient.id, day_of_week: mealSlot, day_order: nextOrder}])
+    .select().single();
+  if (planErr) { showToast('❌ ' + planErr.message); return; }
+  const {error: moveErr} = await sb.from('nutrition_meals')
+    .update({nutrition_plan_id: newPlan.id, meal_order: 0}).eq('id', mealId);
+  if (moveErr) { showToast('❌ ' + moveErr.message); return; }
+  showToast('✅ "' + mealSlot + '" promovido a tab propio');
+  await buildNutritionDayStrip();
   await buildNutritionMealList();
 }
 
