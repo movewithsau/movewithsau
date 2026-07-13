@@ -569,6 +569,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <!-- PLANES TAB -->
     <div id="client-plans-tab" style="display:block;">
       <div id="c-plans-list"><div class="spinner"></div></div>
+      <div id="c-guidelines-list"></div>
     </div>
 
     <!-- HABITS TAB -->
@@ -2770,8 +2771,38 @@ async function loadClientPlans() {
   if(!currentClient){document.getElementById('c-plans-list').innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Sin planes aún.</div></div>';return;}
   const {data:plans} = await sb.from('plans').select('*').eq('client_id',currentClient.id).order('uploaded_at',{ascending:false});
   const list=document.getElementById('c-plans-list');
-  if(!plans||plans.length===0){list.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Tu coach aún no ha subido planes.</div></div>';return;}
-  list.innerHTML=plans.map(p=>`<div class="pdf-card fade-up"><div class="pdf-icon">📄</div><div style="flex:1;min-width:0;"><div class="pdf-name">${p.pdf_name}</div><div class="pdf-date">${new Date(p.uploaded_at).toLocaleDateString('es-CR')}</div></div><a class="pdf-open" href="${p.pdf_url}" target="_blank">Abrir</a></div>`).join('');
+  if(!plans||plans.length===0){list.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Tu coach aún no ha subido planes.</div></div>';}
+  else{list.innerHTML=plans.map(p=>`<div class="pdf-card fade-up"><div class="pdf-icon">📄</div><div style="flex:1;min-width:0;"><div class="pdf-name">${p.pdf_name}</div><div class="pdf-date">${new Date(p.uploaded_at).toLocaleDateString('es-CR')}</div></div><a class="pdf-open" href="${p.pdf_url}" target="_blank">Abrir</a></div>`).join('');}
+  renderClientGuidelines();
+}
+
+async function renderClientGuidelines() {
+  const el = document.getElementById('c-guidelines-list');
+  if (!el) return;
+  const {data} = await sb.from('client_guidelines').select('id,title,content,order_index')
+    .eq('client_id', currentClient.id).order('order_index', {ascending: true});
+  if (!data || !data.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="card" style="margin-top:12px;margin-bottom:0;padding-bottom:4px;">
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.12em;color:var(--orange);text-transform:uppercase;margin-bottom:10px;">📋 Guidelines</div>
+    ${data.map((g, i) => `
+      <div style="border-bottom:1px solid var(--gray1);">
+        <div onclick="toggleClientGuideline('cg-${i}')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;cursor:pointer;">
+          <div style="font-size:14px;font-weight:700;">${g.title}</div>
+          <span id="cg-arr-${i}" style="font-size:16px;color:var(--gray4);transition:transform 0.2s;">▸</span>
+        </div>
+        <div id="cg-${i}" style="display:none;padding-bottom:14px;font-size:13px;line-height:1.7;color:var(--black);">${g.content||''}</div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function toggleClientGuideline(id) {
+  const el = document.getElementById(id);
+  const i = id.split('-')[1];
+  const arr = document.getElementById('cg-arr-' + i);
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (arr) arr.style.transform = open ? '' : 'rotate(90deg)';
 }
 
 // ===== TESTS (EVALUACIONES) =====
