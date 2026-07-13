@@ -822,7 +822,10 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div id="coach-habits-panel" style="margin-bottom:4px;"></div>
     <div class="section-header" style="margin-top:4px;">
       <div class="section-title">⚡ Extras</div>
-      <div class="section-action" onclick="openAddExtraSessionSheet()">+ Sesión</div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <div class="section-action" onclick="openExtraSessionImportModal()" style="background:#f0fff4;color:#276749;border:1.5px solid #276749;padding:5px 10px;border-radius:6px;font-size:11px;">📥 Pegar</div>
+        <div class="section-action" onclick="openAddExtraSessionSheet()">+ Sesión</div>
+      </div>
     </div>
     <div id="coach-extras-panel" style="margin-bottom:4px;"></div>
     <div class="section-header">
@@ -12336,6 +12339,346 @@ async function confirmTrainingImport() {
   }
 }
 
+// ─── EXTRA SESSION IMPORT ─────────────────────────────────────────────
+
+let _eiImport = null;
+
+function openExtraSessionImportModal() {
+  if (!currentClient) return;
+  document.getElementById('extra-session-import-body').innerHTML = `
+    <p style="font-size:13px;color:var(--gray5);margin-bottom:10px;">Pegá el JSON de sesiones extra:</p>
+    <textarea id="ei-json" class="form-textarea" rows="12"
+      style="width:100%;box-sizing:border-box;font-family:monospace;font-size:11px;resize:vertical;"
+      placeholder='{"type":"extra_session","sessions":[{"name":"Post Long Drive","exercises":[{"name":"Hip Flexor Stretch","sets":2,"reps_range":"30-45 seg/lado","rest_seconds":30,"tag":"Peso Corporal","order_index":1,"circuit_group":null,"circuit_rounds":null}]}]}'></textarea>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button onclick="parseExtraSessionJSON()" class="btn-primary" style="flex:1;">Analizar</button>
+      <button onclick="closeModal('modal-extra-session-import')" class="btn-secondary" style="flex:0.4;">Cancelar</button>
+    </div>`;
+  showModal('modal-extra-session-import');
+}
+
+async function parseExtraSessionJSON() {
+  const raw = (document.getElementById('ei-json')?.value||'').trim();
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch(e) {
+    showToast('❌ JSON inválido: '+e.message, 4000); return;
+  }
+  if (parsed.type !== 'extra_session' || !Array.isArray(parsed.sessions) || !parsed.sessions.length) {
+    showToast('❌ Falta type:"extra_session" o el array "sessions"', 4000); return;
+  }
+
+  const {data: lib} = await sb.from('exercise_library')
+    .select('id,name,muscle_group,video_url,tag')
+    .eq('coach_id', currentUser.id);
+  const library = lib || [];
+  const libMap = {};
+  library.forEach(ex => { libMap[_normStr(ex.name)] = ex; });
+
+  const sessions = parsed.sessions.map(sess => ({
+    name: sess.name || 'Sin nombre',
+    exercises: (sess.exercises||[]).map((ex, i) => {
+      const m = libMap[_normStr(ex.name)];
+      return {
+        jsonName: ex.name,
+        sets: ex.sets || 3,
+        reps_range: ex.reps_range || '',
+        rest_seconds: ex.rest_seconds || 60,
+        tag: ex.tag || 'Peso Libre',
+        order_index: ex.order_index != null ? ex.order_index : i,
+        circuit_group: ex.circuit_group || null,
+        circuit_rounds: ex.circuit_group ? (ex.circuit_rounds || null) : null,
+        status: m ? 'match' : 'pending',
+        resolvedType: m ? 'library' : null,
+        resolvedData: m ? {name:m.name, muscle_group:m.muscle_group, video_url:m.video_url, tag:m.tag} : null
+      };
+    })
+  }));
+
+  _eiImport = { sessions, library, activeSession: 0, searchActive: null, searchQuery: '', newFormActive: null };
+  renderExtraSessionImportPreview();
+}
+
+function renderExtraSessionImportPreview() {
+  if (!_eiImport) return;
+  const body = document.getElementById('extra-session-import-body');
+  const si = _eiImport.activeSession;
+  const sess = _eiImport.sessions[si];
+  const allResolved = _eiImport.sessions.every(s => s.exercises.every(ex => ex.status !== 'pending'));
+
+  // Circuit validation
+  const circuitGroups = {};
+  sess.exercises.forEach(ex => {
+    if (ex.circuit_group) {
+      if (!circuitGroups[ex.circuit_group]) circuitGroups[ex.circuit_group] = [];
+      circuitGroups[ex.circuit_group].push(ex);
+    }
+  });
+  const circuitErrors = [];
+  Object.entries(circuitGroups).forEach(([grp, exList]) => {
+    if (exList.length < 2) circuitErrors.push(`Circuito ${grp} tiene solo 1 ejercicio`);
+    else if (exList.some(ex => !ex.circuit_rounds)) circuitErrors.push(`Circuito ${grp} no tiene circuit_rounds`);
+  });
+
+  // Tabs (only if >1 session)
+  let tabsHtml = '';
+  if (_eiImport.sessions.length > 1) {
+    tabsHtml = `<div style="display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;border-bottom:2px solid var(--gray2);margin:-16px -16px 14px -16px;padding:0 16px;">` +
+      _eiImport.sessions.map((s, i) => {
+        const pending = s.exercises.filter(e => e.status==='pending').length;
+        const active = i === si;
+        return `<div onclick="_eiImport.activeSession=${i};_eiImport.searchActive=null;_eiImport.newFormActive=null;renderExtraSessionImportPreview()"
+          style="padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;
+          border-bottom:2px solid ${active?'var(--blue)':'transparent'};color:${active?'var(--blue)':'var(--gray5)'};">
+          ${_esc(s.name)}${pending?` <span style="background:var(--orange);color:white;border-radius:20px;font-size:9px;padding:1px 5px;">${pending}</span>`:''}
+        </div>`;
+      }).join('') + `</div>`;
+  }
+
+  // Exercise rows
+  let exListHtml = '';
+  sess.exercises.forEach((ex, exIdx) => {
+    const sAct = _eiImport.searchActive?.sessIdx===si && _eiImport.searchActive?.exIdx===exIdx;
+    const nAct = _eiImport.newFormActive?.sessIdx===si && _eiImport.newFormActive?.exIdx===exIdx;
+    const isPending = ex.status==='pending';
+    const displayName = _esc(ex.resolvedData?.name || ex.jsonName);
+    let actionHtml = '';
+
+    if (isPending) {
+      if (sAct) {
+        actionHtml = `<div style="margin-top:6px;padding:8px;background:white;border:1px solid var(--gray2);border-radius:var(--radius-sm);">
+          <input class="form-input" id="ei-search-inp" style="font-size:12px;padding:7px 10px;margin-bottom:6px;"
+            placeholder="Buscar ejercicio..." value="${_esc(_eiImport.searchQuery)}"
+            oninput="_eiUpdateSearch(${si},${exIdx},this.value)">
+          <div id="ei-search-results-${si}-${exIdx}"></div>
+        </div>`;
+      } else if (nAct) {
+        const muscleOpts = MUSCLES.map(m=>`<option value="${m}">${m}</option>`).join('');
+        actionHtml = `<div style="margin-top:6px;padding:10px;background:var(--orange-light);border:1px solid var(--orange);border-radius:var(--radius-sm);">
+          <div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:8px;">Nuevo ejercicio</div>
+          <div style="margin-bottom:6px;"><label class="form-label">Nombre</label>
+            <input class="form-input" id="ei-new-name" style="font-size:12px;padding:7px 10px;" value="${_esc(ex.jsonName)}"></div>
+          <div style="margin-bottom:6px;"><label class="form-label">Grupo muscular</label>
+            <select class="form-input" id="ei-new-muscle-sel" style="font-size:12px;padding:7px 10px;" onchange="_eiToggleMuscleCustom(this)">
+              <option value="">Sin especificar</option>
+              ${muscleOpts}
+              <option value="custom">Otro...</option>
+            </select>
+            <input class="form-input" id="ei-new-muscle-custom" style="font-size:12px;padding:7px 10px;margin-top:4px;display:none;" placeholder="Escribí el grupo muscular"></div>
+          <div style="margin-bottom:6px;"><label class="form-label">Video URL (opcional)</label>
+            <input class="form-input" id="ei-new-video" style="font-size:12px;padding:7px 10px;" placeholder="https://..."></div>
+          <div style="margin-bottom:8px;"><label class="form-label">Tag</label>
+            <select class="form-input" id="ei-new-tag" style="font-size:12px;padding:7px 10px;">
+              <option value="Peso Libre">Peso Libre</option>
+              <option value="Máquina">Máquina</option>
+              <option value="Peso Corporal">Peso Corporal</option>
+            </select></div>
+          <div style="display:flex;gap:6px;">
+            <button onclick="_eiSaveNew(${si},${exIdx})" class="btn-primary" style="flex:1;font-size:12px;padding:8px;">✅ Guardar</button>
+            <button onclick="_eiImport.newFormActive=null;renderExtraSessionImportPreview()" class="btn-secondary" style="flex:0.4;font-size:12px;padding:8px;">✕</button>
+          </div>
+        </div>`;
+      } else {
+        actionHtml = `<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+          <button onclick="_eiImport.searchActive={sessIdx:${si},exIdx:${exIdx}};_eiImport.newFormActive=null;_eiImport.searchQuery='';renderExtraSessionImportPreview();setTimeout(()=>{const i=document.getElementById('ei-search-inp');if(i)i.focus();},50)"
+            style="font-size:11px;padding:5px 10px;background:var(--blue-light);border:1.5px solid var(--blue);color:var(--blue);border-radius:var(--radius-sm);cursor:pointer;font-family:'DM Sans',sans-serif;">
+            🔍 Buscar en biblioteca</button>
+          <button onclick="_eiImport.newFormActive={sessIdx:${si},exIdx:${exIdx}};_eiImport.searchActive=null;renderExtraSessionImportPreview()"
+            style="font-size:11px;padding:5px 10px;background:var(--orange-light);border:1.5px solid var(--orange);color:var(--orange);border-radius:var(--radius-sm);cursor:pointer;font-family:'DM Sans',sans-serif;">
+            ➕ Es nuevo</button>
+        </div>`;
+      }
+    }
+
+    const circuitBadgeHtml = ex.circuit_group
+      ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:var(--orange-light);color:var(--orange);border-radius:20px;font-size:10px;font-weight:700;">🔄 ${_esc(ex.circuit_group)}${ex.circuit_rounds?` ×${ex.circuit_rounds}`:''}</span>`
+      : '';
+    const isFirstOfGroup = ex.circuit_group && sess.exercises.findIndex(e=>e.circuit_group===ex.circuit_group)===exIdx;
+    const groupBorderTop = (ex.circuit_group && !isFirstOfGroup) ? 'border-top:1px dashed var(--orange);' : '';
+    exListHtml += `<div style="padding:8px 10px;margin-bottom:${ex.circuit_group?'0':'6px'};border-radius:${isFirstOfGroup?'var(--radius-sm) var(--radius-sm) 0 0':ex.circuit_group?'0':'var(--radius-sm)'};
+      background:${isPending?'#fff8f0':ex.circuit_group?'#fff4ec':'var(--gray1)'};border:1px solid ${isPending?'var(--orange)':ex.circuit_group?'var(--orange)':'transparent'};${groupBorderTop}">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span style="font-size:13px;">${isPending?'⚠️':'✅'}</span>
+        ${circuitBadgeHtml}
+        <span style="font-size:13px;font-weight:600;">${displayName}</span>
+        ${ex.reps_range?`<span style="font-size:11px;color:var(--gray4);">${_esc(ex.reps_range)}</span>`:''}
+        ${!isPending&&ex.sets?`<span style="font-size:11px;color:var(--gray4);">${ex.circuit_group?'':ex.sets+'×'}</span>`:''}
+        <span style="font-size:10px;color:var(--gray4);background:var(--gray1);padding:1px 6px;border-radius:20px;">${_esc(ex.resolvedData?.tag||ex.tag||'')}</span>
+      </div>
+      ${actionHtml}
+    </div>`;
+  });
+
+  const pendingCount = sess.exercises.filter(e=>e.status==='pending').length;
+
+  body.innerHTML = `
+    ${tabsHtml}
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px;font-weight:700;color:var(--gray5);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">
+        ${_esc(sess.name)} · ${sess.exercises.length-pendingCount}/${sess.exercises.length} listos
+      </div>
+      ${exListHtml||'<div style="color:var(--gray4);font-size:12px;">Sin ejercicios en esta sesión</div>'}
+    </div>
+    <div style="padding-top:14px;border-top:1px solid var(--gray2);">
+      ${!allResolved?`<div style="font-size:12px;color:var(--orange);margin-bottom:10px;">⚠️ Resolvé todos los ejercicios sin match antes de confirmar.</div>`:''}
+      ${circuitErrors.map(e=>`<div style="font-size:12px;color:var(--red,#e53935);margin-bottom:8px;">⚠️ ${_esc(e)}</div>`).join('')}
+      <div style="display:flex;gap:8px;">
+        <button onclick="confirmExtraSessionImport()" class="btn-primary"
+          style="flex:1;padding:14px;${(allResolved && !circuitErrors.length)?'':'opacity:0.5;'}"
+          ${(allResolved && !circuitErrors.length)?'':'disabled'}>✅ Confirmar ${_eiImport.sessions.length} sesión(es)</button>
+        <button onclick="openExtraSessionImportModal()" class="btn-secondary" style="flex:0.4;padding:14px;">← Volver</button>
+      </div>
+    </div>`;
+
+  if (_eiImport.searchActive?.sessIdx===si) {
+    _eiUpdateSearch(si, _eiImport.searchActive.exIdx, _eiImport.searchQuery);
+  }
+}
+
+function _eiUpdateSearch(sessIdx, exIdx, query) {
+  _eiImport.searchQuery = query;
+  const el = document.getElementById(`ei-search-results-${sessIdx}-${exIdx}`);
+  if (!el) return;
+  const filtered = (_eiImport.library||[]).filter(l=>_normStr(l.name).includes(_normStr(query))).slice(0,8);
+  el.innerHTML = filtered.length
+    ? filtered.map(l=>`<div onclick="_eiSelectLibrary(${sessIdx},${exIdx},'${l.id}')"
+        style="padding:7px 10px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--gray2);"
+        onmouseover="this.style.background='var(--blue-light)'" onmouseout="this.style.background=''">
+        ${_esc(l.name)}<span style="color:var(--gray4);font-size:10px;margin-left:6px;">${_esc(l.tag||'')}</span>
+      </div>`).join('')
+    : `<div style="color:var(--gray4);font-size:12px;padding:6px;">Sin resultados en biblioteca</div>`;
+}
+
+function _eiSelectLibrary(sessIdx, exIdx, libId) {
+  const lib = (_eiImport.library||[]).find(l=>String(l.id)===String(libId));
+  if (!lib) return;
+  const ex = _eiImport.sessions[sessIdx].exercises[exIdx];
+  ex.status = 'resolved';
+  ex.resolvedType = 'library';
+  ex.resolvedData = {name:lib.name, muscle_group:lib.muscle_group, video_url:lib.video_url, tag:lib.tag};
+  _eiImport.searchActive = null;
+  _eiImport.searchQuery = '';
+  renderExtraSessionImportPreview();
+}
+
+function _eiToggleMuscleCustom(sel) {
+  const customInp = document.getElementById('ei-new-muscle-custom');
+  if (!customInp) return;
+  customInp.style.display = sel.value === 'custom' ? '' : 'none';
+}
+
+function _eiSaveNew(sessIdx, exIdx) {
+  const name = (document.getElementById('ei-new-name')?.value||'').trim();
+  if (!name) { showToast('⚠️ El nombre no puede estar vacío', 2500); return; }
+  const sel = document.getElementById('ei-new-muscle-sel');
+  let muscle = null;
+  if (sel) {
+    if (sel.value === 'custom') {
+      muscle = (document.getElementById('ei-new-muscle-custom')?.value||'').trim() || null;
+    } else if (sel.value) {
+      muscle = sel.value;
+    }
+  }
+  const video = (document.getElementById('ei-new-video')?.value||'').trim() || null;
+  const tag = document.getElementById('ei-new-tag')?.value || 'Peso Libre';
+  const ex = _eiImport.sessions[sessIdx].exercises[exIdx];
+  ex.status = 'resolved';
+  ex.resolvedType = 'new';
+  ex.resolvedData = {name, muscle_group: muscle, video_url: video, tag};
+  _eiImport.newFormActive = null;
+  renderExtraSessionImportPreview();
+}
+
+async function confirmExtraSessionImport() {
+  if (!_eiImport || !currentClient) return;
+  const anyPending = _eiImport.sessions.some(s=>s.exercises.some(ex=>ex.status==='pending'));
+  if (anyPending) { showToast('⚠️ Resolvé todos los ejercicios sin match primero', 3000); return; }
+
+  showToast('⏳ Importando sesiones...', 60000);
+
+  try {
+    // Step 1 — insert new exercises to library
+    const libInserted = new Set();
+    for (const sess of _eiImport.sessions) {
+      for (const ex of sess.exercises) {
+        if (ex.resolvedType === 'new') {
+          const key = _normStr(ex.resolvedData.name);
+          if (libInserted.has(key)) continue;
+          const {data:exists} = await sb.from('exercise_library')
+            .select('id').eq('coach_id', currentUser.id).eq('name', ex.resolvedData.name).maybeSingle();
+          if (!exists) {
+            await sb.from('exercise_library').insert([{
+              coach_id: currentUser.id, name: ex.resolvedData.name,
+              tag: ex.resolvedData.tag||'Peso Libre',
+              muscle_group: ex.resolvedData.muscle_group||null,
+              video_url: ex.resolvedData.video_url||null
+            }]);
+          }
+          libInserted.add(key);
+        }
+      }
+    }
+
+    // Step 2 — iterate sessions
+    for (const sess of _eiImport.sessions) {
+      // Find or create extra_session
+      const {data: existing} = await sb.from('extra_sessions')
+        .select('id').eq('client_id', currentClient.id).eq('name', sess.name).maybeSingle();
+
+      let sessId;
+      if (existing) {
+        sessId = existing.id;
+      } else {
+        const {data: last} = await sb.from('extra_sessions')
+          .select('order_index').eq('client_id', currentClient.id)
+          .order('order_index', {ascending: false}).limit(1);
+        const nextOrder = (last && last.length) ? last[0].order_index + 1 : 0;
+        const {data: newSess, error: sessErr} = await sb.from('extra_sessions')
+          .insert([{client_id: currentClient.id, name: sess.name, order_index: nextOrder}])
+          .select().single();
+        if (sessErr) throw sessErr;
+        sessId = newSess.id;
+      }
+
+      // Get current max order_index for exercises
+      const {data: lastEx} = await sb.from('extra_exercises')
+        .select('order_index').eq('extra_session_id', sessId)
+        .order('order_index', {ascending: false}).limit(1);
+      let nextExOrder = (lastEx && lastEx.length) ? lastEx[0].order_index + 1 : 0;
+
+      // Build payloads
+      const payloads = sess.exercises.map(ex => {
+        const isCircuit = !!ex.circuit_group;
+        return {
+          extra_session_id: sessId,
+          name: ex.resolvedData?.name || ex.jsonName,
+          sets: isCircuit ? 1 : (ex.sets || 3),
+          reps_range: ex.reps_range || '',
+          rest_seconds: ex.rest_seconds || 60,
+          tag: ex.resolvedData?.tag || ex.tag || 'Peso Libre',
+          muscle_group: ex.resolvedData?.muscle_group || null,
+          video_url: ex.resolvedData?.video_url || null,
+          notes: ex.notes || null,
+          superset_group: ex.circuit_group || null,
+          circuit_rounds: ex.circuit_rounds || null,
+          order_index: nextExOrder++
+        };
+      });
+
+      const {error: exErr} = await sb.from('extra_exercises').insert(payloads);
+      if (exErr) throw exErr;
+    }
+
+    const importedCount = _eiImport.sessions.length;
+    closeModal('modal-extra-session-import');
+    _eiImport = null;
+    showToast(`✅ ${importedCount} sesión(es) importada(s)`, 4000);
+    await loadCoachExtras(currentClient.id);
+
+  } catch(e) {
+    showToast('❌ '+(e.message||String(e)), 5000);
+  }
+}
+
 // ─── NUTRITION IMPORT ─────────────────────────────────────────────────
 
 function openNutritionImportModal() {
@@ -12943,6 +13286,19 @@ async function confirmNutritionImport() {
       <span class="modal-close" onclick="closeModal('modal-training-import')">×</span>
     </div>
     <div id="training-import-body" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;">
+      <div class="spinner" style="width:20px;height:20px;margin:30px auto;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: EXTRA SESSION IMPORT ===== -->
+<div class="modal-overlay" id="modal-extra-session-import">
+  <div class="modal-content" style="max-height:92vh;">
+    <div class="modal-header">
+      <div class="modal-title">📥 Pegar Sesión Extra</div>
+      <span class="modal-close" onclick="closeModal('modal-extra-session-import')">×</span>
+    </div>
+    <div id="extra-session-import-body" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;">
       <div class="spinner" style="width:20px;height:20px;margin:30px auto;"></div>
     </div>
   </div>
