@@ -9278,6 +9278,17 @@ async function saveSoloToSupabase(exId, logsKey, sets) {
   if(error){ showToast('❌ '+error.message); return; }
   markExerciseDone(exId);
 
+  // Marcar inputs de kg/reps como guardados
+  for (let s = 1; s <= sets; s++) {
+    const saved = logs[`${exId}_s${s}`] || {};
+    if (saved.w || saved.r) {
+      const wInput = document.getElementById(`slog-w-${exId}-s${s}`);
+      const rInput = document.getElementById(`slog-r-${exId}-s${s}`);
+      if (wInput) { wInput.style.background='#f0fff4'; wInput.style.borderColor='#38a169'; wInput.style.color='#276749'; }
+      if (rInput) { rInput.style.background='#f0fff4'; rInput.style.borderColor='#38a169'; rInput.style.color='#276749'; }
+    }
+  }
+
   // Show progression celebration first if any
   if(progressions.length > 0) {
     const best = progressions[0];
