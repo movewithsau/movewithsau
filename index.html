@@ -4094,7 +4094,42 @@ async function deleteEntireProgram() {
 // ===== RESTART PROGRESS =====
 async function restartClientProgress() {
   const name = currentClient?.name || 'este cliente';
-  if (!confirm(`¿Reiniciar el progreso de ${name}?\n\nSe borrarán:\n• Todos los logs de ejercicios\n• Sesiones completadas\n• Ratings de workouts\n• Logs de hábitos\n• Contador de días entrenados\n\nEl programa queda intacto. Esto no se puede deshacer.`)) return;
+  document.getElementById('restart-confirm-sheet')?.remove();
+  const sheet = document.createElement('div');
+  sheet.id = 'restart-confirm-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:700;display:flex;align-items:flex-end;justify-content:center;';
+  sheet.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;padding:24px 20px 40px;
+      width:100%;max-width:480px;">
+      <div style="font-size:18px;font-weight:800;margin-bottom:8px;">⚠️ Reiniciar progreso</div>
+      <div style="font-size:13px;color:var(--gray5);margin-bottom:16px;line-height:1.6;">
+        Esto eliminará permanentemente de <strong>${name}</strong>:<br><br>
+        • Todos los logs de ejercicios<br>
+        • Sesiones completadas<br>
+        • Ratings de workouts<br>
+        • Logs de hábitos<br>
+        • Contador de días entrenados<br><br>
+        <strong style="color:var(--red);">El programa queda intacto. Esto no se puede deshacer.</strong>
+      </div>
+      <button onclick="confirmRestartProgress()"
+        style="width:100%;padding:13px;background:var(--red);color:white;border:none;
+        border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;
+        font-family:'DM Sans',sans-serif;margin-bottom:10px;">
+        🗑 Sí, reiniciar progreso
+      </button>
+      <button onclick="document.getElementById('restart-confirm-sheet').remove()"
+        style="width:100%;padding:13px;background:var(--gray1);color:var(--black);border:none;
+        border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;
+        font-family:'DM Sans',sans-serif;">
+        Cancelar
+      </button>
+    </div>`;
+  sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  document.body.appendChild(sheet);
+}
+
+async function confirmRestartProgress() {
+  document.getElementById('restart-confirm-sheet')?.remove();
   showToast('⏳ Reiniciando...');
   const cid = currentClient.id;
   await sb.from('exercise_logs').delete().eq('client_id', cid);
@@ -6584,8 +6619,13 @@ async function confirmSaveDayAsWorkout() {
   showToast('✅ Workout "' + name + '" guardado en Machotes');
 }
 
-// ===== PROGRESS DASHBOARD =====
+// ===== PROGRESS DASHBOARD / MESOCYCLE REPORTS =====
 let progressDashboardVisible = false;
+
+function formatMesoDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('es-CR', { day: 'numeric', month: 'short', year: 'numeric' });
+}
 
 async function toggleProgressDashboard() {
   const container = document.getElementById('coach-progress-dashboard');
@@ -6598,93 +6638,396 @@ async function toggleProgressDashboard() {
   progressDashboardVisible = true;
   container.style.display = 'block';
   container.innerHTML = '<div class="spinner"></div>';
-  await loadProgressDashboard();
+  await loadMesocycleReport();
 }
 
-async function loadProgressDashboard() {
+async function loadMesocycleReport() {
   const container = document.getElementById('coach-progress-dashboard');
   if (!container || !currentClient) return;
-  // Get current month range
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
-  const monthName = now.toLocaleString('es', { month: 'long', year: 'numeric' });
-  // Fetch logs for this month
-  const { data: logs } = await sb.from('exercise_logs').select('*').eq('client_id', currentClient.id).gte('created_at', monthStart).lte('created_at', monthEnd);
-  // Fetch workout ratings for session count and avg rating
-  const { data: ratings } = await sb.from('workout_ratings').select('*').eq('client_id', currentClient.id).gte('created_at', monthStart).lte('created_at', monthEnd);
-  // Client data
-  const { data: clientData } = await sb.from('clients').select('initial_weight,current_weight,days_trained').eq('id', currentClient.id).single();
-  // ---- Block 1: Summary ----
-  const sessionCount = ratings ? ratings.length : 0;
-  const totalMinutes = logs ? logs.reduce((s, l) => s + (l.duration_seconds ? Math.round(l.duration_seconds / 60) : 0), 0) : 0;
-  const avgRating = ratings && ratings.length > 0 ? (() => {
-    const ratingMap = { '😎': 1, '🥵': 2, '😵‍💫': 3 };
-    const avg = ratings.reduce((s, r) => s + (ratingMap[r.rating] || 0), 0) / ratings.length;
-    if (avg < 1.5) return '😎';
-    if (avg < 2.5) return '🥵';
-    return '😵‍💫';
-  })() : '—';
-  const weightChange = clientData && clientData.initial_weight && clientData.current_weight
-    ? ((parseFloat(clientData.current_weight) - parseFloat(clientData.initial_weight)).toFixed(1))
-    : null;
-  // ---- Block 2: Sets per muscle per week ----
-  const MUSCLE_GROUPS = ['Pecho', 'Espalda', 'Hombros', 'Bíceps', 'Tríceps', 'Cuádriceps', 'Isquiotibiales', 'Glúteos', 'Core', 'Cardio'];
-  // Get planned exercises (from monthly_plans + exercises table)
-  const { data: planDays } = await sb.from('monthly_plans').select('id,week_number').eq('client_id', currentClient.id);
-  const volumeByWeek = {}; // { muscle: { w1: N, w2: N, w3: N, w4: N, w5: N } }
-  if (planDays && planDays.length > 0) {
-    for (const pd of planDays) {
-      const { data: exs } = await sb.from('exercises').select('muscle_group,sets').eq('plan_day_id', pd.id);
-      if (!exs) continue;
-      for (const ex of exs) {
-        if (!ex.muscle_group) continue;
-        const muscles = ex.muscle_group.split(',').map(m => m.trim());
-        for (const m of muscles) {
-          if (!MUSCLE_GROUPS.includes(m)) continue;
-          if (!volumeByWeek[m]) volumeByWeek[m] = { w1: 0, w2: 0, w3: 0, w4: 0, w5: 0 };
-          const wk = `w${pd.week_number}`;
-          if (wk in volumeByWeek[m]) volumeByWeek[m][wk] += (ex.sets || 0);
-        }
-      }
-    }
+
+  const { data: mesoList } = await sb.from('mesocycles')
+    .select('*').eq('client_id', currentClient.id)
+    .order('created_at', { ascending: true });
+
+  const mesos = mesoList || [];
+
+  if (!mesos.length) {
+    container.innerHTML = `
+      <div style="padding:16px 0;">
+        <div style="font-size:13px;color:var(--gray4);text-align:center;padding:12px 0 16px;">
+          Sin mesociclos registrados aún.
+        </div>
+        <button onclick="createNewMesocycle()"
+          style="width:100%;padding:11px;border:1.5px dashed var(--orange);background:var(--orange-light);
+          color:var(--orange);border-radius:var(--radius-sm);font-size:13px;font-weight:700;
+          cursor:pointer;font-family:'DM Sans',sans-serif;">
+          + Nuevo Mesociclo
+        </button>
+      </div>`;
+    return;
   }
-  // Render
-  let volumeRows = '';
-  const musclesToShow = MUSCLE_GROUPS.filter(m => volumeByWeek[m]);
-  if (musclesToShow.length === 0) volumeRows = `<tr><td colspan="6" style="text-align:center;color:var(--gray4);padding:16px;font-size:12px;">Sin datos de plan programado</td></tr>`;
-  else {
-    for (const m of musclesToShow) {
-      const v = volumeByWeek[m];
-      const badge = (n) => {
-        if (!n) return `<span class="vol-badge vol-zero">0</span>`;
-        if (n >= 10) return `<span class="vol-badge vol-good">${n}</span>`;
-        return `<span class="vol-badge vol-low">${n}</span>`;
-      };
-      volumeRows += `<tr><td>${m}</td><td>${badge(v.w1)}</td><td>${badge(v.w2)}</td><td>${badge(v.w3)}</td><td>${badge(v.w4)}</td><td>${badge(v.w5)}</td></tr>`;
-    }
-  }
+
+  const tabsHtml = mesos.map((m) => `
+    <div onclick="openMesocycleDrawer('${m.id}')"
+      style="display:flex;align-items:center;justify-content:space-between;
+      padding:12px 14px;border-bottom:1px solid var(--gray2);cursor:pointer;
+      background:var(--white);transition:background 0.15s;"
+      onmouseover="this.style.background='var(--gray1)'"
+      onmouseout="this.style.background='var(--white)'">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;
+          color:var(--orange);background:var(--orange-light);padding:3px 8px;
+          border-radius:4px;letter-spacing:0.05em;">${m.label}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--black);">
+          ${m.start_date && m.end_date
+            ? formatMesoDate(m.start_date) + ' – ' + formatMesoDate(m.end_date)
+            : m.meta || 'Sin periodo definido'}
+        </div>
+      </div>
+      <div style="font-size:16px;color:var(--gray4);">›</div>
+    </div>
+  `).join('');
+
   container.innerHTML = `
-    <div style="background:var(--white);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:12px;">
-      <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px;">${monthName}</div>
-      <div class="progress-summary-row">
-        <div class="progress-stat"><div class="progress-stat-num">${sessionCount}</div><div class="progress-stat-label">Sesiones</div></div>
-        <div class="progress-stat"><div class="progress-stat-num">${totalMinutes > 0 ? totalMinutes + 'm' : '—'}</div><div class="progress-stat-label">Tiempo total</div></div>
-        <div class="progress-stat"><div class="progress-stat-num" style="font-size:26px;">${avgRating}</div><div class="progress-stat-label">Rating prom.</div></div>
+    <div style="border:1.5px solid var(--gray2);border-radius:var(--radius);overflow:hidden;margin-bottom:12px;">
+      <div style="padding:10px 14px;background:var(--gray1);border-bottom:1px solid var(--gray2);">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.12em;
+          color:var(--orange);text-transform:uppercase;font-weight:700;">📁 Mesociclos</div>
       </div>
-      ${weightChange !== null ? `<div style="text-align:center;font-size:12px;color:var(--gray5);padding:8px;background:var(--gray1);border-radius:8px;">Peso: ${clientData.initial_weight}kg → ${clientData.current_weight}kg <strong style="color:${parseFloat(weightChange) <= 0 ? 'var(--green)' : 'var(--orange)'};">(${parseFloat(weightChange) > 0 ? '+' : ''}${weightChange}kg)</strong></div>` : ''}
+      ${tabsHtml}
     </div>
-    <div style="background:var(--white);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:12px;">
-      <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Series por músculo / semana</div>
-      <div style="font-size:10px;color:var(--gray4);margin-bottom:10px;">🟢 ≥10 series (vol. óptimo) · 🟡 &lt;10 · ⬜ Sin programar</div>
-      <div style="overflow-x:auto;">
-        <table class="volume-table">
-          <thead><tr><th>Músculo</th><th>Sem 1</th><th>Sem 2</th><th>Sem 3</th><th>Sem 4</th><th>🔄 DL</th></tr></thead>
-          <tbody>${volumeRows}</tbody>
-        </table>
+    <button onclick="createNewMesocycle()"
+      style="width:100%;padding:10px;border:1.5px dashed var(--gray3);background:var(--white);
+      color:var(--gray5);border-radius:var(--radius-sm);font-size:13px;font-weight:700;
+      cursor:pointer;font-family:'DM Sans',sans-serif;">
+      + Nuevo Mesociclo
+    </button>`;
+}
+
+async function createNewMesocycle() {
+  const { data: existing } = await sb.from('mesocycles')
+    .select('label').eq('client_id', currentClient.id)
+    .order('created_at', { ascending: false }).limit(1);
+  const nextNum = existing?.length
+    ? parseInt(existing[0].label.replace('M', '')) + 1 : 1;
+  const label = 'M' + nextNum;
+
+  const { data: planDays } = await sb.from('monthly_plans')
+    .select('id').eq('client_id', currentClient.id);
+  const proposedCount = planDays?.length || 0;
+
+  const { data: sessions } = await sb.from('workout_sessions')
+    .select('id').eq('client_id', currentClient.id);
+  const completedCount = sessions?.length || 0;
+
+  const { data: newMeso, error } = await sb.from('mesocycles').insert([{
+    client_id: currentClient.id,
+    label,
+    sessions_proposed: proposedCount,
+    sessions_completed: completedCount
+  }]).select().single();
+  if (error) { showToast('❌ ' + error.message); return; }
+
+  const { data: s1Days } = await sb.from('monthly_plans')
+    .select('id').eq('client_id', currentClient.id).eq('week_number', 1);
+  if (s1Days && s1Days.length) {
+    const s1DayIds = s1Days.map(d => d.id);
+    const { data: s1ExsFull } = await sb.from('exercises')
+      .select('id,name').in('plan_day_id', s1DayIds).order('order_index');
+
+    const { data: s1Logs } = await sb.from('exercise_logs')
+      .select('exercise_id,weight,reps_done,set_number')
+      .eq('client_id', currentClient.id).eq('week_number', 1);
+    const { data: s4Logs } = await sb.from('exercise_logs')
+      .select('exercise_id,weight,reps_done,set_number')
+      .eq('client_id', currentClient.id).eq('week_number', 4);
+
+    const buildLogMap = (logs) => {
+      const map = {};
+      (logs || []).forEach(l => {
+        if (!map[l.exercise_id] || l.set_number < map[l.exercise_id].set_number)
+          map[l.exercise_id] = l;
+      });
+      return map;
+    };
+    const s1Map = buildLogMap(s1Logs);
+    const s4Map = buildLogMap(s4Logs);
+
+    if (s1ExsFull && s1ExsFull.length) {
+      const seen = new Set();
+      const kpis = s1ExsFull
+        .filter(ex => { if (seen.has(ex.name)) return false; seen.add(ex.name); return true; })
+        .map((ex, i) => {
+          const s1 = s1Map[ex.id];
+          const s4 = s4Map[ex.id];
+          return {
+            mesocycle_id: newMeso.id,
+            exercise_name: ex.name,
+            s1_weight: s1?.weight ? String(s1.weight) : null,
+            s1_reps: s1?.reps_done ? String(s1.reps_done) : null,
+            s4_weight: s4?.weight ? String(s4.weight) : null,
+            s4_reps: s4?.reps_done ? String(s4.reps_done) : null,
+            order_index: i
+          };
+        });
+      if (kpis.length) await sb.from('mesocycle_kpis').insert(kpis);
+    }
+  }
+
+  showToast('✅ ' + label + ' creado');
+  await loadMesocycleReport();
+  setTimeout(() => openMesocycleDrawer(newMeso.id), 300);
+}
+
+async function openMesocycleDrawer(mesoId) {
+  const { data: meso } = await sb.from('mesocycles')
+    .select('*').eq('id', mesoId).single();
+  const { data: kpis } = await sb.from('mesocycle_kpis')
+    .select('*').eq('mesocycle_id', mesoId).order('order_index');
+
+  document.getElementById('mesocycle-drawer')?.remove();
+  const sheet = document.createElement('div');
+  sheet.id = 'mesocycle-drawer';
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:600;display:flex;align-items:flex-end;justify-content:center;';
+
+  const kpisHtml = (kpis || []).map((k) => `
+    <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;
+      align-items:center;padding:8px 0;border-bottom:1px solid var(--gray1);">
+      <div style="font-size:12px;font-weight:600;color:var(--black);">${k.exercise_name}</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+        <div style="font-size:9px;font-weight:700;color:var(--orange);letter-spacing:0.06em;">S1</div>
+        <div style="display:flex;gap:4px;">
+          <input value="${k.s1_weight || ''}" placeholder="kg"
+            id="kpi-s1w-${k.id}"
+            style="width:48px;padding:4px 6px;border:1.5px solid var(--gray2);
+            border-radius:6px;font-size:11px;text-align:center;font-family:'DM Sans',sans-serif;">
+          <input value="${k.s1_reps || ''}" placeholder="reps"
+            id="kpi-s1r-${k.id}"
+            style="width:48px;padding:4px 6px;border:1.5px solid var(--gray2);
+            border-radius:6px;font-size:11px;text-align:center;font-family:'DM Sans',sans-serif;">
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+        <div style="font-size:9px;font-weight:700;color:var(--orange);letter-spacing:0.06em;">S4</div>
+        <div style="display:flex;gap:4px;">
+          <input value="${k.s4_weight || ''}" placeholder="kg"
+            id="kpi-s4w-${k.id}"
+            style="width:48px;padding:4px 6px;border:1.5px solid var(--gray2);
+            border-radius:6px;font-size:11px;text-align:center;font-family:'DM Sans',sans-serif;">
+          <input value="${k.s4_reps || ''}" placeholder="reps"
+            id="kpi-s4r-${k.id}"
+            style="width:48px;padding:4px 6px;border:1.5px solid var(--gray2);
+            border-radius:6px;font-size:11px;text-align:center;font-family:'DM Sans',sans-serif;">
+        </div>
+      </div>
+    </div>`).join('');
+
+  const kpiIds = (kpis || []).map(k => k.id);
+
+  sheet.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;width:100%;
+      max-width:480px;height:88vh;display:flex;flex-direction:column;overflow:hidden;">
+
+      <div style="padding:18px 20px 14px;border-bottom:1px solid var(--gray1);flex-shrink:0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;
+            color:var(--orange);">${meso.label}</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button onclick="deleteMesocycle('${meso.id}')"
+              style="background:var(--red-light,#ffeaea);color:var(--red,#d32f2f);border:none;
+              border-radius:6px;padding:5px 9px;font-size:11px;cursor:pointer;
+              font-family:'DM Sans',sans-serif;">🗑</button>
+            <button onclick="document.getElementById('mesocycle-drawer').remove()"
+              style="background:var(--gray1);border:none;border-radius:50%;
+              width:30px;height:30px;font-size:16px;cursor:pointer;">✕</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex:1;overflow-y:auto;padding:16px 20px;">
+
+        <div style="margin-bottom:16px;">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;
+            color:var(--orange);text-transform:uppercase;font-weight:700;margin-bottom:8px;">
+            Periodo
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div>
+              <label style="font-size:10px;color:var(--gray4);font-weight:700;display:block;margin-bottom:4px;">INICIO</label>
+              <input type="date" id="meso-start" value="${meso.start_date || ''}"
+                class="form-input" style="font-size:13px;padding:9px 12px;">
+            </div>
+            <div>
+              <label style="font-size:10px;color:var(--gray4);font-weight:700;display:block;margin-bottom:4px;">FIN</label>
+              <input type="date" id="meso-end" value="${meso.end_date || ''}"
+                class="form-input" style="font-size:13px;padding:9px 12px;">
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;
+            color:var(--orange);text-transform:uppercase;font-weight:700;margin-bottom:8px;">
+            Sesiones
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div>
+              <label style="font-size:10px;color:var(--gray4);font-weight:700;display:block;margin-bottom:4px;">PROPUESTAS</label>
+              <input type="number" id="meso-proposed" value="${meso.sessions_proposed ?? ''}"
+                class="form-input" style="font-size:13px;padding:9px 12px;">
+            </div>
+            <div>
+              <label style="font-size:10px;color:var(--gray4);font-weight:700;display:block;margin-bottom:4px;">COMPLETADAS</label>
+              <input type="number" id="meso-completed" value="${meso.sessions_completed ?? ''}"
+                class="form-input" style="font-size:13px;padding:9px 12px;">
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;
+            color:var(--orange);text-transform:uppercase;font-weight:700;margin-bottom:8px;">
+            Meta
+          </div>
+          <input id="meso-meta" class="form-input" placeholder="Ej: Fuerza tren superior..."
+            value="${(meso.meta || '').replace(/"/g, '&quot;')}"
+            style="font-size:13px;padding:9px 12px;width:100%;box-sizing:border-box;">
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;
+              color:var(--orange);text-transform:uppercase;font-weight:700;">
+              Ejercicios KPI
+            </div>
+            <button onclick="addKpiRow('${meso.id}')"
+              style="background:var(--orange-light);color:var(--orange);border:none;
+              border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;
+              cursor:pointer;font-family:'DM Sans',sans-serif;">+ Agregar</button>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;
+            padding-bottom:6px;border-bottom:1.5px solid var(--gray2);margin-bottom:4px;">
+            <div style="font-size:10px;font-weight:700;color:var(--gray4);">EJERCICIO</div>
+            <div style="font-size:10px;font-weight:700;color:var(--orange);text-align:center;width:108px;">S1 (kg · reps)</div>
+            <div style="font-size:10px;font-weight:700;color:var(--orange);text-align:center;width:108px;">S4 (kg · reps)</div>
+          </div>
+          <div id="meso-kpis-list">
+            ${kpisHtml || '<div style="font-size:12px;color:var(--gray4);padding:8px 0;">Sin ejercicios KPI. Toca + Agregar.</div>'}
+          </div>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;
+            color:var(--orange);text-transform:uppercase;font-weight:700;margin-bottom:8px;">
+            Observaciones
+          </div>
+          <textarea id="meso-obs" class="form-textarea" rows="4"
+            placeholder="Notas del mesociclo, qué funcionó, qué cambiar..."
+            style="width:100%;box-sizing:border-box;font-size:13px;line-height:1.5;resize:vertical;">${meso.observaciones || ''}</textarea>
+        </div>
+      </div>
+
+      <div style="padding:12px 20px 32px;border-top:1px solid var(--gray1);flex-shrink:0;">
+        <button onclick="saveMesocycle('${meso.id}', ${JSON.stringify(kpiIds)})"
+          class="btn-primary" style="width:100%;padding:13px;font-size:14px;">
+          💾 Guardar cambios
+        </button>
+      </div>
+    </div>`;
+
+  sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  document.body.appendChild(sheet);
+}
+
+async function saveMesocycle(mesoId, kpiIds) {
+  const start = document.getElementById('meso-start').value || null;
+  const end = document.getElementById('meso-end').value || null;
+  const proposed = parseInt(document.getElementById('meso-proposed').value) || null;
+  const completed = parseInt(document.getElementById('meso-completed').value) || null;
+  const meta = document.getElementById('meso-meta').value.trim() || null;
+  const obs = document.getElementById('meso-obs').value.trim() || null;
+
+  const { error } = await sb.from('mesocycles').update({
+    start_date: start, end_date: end,
+    sessions_proposed: proposed, sessions_completed: completed,
+    meta, observaciones: obs
+  }).eq('id', mesoId);
+  if (error) { showToast('❌ ' + error.message); return; }
+
+  await Promise.all((kpiIds || []).map(kId => {
+    const s1w = document.getElementById('kpi-s1w-' + kId)?.value.trim() || null;
+    const s1r = document.getElementById('kpi-s1r-' + kId)?.value.trim() || null;
+    const s4w = document.getElementById('kpi-s4w-' + kId)?.value.trim() || null;
+    const s4r = document.getElementById('kpi-s4r-' + kId)?.value.trim() || null;
+    return sb.from('mesocycle_kpis').update({
+      s1_weight: s1w, s1_reps: s1r, s4_weight: s4w, s4_reps: s4r
+    }).eq('id', kId);
+  }));
+
+  showToast('✅ Mesociclo guardado');
+  document.getElementById('mesocycle-drawer')?.remove();
+  await loadMesocycleReport();
+}
+
+function addKpiRow(mesoId) {
+  const list = document.getElementById('meso-kpis-list');
+  const emptyMsg = list?.querySelector('div[style*="Sin ejercicios"]');
+  if (emptyMsg) emptyMsg.remove();
+  const tempId = 'new-' + Date.now();
+  const div = document.createElement('div');
+  div.id = 'kpi-row-' + tempId;
+  div.style.cssText = 'display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--gray1);';
+  div.innerHTML = `
+    <input placeholder="Nombre ejercicio" id="kpi-name-${tempId}"
+      style="padding:4px 6px;border:1.5px solid var(--orange);border-radius:6px;
+      font-size:11px;font-family:'DM Sans',sans-serif;width:100%;box-sizing:border-box;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+      <div style="font-size:9px;font-weight:700;color:var(--orange);">S1</div>
+      <div style="display:flex;gap:4px;">
+        <input placeholder="kg" id="kpi-s1w-${tempId}"
+          style="width:48px;padding:4px 6px;border:1.5px solid var(--gray2);border-radius:6px;font-size:11px;text-align:center;">
+        <input placeholder="reps" id="kpi-s1r-${tempId}"
+          style="width:48px;padding:4px 6px;border:1.5px solid var(--gray2);border-radius:6px;font-size:11px;text-align:center;">
       </div>
     </div>
-  `;
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+      <div style="font-size:9px;font-weight:700;color:var(--orange);">S4</div>
+      <div style="display:flex;gap:4px;">
+        <input placeholder="kg" id="kpi-s4w-${tempId}"
+          style="width:48px;padding:4px 6px;border:1.5px solid var(--gray2);border-radius:6px;font-size:11px;text-align:center;">
+        <input placeholder="reps" id="kpi-s4r-${tempId}"
+          style="width:48px;padding:4px 6px;border:1.5px solid var(--gray2);border-radius:6px;font-size:11px;text-align:center;">
+      </div>
+    </div>`;
+  list.appendChild(div);
+
+  div.querySelector('#kpi-name-' + tempId).addEventListener('blur', async function() {
+    const name = this.value.trim();
+    if (!name) { div.remove(); return; }
+    const { data: last } = await sb.from('mesocycle_kpis')
+      .select('order_index').eq('mesocycle_id', mesoId)
+      .order('order_index', { ascending: false }).limit(1);
+    const nextOrder = last?.length ? last[0].order_index + 1 : 0;
+    const { data: newKpi } = await sb.from('mesocycle_kpis').insert([{
+      mesocycle_id: mesoId, exercise_name: name, order_index: nextOrder
+    }]).select().single();
+    if (newKpi) {
+      ['s1w', 's1r', 's4w', 's4r'].forEach(f => {
+        const el = document.getElementById('kpi-' + f + '-' + tempId);
+        if (el) el.id = 'kpi-' + f + '-' + newKpi.id;
+      });
+      div.id = 'kpi-row-' + newKpi.id;
+    }
+  });
+}
+
+async function deleteMesocycle(mesoId) {
+  if (!confirm('¿Eliminar este mesociclo? No se puede deshacer.')) return;
+  await sb.from('mesocycle_kpis').delete().eq('mesocycle_id', mesoId);
+  await sb.from('mesocycles').delete().eq('id', mesoId);
+  document.getElementById('mesocycle-drawer')?.remove();
+  showToast('✅ Mesociclo eliminado');
+  await loadMesocycleReport();
 }
 
 
