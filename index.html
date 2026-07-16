@@ -12702,7 +12702,7 @@ async function openExtraFromMachotePicker() {
   document.getElementById('extra-machote-picker-sheet')?.remove();
 
   const {data: templates} = await sb.from('routine_templates')
-    .select('id,name,type').eq('coach_id', currentUser.id).order('name');
+    .select('id,name,type').order('name');
 
   const sheet = document.createElement('div');
   sheet.id = 'extra-machote-picker-sheet';
