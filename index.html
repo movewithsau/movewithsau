@@ -3164,6 +3164,7 @@ async function loadCoachTests(filter = 'all') {
           ${test.context_notes ? `<div style="padding:9px 11px;background:var(--white);border-radius:8px;margin:10px 0 8px;font-size:12px;color:var(--gray5);border-left:3px solid var(--orange);">📝 ${test.context_notes}</div>` : '<div style="height:10px;"></div>'}
           <div style="display:flex;gap:8px;">
             <button onclick="viewCoachTestDetails('${test.id}')" style="flex:1;padding:10px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Ver Detalles</button>
+            <button onclick="saveExistingTestAsTemplate('${test.id}','${test.test_name.replace(/'/g,"\\'")}')" style="padding:10px 13px;background:#f0fff4;color:#276749;border:1.5px solid #276749;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;" title="Guardar como plantilla">💾</button>
             <button onclick="openCopyTestModal(this)" data-test-id="${test.id}" data-test-name="${test.test_name}" style="padding:10px 13px;background:var(--gray2);color:var(--black);border:none;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;" title="Copiar a otro cliente">📋</button>
             <button onclick="openEditTestModal('${test.id}')" style="padding:10px 13px;background:var(--gray2);color:var(--black);border:none;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;">✏️</button>
             <button onclick="confirmDeleteTest('${test.id}','${test.test_name.replace(/'/g,"\\'")}')" style="padding:10px 13px;background:var(--red-light);color:var(--red);border:none;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;">🗑️</button>
@@ -12846,6 +12847,42 @@ async function saveTestAsTemplate() {
 
   const {error: exErr} = await sb.from('test_template_exercises')
     .insert(exercises.map(ex => ({...ex, template_id: templateId})));
+  if (exErr) { showToast('❌ '+exErr.message); return; }
+
+  showToast(existing ? '✅ Plantilla actualizada' : '✅ Plantilla guardada');
+}
+
+async function saveExistingTestAsTemplate(testId, testName) {
+  const {data: exs, error} = await sb.from('test_exercises')
+    .select('exercise_name,exercise_result,exercise_unit,exercise_video_url,exercise_notes')
+    .eq('test_id', testId).order('created_at', {ascending: true});
+  if (error) { showToast('❌ '+error.message); return; }
+  if (!exs || !exs.length) { showToast('⚠️ Esta evaluación no tiene ejercicios'); return; }
+
+  const {data: existing} = await sb.from('test_templates')
+    .select('id').eq('coach_id', currentUser.id).eq('name', testName).maybeSingle();
+
+  let templateId;
+  if (existing) {
+    await sb.from('test_template_exercises').delete().eq('template_id', existing.id);
+    templateId = existing.id;
+  } else {
+    const {data: tpl, error: tplErr} = await sb.from('test_templates')
+      .insert([{coach_id: currentUser.id, name: testName}]).select().single();
+    if (tplErr) { showToast('❌ '+tplErr.message); return; }
+    templateId = tpl.id;
+  }
+
+  const {error: exErr} = await sb.from('test_template_exercises')
+    .insert(exs.map((ex, i) => ({
+      template_id: templateId,
+      exercise_name: ex.exercise_name,
+      exercise_result: ex.exercise_result,
+      exercise_unit: ex.exercise_unit,
+      exercise_video_url: ex.exercise_video_url,
+      exercise_notes: ex.exercise_notes,
+      order_index: i
+    })));
   if (exErr) { showToast('❌ '+exErr.message); return; }
 
   showToast(existing ? '✅ Plantilla actualizada' : '✅ Plantilla guardada');
