@@ -777,7 +777,10 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 
     <div class="section-header" style="margin-top:4px;">
       <div class="section-title">🔬 Evaluaciones</div>
-      <div class="section-action" onclick="openCreateTestModal()">+ Nueva</div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <div class="section-action" onclick="openTestTemplateLibrary()" style="background:#f0fff4;color:#276749;border:1.5px solid #276749;padding:5px 10px;border-radius:6px;font-size:11px;">📚 Plantillas</div>
+        <div class="section-action" onclick="openCreateTestModal()">+ Nueva</div>
+      </div>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:12px;">
       <div class="eval-filter-chip active" onclick="filterClientTests('all', this)" style="cursor:pointer;padding:6px 12px;border-radius:6px;background:var(--gray1);color:var(--black);font-size:12px;font-weight:600;transition:all 0.2s;">Todas</div>
@@ -823,6 +826,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div class="section-header" style="margin-top:4px;">
       <div class="section-title">⚡ Extras</div>
       <div style="display:flex;gap:6px;align-items:center;">
+        <div class="section-action" onclick="openExtraFromMachotePicker()" style="background:#fef9e7;color:#d69e2e;border:1.5px solid #d69e2e;padding:5px 10px;border-radius:6px;font-size:11px;">⭐ Machotes</div>
         <div class="section-action" onclick="openExtraSessionImportModal()" style="background:#f0fff4;color:#276749;border:1.5px solid #276749;padding:5px 10px;border-radius:6px;font-size:11px;">📥 Pegar</div>
         <div class="section-action" onclick="openAddExtraSessionSheet()">+ Sesión</div>
       </div>
@@ -12690,6 +12694,246 @@ async function confirmExtraSessionImport() {
   }
 }
 
+// ─── EXTRAS: DESDE MACHOTES ───────────────────────────────────────────
+
+async function openExtraFromMachotePicker() {
+  if (!currentClient) return;
+  document.getElementById('extra-machote-picker-sheet')?.remove();
+
+  const {data: templates} = await sb.from('routine_templates')
+    .select('id,name,type').eq('coach_id', currentUser.id).order('name');
+
+  const sheet = document.createElement('div');
+  sheet.id = 'extra-machote-picker-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:flex;align-items:flex-end;justify-content:center;';
+
+  const renderList = (items, query) => {
+    const filtered = (items||[]).filter(t => _normStr(t.name).includes(_normStr(query)));
+    if (!filtered.length) return `<div style="color:var(--gray4);font-size:13px;padding:16px 0;">${(items||[]).length ? 'Sin resultados.' : 'Guardá una sesión extra como Machote con ⭐ primero.'}</div>`;
+    return filtered.map(t => `
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--gray1);">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:600;color:var(--black);">${_esc(t.name)}</div>
+          ${t.type ? `<span style="font-size:10px;font-weight:700;color:var(--gray4);background:var(--gray1);padding:2px 7px;border-radius:20px;">${_esc(t.type)}</span>` : ''}
+        </div>
+        <button onclick="selectMachoteForExtra('${t.id}','${_esc(t.name).replace(/'/g,"\\'")}')"
+          style="padding:7px 16px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;flex-shrink:0;">Usar</button>
+      </div>`).join('');
+  };
+
+  sheet.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;width:100%;max-width:480px;height:75vh;display:flex;flex-direction:column;overflow:hidden;">
+      <div style="padding:18px 20px 12px;border-bottom:1px solid var(--gray1);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;">⭐ Desde Machotes</div>
+        <button onclick="document.getElementById('extra-machote-picker-sheet').remove()" style="background:var(--gray1);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;">✕</button>
+      </div>
+      <div style="padding:12px 20px;flex-shrink:0;border-bottom:1px solid var(--gray1);">
+        <input class="form-input" id="machote-search-inp" placeholder="Buscar machote..." style="font-size:13px;"
+          oninput="document.getElementById('machote-list-body').innerHTML = (${JSON.stringify('')},_renderMachoteList(window._machotesForExtra||[],this.value))">
+      </div>
+      <div id="machote-list-body" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 20px;">
+        ${renderList(templates, '')}
+      </div>
+    </div>`;
+
+  window._machotesForExtra = templates || [];
+  window._renderMachoteList = renderList;
+  document.body.appendChild(sheet);
+  sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+}
+
+async function selectMachoteForExtra(templateId, templateName) {
+  const {data: days} = await sb.from('template_days')
+    .select('id,day_name').eq('template_id', templateId)
+    .order('day_order', {ascending: true});
+
+  if (!days || !days.length) { showToast('⚠️ Este machote no tiene días'); return; }
+
+  if (days.length === 1) {
+    await _createExtraFromTemplateDay(days[0].id, days[0].day_name || templateName);
+    return;
+  }
+
+  // Show day selector
+  const sheet = document.getElementById('extra-machote-picker-sheet');
+  const body = document.getElementById('machote-list-body');
+  if (!body) return;
+  body.innerHTML = `
+    <div style="padding-top:8px;">
+      <button onclick="openExtraFromMachotePicker()" style="background:none;border:none;color:var(--gray4);font-size:13px;cursor:pointer;padding:0;font-family:'DM Sans',sans-serif;margin-bottom:12px;">← Volver</button>
+      <div style="font-size:13px;font-weight:700;color:var(--gray5);margin-bottom:10px;">¿Qué día querés usar?</div>
+      ${days.map(d => `
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--gray1);">
+          <div style="flex:1;font-size:14px;font-weight:600;">${_esc(d.day_name)}</div>
+          <button onclick="_createExtraFromTemplateDay('${d.id}','${_esc(d.day_name).replace(/'/g,"\\'")}','${_esc(templateName).replace(/'/g,"\\'")}')"
+            style="padding:7px 16px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Usar</button>
+        </div>`).join('')}
+    </div>`;
+}
+
+async function _createExtraFromTemplateDay(dayId, dayName, fallbackName) {
+  const sessName = dayName || fallbackName || 'Extra';
+  const {data: exs} = await sb.from('template_exercises')
+    .select('*').eq('template_day_id', dayId).order('exercise_order', {ascending: true});
+
+  const {data: last} = await sb.from('extra_sessions')
+    .select('order_index').eq('client_id', currentClient.id)
+    .order('order_index', {ascending: false}).limit(1);
+  const nextOrder = (last && last.length) ? last[0].order_index + 1 : 0;
+
+  const {data: newSess, error: sessErr} = await sb.from('extra_sessions')
+    .insert([{client_id: currentClient.id, name: sessName, order_index: nextOrder}])
+    .select().single();
+  if (sessErr) { showToast('❌ '+sessErr.message); return; }
+
+  if (exs && exs.length) {
+    const payloads = exs.map((ex, i) => ({
+      extra_session_id: newSess.id,
+      name: ex.exercise_name,
+      sets: ex.sets_week1 || 3,
+      reps_range: ex.reps || '',
+      rest_seconds: ex.rest_seconds || 60,
+      tag: 'Peso Libre',
+      muscle_group: ex.muscle_groups || null,
+      video_url: ex.video_url || null,
+      notes: ex.notes || null,
+      superset_group: ex.superset_group || null,
+      circuit_rounds: ex.circuit_rounds || null,
+      order_index: i
+    }));
+    const {error: exErr} = await sb.from('extra_exercises').insert(payloads);
+    if (exErr) { showToast('❌ '+exErr.message); return; }
+  }
+
+  document.getElementById('extra-machote-picker-sheet')?.remove();
+  showToast('✅ Sesión creada desde machote');
+  await loadCoachExtras(currentClient.id);
+}
+
+// ─── EVALUACIONES: PLANTILLAS ─────────────────────────────────────────
+
+async function saveTestAsTemplate() {
+  const testName = document.getElementById('test-name-input').value.trim();
+  if (!testName) { showToast('⚠️ Escribí un nombre primero'); return; }
+
+  const exercises = [];
+  document.querySelectorAll('.test-exercise-item').forEach((item, i) => {
+    const name = (item.querySelector('.exercise-name')?.value||'').trim();
+    if (name) exercises.push({
+      exercise_name: name,
+      exercise_result: (item.querySelector('.exercise-result')?.value||'').trim(),
+      exercise_unit: (item.querySelector('.exercise-unit')?.value||'').trim(),
+      exercise_video_url: (item.querySelector('.exercise-video')?.value||'').trim(),
+      exercise_notes: (item.querySelector('.exercise-notes')?.value||'').trim(),
+      order_index: i
+    });
+  });
+  if (!exercises.length) { showToast('⚠️ Agregá al menos un ejercicio'); return; }
+
+  const {data: existing} = await sb.from('test_templates')
+    .select('id').eq('coach_id', currentUser.id).eq('name', testName).maybeSingle();
+
+  let templateId;
+  if (existing) {
+    await sb.from('test_template_exercises').delete().eq('template_id', existing.id);
+    templateId = existing.id;
+  } else {
+    const {data: tpl, error: tplErr} = await sb.from('test_templates')
+      .insert([{coach_id: currentUser.id, name: testName}]).select().single();
+    if (tplErr) { showToast('❌ '+tplErr.message); return; }
+    templateId = tpl.id;
+  }
+
+  const {error: exErr} = await sb.from('test_template_exercises')
+    .insert(exercises.map(ex => ({...ex, template_id: templateId})));
+  if (exErr) { showToast('❌ '+exErr.message); return; }
+
+  showToast(existing ? '✅ Plantilla actualizada' : '✅ Plantilla guardada');
+}
+
+async function openTestTemplateLibrary() {
+  document.getElementById('test-template-library-sheet')?.remove();
+
+  const {data: templates} = await sb.from('test_templates')
+    .select('id,name').eq('coach_id', currentUser.id).order('name');
+
+  const sheet = document.createElement('div');
+  sheet.id = 'test-template-library-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:flex;align-items:flex-end;justify-content:center;';
+
+  const renderTplList = (items, query) => {
+    const filtered = (items||[]).filter(t => _normStr(t.name).includes(_normStr(query)));
+    if (!filtered.length) return `<div style="color:var(--gray4);font-size:13px;padding:16px 0;">${(items||[]).length ? 'Sin resultados.' : 'Guardá una evaluación como plantilla con 💾.'}</div>`;
+    return filtered.map(t => `
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--gray1);">
+        <div style="flex:1;font-size:14px;font-weight:600;color:var(--black);">${_esc(t.name)}</div>
+        <button onclick="loadTestTemplate('${t.id}','${_esc(t.name).replace(/'/g,"\\'")}')"
+          style="padding:7px 14px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Usar</button>
+        <button onclick="deleteTestTemplate('${t.id}')"
+          style="padding:7px 10px;background:var(--gray1);color:var(--red,#e53935);border:1.5px solid var(--gray2);border-radius:var(--radius-sm);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>
+      </div>`).join('');
+  };
+
+  sheet.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;width:100%;max-width:480px;height:65vh;display:flex;flex-direction:column;overflow:hidden;">
+      <div style="padding:18px 20px 12px;border-bottom:1px solid var(--gray1);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;">📚 Plantillas de Evaluación</div>
+        <button onclick="document.getElementById('test-template-library-sheet').remove()" style="background:var(--gray1);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;">✕</button>
+      </div>
+      <div style="padding:12px 20px;flex-shrink:0;border-bottom:1px solid var(--gray1);">
+        <input class="form-input" id="tpl-search-inp" placeholder="Buscar plantilla..." style="font-size:13px;"
+          oninput="document.getElementById('tpl-list-body').innerHTML=_renderTplList(window._testTemplatesCache||[],this.value)">
+      </div>
+      <div id="tpl-list-body" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 20px;">
+        ${renderTplList(templates, '')}
+      </div>
+    </div>`;
+
+  window._testTemplatesCache = templates || [];
+  window._renderTplList = renderTplList;
+  document.body.appendChild(sheet);
+  sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+}
+
+async function loadTestTemplate(templateId, templateName) {
+  const {data: exs} = await sb.from('test_template_exercises')
+    .select('*').eq('template_id', templateId).order('order_index', {ascending: true});
+
+  document.getElementById('test-template-library-sheet')?.remove();
+  await openCreateTestModal();
+
+  const nameInput = document.getElementById('test-name-input');
+  if (nameInput && !nameInput.value) nameInput.value = templateName;
+
+  const list = document.getElementById('test-exercises-list');
+  if (list) list.innerHTML = '';
+
+  if (exs && exs.length) {
+    exs.forEach(ex => {
+      addTestExercise();
+      const items = document.querySelectorAll('.test-exercise-item');
+      const item = items[items.length - 1];
+      if (!item) return;
+      const n = item.querySelector('.exercise-name'); if (n) n.value = ex.exercise_name || '';
+      const r = item.querySelector('.exercise-result'); if (r) r.value = ex.exercise_result || '';
+      const u = item.querySelector('.exercise-unit'); if (u) u.value = ex.exercise_unit || '';
+      const v = item.querySelector('.exercise-video'); if (v) v.value = ex.exercise_video_url || '';
+      const nt = item.querySelector('.exercise-notes'); if (nt) nt.value = ex.exercise_notes || '';
+    });
+  }
+
+  showToast('✅ Plantilla cargada — completá la fecha y guardá');
+}
+
+async function deleteTestTemplate(templateId) {
+  if (!confirm('¿Eliminar esta plantilla?')) return;
+  await sb.from('test_template_exercises').delete().eq('template_id', templateId);
+  const {error} = await sb.from('test_templates').delete().eq('id', templateId);
+  if (error) { showToast('❌ '+error.message); return; }
+  showToast('✅ Plantilla eliminada');
+  openTestTemplateLibrary();
+}
+
 // ─── NUTRITION IMPORT ─────────────────────────────────────────────────
 
 function openNutritionImportModal() {
@@ -12950,7 +13194,10 @@ async function confirmNutritionImport() {
         <button onclick="addTestExercise()" style="width:100%;padding:12px;background:var(--gray1);border:1.5px dashed var(--gray3);border-radius:var(--radius-sm);color:var(--orange);font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:'DM Sans',sans-serif;">+ Agregar Ejercicio</button>
       </div>
 
-      <button onclick="saveCoachTest()" class="btn-primary" style="margin-top:20px;">Guardar Evaluación</button>
+      <div style="display:flex;gap:8px;margin-top:20px;">
+        <button onclick="saveCoachTest()" class="btn-primary" style="flex:1;">Guardar Evaluación</button>
+        <button onclick="saveTestAsTemplate()" style="flex:0 0 auto;padding:14px 14px;background:#f0fff4;color:#276749;border:1.5px solid #276749;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">💾 Plantilla</button>
+      </div>
       <button onclick="closeModal('modal-create-test')" class="btn-secondary" style="margin-top:10px;">Cancelar</button>
     </div>
   </div>
