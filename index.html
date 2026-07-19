@@ -3859,6 +3859,7 @@ function renderDayExercises(exList, exs, planDayId) {
       <span class="ex-tag ${getTagClass(ex.tag)}" style="font-size:8px;">${ex.tag}</span>
       <span style="font-size:12px;font-weight:500;flex:1;">${ex.name}</span>
       <span style="font-size:10px;color:var(--gray4);">${seriesVal}×${ex.reps_range}${circuitBadge}</span>
+      <button onclick="openSwapExerciseSheet(${JSON.stringify(ex).replace(/"/g,'&quot;')}, '${planDayId}')" style="background:none;border:none;color:var(--gray4);font-size:11px;cursor:pointer;padding:2px 4px;" title="Cambiar ejercicio">🔄</button>
       <button onclick="openEditEx(${JSON.stringify(ex).replace(/"/g,'&quot;')})" style="background:none;border:none;color:var(--orange);font-size:11px;font-weight:700;cursor:pointer;padding:2px 4px;">Editar</button>
       <button onclick="deleteExercise('${ex.id}','${planDayId}')" style="background:none;border:none;color:#e53935;font-size:11px;font-weight:700;cursor:pointer;padding:2px 4px;">🗑</button>
     </div>`;}).join('')}`;
@@ -3880,6 +3881,273 @@ async function reloadDayExercises(planDayId) {
   const {data:exs} = await sb.from('exercises').select('*').eq('plan_day_id',planDayId).order('order_index');
   if(!exs||exs.length===0){exList.innerHTML='<div style="font-size:12px;color:var(--gray4);padding:4px 0;">Sin ejercicios</div>';return;}
   renderDayExercises(exList, exs, planDayId);
+}
+
+// ===== SWAP EJERCICIO =====
+
+function _renderSwapLibRows(list) {
+  if (!list || !list.length) return `
+    <div style="text-align:center;padding:24px 16px;color:var(--gray4);font-size:13px;">
+      Sin ejercicios en biblioteca. Usá "Agregar nuevo" abajo.
+    </div>`;
+  window._swapLibFiltered = list;
+  return list.map((ex, i) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;
+      padding:11px 0;border-bottom:1px solid var(--gray1);">
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;">${ex.name}</div>
+        ${ex.muscle_group ? `<div style="font-size:11px;color:var(--gray4);">${ex.muscle_group}</div>` : ''}
+      </div>
+      <button onclick="_selectSwapLibExercise(${i})"
+        style="background:var(--orange-light);color:var(--orange);border:none;
+        border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;
+        cursor:pointer;font-family:'DM Sans',sans-serif;">
+        Usar →
+      </button>
+    </div>`).join('');
+}
+
+function _filterSwapLib(q) {
+  const all = window._swapLibCache || [];
+  const filtered = q ? all.filter(e => e.name.toLowerCase().includes(q.toLowerCase())) : all;
+  window._swapLibFiltered = filtered;
+  document.getElementById('swap-lib-rows').innerHTML = _renderSwapLibRows(filtered);
+}
+
+function _selectSwapLibExercise(idx) {
+  const ex = (window._swapLibFiltered || [])[idx];
+  if (!ex) return;
+  window._swapNewLibExercise = {
+    name: ex.name,
+    muscle_group: ex.muscle_group || null,
+    video_url: ex.video_url || null,
+    tag: ex.tag || null,
+    isNew: false
+  };
+  document.getElementById('swap-exercise-sheet')?.remove();
+  openSwapWeekSelector();
+}
+
+function _openSwapNewForm() {
+  document.getElementById('swap-new-form').style.display = 'block';
+}
+
+function _confirmSwapNew() {
+  const name = document.getElementById('swap-new-name').value.trim();
+  if (!name) { showToast('⚠️ Escribí el nombre'); return; }
+  window._swapNewLibExercise = {
+    name,
+    muscle_group: document.getElementById('swap-new-muscle').value || null,
+    video_url: document.getElementById('swap-new-video').value.trim() || null,
+    tag: document.getElementById('swap-new-tag').value || 'Peso Libre',
+    isNew: true
+  };
+  document.getElementById('swap-exercise-sheet')?.remove();
+  openSwapWeekSelector();
+}
+
+async function openSwapExerciseSheet(ex, planDayId) {
+  window._swapEx = ex;
+  window._swapPlanDayId = planDayId;
+  window._swapNewLibExercise = null;
+
+  const { data: lib } = await sb.from('exercise_library')
+    .select('id,name,muscle_group,tag,video_url')
+    .eq('coach_id', currentUser.id).order('name');
+  window._swapLibCache = lib || [];
+
+  document.getElementById('swap-exercise-sheet')?.remove();
+  const sheet = document.createElement('div');
+  sheet.id = 'swap-exercise-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:600;display:flex;align-items:flex-end;justify-content:center;';
+
+  sheet.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;width:100%;
+      max-width:480px;height:80vh;display:flex;flex-direction:column;overflow:hidden;">
+
+      <div style="padding:18px 20px 12px;border-bottom:1px solid var(--gray1);flex-shrink:0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:15px;font-weight:700;">Cambiar ejercicio</div>
+          <button onclick="document.getElementById('swap-exercise-sheet').remove()"
+            style="background:var(--gray1);border:none;border-radius:50%;
+            width:30px;height:30px;font-size:16px;cursor:pointer;">✕</button>
+        </div>
+        <div style="font-size:12px;color:var(--gray4);margin-bottom:12px;">
+          Reemplazando: <strong style="color:var(--black);">${ex.name}</strong>
+        </div>
+        <input class="form-input" id="swap-search-input"
+          placeholder="Buscar en biblioteca..."
+          style="font-size:13px;padding:9px 12px;width:100%;box-sizing:border-box;"
+          oninput="_filterSwapLib(this.value)">
+      </div>
+
+      <div id="swap-lib-rows" style="flex:1;overflow-y:auto;padding:0 20px;">
+        ${_renderSwapLibRows(lib || [])}
+      </div>
+
+      <div style="padding:10px 20px 0;border-top:1px solid var(--gray1);flex-shrink:0;">
+        <button onclick="_openSwapNewForm()"
+          style="width:100%;padding:10px;border:1.5px dashed var(--gray3);
+          background:var(--white);color:var(--gray5);border-radius:var(--radius-sm);
+          font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">
+          ➕ No está en mi biblioteca — agregar nuevo
+        </button>
+      </div>
+
+      <div id="swap-new-form" style="display:none;padding:12px 20px;
+        border-top:1px solid var(--gray1);flex-shrink:0;">
+        <input id="swap-new-name" class="form-input"
+          placeholder="Nombre del ejercicio nuevo"
+          style="font-size:13px;padding:9px 12px;margin-bottom:8px;width:100%;box-sizing:border-box;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+          <select id="swap-new-muscle" class="form-select" style="font-size:13px;padding:9px 12px;">
+            <option value="">Músculo...</option>
+            ${['Pecho','Espalda','Hombros','Bíceps','Tríceps','Cuádriceps',
+               'Isquiotibiales','Glúteos','Core','Cardio','Full Body']
+              .map(m => `<option value="${m}">${m}</option>`).join('')}
+          </select>
+          <select id="swap-new-tag" class="form-select" style="font-size:13px;padding:9px 12px;">
+            <option value="Peso Libre">Peso Libre</option>
+            <option value="Peso Corporal">Peso Corporal</option>
+            <option value="Máquina">Máquina</option>
+            <option value="Banda">Banda</option>
+            <option value="Cardio">Cardio</option>
+          </select>
+        </div>
+        <input id="swap-new-video" class="form-input"
+          placeholder="Video URL (opcional)"
+          style="font-size:13px;padding:9px 12px;margin-bottom:8px;width:100%;box-sizing:border-box;">
+        <button onclick="_confirmSwapNew()"
+          style="width:100%;padding:10px;background:var(--orange);color:white;border:none;
+          border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;
+          font-family:'DM Sans',sans-serif;">
+          Usar este ejercicio →
+        </button>
+      </div>
+    </div>`;
+
+  sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  document.body.appendChild(sheet);
+}
+
+async function openSwapWeekSelector() {
+  const newEx = window._swapNewLibExercise;
+  const oldEx = window._swapEx;
+  const planDayId = window._swapPlanDayId;
+
+  const { data: currentPd } = await sb.from('monthly_plans')
+    .select('week_number,day_of_week').eq('id', planDayId).maybeSingle();
+  if (!currentPd) { showToast('❌ No se encontró el día'); return; }
+
+  const { data: allWeekDays } = await sb.from('monthly_plans')
+    .select('id,week_number').eq('client_id', currentClient.id)
+    .eq('day_of_week', currentPd.day_of_week).order('week_number');
+
+  const weekDaysWithEx = [];
+  for (const pd of (allWeekDays || [])) {
+    const { data: exMatch } = await sb.from('exercises')
+      .select('id').eq('plan_day_id', pd.id).eq('name', oldEx.name).maybeSingle();
+    if (exMatch) weekDaysWithEx.push({ ...pd, exerciseId: exMatch.id });
+  }
+
+  if (!weekDaysWithEx.length) {
+    showToast('⚠️ No se encontró el ejercicio en ninguna semana');
+    return;
+  }
+
+  window._swapWeekOptions = weekDaysWithEx;
+  window._swapCurrentPd = currentPd;
+
+  document.getElementById('swap-week-sheet')?.remove();
+  const sheet = document.createElement('div');
+  sheet.id = 'swap-week-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:700;display:flex;align-items:flex-end;justify-content:center;';
+
+  const weekLabel = n => n === 5 ? 'Deload' : 'Semana ' + n;
+
+  sheet.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;
+      padding:22px 20px 36px;width:100%;max-width:480px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="font-size:15px;font-weight:700;">¿En qué semanas aplicar?</div>
+        <button onclick="document.getElementById('swap-week-sheet').remove()"
+          style="background:var(--gray1);border:none;border-radius:50%;
+          width:30px;height:30px;font-size:16px;cursor:pointer;">✕</button>
+      </div>
+      <div style="font-size:12px;color:var(--gray4);margin-bottom:16px;">
+        <strong style="color:var(--black);">${oldEx.name}</strong>
+        → <strong style="color:var(--orange);">${newEx.name}</strong>
+        en <strong>${currentPd.day_of_week}</strong>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;">
+        ${weekDaysWithEx.map(wd => `
+          <label style="display:flex;align-items:center;gap:6px;padding:7px 14px;
+            border:1.5px solid var(--orange);border-radius:20px;cursor:pointer;
+            background:var(--orange-light);">
+            <input type="checkbox" id="swap-week-${wd.week_number}"
+              value="${wd.week_number}" checked
+              style="accent-color:var(--orange);width:14px;height:14px;">
+            <span style="font-size:12px;font-weight:700;color:var(--orange);">
+              ${weekLabel(wd.week_number)}
+            </span>
+          </label>`).join('')}
+      </div>
+      <button onclick="confirmSwap()"
+        style="width:100%;padding:13px;background:var(--orange);color:white;border:none;
+        border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;
+        font-family:'DM Sans',sans-serif;">
+        ✅ Confirmar cambio
+      </button>
+    </div>`;
+
+  sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  document.body.appendChild(sheet);
+}
+
+async function confirmSwap() {
+  const newEx = window._swapNewLibExercise;
+  const weekOptions = window._swapWeekOptions || [];
+
+  const selectedWeeks = weekOptions
+    .filter(wd => document.getElementById('swap-week-' + wd.week_number)?.checked);
+
+  if (!selectedWeeks.length) { showToast('⚠️ Seleccioná al menos una semana'); return; }
+
+  if (newEx.isNew) {
+    const { data: exists } = await sb.from('exercise_library')
+      .select('id').eq('coach_id', currentUser.id).eq('name', newEx.name).maybeSingle();
+    if (!exists) {
+      await sb.from('exercise_library').insert([{
+        coach_id: currentUser.id,
+        name: newEx.name,
+        muscle_group: newEx.muscle_group,
+        video_url: newEx.video_url,
+        tag: newEx.tag || 'Peso Libre'
+      }]);
+    }
+  }
+
+  await Promise.all(selectedWeeks.map(wd =>
+    sb.from('exercises').update({
+      name: newEx.name,
+      muscle_group: newEx.muscle_group || null,
+      video_url: newEx.video_url || null,
+      tag: newEx.tag || null
+    }).eq('id', wd.exerciseId)
+  ));
+
+  showToast(`✅ "${newEx.name}" aplicado en ${selectedWeeks.length} semana(s)`);
+  document.getElementById('swap-week-sheet')?.remove();
+
+  await reloadDayExercises(window._swapPlanDayId);
+
+  window._swapEx = null;
+  window._swapNewLibExercise = null;
+  window._swapWeekOptions = null;
+  window._swapCurrentPd = null;
+  window._swapPlanDayId = null;
+  window._swapLibCache = null;
+  window._swapLibFiltered = null;
 }
 
 function enterCircuitMode(planDayId) {
