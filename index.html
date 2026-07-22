@@ -8979,7 +8979,14 @@ Comida 5 (Cena): 350 kcal | P: 35g | C: 30g | G: 9g">${currentClient.macros_dist
         </div>
       </div>
       <div id="protocols-list"></div>
-    </div>`;
+    </div>
+    <button onclick="openShoppingListModal()"
+      style="width:100%;padding:13px;border:none;border-radius:var(--radius);
+      background:var(--orange-light);color:var(--orange);font-size:14px;font-weight:700;
+      cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:10px;
+      display:flex;align-items:center;justify-content:center;gap:8px;">
+      🛒 Lista de Supermercado
+    </button>`;
   if ((currentClient.menu_mode||'estandar') === 'dinamico') {
     await buildNutritionDayStrip();
   }
@@ -9155,6 +9162,253 @@ async function addProtocolFromLibrary(p) {
   if (error) { showToast('❌ ' + error.message); return; }
   showToast('✅ Protocolo agregado');
   buildProtocolsList();
+}
+
+// ===== SHOPPING LIST =====
+
+const SHOPPING_CATS = [
+  { key: 'Carbohidrato', label: 'Carbohidratos', emoji: '🍞' },
+  { key: 'Grasa',        label: 'Grasas',         emoji: '🥑' },
+  { key: 'Proteína',     label: 'Proteínas',       emoji: '🍗' },
+  { key: 'Lácteo',       label: 'Lácteos',         emoji: '🥛' },
+];
+
+function _renderShoppingItemsHtml(catKey, items) {
+  if (!items || !items.length) return `<div style="font-size:12px;color:var(--gray4);text-align:center;padding:10px 0;">Sin items. Agregá uno arriba.</div>`;
+  return items.map((item, idx) => `
+    <div id="sl-item-${catKey}-${idx}" style="display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--gray1);">
+      <div style="flex:1;font-size:13px;font-weight:600;color:var(--black);">${item.food_name}</div>
+      <input type="number" value="${item.quantity||''}" placeholder="—" step="0.1" min="0"
+        onchange="updateShoppingItem('${catKey}',${idx},'quantity',this.value)"
+        style="width:52px;padding:4px 6px;border:1.5px solid var(--gray2);border-radius:6px;
+        font-size:11px;text-align:center;font-family:'DM Sans',sans-serif;">
+      <input value="${(item.unit||'').replace(/"/g,'&quot;')}" placeholder="und"
+        onchange="updateShoppingItem('${catKey}',${idx},'unit',this.value)"
+        style="width:52px;padding:4px 6px;border:1.5px solid var(--gray2);border-radius:6px;
+        font-size:11px;text-align:center;font-family:'DM Sans',sans-serif;">
+      <button onclick="removeShoppingItem('${catKey}',${idx})"
+        style="background:var(--red-light,#ffeaea);color:var(--red,#d32f2f);border:none;
+        border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;">🗑</button>
+    </div>`).join('');
+}
+
+async function openShoppingListModal() {
+  const { data: foodLib } = await sb.from('food_library')
+    .select('name,categoria')
+    .in('categoria', ['Carbohidrato','Grasa','Proteína','Lácteo'])
+    .order('name');
+
+  const bycat = {};
+  SHOPPING_CATS.forEach(c => { bycat[c.key] = []; });
+  (foodLib || []).forEach(f => { if (bycat[f.categoria]) bycat[f.categoria].push(f.name); });
+
+  const { data: existing } = await sb.from('client_shopping_list_items')
+    .select('*').eq('client_id', currentClient.id).order('created_at', { ascending: true });
+
+  const items = {};
+  SHOPPING_CATS.forEach(c => { items[c.key] = []; });
+  (existing || []).forEach(item => { if (items[item.category]) items[item.category].push(item); });
+
+  window._shoppingItems = items;
+  window._shoppingActiveTab = 'Carbohidrato';
+
+  document.getElementById('shopping-list-sheet')?.remove();
+  const sheet = document.createElement('div');
+  sheet.id = 'shopping-list-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:600;display:flex;align-items:flex-end;justify-content:center;';
+
+  sheet.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;width:100%;
+      max-width:480px;height:88vh;display:flex;flex-direction:column;overflow:hidden;">
+
+      <div style="padding:18px 20px 0;border-bottom:1px solid var(--gray1);flex-shrink:0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div style="font-family:'Playfair Display',serif;font-size:17px;font-weight:900;">🛒 Lista de Supermercado</div>
+          <button onclick="document.getElementById('shopping-list-sheet').remove()"
+            style="background:var(--gray1);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;">✕</button>
+        </div>
+        <div style="display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;">
+          ${SHOPPING_CATS.map(c => `
+            <button id="sl-tab-${c.key}" onclick="switchShoppingTab('${c.key}')"
+              style="white-space:nowrap;padding:8px 12px;border-radius:10px 10px 0 0;border:none;
+              border-bottom:2px solid ${c.key==='Carbohidrato'?'var(--orange)':'transparent'};
+              background:${c.key==='Carbohidrato'?'var(--orange-light)':'transparent'};
+              color:${c.key==='Carbohidrato'?'var(--orange)':'var(--gray4)'};
+              font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">
+              ${c.emoji} ${c.label}
+            </button>`).join('')}
+        </div>
+      </div>
+
+      <div style="flex:1;overflow-y:auto;">
+        ${SHOPPING_CATS.map(c => `
+          <div id="sl-section-${c.key}" style="display:${c.key==='Carbohidrato'?'block':'none'};padding:16px 20px;">
+            <div style="margin-bottom:10px;">
+              <label style="font-size:10px;font-weight:700;color:var(--gray4);display:block;margin-bottom:4px;">ALIMENTO</label>
+              <select id="sl-select-${c.key}" class="form-select"
+                style="font-size:13px;padding:9px 12px;width:100%;box-sizing:border-box;"
+                onchange="toggleShoppingCustom('${c.key}',this.value)">
+                <option value="">Elegir de biblioteca...</option>
+                ${(bycat[c.key]||[]).map(n => `<option value="${n.replace(/"/g,'&quot;')}">${n}</option>`).join('')}
+                <option value="__custom__">✏️ Escribir manualmente...</option>
+              </select>
+            </div>
+            <div id="sl-custom-${c.key}" style="display:none;margin-bottom:10px;">
+              <input id="sl-custom-name-${c.key}" class="form-input"
+                placeholder="Nombre del alimento"
+                style="font-size:13px;padding:9px 12px;width:100%;box-sizing:border-box;">
+            </div>
+            <div style="display:flex;gap:6px;margin-bottom:14px;">
+              <div style="flex:1;">
+                <label style="font-size:10px;font-weight:700;color:var(--gray4);display:block;margin-bottom:4px;">CANTIDAD</label>
+                <input type="number" id="sl-qty-${c.key}" class="form-input"
+                  placeholder="ej: 2" step="0.1" min="0"
+                  style="font-size:13px;padding:9px 12px;">
+              </div>
+              <div style="flex:1;">
+                <label style="font-size:10px;font-weight:700;color:var(--gray4);display:block;margin-bottom:4px;">UNIDAD</label>
+                <input id="sl-unit-${c.key}" class="form-input"
+                  placeholder="kg, L, u..."
+                  style="font-size:13px;padding:9px 12px;">
+              </div>
+              <div style="display:flex;align-items:flex-end;">
+                <button onclick="addShoppingItem('${c.key}')"
+                  style="padding:9px 14px;background:var(--orange);color:white;border:none;
+                  border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;
+                  font-family:'DM Sans',sans-serif;white-space:nowrap;">+ Agregar</button>
+              </div>
+            </div>
+            <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.08em;
+              color:var(--orange);text-transform:uppercase;font-weight:700;margin-bottom:6px;">
+              ${c.emoji} ${c.label}
+            </div>
+            <div id="sl-list-${c.key}">
+              ${_renderShoppingItemsHtml(c.key, items[c.key]||[])}
+            </div>
+          </div>`).join('')}
+      </div>
+
+      <div style="padding:12px 20px 32px;border-top:1px solid var(--gray1);flex-shrink:0;display:flex;flex-direction:column;gap:8px;">
+        <button onclick="saveShoppingList()"
+          class="btn-primary" style="width:100%;padding:13px;font-size:14px;">
+          💾 Guardar lista
+        </button>
+        <button onclick="shareShoppingListWhatsApp()"
+          style="width:100%;padding:13px;background:#25D366;color:white;border:none;
+          border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;
+          font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;">
+          📲 Enviar por WhatsApp
+        </button>
+      </div>
+    </div>`;
+
+  sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  document.body.appendChild(sheet);
+}
+
+function toggleShoppingCustom(catKey, val) {
+  const div = document.getElementById(`sl-custom-${catKey}`);
+  if (div) div.style.display = val === '__custom__' ? 'block' : 'none';
+}
+
+function switchShoppingTab(catKey) {
+  SHOPPING_CATS.forEach(c => {
+    const tab = document.getElementById(`sl-tab-${c.key}`);
+    const section = document.getElementById(`sl-section-${c.key}`);
+    const active = c.key === catKey;
+    if (tab) {
+      tab.style.borderBottom = active ? '2px solid var(--orange)' : '2px solid transparent';
+      tab.style.background = active ? 'var(--orange-light)' : 'transparent';
+      tab.style.color = active ? 'var(--orange)' : 'var(--gray4)';
+    }
+    if (section) section.style.display = active ? 'block' : 'none';
+  });
+  window._shoppingActiveTab = catKey;
+}
+
+function addShoppingItem(catKey) {
+  const sel = document.getElementById(`sl-select-${catKey}`);
+  const customInp = document.getElementById(`sl-custom-name-${catKey}`);
+  const qtyInp = document.getElementById(`sl-qty-${catKey}`);
+  const unitInp = document.getElementById(`sl-unit-${catKey}`);
+
+  const name = sel?.value === '__custom__'
+    ? (customInp?.value.trim() || '')
+    : (sel?.value || '');
+  if (!name) { showToast('⚠️ Elegí o escribí un alimento'); return; }
+
+  const qty = parseFloat(qtyInp?.value) || null;
+  const unit = unitInp?.value.trim() || null;
+
+  if (!window._shoppingItems[catKey]) window._shoppingItems[catKey] = [];
+  window._shoppingItems[catKey].push({ food_name: name, quantity: qty, unit });
+
+  const list = document.getElementById(`sl-list-${catKey}`);
+  if (list) list.innerHTML = _renderShoppingItemsHtml(catKey, window._shoppingItems[catKey]);
+
+  if (sel) sel.value = '';
+  if (customInp) { customInp.value = ''; document.getElementById(`sl-custom-${catKey}`).style.display = 'none'; }
+  if (qtyInp) qtyInp.value = '';
+  if (unitInp) unitInp.value = '';
+}
+
+function updateShoppingItem(catKey, idx, field, value) {
+  if (!window._shoppingItems?.[catKey]?.[idx]) return;
+  window._shoppingItems[catKey][idx][field] = field === 'quantity' ? (parseFloat(value) || null) : value;
+}
+
+function removeShoppingItem(catKey, idx) {
+  window._shoppingItems?.[catKey]?.splice(idx, 1);
+  const list = document.getElementById(`sl-list-${catKey}`);
+  if (list) list.innerHTML = _renderShoppingItemsHtml(catKey, window._shoppingItems[catKey] || []);
+}
+
+async function saveShoppingList() {
+  if (!currentClient) return;
+  const allItems = [];
+  SHOPPING_CATS.forEach(c => {
+    (window._shoppingItems?.[c.key] || []).forEach(item => {
+      allItems.push({
+        client_id: currentClient.id,
+        category: c.key,
+        food_name: item.food_name,
+        quantity: item.quantity || null,
+        unit: item.unit || null,
+        updated_at: new Date().toISOString()
+      });
+    });
+  });
+
+  const { error: delErr } = await sb.from('client_shopping_list_items')
+    .delete().eq('client_id', currentClient.id);
+  if (delErr) { showToast('❌ ' + delErr.message); return; }
+
+  if (allItems.length) {
+    const { error: insErr } = await sb.from('client_shopping_list_items').insert(allItems);
+    if (insErr) { showToast('❌ ' + insErr.message); return; }
+  }
+
+  showToast('✅ Lista guardada');
+}
+
+function shareShoppingListWhatsApp() {
+  let text = `🛒 Lista de Supermercado — ${currentClient.name || ''}`;
+  let hasItems = false;
+
+  SHOPPING_CATS.forEach(c => {
+    const items = window._shoppingItems?.[c.key] || [];
+    if (!items.length) return;
+    hasItems = true;
+    text += `\n\n${c.emoji} ${c.label}:`;
+    items.forEach(item => {
+      const qty = item.quantity != null ? item.quantity + (item.unit ? ' ' + item.unit : '') : '';
+      text += `\n- ${item.food_name}${qty ? ': ' + qty : ''}`;
+    });
+  });
+
+  if (!hasItems) { showToast('⚠️ La lista está vacía'); return; }
+  text += '\n\n💪 Plan nutricional por @movewithsau';
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
 }
 
 // ===== REMINDERS =====
