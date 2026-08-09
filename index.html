@@ -89,6 +89,8 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 .nav-label { font-size:10px; font-weight:500; color:var(--gray4); }
 .nav-item.active .nav-label { color:var(--orange); }
 .nav-dot { width:4px; height:4px; border-radius:50%; background:var(--orange); opacity:0; margin-top:1px; }
+body.lift-mode #screen-client-home .bottom-nav .nav-item:nth-child(3), body.lift-mode #screen-client-plan .bottom-nav .nav-item:nth-child(3), body.lift-mode #screen-client-profile .bottom-nav .nav-item:nth-child(3), body.lift-mode #screen-client-food .bottom-nav .nav-item:nth-child(3), body.lift-mode #screen-client-coaching .bottom-nav .nav-item:nth-child(3) { display:none; }
+body.lift-mode #strongflow-btn { display:none !important; }
 .nav-item.active .nav-dot { opacity:1; }
 
 /* LOGIN */
@@ -530,16 +532,31 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
 <div class="screen" id="screen-client-home">
   <div class="topbar"><div class="topbar-logo">Move With Sau</div><div class="topbar-action" onclick="handleLogout()">Salir</div></div>
   <div class="scroll-body">
-    <div class="greeting-card fade-up"><div class="greeting-hello">Bienvenido de nuevo,</div><div class="greeting-name" id="c-greeting-name">—</div><div class="greeting-sub" id="c-greeting-week">—</div></div>
-    <div class="stat-row fade-up">
-      <div class="stat-card"><div class="stat-num" id="c-days-trained">0</div><div class="stat-label">Días entrenados</div></div>
-      <div class="stat-card"><div class="stat-num" id="c-week-num">1</div><div class="stat-label">Semana actual</div></div>
-    </div>
+    <div id="regular-home-block">
+      <div class="greeting-card fade-up"><div class="greeting-hello">Bienvenido de nuevo,</div><div class="greeting-name" id="c-greeting-name">—</div><div class="greeting-sub" id="c-greeting-week">—</div></div>
+      <div class="stat-row fade-up">
+        <div class="stat-card"><div class="stat-num" id="c-days-trained">0</div><div class="stat-label">Días entrenados</div></div>
+        <div class="stat-card"><div class="stat-num" id="c-week-num">1</div><div class="stat-label">Semana actual</div></div>
+      </div>
 
-    <div id="c-day-strip"></div>
-    <div style="font-size:16px;font-weight:700;color:var(--black);margin-bottom:10px;">¡Vamos Con TODA Hoy CHAMP! 🏆</div>
+      <div id="c-day-strip"></div>
+      <div style="font-size:16px;font-weight:700;color:var(--black);margin-bottom:10px;">¡Vamos Con TODA Hoy CHAMP! 🏆</div>
+    </div>
+    <div id="lift-home-block" style="display:none;"></div>
     <div id="c-exercises-list"><div class="spinner"></div></div>
     <div id="c-muscle-summary"></div>
+    <div id="lift-missions-block" style="display:none;"></div>
+    <div id="training-locked-block" style="display:none;">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;padding:32px;text-align:center;">
+        <div style="font-size:52px;margin-bottom:16px;">🔒</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.18em;color:var(--orange);text-transform:uppercase;margin-bottom:8px;">Módulo exclusivo</div>
+        <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;line-height:1.1;margin-bottom:14px;"><span style="color:var(--orange);">ENTRENO</span> es para<br>MOVERs con programa<br>de entrenamiento.</div>
+        <div style="font-size:14px;color:var(--gray5);line-height:1.6;margin-bottom:28px;">Adquiere el tuyo hoy y<br>lleva tu físico al siguiente nivel.</div>
+        <a href="https://wa.me/50672083564?text=Hola%20Sau!%20Quiero%20saber%20sobre%20el%20programa%20de%20entrenamiento%20🏋️" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:var(--orange);color:white;border-radius:var(--radius-sm);padding:14px 28px;font-size:14px;font-weight:700;text-decoration:none;font-family:'DM Sans',sans-serif;">
+          📲 Quiero mi programa de Entreno
+        </a>
+      </div>
+    </div>
   </div>
   <a href="https://wa.me/50672083564" target="_blank" style="position:fixed;bottom:80px;right:16px;width:50px;height:50px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,211,102,0.4);z-index:99;text-decoration:none;font-size:26px;">💬</a>
   <!-- StrongFlow button — only on Hoy screen, grows when workout running -->
@@ -686,6 +703,30 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   </div>
 </div>
 
+<!-- ===== CLIENT: COACHING (exclusivo LIFT) ===== -->
+<div class="screen" id="screen-client-coaching">
+  <div class="topbar"><div class="topbar-logo">Move With Sau</div><div class="topbar-action" onclick="handleLogout()">Salir</div></div>
+  <div class="scroll-body">
+    <div style="margin-bottom:18px;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">LIFT</div><div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;">Coaching</div></div>
+
+    <div style="font-size:16px;font-weight:700;color:var(--black);margin-bottom:10px;">📄 Documentos</div>
+    <div id="lift-coaching-documents-list"><div class="spinner"></div></div>
+
+    <div style="font-size:16px;font-weight:700;color:var(--black);margin:22px 0 10px;">🗂️ Protocolos</div>
+    <div id="lift-coaching-protocols-list"><div class="spinner"></div></div>
+
+    <div style="font-size:16px;font-weight:700;color:var(--black);margin:22px 0 10px;">📝 Notas</div>
+    <div id="lift-coaching-guidelines-list"></div>
+  </div>
+  <a href="https://wa.me/50672083564" target="_blank" style="position:fixed;bottom:80px;right:16px;width:50px;height:50px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,211,102,0.4);z-index:99;text-decoration:none;font-size:26px;">💬</a>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="clientNav('home',this)"><div class="nav-icon">🏋️</div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
+    <div class="nav-item active" onclick="clientNav('coaching',this)"><div class="nav-icon">🧭</div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon">📋</div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('profile',this)"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div><div class="nav-dot"></div></div>
+  </div>
+</div>
+
 <!-- ===== CLIENT: EXERCISE DETAIL ===== -->
 <div class="screen" id="screen-ex-detail">
   <div class="topbar">
@@ -727,6 +768,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
     <div style="display:flex;margin:0 -20px 0;border-bottom:2px solid var(--gray2);background:var(--white);position:sticky;top:0;z-index:10;margin-bottom:0;">
       <div id="ctab-active" onclick="setClientTab('active')" style="flex:1;text-align:center;padding:13px 8px 11px;font-size:13px;font-weight:700;color:var(--orange);border-bottom:2px solid var(--orange);margin-bottom:-2px;cursor:pointer;">💪 Activos <span id="coach-count-active" style="font-size:11px;font-weight:600;color:var(--orange);"></span></div>
       <div id="ctab-churn" onclick="setClientTab('churn')" style="flex:1;text-align:center;padding:13px 8px 11px;font-size:13px;font-weight:700;color:var(--gray4);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;">👋 Churn <span id="coach-count-churn" style="font-size:11px;font-weight:600;color:var(--gray4);"></span></div>
+      <div id="ctab-hidden" onclick="setClientTab('hidden')" style="flex:1;text-align:center;padding:13px 8px 11px;font-size:13px;font-weight:700;color:var(--gray4);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;">🙈 Ocultos <span id="coach-count-hidden" style="font-size:11px;font-weight:600;color:var(--gray4);"></span></div>
     </div>
     <div id="client-sort-bar" class="sort-bar" style="margin-top:12px;">
       <div class="sort-chip active" onclick="setSortClients('name',this)">A–Z</div>
@@ -751,6 +793,8 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
   <div class="topbar"><div class="back-btn" onclick="showScreen('screen-coach-home');loadCoachClients();">‹ Clientes</div><div class="topbar-action" onclick="showPlanBuilder()">+ Plan</div></div>
   <div class="profile-header" id="coach-profile-header"></div>
   <div class="scroll-body" style="padding-top:14px;">
+    <div class="section-header"><div class="section-title">LIFT</div></div>
+    <div class="payment-card" id="coach-lift-card"></div>
     <div class="section-header"><div class="section-title">Información de pago</div><div class="section-action" onclick="showModal('modal-edit-payment')">Editar</div></div>
     <div class="payment-card" id="coach-payment-card"></div>
     <div class="section-header"><div class="section-title">Días entrenados</div></div>
@@ -832,6 +876,10 @@ body { font-family:'DM Sans',sans-serif; background:var(--gray1); color:var(--bl
       </div>
     </div>
     <div id="coach-extras-panel" style="margin-bottom:4px;"></div>
+    <div class="section-header">
+      <div class="section-title">Módulo Entreno</div>
+    </div>
+    <div id="coach-training-panel"></div>
     <div class="section-header">
       <div class="section-title">Módulo Food</div>
       <div class="section-action" onclick="openNutritionImportModal()" style="background:#f0fff4;color:#276749;border:1.5px solid #276749;padding:5px 10px;border-radius:6px;font-size:11px;">📥 Pegar Menú</div>
@@ -1725,6 +1773,201 @@ function formatDate(dateStr) {
   return new Date(dateStr+'T12:00:00').toLocaleDateString('es-CR', {day:'numeric', month:'short', year:'numeric'});
 }
 
+// ===== LIFT — lógica de release diario (on-read, sin cron job) =====
+const LIFT_TOTAL_DAYS = 28;
+
+function escHtml(str) {
+  return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// LIFT reutiliza monthly_plans/exercises: day_number 1-28 se mapea a
+// week_number 1-4 (7 días por semana) y day_of_week = 'Día N' (absoluto, no por semana).
+function liftDayToWeek(dayNumber) { return Math.ceil(dayNumber / 7); }
+function liftDayLabel(dayNumber) { return `Día ${dayNumber}`; }
+
+// unlock_timestamp(day_number): lift_start_date + (day_number-1) días, a las lift_release_hour, hora local del dispositivo
+function getLiftUnlockTimestamp(client, dayNumber) {
+  if (!client?.lift_start_date) return null;
+  const hour = client.lift_release_hour ?? 6;
+  const d = new Date(client.lift_start_date + 'T00:00:00');
+  d.setDate(d.getDate() + (dayNumber - 1));
+  d.setHours(hour, 0, 0, 0);
+  return d;
+}
+
+// Estado de un ítem individual (workout, mente_alma o propósito) de un día LIFT.
+// Una vez completado queda completado para siempre, sin importar si la ventana ya cerró.
+function getLiftItemState(client, dayNumber, completed) {
+  if (completed) return 'completado';
+  const unlock = getLiftUnlockTimestamp(client, dayNumber);
+  if (!unlock) return 'bloqueado';
+  const now = new Date();
+  if (now < unlock) return 'bloqueado';
+  const nextUnlock = getLiftUnlockTimestamp(client, dayNumber + 1);
+  if (nextUnlock && now >= nextUnlock) return 'perdido';
+  return 'activo';
+}
+
+// Estado agregado de un día completo LIFT, dados los estados 'completed' de sus 3 ítems (workout, mente_alma, propósito)
+function getLiftDayState(client, dayNumber, itemsCompleted) {
+  const states = itemsCompleted.map(c => getLiftItemState(client, dayNumber, c));
+  if (states.every(s => s === 'completado')) return 'completado';
+  if (states.some(s => s === 'bloqueado')) return 'bloqueado';
+  if (states.some(s => s === 'perdido')) return 'perdido';
+  return 'activo';
+}
+
+// Día actual del challenge (1-28) según la hora de ahora vs. lift_start_date/lift_release_hour
+function getLiftCurrentDayNumber(client) {
+  const startUnlock = getLiftUnlockTimestamp(client, 1);
+  if (!startUnlock) return 1;
+  const now = new Date();
+  if (now < startUnlock) return 1;
+  const diffDays = Math.floor((now - startUnlock) / 86400000) + 1;
+  return Math.min(Math.max(diffDays, 1), LIFT_TOTAL_DAYS);
+}
+
+// ===== LIFT — home del cliente (Paso 4) =====
+let liftViewDay = null;
+
+async function initLiftClientHome() {
+  document.body.classList.add('lift-mode');
+  document.getElementById('regular-home-block').style.display = 'none';
+  document.getElementById('lift-home-block').style.display = 'block';
+  document.getElementById('lift-missions-block').style.display = 'block';
+  // Limpia cualquier estado dejado por applyTrainingAccessGate() de una sesión
+  // regular/evoluTion anterior en el mismo tab (mismos elementos DOM se comparten)
+  document.getElementById('training-locked-block').style.display = 'none';
+  document.getElementById('c-exercises-list').style.display = '';
+  document.getElementById('c-muscle-summary').style.display = '';
+  liftViewDay = getLiftCurrentDayNumber(currentClient);
+  await renderLiftDay(liftViewDay);
+}
+
+async function isLiftWorkoutDone(dayNumber) {
+  const week = liftDayToWeek(dayNumber);
+  const dayLabel = liftDayLabel(dayNumber);
+  const { data: pd } = await sb.from('monthly_plans').select('id').eq('client_id', currentClient.id).eq('week_number', week).eq('day_of_week', dayLabel).maybeSingle();
+  if (!pd) return false;
+  const { data: exs } = await sb.from('exercises').select('id').eq('plan_day_id', pd.id);
+  if (exs && exs.length > 0) {
+    const exIds = exs.map(e => e.id);
+    const { data: logs } = await sb.from('exercise_logs').select('exercise_id').in('exercise_id', exIds).limit(1);
+    if (logs && logs.length > 0) return true;
+  }
+  const { data: ws } = await sb.from('workout_sessions').select('id').eq('client_id', currentClient.id).eq('plan_day_id', pd.id).maybeSingle();
+  return !!ws;
+}
+
+async function renderLiftDay(dayNumber) {
+  liftViewDay = dayNumber;
+  clientWeek = liftDayToWeek(dayNumber);
+  clientDay = liftDayLabel(dayNumber);
+
+  const { data: missions } = await sb.from('client_lift_missions').select('*').eq('client_id', currentClient.id).eq('day_number', dayNumber);
+  const missionMenteAlma = (missions || []).find(m => m.area === 'mente_alma') || null;
+  const missionProposito = (missions || []).find(m => m.area === 'proposito') || null;
+  const workoutDone = await isLiftWorkoutDone(dayNumber);
+  const itemsCompleted = [workoutDone, !!missionMenteAlma?.completed, !!missionProposito?.completed];
+  const doneCount = itemsCompleted.filter(Boolean).length;
+
+  const header = document.getElementById('lift-home-block');
+  header.innerHTML = `
+    <div style="background:var(--white);border:2px solid var(--orange);border-radius:16px;padding:16px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:900;">Día ${dayNumber} <span style="font-size:13px;color:var(--gray4);font-weight:600;">/ ${LIFT_TOTAL_DAYS}</span></div>
+        <div style="font-size:13px;font-weight:800;color:var(--orange);">${doneCount}/3 completado</div>
+      </div>
+      <div id="lift-progress-strip" style="display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;"><div class="spinner"></div></div>
+    </div>
+    <div style="font-size:16px;font-weight:700;color:var(--black);margin-bottom:10px;">🏋️ Cuerpo</div>`;
+  renderLiftProgressStrip(dayNumber);
+
+  await loadClientExercises();
+
+  const dayState = getLiftDayState(currentClient, dayNumber, itemsCompleted);
+  document.getElementById('lift-missions-block').innerHTML =
+    renderLiftMissionCard('mente_alma', '🧘 Mente / Alma', missionMenteAlma, dayNumber, dayState) +
+    renderLiftMissionCard('proposito', '🎯 Propósito', missionProposito, dayNumber, dayState);
+}
+
+async function renderLiftProgressStrip(activeDay) {
+  const stripEl = document.getElementById('lift-progress-strip');
+  if (!stripEl) return;
+
+  const { data: allMissions } = await sb.from('client_lift_missions').select('day_number,area,completed').eq('client_id', currentClient.id);
+  const missionsByDay = {};
+  (allMissions || []).forEach(m => { (missionsByDay[m.day_number] = missionsByDay[m.day_number] || {})[m.area] = m.completed; });
+
+  const { data: planDays } = await sb.from('monthly_plans').select('id,day_of_week,week_number').eq('client_id', currentClient.id).in('week_number', [1, 2, 3, 4]);
+  const planDayByLabel = {};
+  (planDays || []).forEach(p => { planDayByLabel[p.day_of_week] = p.id; });
+  const planDayIds = (planDays || []).map(p => p.id);
+  const workoutDoneIds = new Set();
+  if (planDayIds.length > 0) {
+    const { data: exs } = await sb.from('exercises').select('id,plan_day_id').in('plan_day_id', planDayIds);
+    const exIds = (exs || []).map(e => e.id);
+    if (exIds.length > 0) {
+      const { data: logs } = await sb.from('exercise_logs').select('exercise_id').in('exercise_id', exIds).limit(2000);
+      const loggedExIds = new Set((logs || []).map(l => l.exercise_id));
+      (exs || []).forEach(e => { if (loggedExIds.has(e.id)) workoutDoneIds.add(e.plan_day_id); });
+    }
+    const { data: sessions } = await sb.from('workout_sessions').select('plan_day_id').eq('client_id', currentClient.id).in('plan_day_id', planDayIds);
+    (sessions || []).forEach(s => workoutDoneIds.add(s.plan_day_id));
+  }
+
+  let html = '';
+  for (let d = 1; d <= LIFT_TOTAL_DAYS; d++) {
+    const pdId = planDayByLabel[liftDayLabel(d)];
+    const workoutDone = pdId ? workoutDoneIds.has(pdId) : false;
+    const ma = !!missionsByDay[d]?.mente_alma;
+    const pr = !!missionsByDay[d]?.proposito;
+    const state = getLiftDayState(currentClient, d, [workoutDone, ma, pr]);
+    const icon = state === 'completado' ? '✅' : state === 'perdido' ? '❌' : state === 'bloqueado' ? '🔒' : '🔸';
+    const isActive = d === activeDay;
+    html += `<div onclick="renderLiftDay(${d})" style="flex-shrink:0;width:34px;height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:8px;cursor:pointer;background:${isActive ? 'var(--orange-light)' : 'transparent'};border:1.5px solid ${isActive ? 'var(--orange)' : 'transparent'};">
+      <div style="font-size:13px;">${icon}</div>
+      <div style="font-size:9px;font-weight:700;color:${isActive ? 'var(--orange)' : 'var(--gray4)'};">${d}</div>
+    </div>`;
+  }
+  stripEl.innerHTML = html;
+}
+
+function renderLiftMissionCard(area, label, mission, dayNumber, dayState) {
+  const hasContent = !!(mission && mission.title && mission.title.trim() && mission.content && mission.content.trim());
+  if (!hasContent) {
+    return `<div class="card" style="margin-bottom:14px;"><div style="font-size:14px;font-weight:700;margin-bottom:4px;">${label}</div><div style="font-size:13px;color:var(--gray4);">Sin misión asignada para este día.</div></div>`;
+  }
+  const itemState = getLiftItemState(currentClient, dayNumber, !!mission.completed);
+  // Editable solo dentro de la ventana de 24h del día — una vez cerrada, ni marcar ni desmarcar
+  // (evita que desmarcar por error algo ya completado lo deje 'perdido' para siempre sin forma de corregirlo)
+  const unlock = getLiftUnlockTimestamp(currentClient, dayNumber);
+  const nextUnlock = getLiftUnlockTimestamp(currentClient, dayNumber + 1);
+  const now = new Date();
+  const editable = !!unlock && now >= unlock && (!nextUnlock || now < nextUnlock);
+  const checked = !!mission.completed;
+  return `
+    <div class="card" style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:10px;">
+        <div style="font-size:14px;font-weight:700;">${label} · ${escHtml(mission.title)}</div>
+        <input type="checkbox" ${checked ? 'checked' : ''} ${editable ? '' : 'disabled'} onchange="toggleLiftMission('${mission.id}',${dayNumber},this.checked)" style="width:20px;height:20px;flex-shrink:0;">
+      </div>
+      <div style="font-size:13px;color:var(--gray5);line-height:1.5;margin-bottom:8px;">${escHtml(mission.content)}</div>
+      <textarea placeholder="Tu reflexión (opcional)..." ${editable ? '' : 'disabled'} onblur="saveLiftReflection('${mission.id}',this.value)" style="width:100%;min-height:60px;padding:10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;resize:vertical;">${escHtml(mission.reflection || '')}</textarea>
+      ${itemState === 'perdido' ? '<div style="font-size:11px;color:var(--red);margin-top:6px;font-weight:600;">⏱ Ventana cerrada — modo solo lectura</div>' : ''}
+    </div>`;
+}
+
+async function toggleLiftMission(missionId, dayNumber, checked) {
+  await sb.from('client_lift_missions').update({ completed: checked, completed_at: checked ? new Date().toISOString() : null }).eq('id', missionId);
+  showToast(checked ? '✅ Misión completada' : 'Misión desmarcada');
+  renderLiftDay(dayNumber);
+}
+
+async function saveLiftReflection(missionId, text) {
+  await sb.from('client_lift_missions').update({ reflection: text || null }).eq('id', missionId);
+}
+
 // ===== AUTO LOGIN =====
 window.addEventListener('DOMContentLoaded', async () => {
   const saved = localStorage.getItem('mws_user');
@@ -1776,6 +2019,7 @@ async function handleLogin() {
 
 function handleLogout() {
   currentUser=null; currentClient=null; clientWeek=1; clientDay=null; screenHistory=[];
+  document.body.classList.remove('lift-mode');
   stopGlobalTimer();
   localStorage.removeItem('mws_user');
   showScreen('screen-login');
@@ -1830,16 +2074,31 @@ async function initClient() {
   // evoluTion appearance
   const greetingCard = document.querySelector('#screen-client-home .greeting-card');
   const topbarLogo = document.querySelector('#screen-client-home .topbar-logo');
-  if (cd?.is_evolution) {
+  if (cd?.program_type === 'evolution') {
     if (greetingCard) greetingCard.style.background = '#111';
     if (topbarLogo) topbarLogo.innerHTML = 'Move With Sau <span style="font-family:\'DM Mono\',monospace;font-size:10px;font-weight:800;color:var(--orange);letter-spacing:0.08em;">evoluTion</span>';
+  } else if (cd?.program_type === 'lift') {
+    if (greetingCard) greetingCard.style.background = '';
+    if (topbarLogo) topbarLogo.innerHTML = 'Move With Sau <span style="display:inline-flex;align-items:center;justify-content:center;padding:2px 7px;border-radius:5px;font-size:9px;font-weight:800;background:var(--orange);color:#fff;font-family:\'DM Sans\',sans-serif;letter-spacing:0.04em;margin-left:4px;">LIFT</span>';
   } else {
     if (greetingCard) greetingCard.style.background = '';
     if (topbarLogo) topbarLogo.textContent = 'Move With Sau';
   }
   loadGoalDisplay(cd?.goal_text);
   updateClientWeekUI();
-  loadClientDayStrip();
+  document.body.classList.toggle('lift-mode', cd?.program_type === 'lift');
+  applyLiftNavPatch(cd?.program_type === 'lift');
+  if (cd?.program_type === 'lift') {
+    loadTodayRating().catch(()=>{});
+    if(localStorage.getItem('mws_timer_running') === '1') startTimerDisplay();
+    loadAICounts();
+    setTimeout(() => requestPushPermission(), 2000);
+    initLiftClientHome();
+    return;
+  }
+  document.getElementById('lift-home-block').style.display = 'none';
+  document.getElementById('lift-missions-block').style.display = 'none';
+  if (applyTrainingAccessGate()) { loadClientDayStrip(); }
   loadClientPlans();
   loadTodayRating().catch(()=>{});
   if(localStorage.getItem('mws_timer_running') === '1') startTimerDisplay();
@@ -2783,8 +3042,9 @@ async function loadClientPlans() {
   renderClientGuidelines();
 }
 
-async function renderClientGuidelines() {
-  const el = document.getElementById('c-guidelines-list');
+async function renderClientGuidelines(targetElId, idPrefix) {
+  const el = document.getElementById(targetElId || 'c-guidelines-list');
+  const prefix = idPrefix || 'cg';
   if (!el) return;
   const {data} = await sb.from('client_guidelines').select('id,title,content,order_index')
     .eq('client_id', currentClient.id).order('order_index', {ascending: true});
@@ -2793,23 +3053,71 @@ async function renderClientGuidelines() {
     <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.12em;color:var(--orange);text-transform:uppercase;margin-bottom:10px;">📋 Guidelines</div>
     ${data.map((g, i) => `
       <div style="border-bottom:1px solid var(--gray1);">
-        <div onclick="toggleClientGuideline('cg-${i}')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;cursor:pointer;">
+        <div onclick="toggleClientGuideline('${prefix}-${i}','${prefix}-arr-${i}')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;cursor:pointer;">
           <div style="font-size:14px;font-weight:700;">${g.title}</div>
-          <span id="cg-arr-${i}" style="font-size:16px;color:var(--gray4);transition:transform 0.2s;">▸</span>
+          <span id="${prefix}-arr-${i}" style="font-size:16px;color:var(--gray4);transition:transform 0.2s;">▸</span>
         </div>
-        <div id="cg-${i}" style="display:none;padding-bottom:14px;font-size:13px;line-height:1.7;color:var(--black);">${g.content||''}</div>
+        <div id="${prefix}-${i}" style="display:none;padding-bottom:14px;font-size:13px;line-height:1.7;color:var(--black);">${g.content||''}</div>
       </div>`).join('')}
   </div>`;
 }
 
-function toggleClientGuideline(id) {
-  const el = document.getElementById(id);
-  const i = id.split('-')[1];
-  const arr = document.getElementById('cg-arr-' + i);
+function toggleClientGuideline(contentId, arrowId) {
+  const el = document.getElementById(contentId);
+  const arr = document.getElementById(arrowId || ('cg-arr-' + contentId.split('-')[1]));
   if (!el) return;
   const open = el.style.display !== 'none';
   el.style.display = open ? 'none' : 'block';
   if (arr) arr.style.transform = open ? '' : 'rotate(90deg)';
+}
+
+// ===== LIFT — tab "Coaching" del cliente (Documentos / Protocolos / Notas) =====
+async function loadClientCoachingTab() {
+  loadClientDocuments();
+  loadClientProtocolsView();
+  renderClientGuidelines('lift-coaching-guidelines-list', 'lgn');
+}
+
+async function loadClientDocuments() {
+  const el = document.getElementById('lift-coaching-documents-list');
+  if (!el || !currentClient) return;
+  el.innerHTML = '<div class="spinner"></div>';
+  const { data } = await sb.from('client_documents').select('*').eq('client_id', currentClient.id).order('uploaded_at', { ascending: false });
+  window._clientDocsCache = data || [];
+  if (!data || !data.length) { el.innerHTML = '<div style="font-size:13px;color:var(--gray4);text-align:center;padding:16px 0;">Tu coach todavía no subió documentos.</div>'; return; }
+  el.innerHTML = data.map((d, i) => `
+    <div class="pdf-card fade-up" style="cursor:pointer;" onclick="openClientDocument(${i})">
+      <div class="pdf-icon">📄</div>
+      <div style="flex:1;min-width:0;">
+        <div class="pdf-name">${escHtml(d.title)}</div>
+        <div class="pdf-date">${new Date(d.uploaded_at).toLocaleDateString('es-CR')}</div>
+      </div>
+      <div class="pdf-open">Abrir</div>
+    </div>`).join('');
+}
+
+async function openClientDocument(i) {
+  const doc = window._clientDocsCache?.[i];
+  if (!doc) return;
+  const { data, error } = await sb.storage.from('client-documents').createSignedUrl(doc.file_path, 300);
+  if (error) { showToast('❌ ' + error.message); return; }
+  window.open(data.signedUrl, '_blank');
+}
+
+async function loadClientProtocolsView() {
+  const el = document.getElementById('lift-coaching-protocols-list');
+  if (!el || !currentClient) return;
+  el.innerHTML = '<div class="spinner"></div>';
+  const { data } = await sb.from('nutrition_protocols').select('id,title,content,order_index').eq('client_id', currentClient.id).order('order_index', { ascending: true });
+  if (!data || !data.length) { el.innerHTML = '<div style="font-size:13px;color:var(--gray4);text-align:center;padding:16px 0;">Tu coach todavía no asignó protocolos.</div>'; return; }
+  el.innerHTML = data.map((p, i) => `
+    <div style="border-bottom:1px solid var(--gray1);">
+      <div onclick="toggleClientGuideline('lift-proto-${i}','lift-proto-arr-${i}')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;cursor:pointer;">
+        <div style="font-size:14px;font-weight:700;">${escHtml(p.title)}</div>
+        <span id="lift-proto-arr-${i}" style="font-size:16px;color:var(--gray4);transition:transform 0.2s;">▸</span>
+      </div>
+      <div id="lift-proto-${i}" style="display:none;padding-bottom:14px;font-size:13px;line-height:1.7;color:var(--black);">${p.content || ''}</div>
+    </div>`).join('');
 }
 
 // ===== TESTS (EVALUACIONES) =====
@@ -3516,17 +3824,56 @@ async function saveCoachTest() {
   alert('¡Evaluación creada! 💪');
 }
 
+// Bloqueo del módulo Entreno (espejo de food_access), no aplica a clientes LIFT.
+// Devuelve true si el cliente tiene acceso (el caller decide si sigue cargando contenido).
+function applyTrainingAccessGate() {
+  const locked = currentClient && currentClient.program_type !== 'lift' && currentClient.training_access === false;
+  const lockedBlock = document.getElementById('training-locked-block');
+  const regularBlock = document.getElementById('regular-home-block');
+  const exList = document.getElementById('c-exercises-list');
+  const muscleSummary = document.getElementById('c-muscle-summary');
+  const sfBtn = document.getElementById('strongflow-btn');
+  if (lockedBlock) lockedBlock.style.display = locked ? '' : 'none';
+  if (regularBlock) regularBlock.style.display = locked ? 'none' : '';
+  if (exList) exList.style.display = locked ? 'none' : '';
+  if (muscleSummary) muscleSummary.style.display = locked ? 'none' : '';
+  if (sfBtn) sfBtn.style.display = locked ? 'none' : '';
+  return !locked;
+}
+
 function clientNav(tab,el) {
-  document.querySelectorAll('#screen-client-home .nav-item,#screen-client-plan .nav-item,#screen-client-profile .nav-item,#screen-client-food .nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('#screen-client-home .nav-item,#screen-client-plan .nav-item,#screen-client-profile .nav-item,#screen-client-food .nav-item,#screen-client-coaching .nav-item').forEach(n=>n.classList.remove('active'));
   el.classList.add('active');
-  if(tab==='home'){showScreen('screen-client-home');loadClientDayStrip();}
+  if(tab==='home'){showScreen('screen-client-home');if(currentClient?.program_type==='lift'){renderLiftDay(liftViewDay||getLiftCurrentDayNumber(currentClient));}else if(applyTrainingAccessGate()){loadClientDayStrip();}}
   else if(tab==='food'){showScreen('screen-client-food');loadFoodScreen();}
   else if(tab==='plan'){showScreen('screen-client-plan');loadClientPlans();loadClientTests();}
   else if(tab==='profile'){showScreen('screen-client-profile');loadClientContractPanel();}
+  else if(tab==='coaching'){showScreen('screen-client-coaching');loadClientCoachingTab();}
+}
+
+// Repurpone el slot "Food" del bottom-nav como "Coaching" para clientes LIFT
+// (StrongFlow/Food/Plan no aplican a LIFT; Coaching queda entre Hoy y Perfil)
+function applyLiftNavPatch(isLift) {
+  // Scopeado a las 5 screens de CLIENTE únicamente — un selector genérico ".bottom-nav"
+  // también pisaría el nav-item(2) ("Machotes") de las screens del coach.
+  document.querySelectorAll('#screen-client-home .bottom-nav .nav-item:nth-child(2),#screen-client-plan .bottom-nav .nav-item:nth-child(2),#screen-client-profile .bottom-nav .nav-item:nth-child(2),#screen-client-food .bottom-nav .nav-item:nth-child(2),#screen-client-coaching .bottom-nav .nav-item:nth-child(2)').forEach(item => {
+    const icon = item.querySelector('.nav-icon');
+    const label = item.querySelector('.nav-label');
+    if (isLift) {
+      if (icon) icon.textContent = '🧭';
+      if (label) label.textContent = 'Coaching';
+      item.onclick = () => clientNav('coaching', item);
+    } else {
+      if (icon) icon.textContent = '🥗';
+      if (label) label.textContent = 'Food';
+      item.onclick = () => clientNav('food', item);
+    }
+  });
 }
 
 // ===== COACH =====
 async function initCoach() {
+  document.body.classList.remove('lift-mode');
   showScreen('screen-coach-home');
   document.getElementById('coach-name-display').textContent = currentUser.name.split(' ')[0];
   loadCoachClients();
@@ -3554,11 +3901,18 @@ async function setSortClients(mode, el) {
 function renderCoachClients(clients) {
   window._cachedClients = clients;
   const list = document.getElementById('coach-clients-list');
-  // Filter by current tab
-  const filtered = (clients||[]).filter(c => clientTab === 'churn' ? c.is_churn : !c.is_churn);
+  // Filter by current tab — clientes hidden=true solo aparecen bajo el tab "Ocultos",
+  // nunca en Activos/Churn.
+  const filtered = (clients||[]).filter(c => {
+    if (clientTab === 'hidden') return !!c.hidden;
+    if (c.hidden) return false;
+    return clientTab === 'churn' ? c.is_churn : !c.is_churn;
+  });
   if(filtered.length===0){
     list.innerHTML = clientTab === 'churn'
       ? '<div class="empty-state"><div class="empty-icon">👋</div><div class="empty-text">Sin clientes en Churn.<br>¡Todos están activos!</div></div>'
+      : clientTab === 'hidden'
+      ? '<div class="empty-state"><div class="empty-icon">🙈</div><div class="empty-text">Sin clientes ocultos.</div></div>'
       : '<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-text">Sin clientes aún.<br>Toca + Cliente para agregar.</div></div>';
     return;
   }
@@ -3580,12 +3934,16 @@ function renderCoachClients(clients) {
     const badgeText = getPaymentBadgeText(d);
     const startDateStr = c.start_date ? formatDate(c.start_date) : (c.created_at ? new Date(c.created_at).toLocaleDateString('es-CR',{day:'numeric',month:'short',year:'numeric'}) : null);
     const typeTag = c.client_type ? `<span class="client-type-tag">${c.client_type==='Virtual'?'V':'H'}</span>` : '';
-    const evolutionBadge = `<span onclick="event.stopPropagation();toggleEvolutionClient('${c.id}',${!c.is_evolution})" title="${c.is_evolution?'Desactivar evoluTion':'Activar evoluTion'}" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:10px;font-weight:800;background:${c.is_evolution?'#111':'var(--gray1)'};color:${c.is_evolution?'var(--orange)':'var(--gray3)'};border:1.5px solid ${c.is_evolution?'var(--orange)':'var(--gray2)'};font-family:'DM Mono',monospace;cursor:pointer;flex-shrink:0;">T</span>`;
+    const isLift = c.program_type === 'lift';
+    const isEvo = c.program_type === 'evolution';
+    const evolutionBadge = isLift ? '' : `<span onclick="event.stopPropagation();toggleEvolutionClient('${c.id}',${!isEvo})" title="${isEvo?'Desactivar evoluTion':'Activar evoluTion'}" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:10px;font-weight:800;background:${isEvo?'#111':'var(--gray1)'};color:${isEvo?'var(--orange)':'var(--gray3)'};border:1.5px solid ${isEvo?'var(--orange)':'var(--gray2)'};font-family:'DM Mono',monospace;cursor:pointer;flex-shrink:0;">T</span>`;
+    const liftBadge = isLift ? `<span title="Programa LIFT" style="display:inline-flex;align-items:center;justify-content:center;padding:3px 7px;border-radius:5px;font-size:9px;font-weight:800;background:var(--orange);color:#fff;font-family:'DM Mono',monospace;letter-spacing:0.04em;flex-shrink:0;">LIFT</span>` : '';
     const churnBadge = c.is_churn ? `<div style="background:#f3f4f6;color:var(--gray4);border-radius:8px;padding:6px 10px;text-align:center;font-size:11px;font-weight:700;line-height:1.2;border:1.5px solid var(--gray2);">👋<div style="font-size:8px;margin-top:1px;">CHURN</div></div>` : `<div class="payment-badge ${badgeClass}"><div style="font-size:8px;opacity:0.7;margin-bottom:1px;">PAGO</div>${badgeText}</div>`;
-    return `<div class="client-card fade-up" onclick="openCoachClient('${c.id}')">
+    const hasOverdueReminder = (window._clientsWithOverdueReminder||new Set()).has(c.id);
+    return `<div class="client-card fade-up" onclick="openCoachClient('${c.id}')" style="${hasOverdueReminder?'background:var(--orange-light);border:1.5px solid var(--orange);':''}">
       <div class="client-avatar" style="${c.is_churn ? 'opacity:0.5;' : ''}">${getInitials(c.name)}</div>
       <div class="client-info">
-        <div class="client-name" style="display:flex;align-items:center;gap:6px;${c.is_churn ? 'color:var(--gray4);' : ''}">${c.name}${typeTag}${evolutionBadge}${(window._clientsWithReminder||new Set()).has(c.id)?'<div style="width:22px;height:22px;border-radius:5px;background:#fff3e0;display:flex;align-items:center;justify-content:center;font-size:12px;">⏰</div>':''}</div>
+        <div class="client-name" style="display:flex;align-items:center;gap:6px;${c.is_churn ? 'color:var(--gray4);' : ''}">${c.name}${typeTag}${evolutionBadge}${liftBadge}${(window._clientsWithReminder||new Set()).has(c.id)?'<div style="width:22px;height:22px;border-radius:5px;background:#fff3e0;display:flex;align-items:center;justify-content:center;font-size:12px;">⏰</div>':''}</div>
         <div class="client-meta">@${c.username} · ${c.days_trained||0} días${startDateStr?` · Inicio: ${startDateStr}`:''}${clientSortMode==='last_active'?(()=>{const t=(window._lastTrainedMap||{})[c.id];return t?` · 🟢 ${new Date(t).toLocaleDateString('es-CR',{weekday:'short',day:'numeric',month:'short'})}`:' · ⚫ Sin entreno';})():''}</div>
       </div>
       ${churnBadge}
@@ -3593,46 +3951,49 @@ function renderCoachClients(clients) {
   }).join('');
 }
 
-let clientTab = 'active'; // 'active' | 'churn'
+let clientTab = 'active'; // 'active' | 'churn' | 'hidden'
 
 function setClientTab(tab) {
   clientTab = tab;
   const activeTab = document.getElementById('ctab-active');
   const churnTab = document.getElementById('ctab-churn');
+  const hiddenTab = document.getElementById('ctab-hidden');
   const sortBar = document.getElementById('client-sort-bar');
-  if (activeTab && churnTab) {
-    if (tab === 'active') {
-      activeTab.style.color = 'var(--orange)'; activeTab.style.borderBottomColor = 'var(--orange)';
-      churnTab.style.color = 'var(--gray4)'; churnTab.style.borderBottomColor = 'transparent';
-    } else {
-      churnTab.style.color = 'var(--orange)'; churnTab.style.borderBottomColor = 'var(--orange)';
-      activeTab.style.color = 'var(--gray4)'; activeTab.style.borderBottomColor = 'transparent';
-    }
-  }
-  // Hide sort bar for churn (less relevant)
-  if (sortBar) sortBar.style.display = tab === 'churn' ? 'none' : '';
+  [activeTab, churnTab, hiddenTab].forEach(t => { if (t) { t.style.color = 'var(--gray4)'; t.style.borderBottomColor = 'transparent'; } });
+  const current = tab === 'active' ? activeTab : tab === 'churn' ? churnTab : hiddenTab;
+  if (current) { current.style.color = 'var(--orange)'; current.style.borderBottomColor = 'var(--orange)'; }
+  // Hide sort bar for churn/hidden (less relevant)
+  if (sortBar) sortBar.style.display = tab === 'active' ? '' : 'none';
   renderCoachClients(window._cachedClientsAll || []);
 }
 
 async function loadCoachClients() {
   const {data:clients} = await sb.from('clients').select('*').eq('coach_id',currentUser.id);
   window._cachedClientsAll = clients || [];
-  const active = (clients||[]).filter(c => !c.is_churn);
-  const churned = (clients||[]).filter(c => c.is_churn);
+  const notHidden = (clients||[]).filter(c => !c.hidden);
+  const active = notHidden.filter(c => !c.is_churn);
+  const churned = notHidden.filter(c => c.is_churn);
+  const hiddenClients = (clients||[]).filter(c => c.hidden);
   const activeCountEl = document.getElementById('coach-count-active');
   const churnCountEl = document.getElementById('coach-count-churn');
+  const hiddenCountEl = document.getElementById('coach-count-hidden');
   if (activeCountEl) activeCountEl.textContent = active.length ? `(${active.length})` : '';
   if (churnCountEl) churnCountEl.textContent = churned.length ? `(${churned.length})` : '';
+  if (hiddenCountEl) hiddenCountEl.textContent = hiddenClients.length ? `(${hiddenClients.length})` : '';
   // Fetch upcoming/overdue reminders (due ≤ today+7) for badge
   const clientIds = (clients||[]).map(c => c.id);
   if (clientIds.length) {
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() + 7);
+    const todayStr = new Date().toISOString().split('T')[0];
     const {data: upcoming} = await sb.from('client_reminders')
-      .select('client_id').in('client_id', clientIds)
+      .select('client_id,due_date').in('client_id', clientIds)
       .lte('due_date', cutoff.toISOString().split('T')[0]);
     window._clientsWithReminder = new Set((upcoming||[]).map(r => r.client_id));
+    // Vencidos u hoy — se resalta la card completa en naranja para que salte a la vista
+    window._clientsWithOverdueReminder = new Set((upcoming||[]).filter(r => r.due_date <= todayStr).map(r => r.client_id));
   } else {
     window._clientsWithReminder = new Set();
+    window._clientsWithOverdueReminder = new Set();
   }
   renderCoachClients(clients||[]);
 }
@@ -3642,7 +4003,9 @@ async function openCoachClient(clientId) {
   currentClient=c;
   const startDateStr = c.start_date ? formatDate(c.start_date) : null;
   const typeTag = c.client_type ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:10px;font-weight:800;background:var(--orange-light);color:var(--orange);border:1.5px solid var(--orange-mid);font-family:'DM Mono',monospace;margin-left:6px;">${c.client_type==='Virtual'?'V':'H'}</span>` : '';
-  const evoTag = `<span onclick="toggleEvolutionClient('${c.id}',${!c.is_evolution})" title="${c.is_evolution?'Desactivar evoluTion':'Activar evoluTion'}" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:10px;font-weight:800;background:${c.is_evolution?'#111':'var(--gray1)'};color:${c.is_evolution?'var(--orange)':'var(--gray3)'};border:1.5px solid ${c.is_evolution?'var(--orange)':'var(--gray2)'};font-family:'DM Mono',monospace;margin-left:6px;cursor:pointer;">T</span>`;
+  const isLiftDetail = c.program_type === 'lift';
+  const isEvoDetail = c.program_type === 'evolution';
+  const evoTag = isLiftDetail ? '' : `<span onclick="toggleEvolutionClient('${c.id}',${!isEvoDetail})" title="${isEvoDetail?'Desactivar evoluTion':'Activar evoluTion'}" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:10px;font-weight:800;background:${isEvoDetail?'#111':'var(--gray1)'};color:${isEvoDetail?'var(--orange)':'var(--gray3)'};border:1.5px solid ${isEvoDetail?'var(--orange)':'var(--gray2)'};font-family:'DM Mono',monospace;margin-left:6px;cursor:pointer;">T</span>`;
   document.getElementById('coach-profile-header').innerHTML=`
     <div class="profile-avatar-lg">${getInitials(c.name)}</div>
     <div>
@@ -3679,19 +4042,22 @@ async function openCoachClient(clientId) {
       </span>
     </div>
     <div class="payment-row"><span class="payment-key">Tiempo entrenado</span><span class="payment-val payment-val-time">${Math.floor((c.total_training_minutes||0)/60)}h ${(c.total_training_minutes||0)%60}min</span></div>
-    <div style="margin-top:14px;padding-top:12px;border-top:1.5px solid var(--gray2);">
+    <div style="margin-top:14px;padding-top:12px;border-top:1.5px solid var(--gray2);display:flex;flex-direction:column;gap:8px;">
       ${c.is_churn ? `<button onclick="toggleChurnClient(false)" style="width:100%;padding:10px;background:var(--green-light);color:var(--green);border:1.5px solid var(--green);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✅ Reactivar cliente</button>` : `<button onclick="toggleChurnClient(true)" style="width:100%;padding:10px;background:var(--red-light);color:var(--red);border:1.5px solid var(--red);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">👋 Marcar como Churn</button>`}
+      ${c.hidden ? `<button onclick="toggleHiddenClient(false)" style="width:100%;padding:10px;background:var(--gray1);color:var(--black);border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">👁️ Mostrar cliente</button>` : `<button onclick="toggleHiddenClient(true)" style="width:100%;padding:10px;background:var(--gray1);color:var(--black);border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">🙈 Ocultar cliente</button>`}
     </div>`;
   document.getElementById('ep-date').value=c.next_payment_date||'';
   document.getElementById('ep-amount').value=c.payment_amount||'';
   document.getElementById('ep-start-date').value=c.start_date||'';
   document.getElementById('ep-client-type').value=c.client_type||'';
+  renderCoachLiftCard(c);
   logsVisible = false;
   logsFilterDate = null;
   document.getElementById('coach-c-days').textContent=c.days_trained||0;
   loadWeekTrainedCount(c.id);
   loadCoachClientDetail(clientId);
   loadCoachPlans();
+  loadCoachTrainingPanel();
   loadCoachFoodPanel();
   loadCoachHabits(clientId);
   loadCoachExtras(clientId);
@@ -3700,6 +4066,553 @@ async function openCoachClient(clientId) {
   loadTrainerNotes(clientId);
   loadWeeklyTracker(clientId);
   showScreen('screen-coach-client');
+}
+
+// ===== LIFT — coach UI (Paso 5) =====
+async function computeLiftSummary(client) {
+  const currentDay = getLiftCurrentDayNumber(client);
+  const { data: missions } = await sb.from('client_lift_missions').select('*').eq('client_id', client.id);
+  const missionsByDay = {};
+  (missions || []).forEach(m => { (missionsByDay[m.day_number] = missionsByDay[m.day_number] || {})[m.area] = m; });
+
+  const { data: planDays } = await sb.from('monthly_plans').select('id,day_of_week').eq('client_id', client.id).in('week_number', [1, 2, 3, 4]);
+  const planDayByLabel = {};
+  (planDays || []).forEach(p => { planDayByLabel[p.day_of_week] = p.id; });
+  const planDayIds = (planDays || []).map(p => p.id);
+  const workoutDoneIds = new Set();
+  if (planDayIds.length > 0) {
+    const { data: exs } = await sb.from('exercises').select('id,plan_day_id').in('plan_day_id', planDayIds);
+    const exIds = (exs || []).map(e => e.id);
+    if (exIds.length > 0) {
+      const { data: logs } = await sb.from('exercise_logs').select('exercise_id').in('exercise_id', exIds).limit(3000);
+      const loggedExIds = new Set((logs || []).map(l => l.exercise_id));
+      (exs || []).forEach(e => { if (loggedExIds.has(e.id)) workoutDoneIds.add(e.plan_day_id); });
+    }
+    const { data: sessions } = await sb.from('workout_sessions').select('plan_day_id').eq('client_id', client.id).in('plan_day_id', planDayIds);
+    (sessions || []).forEach(s => workoutDoneIds.add(s.plan_day_id));
+  }
+
+  const days = [];
+  for (let d = 1; d <= LIFT_TOTAL_DAYS; d++) {
+    const pdId = planDayByLabel[liftDayLabel(d)];
+    const workoutDone = pdId ? workoutDoneIds.has(pdId) : false;
+    const maRow = missionsByDay[d]?.mente_alma || null;
+    const prRow = missionsByDay[d]?.proposito || null;
+    const items = [workoutDone, !!maRow?.completed, !!prRow?.completed];
+    const state = getLiftDayState(client, d, items);
+    days.push({ dayNumber: d, workoutDone, maRow, prRow, state, itemsCompletedCount: items.filter(Boolean).length });
+  }
+
+  let totalItems = 0, completedItems = 0, lostDays = 0;
+  days.slice(0, currentDay).forEach(dd => {
+    totalItems += 3;
+    completedItems += dd.itemsCompletedCount;
+    if (dd.state === 'perdido') lostDays++;
+  });
+
+  return { currentDay, totalItems, completedItems, lostDays, days };
+}
+
+async function renderCoachLiftCard(c) {
+  const card = document.getElementById('coach-lift-card');
+  if (!card) return;
+  if (c.program_type !== 'lift') {
+    card.innerHTML = `
+      <div style="font-size:13px;color:var(--gray4);margin-bottom:10px;">Este cliente no está en el programa LIFT.</div>
+      <button onclick="openLiftActivationModal('${c.id}')" style="width:100%;padding:10px;background:var(--orange);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">🔥 Activar LIFT</button>`;
+    return;
+  }
+  card.innerHTML = '<div class="spinner"></div>';
+  const summary = await computeLiftSummary(c);
+  card.innerHTML = `
+    <div class="payment-row"><span class="payment-key">Día</span><span class="payment-val">${summary.currentDay}/${LIFT_TOTAL_DAYS}</span></div>
+    <div class="payment-row"><span class="payment-key">Ítems completados</span><span class="payment-val">${summary.completedItems}/${summary.totalItems}</span></div>
+    <div class="payment-row"><span class="payment-key">Días perdidos</span><span class="payment-val" style="color:${summary.lostDays > 0 ? 'var(--red)' : 'var(--black)'}">${summary.lostDays}</span></div>
+    <div style="margin-top:12px;display:flex;gap:8px;">
+      <button onclick="openLiftTracker('${c.id}')" style="flex:1;padding:10px;background:#111;color:var(--orange);border:2px solid var(--orange);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">📊 Ver LIFT Tracker completo</button>
+      <button onclick="openLiftActivationModal('${c.id}')" style="padding:10px 14px;background:var(--gray1);color:var(--black);border:1.5px solid var(--gray2);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">⚙️</button>
+    </div>
+    <div style="margin-top:14px;padding-top:12px;border-top:1.5px solid var(--gray2);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-size:11px;font-weight:800;color:var(--gray4);text-transform:uppercase;letter-spacing:0.05em;">📄 Documentos</div>
+        <button onclick="openLiftDocUploadModal('${c.id}')" style="background:var(--orange-light);color:var(--orange);border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Subir</button>
+      </div>
+      <div id="coach-lift-docs-list"><div class="spinner"></div></div>
+    </div>`;
+  loadCoachLiftDocuments(c.id);
+}
+
+async function loadCoachLiftDocuments(clientId) {
+  const el = document.getElementById('coach-lift-docs-list');
+  if (!el) return;
+  const { data } = await sb.from('client_documents').select('*').eq('client_id', clientId).order('uploaded_at', { ascending: false });
+  window._coachLiftDocsCache = data || [];
+  if (!data || !data.length) { el.innerHTML = '<div style="font-size:12px;color:var(--gray4);">Sin documentos subidos.</div>'; return; }
+  el.innerHTML = data.map((d, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--gray1);">
+      <div style="flex:1;font-size:12px;font-weight:600;">${escHtml(d.title)}</div>
+      <span style="font-size:10px;color:var(--gray4);">${new Date(d.uploaded_at).toLocaleDateString('es-CR')}</span>
+      <button onclick="deleteLiftDocument(${i},'${clientId}')" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;">✕</button>
+    </div>`).join('');
+}
+
+async function deleteLiftDocument(i, clientId) {
+  const doc = window._coachLiftDocsCache?.[i];
+  if (!doc) return;
+  if (!confirm('¿Eliminar este documento?')) return;
+  try { await sb.storage.from('client-documents').remove([doc.file_path]); } catch (e) { console.warn('Storage delete failed:', e); }
+  const { error } = await sb.from('client_documents').delete().eq('id', doc.id);
+  if (error) { showToast('❌ ' + error.message); return; }
+  showToast('🗑️ Documento eliminado');
+  loadCoachLiftDocuments(clientId);
+}
+
+let selectedLiftDocFile = null;
+function handleLiftDocSelect(input) {
+  selectedLiftDocFile = input.files[0];
+  if (selectedLiftDocFile) document.getElementById('lift-doc-selected').textContent = '📄 ' + selectedLiftDocFile.name;
+}
+
+function openLiftDocUploadModal(clientId) {
+  document.getElementById('lift-doc-upload-sheet')?.remove();
+  selectedLiftDocFile = null;
+  const sheet = document.createElement('div');
+  sheet.id = 'lift-doc-upload-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:700;display:flex;align-items:flex-end;justify-content:center;';
+  sheet.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;width:100%;max-width:480px;display:flex;flex-direction:column;overflow:hidden;">
+      <div style="padding:18px 20px 12px;border-bottom:1px solid var(--gray1);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:16px;font-weight:700;">📄 Subir documento</div>
+        <button onclick="document.getElementById('lift-doc-upload-sheet').remove()" style="background:none;border:none;font-size:22px;color:var(--gray4);cursor:pointer;">✕</button>
+      </div>
+      <div style="padding:16px 20px;">
+        <label style="font-size:12px;font-weight:700;color:var(--gray4);display:block;margin-bottom:4px;">Título</label>
+        <input class="form-input" id="lift-doc-title-input" placeholder="Ej: Guía de movilidad" style="margin-bottom:14px;width:100%;box-sizing:border-box;">
+        <div class="upload-area" onclick="document.getElementById('lift-doc-input').click()">
+          <div style="font-size:30px;">📄</div>
+          <div class="upload-text">Toca para seleccionar un PDF</div>
+        </div>
+        <input type="file" id="lift-doc-input" accept=".pdf" style="display:none" onchange="handleLiftDocSelect(this)">
+        <div id="lift-doc-selected" style="font-size:12px;color:var(--gray4);margin-top:8px;"></div>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--gray1);flex-shrink:0;">
+        <button onclick="uploadLiftDocument('${clientId}')" style="width:100%;padding:12px;background:var(--orange);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Subir</button>
+      </div>
+    </div>`;
+  sheet.onclick = (e) => { if (e.target === sheet) sheet.remove(); };
+  document.body.appendChild(sheet);
+}
+
+async function uploadLiftDocument(clientId) {
+  const title = document.getElementById('lift-doc-title-input').value.trim();
+  if (!title) { showToast('⚠️ Escribí un título'); return; }
+  if (!selectedLiftDocFile) { showToast('⚠️ Elegí un PDF'); return; }
+  if (selectedLiftDocFile.type !== 'application/pdf') { showToast('⚠️ Solo se permiten archivos PDF'); return; }
+  const safeName = selectedLiftDocFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const filePath = `${clientId}/${Date.now()}_${safeName}`;
+  const { error: upErr } = await sb.storage.from('client-documents').upload(filePath, selectedLiftDocFile);
+  if (upErr) { showToast('❌ ' + upErr.message); return; }
+  const { error: insErr } = await sb.from('client_documents').insert([{ client_id: clientId, title, file_path: filePath, file_size_bytes: selectedLiftDocFile.size }]);
+  if (insErr) { showToast('❌ ' + insErr.message); return; }
+  showToast('✅ Documento subido');
+  document.getElementById('lift-doc-upload-sheet')?.remove();
+  selectedLiftDocFile = null;
+  loadCoachLiftDocuments(clientId);
+}
+
+async function openLiftActivationModal(clientId) {
+  document.getElementById('lift-activation-sheet')?.remove();
+  const { data: c } = await sb.from('clients').select('*').eq('id', clientId).single();
+  const sheet = document.createElement('div');
+  sheet.id = 'lift-activation-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:600;display:flex;align-items:flex-end;justify-content:center;';
+  sheet.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;width:100%;max-width:480px;height:88vh;display:flex;flex-direction:column;overflow:hidden;">
+      <div style="padding:18px 20px 12px;border-bottom:1px solid var(--gray1);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:16px;font-weight:700;">🔥 Activar LIFT — ${c.name}</div>
+        <button onclick="document.getElementById('lift-activation-sheet').remove()" style="background:none;border:none;font-size:22px;color:var(--gray4);cursor:pointer;">✕</button>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:16px 20px;">
+        <label style="font-size:12px;font-weight:700;color:var(--gray4);display:block;margin-bottom:4px;">Fecha de inicio (Día 1)</label>
+        <input type="date" id="lift-start-date-input" value="${c.lift_start_date || ''}" class="form-input" style="margin-bottom:14px;">
+        <label style="font-size:12px;font-weight:700;color:var(--gray4);display:block;margin-bottom:4px;">Hora de release diario</label>
+        <select id="lift-release-hour-input" class="form-input" style="margin-bottom:14px;">
+          ${Array.from({ length: 24 }, (_, h) => `<option value="${h}" ${((c.lift_release_hour ?? 6) === h) ? 'selected' : ''}>${String(h).padStart(2, '0')}:00</option>`).join('')}
+        </select>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <button id="lift-tab-json-btn" onclick="_liftActivationSwitchTab('json')" style="flex:1;padding:8px;border-radius:6px;border:1.5px solid var(--orange);background:var(--orange);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Importar JSON</button>
+          <button id="lift-tab-manual-btn" onclick="_liftActivationSwitchTab('manual')" style="flex:1;padding:8px;border-radius:6px;border:1.5px solid var(--gray2);background:var(--gray1);color:var(--black);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Llenar manual</button>
+        </div>
+        <div id="lift-json-panel">
+          <label style="font-size:12px;font-weight:700;color:var(--gray4);display:block;margin-bottom:4px;">JSON del plan (28 días, opcional — se puede cargar después)</label>
+          <textarea id="lift-json-input" placeholder='{"type":"lift","days":[{"day_number":1,"workout":{"exercises":[{"name":"Sentadilla","sets":3,"reps_range":"8-12"}]},"mente_alma":{"title":"...","content":"..."},"proposito":{"title":"...","content":"..."}}]}' style="width:100%;min-height:220px;padding:10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:12px;font-family:monospace;resize:vertical;"></textarea>
+        </div>
+        <div id="lift-manual-panel" style="display:none;"></div>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--gray1);flex-shrink:0;">
+        <button onclick="saveLiftActivation('${clientId}')" style="width:100%;padding:12px;background:var(--orange);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Activar y cargar plan</button>
+      </div>
+    </div>`;
+  sheet.onclick = (e) => { if (e.target === sheet) sheet.remove(); };
+  document.body.appendChild(sheet);
+  _liftActivationClientId = clientId;
+  _liftActivationActiveTab = 'json';
+}
+
+let _liftActivationClientId = null;
+let _liftActivationActiveTab = 'json';
+
+function _liftActivationSwitchTab(tab) {
+  _liftActivationActiveTab = tab;
+  const jsonBtn = document.getElementById('lift-tab-json-btn');
+  const manualBtn = document.getElementById('lift-tab-manual-btn');
+  const jsonPanel = document.getElementById('lift-json-panel');
+  const manualPanel = document.getElementById('lift-manual-panel');
+  const activeStyle = "flex:1;padding:8px;border-radius:6px;border:1.5px solid var(--orange);background:var(--orange);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;";
+  const inactiveStyle = "flex:1;padding:8px;border-radius:6px;border:1.5px solid var(--gray2);background:var(--gray1);color:var(--black);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;";
+  if (tab === 'json') {
+    jsonBtn.style.cssText = activeStyle; manualBtn.style.cssText = inactiveStyle;
+    jsonPanel.style.display = ''; manualPanel.style.display = 'none';
+  } else {
+    jsonBtn.style.cssText = inactiveStyle; manualBtn.style.cssText = activeStyle;
+    jsonPanel.style.display = 'none'; manualPanel.style.display = '';
+    renderLiftManualPanel(_liftActivationClientId);
+  }
+}
+
+async function _liftFetchContentStatus(clientId) {
+  const { data: missions } = await sb.from('client_lift_missions').select('day_number,area,title,content').eq('client_id', clientId);
+  const missionsByDay = {};
+  (missions || []).forEach(m => { (missionsByDay[m.day_number] = missionsByDay[m.day_number] || {})[m.area] = !!(m.title && m.content); });
+  const { data: planDays } = await sb.from('monthly_plans').select('id,day_of_week').eq('client_id', clientId).in('week_number', [1, 2, 3, 4]);
+  const planDayByLabel = {};
+  (planDays || []).forEach(p => { planDayByLabel[p.day_of_week] = p.id; });
+  const planDayIds = (planDays || []).map(p => p.id);
+  const hasExercisesByPd = new Set();
+  if (planDayIds.length > 0) {
+    const { data: exs } = await sb.from('exercises').select('plan_day_id').in('plan_day_id', planDayIds);
+    (exs || []).forEach(e => hasExercisesByPd.add(e.plan_day_id));
+  }
+  const status = {};
+  for (let d = 1; d <= LIFT_TOTAL_DAYS; d++) {
+    const pdId = planDayByLabel[liftDayLabel(d)];
+    status[d] = {
+      workout: pdId ? hasExercisesByPd.has(pdId) : false,
+      mente_alma: !!missionsByDay[d]?.mente_alma,
+      proposito: !!missionsByDay[d]?.proposito
+    };
+  }
+  return status;
+}
+
+async function renderLiftManualPanel(clientId) {
+  const panel = document.getElementById('lift-manual-panel');
+  if (!panel) return;
+  panel.innerHTML = '<div class="spinner"></div>';
+  const status = await _liftFetchContentStatus(clientId);
+  const chip = (has, label, onclick) => `<button onclick="${onclick}" style="flex:1;padding:8px 4px;border-radius:6px;border:1.5px solid ${has ? 'var(--green)' : 'var(--gray2)'};background:${has ? 'var(--green-light)' : 'var(--gray1)'};color:${has ? 'var(--green)' : 'var(--gray4)'};font-size:10px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">${has ? '✓ ' : ''}${label}</button>`;
+  let html = '';
+  for (let d = 1; d <= LIFT_TOTAL_DAYS; d++) {
+    html += `<div style="display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--gray1);">
+      <div style="width:28px;font-size:12px;font-weight:700;color:var(--gray4);flex-shrink:0;">D${d}</div>
+      ${chip(status[d].workout, 'Cuerpo', `_openLiftManualWorkoutCell('${clientId}',${d})`)}
+      ${chip(status[d].mente_alma, 'Mente/Alma', `_openLiftManualMissionCell('${clientId}',${d},'mente_alma')`)}
+      ${chip(status[d].proposito, 'Propósito', `_openLiftManualMissionCell('${clientId}',${d},'proposito')`)}
+    </div>`;
+  }
+  panel.innerHTML = html;
+}
+
+function _openLiftManualWorkoutCell(clientId, dayNumber) {
+  _liftWorkoutEditorRefreshCallback = () => renderLiftManualPanel(clientId);
+  openLiftWorkoutEditor(clientId, dayNumber);
+}
+function _openLiftManualMissionCell(clientId, dayNumber, area) {
+  _liftMissionEditorRefreshCallback = () => renderLiftManualPanel(clientId);
+  openLiftMissionEditor(clientId, dayNumber, area);
+}
+
+async function saveLiftActivation(clientId) {
+  const startDate = document.getElementById('lift-start-date-input').value;
+  const releaseHour = parseInt(document.getElementById('lift-release-hour-input').value, 10);
+  // Solo se usa el JSON si esa tab está activa — evita pisar contenido cargado a mano
+  // con un JSON abandonado en el textarea si el coach cambió de tab sin borrarlo.
+  const jsonText = _liftActivationActiveTab === 'json' ? document.getElementById('lift-json-input').value.trim() : '';
+  if (!startDate) { showToast('❌ Falta la fecha de inicio'); return; }
+  await sb.from('clients').update({ program_type: 'lift', lift_start_date: startDate, lift_release_hour: releaseHour }).eq('id', clientId);
+  if (currentClient?.id === clientId) {
+    currentClient.program_type = 'lift';
+    currentClient.lift_start_date = startDate;
+    currentClient.lift_release_hour = releaseHour;
+  }
+  if (jsonText) {
+    await confirmLiftImport(jsonText, clientId);
+  } else {
+    showToast('✅ LIFT activado (sin plan importado todavía)');
+    document.getElementById('lift-activation-sheet')?.remove();
+    if (window._cachedClientsAll) renderCoachClients(window._cachedClientsAll);
+    openCoachClient(clientId);
+  }
+}
+
+async function confirmLiftImport(jsonText, clientId) {
+  let parsed;
+  try { parsed = JSON.parse(jsonText); } catch (e) { showToast('❌ JSON inválido: ' + e.message); return; }
+  if (!parsed || parsed.type !== 'lift' || !Array.isArray(parsed.days)) { showToast('❌ Formato inválido: se espera {type:"lift", days:[...]}'); return; }
+  showToast('⏳ Importando plan LIFT...');
+  for (const day of parsed.days) {
+    const dayNumber = day.day_number;
+    if (!dayNumber || dayNumber < 1 || dayNumber > LIFT_TOTAL_DAYS) continue;
+    const week = liftDayToWeek(dayNumber);
+    const dayLabel = liftDayLabel(dayNumber);
+    let { data: pd } = await sb.from('monthly_plans').select('id').eq('client_id', clientId).eq('week_number', week).eq('day_of_week', dayLabel).maybeSingle();
+    if (!pd) {
+      const { data: newPd } = await sb.from('monthly_plans').insert([{ client_id: clientId, week_number: week, day_of_week: dayLabel, day_order: dayNumber }]).select().single();
+      pd = newPd;
+    }
+    if (!pd) continue;
+    await sb.from('exercises').delete().eq('plan_day_id', pd.id);
+    const exs = (day.workout?.exercises || []).map((ex, idx) => ({
+      plan_day_id: pd.id,
+      name: ex.name,
+      tag: ex.tag || 'Peso Libre',
+      muscle_group: ex.muscle_group || null,
+      video_url: ex.video_url || null,
+      sets: ex.sets || 3,
+      reps_range: ex.reps_range || '',
+      rpe: ex.rpe ?? null,
+      rest_seconds: ex.rest_seconds || 60,
+      superset_group: ex.superset_group || null,
+      circuit_rounds: ex.circuit_rounds || null,
+      order_index: ex.order_index ?? idx
+    }));
+    if (exs.length > 0) await sb.from('exercises').insert(exs);
+    const missionRows = [];
+    if (day.mente_alma) missionRows.push({ client_id: clientId, day_number: dayNumber, area: 'mente_alma', title: day.mente_alma.title || '', content: day.mente_alma.content || '' });
+    if (day.proposito) missionRows.push({ client_id: clientId, day_number: dayNumber, area: 'proposito', title: day.proposito.title || '', content: day.proposito.content || '' });
+    if (missionRows.length > 0) await sb.from('client_lift_missions').upsert(missionRows, { onConflict: 'client_id,day_number,area' });
+  }
+  showToast('✅ Plan LIFT importado');
+  document.getElementById('lift-activation-sheet')?.remove();
+  if (window._cachedClientsAll) renderCoachClients(window._cachedClientsAll);
+  openCoachClient(clientId);
+}
+
+// ===== LIFT — editores compartidos por celda (Paso 3/4) =====
+// Usados tanto por el LIFT Tracker (click en celda) como por el panel de "Llenar manual"
+// en la activación. z-index 700, por encima de trackers/activación (600).
+let _liftWorkoutEditorCtx = null;
+let _liftWorkoutEditorRows = [];
+let _liftWorkoutEditorRefreshCallback = null;
+let _liftWorkoutEditorRequestId = 0;
+let _liftMissionEditorCtx = null;
+let _liftMissionEditorRefreshCallback = null;
+
+async function openLiftWorkoutEditor(clientId, dayNumber) {
+  document.getElementById('lift-workout-editor-sheet')?.remove();
+  const requestId = ++_liftWorkoutEditorRequestId;
+  const week = liftDayToWeek(dayNumber);
+  const dayLabel = liftDayLabel(dayNumber);
+  const { data: pd } = await sb.from('monthly_plans').select('id').eq('client_id', clientId).eq('week_number', week).eq('day_of_week', dayLabel).maybeSingle();
+  let exs = [];
+  if (pd) {
+    const { data } = await sb.from('exercises').select('*').eq('plan_day_id', pd.id).order('order_index');
+    exs = data || [];
+  }
+  // Si se abrió otra celda mientras esta consulta estaba en vuelo, esta respuesta quedó obsoleta — descartarla
+  if (requestId !== _liftWorkoutEditorRequestId) return;
+  _liftWorkoutEditorCtx = { clientId, dayNumber };
+  _liftWorkoutEditorRows = exs.map(e => ({
+    name: e.name || '', sets: e.sets ?? 3, reps_range: e.reps_range || '', rpe: e.rpe ?? '',
+    tag: e.tag || 'Peso Libre', muscle_group: e.muscle_group || '', video_url: e.video_url || '',
+    superset_group: e.superset_group || '', circuit_rounds: e.circuit_rounds ?? ''
+  }));
+  document.getElementById('lift-workout-editor-sheet')?.remove();
+  const sheet = document.createElement('div');
+  sheet.id = 'lift-workout-editor-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:700;display:flex;align-items:flex-end;justify-content:center;';
+  sheet.onclick = (e) => { if (e.target === sheet) sheet.remove(); };
+  document.body.appendChild(sheet);
+  renderLiftWorkoutEditorSheet();
+}
+
+function _liftWorkoutUpdateField(i, field, value) {
+  if (_liftWorkoutEditorRows[i]) _liftWorkoutEditorRows[i][field] = value;
+}
+function _liftWorkoutRemoveRow(i) {
+  _liftWorkoutEditorRows.splice(i, 1);
+  renderLiftWorkoutEditorSheet();
+}
+function _liftWorkoutAddRow() {
+  _liftWorkoutEditorRows.push({ name: '', sets: 3, reps_range: '', rpe: '', tag: 'Peso Libre', muscle_group: '', video_url: '', superset_group: '', circuit_rounds: '' });
+  renderLiftWorkoutEditorSheet();
+}
+
+function renderLiftWorkoutEditorSheet() {
+  const sheet = document.getElementById('lift-workout-editor-sheet');
+  if (!sheet || !_liftWorkoutEditorCtx) return;
+  const { dayNumber } = _liftWorkoutEditorCtx;
+  const rowsHtml = _liftWorkoutEditorRows.map((r, i) => `
+    <div style="border:1.5px solid var(--gray2);border-radius:10px;padding:10px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:11px;font-weight:700;color:var(--gray4);">Ejercicio ${i + 1}</span>
+        <button onclick="_liftWorkoutRemoveRow(${i})" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;">✕</button>
+      </div>
+      <input class="form-input" placeholder="Nombre del ejercicio" value="${escHtml(r.name)}" oninput="_liftWorkoutUpdateField(${i},'name',this.value)" style="margin-bottom:6px;width:100%;">
+      <div style="display:flex;gap:6px;margin-bottom:6px;">
+        <input class="form-input" type="number" placeholder="Series" value="${escHtml(r.sets)}" oninput="_liftWorkoutUpdateField(${i},'sets',this.value)" style="flex:1;">
+        <input class="form-input" placeholder="Reps (ej: 8-12)" value="${escHtml(r.reps_range)}" oninput="_liftWorkoutUpdateField(${i},'reps_range',this.value)" style="flex:1;">
+        <input class="form-input" type="number" placeholder="RPE" value="${escHtml(r.rpe)}" oninput="_liftWorkoutUpdateField(${i},'rpe',this.value)" style="flex:1;">
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:6px;">
+        <select class="form-input" onchange="_liftWorkoutUpdateField(${i},'tag',this.value)" style="flex:1;">
+          <option value="Peso Libre" ${r.tag === 'Peso Libre' ? 'selected' : ''}>Peso Libre</option>
+          <option value="Máquina" ${r.tag === 'Máquina' ? 'selected' : ''}>Máquina</option>
+          <option value="Peso Corporal" ${r.tag === 'Peso Corporal' ? 'selected' : ''}>Peso Corporal</option>
+        </select>
+        <input class="form-input" placeholder="Grupo muscular" value="${escHtml(r.muscle_group)}" oninput="_liftWorkoutUpdateField(${i},'muscle_group',this.value)" style="flex:1;">
+      </div>
+      <input class="form-input" placeholder="URL video (opcional)" value="${escHtml(r.video_url)}" oninput="_liftWorkoutUpdateField(${i},'video_url',this.value)" style="margin-bottom:6px;width:100%;">
+      <div style="display:flex;gap:6px;">
+        <input class="form-input" placeholder="Grupo circuito (ej: A, opcional)" value="${escHtml(r.superset_group)}" oninput="_liftWorkoutUpdateField(${i},'superset_group',this.value)" style="flex:1;">
+        <input class="form-input" type="number" placeholder="Rounds" value="${escHtml(r.circuit_rounds)}" oninput="_liftWorkoutUpdateField(${i},'circuit_rounds',this.value)" style="flex:1;">
+      </div>
+    </div>`).join('');
+  sheet.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;width:100%;max-width:480px;height:88vh;display:flex;flex-direction:column;overflow:hidden;">
+      <div style="padding:18px 20px 12px;border-bottom:1px solid var(--gray1);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:16px;font-weight:700;">🏋️ Cuerpo — Día ${dayNumber}</div>
+        <button onclick="document.getElementById('lift-workout-editor-sheet').remove()" style="background:none;border:none;font-size:22px;color:var(--gray4);cursor:pointer;">✕</button>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:16px 20px;">
+        ${rowsHtml || '<div style="font-size:13px;color:var(--gray4);margin-bottom:10px;">Sin ejercicios todavía.</div>'}
+        <button onclick="_liftWorkoutAddRow()" style="width:100%;padding:10px;background:var(--gray1);color:var(--black);border:1.5px dashed var(--gray3);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Agregar ejercicio</button>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--gray1);flex-shrink:0;">
+        <button onclick="saveLiftWorkoutEditor()" style="width:100%;padding:12px;background:var(--orange);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Guardar día ${dayNumber}</button>
+      </div>
+    </div>`;
+}
+
+async function saveLiftWorkoutEditor() {
+  const { clientId, dayNumber } = _liftWorkoutEditorCtx;
+  const week = liftDayToWeek(dayNumber);
+  const dayLabel = liftDayLabel(dayNumber);
+  let { data: pd } = await sb.from('monthly_plans').select('id').eq('client_id', clientId).eq('week_number', week).eq('day_of_week', dayLabel).maybeSingle();
+  if (!pd) {
+    const { data: newPd, error: insPdErr } = await sb.from('monthly_plans').insert([{ client_id: clientId, week_number: week, day_of_week: dayLabel, day_order: dayNumber }]).select().single();
+    if (insPdErr) { showToast('❌ ' + insPdErr.message); return; }
+    pd = newPd;
+  }
+  if (!pd) { showToast('❌ No se pudo guardar el día'); return; }
+  const { error: delErr } = await sb.from('exercises').delete().eq('plan_day_id', pd.id);
+  if (delErr) { showToast('❌ ' + delErr.message); return; }
+  const exs = _liftWorkoutEditorRows.filter(r => r.name && r.name.trim()).map((r, idx) => ({
+    plan_day_id: pd.id,
+    name: r.name.trim(),
+    tag: r.tag || 'Peso Libre',
+    muscle_group: r.muscle_group ? String(r.muscle_group).trim() : null,
+    video_url: r.video_url ? String(r.video_url).trim() : null,
+    sets: r.sets !== '' ? parseInt(r.sets, 10) : 3,
+    reps_range: r.reps_range ? String(r.reps_range).trim() : '',
+    rpe: r.rpe !== '' && r.rpe != null ? parseFloat(r.rpe) : null,
+    rest_seconds: 60,
+    superset_group: r.superset_group ? String(r.superset_group).trim() : null,
+    circuit_rounds: r.circuit_rounds !== '' ? parseInt(r.circuit_rounds, 10) : null,
+    order_index: idx
+  }));
+  if (exs.length > 0) {
+    const { error: insExErr } = await sb.from('exercises').insert(exs);
+    if (insExErr) { showToast('❌ ' + insExErr.message); return; }
+  }
+  showToast('✅ Día ' + dayNumber + ' guardado');
+  document.getElementById('lift-workout-editor-sheet')?.remove();
+  if (_liftWorkoutEditorRefreshCallback) _liftWorkoutEditorRefreshCallback();
+}
+
+async function openLiftMissionEditor(clientId, dayNumber, area) {
+  document.getElementById('lift-mission-editor-sheet')?.remove();
+  const { data: row } = await sb.from('client_lift_missions').select('*').eq('client_id', clientId).eq('day_number', dayNumber).eq('area', area).maybeSingle();
+  _liftMissionEditorCtx = { clientId, dayNumber, area };
+  const areaLabel = area === 'mente_alma' ? '🧘 Mente / Alma' : '🎯 Propósito';
+  const sheet = document.createElement('div');
+  sheet.id = 'lift-mission-editor-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:700;display:flex;align-items:flex-end;justify-content:center;';
+  sheet.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;">
+      <div style="padding:18px 20px 12px;border-bottom:1px solid var(--gray1);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:16px;font-weight:700;">${areaLabel} — Día ${dayNumber}</div>
+        <button onclick="document.getElementById('lift-mission-editor-sheet').remove()" style="background:none;border:none;font-size:22px;color:var(--gray4);cursor:pointer;">✕</button>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:16px 20px;">
+        <label style="font-size:12px;font-weight:700;color:var(--gray4);display:block;margin-bottom:4px;">Título</label>
+        <input class="form-input" id="lift-mission-title-input" value="${escHtml(row?.title || '')}" style="margin-bottom:14px;width:100%;">
+        <label style="font-size:12px;font-weight:700;color:var(--gray4);display:block;margin-bottom:4px;">Contenido</label>
+        <textarea class="form-input" id="lift-mission-content-input" style="min-height:140px;margin-bottom:14px;resize:vertical;width:100%;">${escHtml(row?.content || '')}</textarea>
+        ${row?.reflection ? `<label style="font-size:12px;font-weight:700;color:var(--gray4);display:block;margin-bottom:4px;">Reflexión del cliente (solo lectura)</label><div style="font-size:13px;color:var(--gray5);background:var(--gray1);border-radius:8px;padding:10px;white-space:pre-wrap;">${escHtml(row.reflection)}</div>` : ''}
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--gray1);flex-shrink:0;">
+        <button onclick="saveLiftMissionEditor()" style="width:100%;padding:12px;background:var(--orange);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Guardar</button>
+      </div>
+    </div>`;
+  sheet.onclick = (e) => { if (e.target === sheet) sheet.remove(); };
+  document.body.appendChild(sheet);
+}
+
+async function saveLiftMissionEditor() {
+  const { clientId, dayNumber, area } = _liftMissionEditorCtx;
+  const title = document.getElementById('lift-mission-title-input').value.trim();
+  const content = document.getElementById('lift-mission-content-input').value.trim();
+  if (!title || !content) { showToast('❌ Completá título y contenido'); return; }
+  const { error } = await sb.from('client_lift_missions').upsert([{ client_id: clientId, day_number: dayNumber, area, title, content }], { onConflict: 'client_id,day_number,area' });
+  if (error) { showToast('❌ ' + error.message); return; }
+  showToast('✅ Guardado');
+  document.getElementById('lift-mission-editor-sheet')?.remove();
+  if (_liftMissionEditorRefreshCallback) _liftMissionEditorRefreshCallback();
+}
+
+function _openLiftTrackerWorkoutCell(clientId, dayNumber) {
+  _liftWorkoutEditorRefreshCallback = () => openLiftTracker(clientId);
+  openLiftWorkoutEditor(clientId, dayNumber);
+}
+function _openLiftTrackerMissionCell(clientId, dayNumber, area) {
+  _liftMissionEditorRefreshCallback = () => openLiftTracker(clientId);
+  openLiftMissionEditor(clientId, dayNumber, area);
+}
+
+async function openLiftTracker(clientId) {
+  document.getElementById('lift-tracker-sheet')?.remove();
+  const { data: c } = await sb.from('clients').select('*').eq('id', clientId).single();
+  const summary = await computeLiftSummary(c);
+  const icon = s => s === 'completado' ? '✅' : s === 'perdido' ? '❌' : s === 'bloqueado' ? '🔒' : '—';
+  const rows = summary.days.map(d => {
+    const workoutState = getLiftItemState(c, d.dayNumber, d.workoutDone);
+    const maState = getLiftItemState(c, d.dayNumber, !!d.maRow?.completed);
+    const prState = getLiftItemState(c, d.dayNumber, !!d.prRow?.completed);
+    return `<div style="display:grid;grid-template-columns:36px 1fr 1fr 1fr;align-items:center;padding:7px 4px;border-bottom:1px solid var(--gray1);font-size:13px;">
+      <div style="font-weight:700;color:var(--gray4);">${d.dayNumber}</div>
+      <div onclick="_openLiftTrackerWorkoutCell('${clientId}',${d.dayNumber})" style="text-align:center;cursor:pointer;">${icon(workoutState)}</div>
+      <div onclick="_openLiftTrackerMissionCell('${clientId}',${d.dayNumber},'mente_alma')" style="text-align:center;cursor:pointer;">${icon(maState)}</div>
+      <div onclick="_openLiftTrackerMissionCell('${clientId}',${d.dayNumber},'proposito')" style="text-align:center;cursor:pointer;">${icon(prState)}</div>
+    </div>`;
+  }).join('');
+  const sheet = document.createElement('div');
+  sheet.id = 'lift-tracker-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:600;display:flex;align-items:flex-end;justify-content:center;';
+  sheet.innerHTML = `
+    <div style="background:var(--white);border-radius:20px 20px 0 0;width:100%;max-width:480px;height:88vh;display:flex;flex-direction:column;overflow:hidden;">
+      <div style="padding:18px 20px 12px;border-bottom:1px solid var(--gray1);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:16px;font-weight:700;">📊 LIFT Tracker — ${c.name}</div>
+        <button onclick="document.getElementById('lift-tracker-sheet').remove()" style="background:none;border:none;font-size:22px;color:var(--gray4);cursor:pointer;">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:36px 1fr 1fr 1fr;padding:10px 20px 6px;font-size:10px;font-weight:800;color:var(--gray4);text-transform:uppercase;letter-spacing:0.05em;flex-shrink:0;">
+        <div>Día</div><div style="text-align:center;">Cuerpo</div><div style="text-align:center;">Mente/Alma</div><div style="text-align:center;">Propósito</div>
+      </div>
+      <div style="font-size:10px;color:var(--gray4);padding:0 20px 8px;flex-shrink:0;">Tocá cualquier celda para editar ese día.</div>
+      <div style="flex:1;overflow-y:auto;padding:0 20px 16px;">${rows}</div>
+    </div>`;
+  sheet.onclick = (e) => { if (e.target === sheet) sheet.remove(); };
+  document.body.appendChild(sheet);
 }
 
 function getWeekStart() {
@@ -7450,15 +8363,16 @@ async function updatePayment() {
 }
 
 async function toggleEvolutionClient(clientId, newVal) {
-  const { error } = await sb.from('clients').update({ is_evolution: newVal }).eq('id', clientId);
+  const newType = newVal ? 'evolution' : 'regular';
+  const { error } = await sb.from('clients').update({ program_type: newType }).eq('id', clientId);
   if (error) { showToast('❌ ' + error.message); return; }
   if (window._cachedClientsAll) {
     const c = window._cachedClientsAll.find(x => x.id === clientId);
-    if (c) c.is_evolution = newVal;
+    if (c) c.program_type = newType;
     renderCoachClients(window._cachedClientsAll);
   }
   if (currentClient?.id === clientId) {
-    currentClient.is_evolution = newVal;
+    currentClient.program_type = newType;
     // Refresh profile header T badge
     openCoachClient(clientId);
   }
@@ -7475,6 +8389,20 @@ async function toggleChurnClient(makeChurn) {
   if (error) { showToast('❌ Error: ' + error.message); return; }
   currentClient.is_churn = makeChurn;
   showToast(makeChurn ? '👋 Cliente movido a Churn' : '✅ Cliente reactivado');
+  showScreen('screen-coach-home');
+  loadCoachClients();
+}
+
+async function toggleHiddenClient(makeHidden) {
+  if (!currentClient) return;
+  const msg = makeHidden
+    ? `¿Ocultar a ${currentClient.name} de tu lista principal? Vas a poder verlo bajo el tab "Ocultos". Su acceso a la app no se ve afectado.`
+    : `¿Mostrar a ${currentClient.name} de nuevo en tu lista principal?`;
+  if (!confirm(msg)) return;
+  const { error } = await sb.from('clients').update({ hidden: makeHidden }).eq('id', currentClient.id);
+  if (error) { showToast('❌ Error: ' + error.message); return; }
+  currentClient.hidden = makeHidden;
+  showToast(makeHidden ? '🙈 Cliente ocultado' : '👁️ Cliente visible de nuevo');
   showScreen('screen-coach-home');
   loadCoachClients();
 }
@@ -8892,6 +9820,38 @@ async function clearFoodChat() {
     <div style="font-size:13px;line-height:1.6;">Chat limpiado. Preguntame lo que sea sobre tu alimentación.</div>
   </div>`;
   showToast('✅ Chat limpiado');
+}
+
+// ===== COACH: TRAINING ACCESS (espejo de food_access, no aplica a LIFT) =====
+async function loadCoachTrainingPanel() {
+  const panel = document.getElementById('coach-training-panel');
+  if (!panel || !currentClient) return;
+  if (currentClient.program_type === 'lift') {
+    panel.innerHTML = '<div style="font-size:12px;color:var(--gray4);padding:8px 0;">No aplica — este cliente está en el programa LIFT.</div>';
+    return;
+  }
+  const hasAccess = currentClient.training_access !== false;
+  panel.innerHTML = `
+    <div style="background:${hasAccess ? 'var(--green-light)' : 'var(--red-light)'};border:1.5px solid ${hasAccess ? 'var(--green)' : 'var(--red)'};border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:${hasAccess ? 'var(--green)' : 'var(--red)'};">${hasAccess ? '✅ Acceso Entreno activo' : '❌ Sin acceso Entreno'}</div>
+        <div style="font-size:11px;color:var(--gray5);margin-top:2px;">${hasAccess ? 'El cliente puede usar StrongFlow y ver su plan de entreno' : 'El cliente ve la pantalla de bloqueo en Hoy'}</div>
+      </div>
+      <button onclick="toggleTrainingAccess()" style="background:${hasAccess ? 'var(--red)' : 'var(--green)'};color:white;border:none;border-radius:var(--radius-sm);padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">
+        ${hasAccess ? 'Desactivar' : 'Dar acceso'}
+      </button>
+    </div>`;
+}
+
+async function toggleTrainingAccess() {
+  if (!currentClient) return;
+  const hasAccess = currentClient.training_access !== false;
+  const newAccess = !hasAccess;
+  const { error } = await sb.from('clients').update({ training_access: newAccess }).eq('id', currentClient.id);
+  if (error) { showToast('❌ ' + error.message); return; }
+  currentClient.training_access = newAccess;
+  showToast(newAccess ? '✅ Acceso Entreno activado' : '🔒 Acceso Entreno desactivado');
+  loadCoachTrainingPanel();
 }
 
 // ===== COACH: FOOD ACCESS & NUTRITION DATA =====
@@ -11135,7 +12095,7 @@ async function openContractEditor() {
   const { data: existing } = await sb.from('contracts').select('*').eq('client_id', currentClient.id).maybeSingle();
   currentContractId = existing?.id || null;
   contractEditorMode = existing ? 'edit' : 'create';
-  window._existingContractSnapshot = existing ? { program: existing.program, duration: existing.duration, total_amount: existing.total_amount, signed_at: existing.signed_at } : null;
+  window._existingContractSnapshot = existing ? { program: existing.program, duration: existing.duration, total_amount: existing.total_amount, includes_lift: !!existing.includes_lift, signed_at: existing.signed_at } : null;
 
   // Build modal HTML dynamically and inject into page
   let modal = document.getElementById('modal-contract-editor');
@@ -11156,6 +12116,10 @@ async function openContractEditor() {
         <option value="NutriFlex">NutriFlex</option>
         <option value="evoluTion">evoluTion</option>
       </select>
+    </div>
+    <div class="form-group" style="display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" id="ce-includes-lift" style="width:18px;height:18px;flex-shrink:0;">
+      <label for="ce-includes-lift" style="font-size:13px;font-weight:600;color:var(--gray5);cursor:pointer;margin:0;">Incluye LIFT</label>
     </div>
     <div class="form-group">
       <label class="form-label">Duración</label>
@@ -11192,6 +12156,7 @@ async function openContractEditor() {
   // Pre-fill if editing
   if (existing) {
     document.getElementById('ce-program').value = existing.program || 'StrongFlow';
+    document.getElementById('ce-includes-lift').checked = !!existing.includes_lift;
     document.getElementById('ce-duration').value = existing.duration || 'Trimestral';
     document.getElementById('ce-total').value = existing.total_amount || '';
     document.getElementById('ce-payment-method').value = existing.payment_method || '';
@@ -11244,12 +12209,13 @@ async function saveContract() {
   const isMensual = duration === 'Mensual';
   const installments = isMensual ? [] : getInstallmentsFromForm();
   const payment_day = isMensual ? parseInt(document.getElementById('ce-payment-day').value) : null;
+  const includes_lift = document.getElementById('ce-includes-lift').checked;
   if (!program || !duration || isNaN(total_amount) || !payment_method) { showToast('⚠️ Completá todos los campos'); return; }
-  const payload = { client_id: currentClient.id, program, duration, total_amount, payment_method, installments, payment_day };
+  const payload = { client_id: currentClient.id, program, duration, total_amount, payment_method, installments, payment_day, includes_lift };
   if (currentContractId && window._existingContractSnapshot) {
     const snap = window._existingContractSnapshot;
     if (snap.signed_at) {
-      const changed = snap.program !== program || snap.duration !== duration || parseFloat(snap.total_amount) !== total_amount;
+      const changed = snap.program !== program || snap.duration !== duration || parseFloat(snap.total_amount) !== total_amount || snap.includes_lift !== includes_lift;
       if (changed) { payload.signed_at = null; payload.signed_by = null; payload.status = 'pendiente'; }
     }
   }
