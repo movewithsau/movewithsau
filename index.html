@@ -561,7 +561,7 @@ body.lift-mode #strongflow-btn { display:none !important; }
   <a href="https://wa.me/50672083564" target="_blank" style="position:fixed;bottom:80px;right:16px;width:50px;height:50px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,211,102,0.4);z-index:99;text-decoration:none;font-size:26px;">💬</a>
   <!-- StrongFlow button — only on Hoy screen, grows when workout running -->
   <div id="strongflow-btn" onclick="openStrongFlow()" style="position:fixed;bottom:140px;right:16px;width:50px;height:50px;background:#111111;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,0.35);z-index:99;cursor:pointer;transition:all 0.3s;border:2px solid var(--orange);">
-    <span style="font-size:22px;font-weight:900;color:var(--orange);font-family:'Playfair Display',serif;line-height:1;">?</span>
+    <span style="font-size:22px;font-weight:900;color:var(--orange);font-family:'Playfair Display',serif;line-height:1;display:inline-block;transform:translate(0.03em,0.05em);">?</span>
   </div>
   <div class="bottom-nav">
     <div class="nav-item active" onclick="clientNav('home',this)"><div class="nav-icon">🏋️</div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
@@ -1299,7 +1299,7 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
     <!-- header -->
     <div style="background:#111111;padding:16px 20px 14px;display:flex;align-items:center;gap:12px;flex-shrink:0;">
       <div style="width:36px;height:36px;background:#111;border:2px solid var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <span style="font-size:18px;font-weight:900;color:var(--orange);font-family:'Playfair Display',serif;line-height:1;">?</span>
+        <span style="font-size:18px;font-weight:900;color:var(--orange);font-family:'Playfair Display',serif;line-height:1;display:inline-block;transform:translate(0.03em,0.05em);">?</span>
       </div>
       <div style="flex:1;">
         <div style="font-family:'Playfair Display',serif;font-size:17px;font-weight:900;color:white;">StrongFlow</div>
@@ -11416,7 +11416,7 @@ async function loadStrongFlowHistory() {
 function renderSFWelcome() {
   return `<div style="text-align:center;padding:20px 10px;">
     <div style="width:52px;height:52px;background:#111;border:2px solid var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
-      <span style="font-size:24px;font-weight:900;color:var(--orange);font-family:'Playfair Display',serif;">?</span>
+      <span style="font-size:24px;font-weight:900;color:var(--orange);font-family:'Playfair Display',serif;line-height:1;display:inline-block;transform:translate(0.03em,0.05em);">?</span>
     </div>
     <div style="font-size:13px;line-height:1.7;color:var(--gray5);">Hola, soy <strong style="color:var(--black);">StrongFlow</strong>.<br>Preguntame sobre técnica, sensaciones,<br>calentamiento — o si algo te está molestando.</div>
   </div>`;
