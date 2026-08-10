@@ -560,8 +560,8 @@ body.lift-mode #strongflow-btn { display:none !important; }
   </div>
   <!-- Floating action buttons — shared column so StrongFlow (grows when workout running) and WhatsApp never overlap -->
   <div style="position:fixed;bottom:80px;right:16px;display:flex;flex-direction:column;align-items:center;gap:14px;z-index:99;">
-    <div id="strongflow-btn" onclick="openStrongFlow()" style="width:50px;height:50px;background:#111111;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,0.35);cursor:pointer;transition:all 0.3s;border:2px solid var(--orange);">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <div id="strongflow-btn" onclick="openStrongFlow()" style="width:50px;height:50px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,0.35);border-radius:50%;cursor:pointer;transition:all 0.3s;">
+      <svg viewBox="0 0 240 240" width="50" height="50" xmlns="http://www.w3.org/2000/svg"><circle cx="120" cy="120" r="112" fill="#111111" stroke="#F75A0E" stroke-width="10"/><text x="120" y="122" text-anchor="middle" dominant-baseline="central" font-family="DM Sans, Arial, sans-serif" font-size="110" font-weight="700" fill="#F75A0E">?</text></svg>
     </div>
     <a href="https://wa.me/50672083564" target="_blank" style="width:50px;height:50px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,211,102,0.4);text-decoration:none;font-size:26px;">💬</a>
   </div>
@@ -1300,8 +1300,8 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
   <div style="position:relative;width:100%;max-width:480px;height:82vh;background:var(--white);border-radius:24px 24px 0 0;display:flex;flex-direction:column;overflow:hidden;">
     <!-- header -->
     <div style="background:#111111;padding:16px 20px 14px;display:flex;align-items:center;gap:12px;flex-shrink:0;">
-      <div style="width:36px;height:36px;background:#111;border:2px solid var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 240 240" width="36" height="36" xmlns="http://www.w3.org/2000/svg"><circle cx="120" cy="120" r="112" fill="#111111" stroke="#F75A0E" stroke-width="10"/><text x="120" y="122" text-anchor="middle" dominant-baseline="central" font-family="DM Sans, Arial, sans-serif" font-size="110" font-weight="700" fill="#F75A0E">?</text></svg>
       </div>
       <div style="flex:1;">
         <div style="font-family:'Playfair Display',serif;font-size:17px;font-weight:900;color:white;">StrongFlow</div>
@@ -11417,8 +11417,8 @@ async function loadStrongFlowHistory() {
 
 function renderSFWelcome() {
   return `<div style="text-align:center;padding:20px 10px;">
-    <div style="width:52px;height:52px;background:#111;border:2px solid var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <div style="width:52px;height:52px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+      <svg viewBox="0 0 240 240" width="52" height="52" xmlns="http://www.w3.org/2000/svg"><circle cx="120" cy="120" r="112" fill="#111111" stroke="#F75A0E" stroke-width="10"/><text x="120" y="122" text-anchor="middle" dominant-baseline="central" font-family="DM Sans, Arial, sans-serif" font-size="110" font-weight="700" fill="#F75A0E">?</text></svg>
     </div>
     <div style="font-size:13px;line-height:1.7;color:var(--gray5);">Hola, soy <strong style="color:var(--black);">StrongFlow</strong>.<br>Preguntame sobre técnica, sensaciones,<br>calentamiento — o si algo te está molestando.</div>
   </div>`;
@@ -11502,13 +11502,13 @@ function updateStrongFlowBtn() {
     btn.style.height = '62px';
     btn.style.boxShadow = '0 0 0 5px rgba(247,90,14,0.2), 0 4px 20px rgba(0,0,0,0.4)';
     const svg = btn.querySelector('svg');
-    if(svg) { svg.setAttribute('width','28'); svg.setAttribute('height','28'); }
+    if(svg) { svg.setAttribute('width','62'); svg.setAttribute('height','62'); }
   } else {
     btn.style.width = '50px';
     btn.style.height = '50px';
     btn.style.boxShadow = '0 4px 16px rgba(0,0,0,0.35)';
     const svg = btn.querySelector('svg');
-    if(svg) { svg.setAttribute('width','24'); svg.setAttribute('height','24'); }
+    if(svg) { svg.setAttribute('width','50'); svg.setAttribute('height','50'); }
   }
 }
 
