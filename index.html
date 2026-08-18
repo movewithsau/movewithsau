@@ -1862,25 +1862,43 @@ async function initLiftClientHome() {
   await renderLiftDay(liftViewDay);
 }
 
+// Devuelve el plan_day_id (monthly_plans.id) enlazado a este slot LIFT, o null si
+// todavía no se enlazó ningún día — reemplaza la vieja fórmula fija
+// week=ceil(day/7)/day_of_week='Día N'. Ver Paso 4 de "LIFT: enlazar rutinas".
+async function getLiftLinkedPlanDayId(clientId, dayNumber) {
+  const { data } = await sb.from('client_lift_day_links').select('linked_plan_day_id').eq('client_id', clientId).eq('lift_day_number', dayNumber).maybeSingle();
+  return data?.linked_plan_day_id || null;
+}
+
 async function isLiftWorkoutDone(dayNumber) {
-  const week = liftDayToWeek(dayNumber);
-  const dayLabel = liftDayLabel(dayNumber);
-  const { data: pd } = await sb.from('monthly_plans').select('id').eq('client_id', currentClient.id).eq('week_number', week).eq('day_of_week', dayLabel).maybeSingle();
-  if (!pd) return false;
-  const { data: exs } = await sb.from('exercises').select('id').eq('plan_day_id', pd.id);
+  const pdId = await getLiftLinkedPlanDayId(currentClient.id, dayNumber);
+  if (!pdId) return false;
+  const { data: exs } = await sb.from('exercises').select('id').eq('plan_day_id', pdId);
   if (exs && exs.length > 0) {
     const exIds = exs.map(e => e.id);
     const { data: logs } = await sb.from('exercise_logs').select('exercise_id').in('exercise_id', exIds).limit(1);
     if (logs && logs.length > 0) return true;
   }
-  const { data: ws } = await sb.from('workout_sessions').select('id').eq('client_id', currentClient.id).eq('plan_day_id', pd.id).maybeSingle();
+  const { data: ws } = await sb.from('workout_sessions').select('id').eq('client_id', currentClient.id).eq('plan_day_id', pdId).maybeSingle();
   return !!ws;
 }
 
 async function renderLiftDay(dayNumber) {
   liftViewDay = dayNumber;
-  clientWeek = liftDayToWeek(dayNumber);
-  clientDay = liftDayLabel(dayNumber);
+  const linkedPdId = await getLiftLinkedPlanDayId(currentClient.id, dayNumber);
+  let hasLinkedWorkout = false;
+  if (linkedPdId) {
+    const { data: pd } = await sb.from('monthly_plans').select('week_number,day_of_week').eq('id', linkedPdId).maybeSingle();
+    if (pd) { clientWeek = pd.week_number; clientDay = pd.day_of_week; hasLinkedWorkout = true; }
+  }
+  if (!hasLinkedWorkout) {
+    // clientWeek/clientDay son globals compartidos con todo el flujo de cliente
+    // regular/evoluTion — si no hay enlace para este día, hay que limpiarlos en vez
+    // de dejar el valor de un día LIFT anterior colgado ahí para quien sea que los
+    // lea después.
+    clientWeek = 1;
+    clientDay = null;
+  }
 
   const { data: missions } = await sb.from('client_lift_missions').select('*').eq('client_id', currentClient.id).eq('day_number', dayNumber);
   const missionMenteAlma = (missions || []).find(m => m.area === 'mente_alma') || null;
@@ -1901,7 +1919,12 @@ async function renderLiftDay(dayNumber) {
     <div style="font-size:16px;font-weight:700;color:var(--black);margin-bottom:10px;">🏋️ Cuerpo</div>`;
   renderLiftProgressStrip(dayNumber);
 
-  await loadClientExercises();
+  if (hasLinkedWorkout) {
+    await loadClientExercises();
+  } else {
+    document.getElementById('c-exercises-list').innerHTML = '<div class="empty-state"><div class="empty-icon">🔗</div><div class="empty-text">Tu coach todavía no enlazó una rutina para este día.</div></div>';
+    document.getElementById('c-muscle-summary').innerHTML = '';
+  }
 
   const dayState = getLiftDayState(currentClient, dayNumber, itemsCompleted);
   document.getElementById('lift-missions-block').innerHTML =
@@ -1917,10 +1940,10 @@ async function renderLiftProgressStrip(activeDay) {
   const missionsByDay = {};
   (allMissions || []).forEach(m => { (missionsByDay[m.day_number] = missionsByDay[m.day_number] || {})[m.area] = m.completed; });
 
-  const { data: planDays } = await sb.from('monthly_plans').select('id,day_of_week,week_number').eq('client_id', currentClient.id).in('week_number', [1, 2, 3, 4]);
-  const planDayByLabel = {};
-  (planDays || []).forEach(p => { planDayByLabel[p.day_of_week] = p.id; });
-  const planDayIds = (planDays || []).map(p => p.id);
+  const { data: links } = await sb.from('client_lift_day_links').select('lift_day_number,linked_plan_day_id').eq('client_id', currentClient.id);
+  const pdIdByDay = {};
+  (links || []).forEach(l => { pdIdByDay[l.lift_day_number] = l.linked_plan_day_id; });
+  const planDayIds = [...new Set((links || []).map(l => l.linked_plan_day_id))];
   const workoutDoneIds = new Set();
   if (planDayIds.length > 0) {
     const { data: exs } = await sb.from('exercises').select('id,plan_day_id').in('plan_day_id', planDayIds);
@@ -1936,7 +1959,7 @@ async function renderLiftProgressStrip(activeDay) {
 
   let html = '';
   for (let d = 1; d <= LIFT_TOTAL_DAYS; d++) {
-    const pdId = planDayByLabel[liftDayLabel(d)];
+    const pdId = pdIdByDay[d];
     const workoutDone = pdId ? workoutDoneIds.has(pdId) : false;
     const ma = !!missionsByDay[d]?.mente_alma;
     const pr = !!missionsByDay[d]?.proposito;
@@ -4233,10 +4256,10 @@ async function computeLiftSummary(client) {
   const missionsByDay = {};
   (missions || []).forEach(m => { (missionsByDay[m.day_number] = missionsByDay[m.day_number] || {})[m.area] = m; });
 
-  const { data: planDays } = await sb.from('monthly_plans').select('id,day_of_week').eq('client_id', client.id).in('week_number', [1, 2, 3, 4]);
-  const planDayByLabel = {};
-  (planDays || []).forEach(p => { planDayByLabel[p.day_of_week] = p.id; });
-  const planDayIds = (planDays || []).map(p => p.id);
+  const { data: links } = await sb.from('client_lift_day_links').select('lift_day_number,linked_plan_day_id').eq('client_id', client.id);
+  const pdIdByDay = {};
+  (links || []).forEach(l => { pdIdByDay[l.lift_day_number] = l.linked_plan_day_id; });
+  const planDayIds = [...new Set((links || []).map(l => l.linked_plan_day_id))];
   const workoutDoneIds = new Set();
   if (planDayIds.length > 0) {
     const { data: exs } = await sb.from('exercises').select('id,plan_day_id').in('plan_day_id', planDayIds);
@@ -4252,7 +4275,7 @@ async function computeLiftSummary(client) {
 
   const days = [];
   for (let d = 1; d <= LIFT_TOTAL_DAYS; d++) {
-    const pdId = planDayByLabel[liftDayLabel(d)];
+    const pdId = pdIdByDay[d];
     const workoutDone = pdId ? workoutDoneIds.has(pdId) : false;
     const maRow = missionsByDay[d]?.mente_alma || null;
     const prRow = missionsByDay[d]?.proposito || null;
@@ -4442,10 +4465,10 @@ async function _liftFetchContentStatus(clientId) {
   const { data: missions } = await sb.from('client_lift_missions').select('day_number,area,title,content').eq('client_id', clientId);
   const missionsByDay = {};
   (missions || []).forEach(m => { (missionsByDay[m.day_number] = missionsByDay[m.day_number] || {})[m.area] = !!(m.title && m.content); });
-  const { data: planDays } = await sb.from('monthly_plans').select('id,day_of_week').eq('client_id', clientId).in('week_number', [1, 2, 3, 4]);
-  const planDayByLabel = {};
-  (planDays || []).forEach(p => { planDayByLabel[p.day_of_week] = p.id; });
-  const planDayIds = (planDays || []).map(p => p.id);
+  const { data: links } = await sb.from('client_lift_day_links').select('lift_day_number,linked_plan_day_id').eq('client_id', clientId);
+  const pdIdByDay = {};
+  (links || []).forEach(l => { pdIdByDay[l.lift_day_number] = l.linked_plan_day_id; });
+  const planDayIds = [...new Set((links || []).map(l => l.linked_plan_day_id))];
   const hasExercisesByPd = new Set();
   if (planDayIds.length > 0) {
     const { data: exs } = await sb.from('exercises').select('plan_day_id').in('plan_day_id', planDayIds);
@@ -4453,7 +4476,7 @@ async function _liftFetchContentStatus(clientId) {
   }
   const status = {};
   for (let d = 1; d <= LIFT_TOTAL_DAYS; d++) {
-    const pdId = planDayByLabel[liftDayLabel(d)];
+    const pdId = pdIdByDay[d];
     status[d] = {
       workout: pdId ? hasExercisesByPd.has(pdId) : false,
       mente_alma: !!missionsByDay[d]?.mente_alma,
@@ -4482,8 +4505,8 @@ async function renderLiftManualPanel(clientId) {
 }
 
 function _openLiftManualWorkoutCell(clientId, dayNumber) {
-  _liftWorkoutEditorRefreshCallback = () => renderLiftManualPanel(clientId);
-  openLiftWorkoutEditor(clientId, dayNumber);
+  _liftLinkSelectorRefreshCallback = () => renderLiftManualPanel(clientId);
+  openLiftDayLinkSelector(clientId, dayNumber);
 }
 function _openLiftManualMissionCell(clientId, dayNumber, area) {
   _liftMissionEditorRefreshCallback = () => renderLiftManualPanel(clientId);
@@ -4545,6 +4568,11 @@ async function confirmLiftImport(jsonText, clientId) {
       order_index: ex.order_index ?? idx
     }));
     if (exs.length > 0) await sb.from('exercises').insert(exs);
+    // El día se sigue "colocando" con la fórmula (week=ceil(day/7), 'Día N') para no
+    // pisar días manuales de otras semanas — pero lo que el resto de la app LEE ahora
+    // es el enlace explícito, no la fórmula. Sin este upsert, el día importado
+    // quedaría invisible pese a haberse creado bien.
+    await sb.from('client_lift_day_links').upsert([{ client_id: clientId, lift_day_number: dayNumber, linked_plan_day_id: pd.id }], { onConflict: 'client_id,lift_day_number' });
     const missionRows = [];
     if (day.mente_alma) missionRows.push({ client_id: clientId, day_number: dayNumber, area: 'mente_alma', title: day.mente_alma.title || '', content: day.mente_alma.content || '' });
     if (day.proposito) missionRows.push({ client_id: clientId, day_number: dayNumber, area: 'proposito', title: day.proposito.title || '', content: day.proposito.content || '' });
@@ -4557,135 +4585,119 @@ async function confirmLiftImport(jsonText, clientId) {
 }
 
 // ===== LIFT — editores compartidos por celda (Paso 3/4) =====
-// Usados tanto por el LIFT Tracker (click en celda) como por el panel de "Llenar manual"
+// Usado tanto por el LIFT Tracker (click en celda) como por el panel de "Llenar manual"
 // en la activación. z-index 700, por encima de trackers/activación (600).
-let _liftWorkoutEditorCtx = null;
-let _liftWorkoutEditorRows = [];
-let _liftWorkoutEditorRefreshCallback = null;
-let _liftWorkoutEditorRequestId = 0;
+// Enlaza un slot LIFT (day_number) a un día YA CONSTRUIDO en monthly_plans —
+// no crea/edita ejercicios acá, eso se hace con el editor normal del perfil.
+let _liftLinkSelectorCtx = null; // {clientId, dayNumber, currentLinkedId}
+let _liftLinkSelectorRefreshCallback = null;
+let _liftLinkSelectorWeeks = null; // {weekNum: [{id, day_of_week, day_order, exCount, exNames}]}
+let _liftLinkSelectorStep = 'week'; // 'week' | 'day'
+let _liftLinkSelectorSelectedWeek = null;
+let _liftLinkSelectorRequestId = 0;
 let _liftMissionEditorCtx = null;
 let _liftMissionEditorRefreshCallback = null;
 
-async function openLiftWorkoutEditor(clientId, dayNumber) {
-  document.getElementById('lift-workout-editor-sheet')?.remove();
-  const requestId = ++_liftWorkoutEditorRequestId;
-  const week = liftDayToWeek(dayNumber);
-  const dayLabel = liftDayLabel(dayNumber);
-  const { data: pd } = await sb.from('monthly_plans').select('id').eq('client_id', clientId).eq('week_number', week).eq('day_of_week', dayLabel).maybeSingle();
-  let exs = [];
-  if (pd) {
-    const { data } = await sb.from('exercises').select('*').eq('plan_day_id', pd.id).order('order_index');
-    exs = data || [];
+async function openLiftDayLinkSelector(clientId, dayNumber) {
+  document.getElementById('lift-link-selector-sheet')?.remove();
+  // Token de request: si el coach toca dos celdas seguidas antes de que la primera
+  // consulta resuelva, sin esto quedarían dos sheets con el mismo id compitiendo por
+  // el mismo estado global (_liftLinkSelectorWeeks/Ctx) — mismo patrón que
+  // loadClientExercisesRequestId usa para el mismo problema en otro lado del archivo.
+  const requestId = ++_liftLinkSelectorRequestId;
+
+  // Misma query que usa el editor de plan normal del perfil (loadCoachClientDetail) —
+  // todos los días ya construidos para este cliente, en cualquier semana.
+  const { data: plans } = await sb.from('monthly_plans').select('id,week_number,day_of_week,day_order').eq('client_id', clientId).order('week_number').order('day_order', { ascending: true, nullsFirst: false });
+  const planDayIds = (plans || []).map(p => p.id);
+  const exCountByPd = {}, exNamesByPd = {};
+  if (planDayIds.length > 0) {
+    const { data: exs } = await sb.from('exercises').select('plan_day_id,name').in('plan_day_id', planDayIds);
+    (exs || []).forEach(e => {
+      exCountByPd[e.plan_day_id] = (exCountByPd[e.plan_day_id] || 0) + 1;
+      (exNamesByPd[e.plan_day_id] = exNamesByPd[e.plan_day_id] || []).push(e.name);
+    });
   }
-  // Si se abrió otra celda mientras esta consulta estaba en vuelo, esta respuesta quedó obsoleta — descartarla
-  if (requestId !== _liftWorkoutEditorRequestId) return;
-  _liftWorkoutEditorCtx = { clientId, dayNumber };
-  _liftWorkoutEditorRows = exs.map(e => ({
-    name: e.name || '', sets: e.sets ?? 3, reps_range: e.reps_range || '', rpe: e.rpe ?? '',
-    tag: e.tag || 'Peso Libre', muscle_group: e.muscle_group || '', video_url: e.video_url || '',
-    superset_group: e.superset_group || '', circuit_rounds: e.circuit_rounds ?? ''
-  }));
-  document.getElementById('lift-workout-editor-sheet')?.remove();
+  const { data: currentLink } = await sb.from('client_lift_day_links').select('linked_plan_day_id').eq('client_id', clientId).eq('lift_day_number', dayNumber).maybeSingle();
+
+  // Si se abrió otra celda mientras estas consultas estaban en vuelo, esta respuesta
+  // quedó obsoleta — descartarla en vez de pisar el estado del selector más nuevo.
+  if (requestId !== _liftLinkSelectorRequestId) return;
+
+  const weeks = {};
+  (plans || []).forEach(p => {
+    if (!weeks[p.week_number]) weeks[p.week_number] = [];
+    weeks[p.week_number].push({ ...p, exCount: exCountByPd[p.id] || 0, exNames: exNamesByPd[p.id] || [] });
+  });
+  _liftLinkSelectorWeeks = weeks;
+  _liftLinkSelectorCtx = { clientId, dayNumber, currentLinkedId: currentLink?.linked_plan_day_id || null };
+
+  document.getElementById('lift-link-selector-sheet')?.remove();
   const sheet = document.createElement('div');
-  sheet.id = 'lift-workout-editor-sheet';
+  sheet.id = 'lift-link-selector-sheet';
   sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:700;display:flex;align-items:flex-end;justify-content:center;';
   sheet.onclick = (e) => { if (e.target === sheet) sheet.remove(); };
   document.body.appendChild(sheet);
-  renderLiftWorkoutEditorSheet();
+  renderLiftLinkSelectorSheet();
 }
 
-function _liftWorkoutUpdateField(i, field, value) {
-  if (_liftWorkoutEditorRows[i]) _liftWorkoutEditorRows[i][field] = value;
-}
-function _liftWorkoutRemoveRow(i) {
-  _liftWorkoutEditorRows.splice(i, 1);
-  renderLiftWorkoutEditorSheet();
-}
-function _liftWorkoutAddRow() {
-  _liftWorkoutEditorRows.push({ name: '', sets: 3, reps_range: '', rpe: '', tag: 'Peso Libre', muscle_group: '', video_url: '', superset_group: '', circuit_rounds: '' });
-  renderLiftWorkoutEditorSheet();
-}
+function renderLiftLinkSelectorSheet() {
+  const sheet = document.getElementById('lift-link-selector-sheet');
+  if (!sheet || !_liftLinkSelectorCtx) return;
+  const { dayNumber } = _liftLinkSelectorCtx;
+  const weekNums = Object.keys(_liftLinkSelectorWeeks).map(Number).sort((a, b) => a - b);
 
-function renderLiftWorkoutEditorSheet() {
-  const sheet = document.getElementById('lift-workout-editor-sheet');
-  if (!sheet || !_liftWorkoutEditorCtx) return;
-  const { dayNumber } = _liftWorkoutEditorCtx;
-  const rowsHtml = _liftWorkoutEditorRows.map((r, i) => `
-    <div style="border:1.5px solid var(--gray2);border-radius:10px;padding:10px;margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <span style="font-size:11px;font-weight:700;color:var(--gray4);">Ejercicio ${i + 1}</span>
-        <button onclick="_liftWorkoutRemoveRow(${i})" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;">✕</button>
-      </div>
-      <input class="form-input" placeholder="Nombre del ejercicio" value="${escHtml(r.name)}" oninput="_liftWorkoutUpdateField(${i},'name',this.value)" style="margin-bottom:6px;width:100%;">
-      <div style="display:flex;gap:6px;margin-bottom:6px;">
-        <input class="form-input" type="number" placeholder="Series" value="${escHtml(r.sets)}" oninput="_liftWorkoutUpdateField(${i},'sets',this.value)" style="flex:1;">
-        <input class="form-input" placeholder="Reps (ej: 8-12)" value="${escHtml(r.reps_range)}" oninput="_liftWorkoutUpdateField(${i},'reps_range',this.value)" style="flex:1;">
-        <input class="form-input" type="number" placeholder="RPE" value="${escHtml(r.rpe)}" oninput="_liftWorkoutUpdateField(${i},'rpe',this.value)" style="flex:1;">
-      </div>
-      <div style="display:flex;gap:6px;margin-bottom:6px;">
-        <select class="form-input" onchange="_liftWorkoutUpdateField(${i},'tag',this.value)" style="flex:1;">
-          <option value="Peso Libre" ${r.tag === 'Peso Libre' ? 'selected' : ''}>Peso Libre</option>
-          <option value="Máquina" ${r.tag === 'Máquina' ? 'selected' : ''}>Máquina</option>
-          <option value="Peso Corporal" ${r.tag === 'Peso Corporal' ? 'selected' : ''}>Peso Corporal</option>
-        </select>
-        <input class="form-input" placeholder="Grupo muscular" value="${escHtml(r.muscle_group)}" oninput="_liftWorkoutUpdateField(${i},'muscle_group',this.value)" style="flex:1;">
-      </div>
-      <input class="form-input" placeholder="URL video (opcional)" value="${escHtml(r.video_url)}" oninput="_liftWorkoutUpdateField(${i},'video_url',this.value)" style="margin-bottom:6px;width:100%;">
-      <div style="display:flex;gap:6px;">
-        <input class="form-input" placeholder="Grupo circuito (ej: A, opcional)" value="${escHtml(r.superset_group)}" oninput="_liftWorkoutUpdateField(${i},'superset_group',this.value)" style="flex:1;">
-        <input class="form-input" type="number" placeholder="Rounds" value="${escHtml(r.circuit_rounds)}" oninput="_liftWorkoutUpdateField(${i},'circuit_rounds',this.value)" style="flex:1;">
-      </div>
-    </div>`).join('');
+  let bodyHtml;
+  if (_liftLinkSelectorStep === 'week') {
+    bodyHtml = weekNums.length === 0
+      ? `<div style="font-size:13px;color:var(--gray4);text-align:center;padding:24px 16px;">Este cliente todavía no tiene ningún día construido en su plan. Creá uno desde su perfil (Plan mensual → Editar) y volvé acá para enlazarlo.</div>`
+      : weekNums.map(w => `
+        <button onclick="_liftLinkSelectorPickWeek(${w})" style="width:100%;text-align:left;padding:14px;border:1.5px solid var(--gray2);border-radius:10px;background:var(--white);margin-bottom:8px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:14px;font-weight:700;">Semana ${w}</span>
+          <span style="font-size:11px;color:var(--gray4);">${_liftLinkSelectorWeeks[w].length} día(s) ›</span>
+        </button>`).join('');
+  } else {
+    const days = _liftLinkSelectorWeeks[_liftLinkSelectorSelectedWeek] || [];
+    bodyHtml = `<button onclick="_liftLinkSelectorBackToWeeks()" style="background:none;border:none;color:var(--orange);font-size:12px;font-weight:700;cursor:pointer;margin-bottom:10px;padding:0;">‹ Volver a semanas</button>` +
+      days.map(d => {
+        const isCurrent = _liftLinkSelectorCtx.currentLinkedId === d.id;
+        const preview = d.exCount > 0 ? `${d.exCount} ejercicio${d.exCount === 1 ? '' : 's'}: ${d.exNames.slice(0, 3).join(', ')}${d.exNames.length > 3 ? '…' : ''}` : 'Sin ejercicios cargados';
+        return `<button onclick="_liftLinkSelectorPickDay('${d.id}')" style="width:100%;text-align:left;padding:14px;border:1.5px solid ${isCurrent ? 'var(--orange)' : 'var(--gray2)'};border-radius:10px;background:${isCurrent ? 'var(--orange-light)' : 'var(--white)'};margin-bottom:8px;cursor:pointer;font-family:'DM Sans',sans-serif;">
+          <div style="font-size:14px;font-weight:700;${isCurrent ? 'color:var(--orange);' : ''}">${escHtml(d.day_of_week)}${isCurrent ? ' · enlazado ahora' : ''}</div>
+          <div style="font-size:11px;color:var(--gray4);margin-top:2px;">${escHtml(preview)}</div>
+        </button>`;
+      }).join('');
+  }
+
   sheet.innerHTML = `
-    <div style="background:var(--white);border-radius:20px 20px 0 0;width:100%;max-width:480px;height:88vh;display:flex;flex-direction:column;overflow:hidden;">
+    <div style="background:var(--white);border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;">
       <div style="padding:18px 20px 12px;border-bottom:1px solid var(--gray1);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
-        <div style="font-size:16px;font-weight:700;">🏋️ Cuerpo — Día ${dayNumber}</div>
-        <button onclick="document.getElementById('lift-workout-editor-sheet').remove()" style="background:none;border:none;font-size:22px;color:var(--gray4);cursor:pointer;">✕</button>
+        <div style="font-size:16px;font-weight:700;">🏋️ Enlazar Cuerpo — Día ${dayNumber}</div>
+        <button onclick="document.getElementById('lift-link-selector-sheet').remove()" style="background:none;border:none;font-size:22px;color:var(--gray4);cursor:pointer;">✕</button>
       </div>
       <div style="flex:1;overflow-y:auto;padding:16px 20px;">
-        ${rowsHtml || '<div style="font-size:13px;color:var(--gray4);margin-bottom:10px;">Sin ejercicios todavía.</div>'}
-        <button onclick="_liftWorkoutAddRow()" style="width:100%;padding:10px;background:var(--gray1);color:var(--black);border:1.5px dashed var(--gray3);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Agregar ejercicio</button>
-      </div>
-      <div style="padding:14px 20px;border-top:1px solid var(--gray1);flex-shrink:0;">
-        <button onclick="saveLiftWorkoutEditor()" style="width:100%;padding:12px;background:var(--orange);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Guardar día ${dayNumber}</button>
+        <div style="font-size:11px;color:var(--gray4);margin-bottom:12px;">${_liftLinkSelectorStep === 'week' ? 'Elegí la semana del plan que tiene la rutina que querés usar.' : 'Elegí el día dentro de esa semana.'}</div>
+        ${bodyHtml}
       </div>
     </div>`;
 }
 
-async function saveLiftWorkoutEditor() {
-  const { clientId, dayNumber } = _liftWorkoutEditorCtx;
-  const week = liftDayToWeek(dayNumber);
-  const dayLabel = liftDayLabel(dayNumber);
-  let { data: pd } = await sb.from('monthly_plans').select('id').eq('client_id', clientId).eq('week_number', week).eq('day_of_week', dayLabel).maybeSingle();
-  if (!pd) {
-    const { data: newPd, error: insPdErr } = await sb.from('monthly_plans').insert([{ client_id: clientId, week_number: week, day_of_week: dayLabel, day_order: dayNumber }]).select().single();
-    if (insPdErr) { showToast('❌ ' + insPdErr.message); return; }
-    pd = newPd;
-  }
-  if (!pd) { showToast('❌ No se pudo guardar el día'); return; }
-  const { error: delErr } = await sb.from('exercises').delete().eq('plan_day_id', pd.id);
-  if (delErr) { showToast('❌ ' + delErr.message); return; }
-  const exs = _liftWorkoutEditorRows.filter(r => r.name && r.name.trim()).map((r, idx) => ({
-    plan_day_id: pd.id,
-    name: r.name.trim(),
-    tag: r.tag || 'Peso Libre',
-    muscle_group: r.muscle_group ? String(r.muscle_group).trim() : null,
-    video_url: r.video_url ? String(r.video_url).trim() : null,
-    sets: r.sets !== '' ? parseInt(r.sets, 10) : 3,
-    reps_range: r.reps_range ? String(r.reps_range).trim() : '',
-    rpe: r.rpe !== '' && r.rpe != null ? parseFloat(r.rpe) : null,
-    rest_seconds: 60,
-    superset_group: r.superset_group ? String(r.superset_group).trim() : null,
-    circuit_rounds: r.circuit_rounds !== '' ? parseInt(r.circuit_rounds, 10) : null,
-    order_index: idx
-  }));
-  if (exs.length > 0) {
-    const { error: insExErr } = await sb.from('exercises').insert(exs);
-    if (insExErr) { showToast('❌ ' + insExErr.message); return; }
-  }
-  showToast('✅ Día ' + dayNumber + ' guardado');
-  document.getElementById('lift-workout-editor-sheet')?.remove();
-  if (_liftWorkoutEditorRefreshCallback) _liftWorkoutEditorRefreshCallback();
+function _liftLinkSelectorPickWeek(w) {
+  _liftLinkSelectorSelectedWeek = w;
+  _liftLinkSelectorStep = 'day';
+  renderLiftLinkSelectorSheet();
+}
+function _liftLinkSelectorBackToWeeks() {
+  _liftLinkSelectorStep = 'week';
+  renderLiftLinkSelectorSheet();
+}
+async function _liftLinkSelectorPickDay(planDayId) {
+  const { clientId, dayNumber } = _liftLinkSelectorCtx;
+  const { error } = await sb.from('client_lift_day_links').upsert([{ client_id: clientId, lift_day_number: dayNumber, linked_plan_day_id: planDayId }], { onConflict: 'client_id,lift_day_number' });
+  if (error) { showToast('❌ ' + error.message); return; }
+  showToast('✅ Día enlazado');
+  document.getElementById('lift-link-selector-sheet')?.remove();
+  if (_liftLinkSelectorRefreshCallback) _liftLinkSelectorRefreshCallback();
 }
 
 async function openLiftMissionEditor(clientId, dayNumber, area) {
@@ -4730,8 +4742,8 @@ async function saveLiftMissionEditor() {
 }
 
 function _openLiftTrackerWorkoutCell(clientId, dayNumber) {
-  _liftWorkoutEditorRefreshCallback = () => openLiftTracker(clientId);
-  openLiftWorkoutEditor(clientId, dayNumber);
+  _liftLinkSelectorRefreshCallback = () => openLiftTracker(clientId);
+  openLiftDayLinkSelector(clientId, dayNumber);
 }
 function _openLiftTrackerMissionCell(clientId, dayNumber, area) {
   _liftMissionEditorRefreshCallback = () => openLiftTracker(clientId);
