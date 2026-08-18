@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/coach-digest",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}
