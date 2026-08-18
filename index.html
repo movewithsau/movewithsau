@@ -531,6 +531,16 @@ body.lift-mode #strongflow-btn { display:none !important; }
 <!-- ===== CLIENT: HOY ===== -->
 <div class="screen" id="screen-client-home">
   <div class="topbar"><div class="topbar-logo">Move With Sau</div><div class="topbar-action" onclick="handleLogout()">Salir</div></div>
+  <div id="workout-header-block" style="display:none;position:sticky;top:0;z-index:99;background:#111;padding:14px 20px;align-items:center;justify-content:space-between;gap:12px;">
+    <div style="min-width:0;">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.14em;color:var(--gray4);text-transform:uppercase;">Entrenando</div>
+      <div id="workout-header-exname" style="font-size:14px;font-weight:700;color:white;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</div>
+    </div>
+    <div style="text-align:right;flex-shrink:0;">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.14em;color:var(--orange);text-transform:uppercase;">Tiempo</div>
+      <div id="workout-header-timer" style="font-family:'DM Mono',monospace;font-size:16px;font-weight:700;color:var(--orange);margin-top:2px;">0:00</div>
+    </div>
+  </div>
   <div class="scroll-body">
     <div id="regular-home-block">
       <div class="greeting-card fade-up"><div class="greeting-hello">Bienvenido de nuevo,</div><div class="greeting-name" id="c-greeting-name">—</div><div class="greeting-sub" id="c-greeting-week">—</div></div>
@@ -1524,6 +1534,11 @@ let currentUser = null, currentClient = null, currentExercise = null;
 let clientWeek = 1, clientDay = null, currentPlanDayId = null;
 let weeklyTrackerWeek = 1;
 let prevWeekLogsCache = {}; // { exName: { setNum: {weight, reps, unit} } }
+// Estado de abierto/cerrado del acordeón de ejercicios, elegido a mano por el cliente
+// (independiente de cuál sea "el primero pendiente"). Se resetea al cambiar de día.
+let accordionOverrides = new Map();
+let accordionDayKey = null;
+let loadClientExercisesRequestId = 0;
 let builderWeek = 1, builderDay = null;
 let exFormCount = 0;
 let selectedPdfFile = null;
@@ -2451,21 +2466,56 @@ function getDayShortLabel(dayValue, idx) {
 }
 
 async function loadClientExercises() {
+  // Token de request: loadClientExercises es async con varios await (planDay, exs,
+  // logs de semana anterior) — si el cliente cambia de día/semana dos veces rápido,
+  // dos invocaciones quedan en vuelo a la vez. Sin esto, la más vieja podría resolver
+  // después y pisar el render correcto de la más nueva con datos del día equivocado.
+  const requestId = ++loadClientExercisesRequestId;
   const list = document.getElementById('c-exercises-list');
   const summary = document.getElementById('c-muscle-summary');
   list.innerHTML='<div class="spinner"></div>';
   summary.innerHTML='';
   if(!currentClient){list.innerHTML='<div class="empty-state"><div class="empty-icon">🏋️</div><div class="empty-text">Sin rutina asignada.</div></div>';return;}
   const {data:planDay} = await sb.from('monthly_plans').select('*').eq('client_id',currentClient.id).eq('week_number',clientWeek).eq('day_of_week',clientDay).single();
+  if(requestId !== loadClientExercisesRequestId) return;
   if(!planDay){list.innerHTML='<div class="empty-state"><div class="empty-icon">😴</div><div class="empty-text">Sin ejercicios para este día.</div></div>';return;}
   currentPlanDayId = planDay.id;
   const {data:exs} = await sb.from('exercises').select('*').eq('plan_day_id',planDay.id).order('order_index');
+  if(requestId !== loadClientExercisesRequestId) return;
   if(!exs||exs.length===0){list.innerHTML='<div class="empty-state"><div class="empty-icon">😴</div><div class="empty-text">Sin ejercicios para este día.</div></div>';return;}
+
+  // El acordeón (abierto/cerrado a mano) se resetea solo al cambiar de día real,
+  // no en cada re-render disparado por un "Guardar ✓" dentro del mismo día.
+  const dayKey = `${currentClient.id}_w${clientWeek}_${clientDay}`;
+  if (dayKey !== accordionDayKey) { accordionOverrides = new Map(); accordionDayKey = dayKey; }
 
   const groups = {};
   exs.forEach(ex=>{ if(ex.superset_group){ if(!groups[ex.superset_group])groups[ex.superset_group]=[]; groups[ex.superset_group].push(ex); } });
 
   const done = getCompletedExercises();
+
+  // ── Orden de items (ejercicio suelto o circuito) para saber cuál es "el primero
+  // pendiente" — ese arranca expandido, dispara el nombre del header sticky, y define
+  // el resto del acordeón colapsado por default. ──
+  const itemsOrder = [];
+  const seenGroupsForOrder = new Set();
+  exs.forEach(ex => {
+    if (ex.superset_group) {
+      if (!seenGroupsForOrder.has(ex.superset_group)) {
+        seenGroupsForOrder.add(ex.superset_group);
+        const g = groups[ex.superset_group];
+        itemsOrder.push({ key: `circuit-${ex.superset_group}`, label: `Circuito ${ex.superset_group}`, isDone: g.every(se => !!done[se.id]) });
+      }
+    } else {
+      itemsOrder.push({ key: `solo-${ex.id}`, label: ex.name, isDone: !!done[ex.id] });
+    }
+  });
+  const firstPendingItem = itemsOrder.find(it => !it.isDone) || null;
+  function isItemOpen(key) {
+    if (accordionOverrides.has(key)) return accordionOverrides.get(key);
+    return !!firstPendingItem && firstPendingItem.key === key;
+  }
+
   // Load saved circuit logs from localStorage
   const circuitLogsKey = `mws_clogs_${currentClient.id}_w${clientWeek}_${clientDay}`;
   let circuitLogs = {};
@@ -2512,18 +2562,48 @@ async function loadClientExercises() {
     } catch(e){ console.warn('prev logs fetch failed:',e); }
   }
   prevWeekLogsCache = prevByEx;
+  if(requestId !== loadClientExercisesRequestId) return;
 
   // ===== WORKOUT START BUTTON (before warmup banner) =====
   const workoutStarted = isWorkoutStarted();
+  // Con el entreno en curso, la barra sticky "Entrenando" ya cubre esta info para
+  // clientes no-LIFT — pero LIFT no tiene esa barra (ver guard más abajo), así que
+  // ahí sí hay que mantener el pill viejo o el cliente se queda sin ningún indicador
+  // de que el entreno sigue activo.
   const startBtnHtml = !workoutStarted
     ? `<button class="workout-action-btn workout-start-btn fade-up" onclick="handleStartWorkout()">
         <span style="font-size:18px;">▶</span> Iniciar entreno
       </button>`
-    : `<div class="fade-up" style="background:var(--green-light);border:1.5px solid var(--green);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
-        <span style="font-size:16px;">🟢</span>
-        <span style="font-size:13px;font-weight:700;color:var(--green);">Entreno en curso</span>
-        <span id="home-timer-badge" style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--green);margin-left:auto;"></span>
-      </div>`;
+    : (currentClient.program_type === 'lift'
+      ? `<div class="fade-up" style="background:var(--green-light);border:1.5px solid var(--green);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+          <span style="font-size:16px;">🟢</span>
+          <span style="font-size:13px;font-weight:700;color:var(--green);">Entreno en curso</span>
+          <span id="lift-home-timer-badge" style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--green);margin-left:auto;"></span>
+        </div>`
+      : '');
+
+  // La sección de bienvenida/stats se reemplaza por el header sticky "Entrenando"
+  // mientras dure el entreno — solo para clientes no-LIFT (LIFT tiene su propio
+  // header de día, sin relación con este).
+  if (currentClient.program_type !== 'lift') {
+    const regularBlock = document.getElementById('regular-home-block');
+    const workoutHeaderBlock = document.getElementById('workout-header-block');
+    if (regularBlock) regularBlock.style.display = workoutStarted ? 'none' : '';
+    if (workoutHeaderBlock) {
+      workoutHeaderBlock.style.display = workoutStarted ? 'flex' : 'none';
+      if (workoutStarted) {
+        // Sticky top:0 solo funciona bien acá porque este bloque vive afuera de
+        // .scroll-body (mismo nivel que .topbar) — adentro de .scroll-body el sticky
+        // no se activa en la práctica (esa región no termina siendo la que realmente
+        // scrollea). Como .topbar también es sticky top:0, hay que correr este bloque
+        // exactamente su altura para que no se superpongan al quedar ambos pegados.
+        const topbarEl = document.querySelector('#screen-client-home .topbar');
+        workoutHeaderBlock.style.top = (topbarEl ? topbarEl.offsetHeight : 0) + 'px';
+      }
+    }
+    const headerNameEl = document.getElementById('workout-header-exname');
+    if (headerNameEl) headerNameEl.textContent = firstPendingItem ? firstPendingItem.label : '¡Todo completado! 🎉';
+  }
 
   // Warmup banner
   const warmupBanner = `<div class="fade-up" style="background:linear-gradient(135deg,#fff8f5,#fff3ee);border:1.5px solid var(--orange-mid);border-radius:var(--radius);padding:13px 15px;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px;">
@@ -2613,8 +2693,17 @@ async function loadClientExercises() {
         }
       }
 
-      exHtml += `<div class="fade-up" style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;border-left:3px solid var(--orange);">
-        <div style="padding:10px 14px 8px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+      const circuitItemKey = `circuit-${ex.superset_group}`;
+      const circuitDone = g.every(se => !!done[se.id]);
+      const circuitOpen = isItemOpen(circuitItemKey);
+      exHtml += `<div class="fade-up" style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;border-left:3px solid var(--orange);${circuitDone?'opacity:0.85;':''}">
+        <div onclick="toggleAccordionItem('${circuitItemKey}')" style="padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;">
+          <div class="ex-check-badge${circuitDone?' done':''}" id="acc-check-${circuitItemKey}">${circuitDone?'✓':''}</div>
+          <div style="flex:1;min-width:0;font-size:14px;font-weight:700;color:var(--black);">Circuito ${ex.superset_group}</div>
+          <div id="acc-chevron-${circuitItemKey}" style="font-size:16px;color:var(--gray4);flex-shrink:0;transition:transform 0.2s;transform:${circuitOpen?'rotate(180deg)':''};">▾</div>
+        </div>
+        <div class="acc-body" id="acc-body-${circuitItemKey}" style="display:${circuitOpen?'block':'none'};padding:0 14px 12px;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;">
           <div style="flex:1;">
             <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--orange);text-transform:uppercase;font-weight:700;">Circuito ${ex.superset_group}</div>
             <div style="font-size:11px;color:var(--gray4);margin-top:1px;">${rounds} rounds · ${restText} descanso</div>
@@ -2636,8 +2725,9 @@ async function loadClientExercises() {
             <tbody>${rows}</tbody>
           </table>
         </div>
-        <div style="padding:8px 14px;">
+        <div style="padding:8px 0 0;">
           <button onclick="saveCircuitToSupabase('${ex.superset_group}','${circuitLogsKey}',[${g.map(se=>`'${se.id}'`).join(',')}],${rounds})" style="width:100%;padding:10px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Guardar Circuito ${ex.superset_group} ✓</button>
+        </div>
         </div>
       </div>`;
 
@@ -2678,9 +2768,17 @@ async function loadClientExercises() {
       }
 
       const unitToggleId = `unit-solo-${ex.id}`;
-      exHtml+=`<div class="fade-up" style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;${isDone?'opacity:0.7;':''}">
+      const soloItemKey = `solo-${ex.id}`;
+      const soloOpen = isItemOpen(soloItemKey);
+      exHtml+=`<div class="fade-up" style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;${isDone?'opacity:0.85;':''}">
+        <div onclick="toggleAccordionItem('${soloItemKey}')" style="padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;">
+          <div class="ex-check-badge${isDone?' done':''}" id="acc-check-${soloItemKey}">${isDone?'✓':''}</div>
+          <div style="flex:1;min-width:0;font-size:14px;font-weight:700;color:var(--black);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${ex.name}</div>
+          <div id="acc-chevron-${soloItemKey}" style="font-size:16px;color:var(--gray4);flex-shrink:0;transition:transform 0.2s;transform:${soloOpen?'rotate(180deg)':''};">▾</div>
+        </div>
+        <div class="acc-body" id="acc-body-${soloItemKey}" style="display:${soloOpen?'block':'none'};padding:0 14px 12px;">
         <!-- Header -->
-        <div style="padding:10px 14px 8px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+        <div style="padding-bottom:8px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
           <div style="flex:1;min-width:0;">
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;">
               <span class="ex-tag ${getTagClass(ex.tag)}">${ex.tag}</span>
@@ -2700,8 +2798,9 @@ async function loadClientExercises() {
         <table style="width:100%;border-collapse:collapse;">
           <tbody>${setRows}</tbody>
         </table>
-        <div style="padding:8px 14px;">
+        <div style="padding-top:8px;">
           <button onclick="saveSoloToSupabase('${ex.id}','${soloLogsKey}',${ex.sets})" style="width:100%;padding:10px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Guardar ✓</button>
+        </div>
         </div>
       </div>`;
     }
@@ -2735,18 +2834,70 @@ async function loadClientExercises() {
 }
 
 function updateHomeBadge() {
-  const badge = document.getElementById('home-timer-badge');
-  if(!badge) return;
+  // #workout-header-timer (no-LIFT, header sticky) y #lift-home-timer-badge (LIFT,
+  // pill "Entreno en curso" — LIFT no tiene header sticky propio para esto) — se
+  // actualiza el que exista en cada render, puede que ninguno si el workout no
+  // arrancó todavía en esta pantalla.
+  const headerBadge = document.getElementById('workout-header-timer');
+  const liftBadge = document.getElementById('lift-home-timer-badge');
+  // Ambos son elementos fijos del HTML (o re-creados por render), siempre
+  // presentes aunque ocultos — hay que cortar el loop a mano chequeando
+  // isWorkoutStarted(), si no seguiría corriendo cada 1s para siempre en segundo plano.
+  if((!headerBadge && !liftBadge) || !isWorkoutStarted()) return;
   const elapsed = getElapsedSeconds();
   const m = Math.floor(elapsed/60);
   const s = elapsed%60;
-  badge.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  const text = `${m}:${s.toString().padStart(2,'0')}`;
+  if(headerBadge) headerBadge.textContent = text;
+  if(liftBadge) liftBadge.textContent = text;
   setTimeout(updateHomeBadge, 1000);
 }
+
+// Abre/cierra una card del acordeón de ejercicios directo en el DOM (sin re-render
+// completo, para no perder scroll/foco) y recuerda la elección para el próximo
+// re-render (ej. el que dispara un "Guardar ✓" en otra card).
+function toggleAccordionItem(key) {
+  const body = document.getElementById(`acc-body-${key}`);
+  const chevron = document.getElementById(`acc-chevron-${key}`);
+  if (!body) return;
+  const willOpen = body.style.display === 'none';
+  body.style.display = willOpen ? 'block' : 'none';
+  if (chevron) chevron.style.transform = willOpen ? 'rotate(180deg)' : '';
+  accordionOverrides.set(key, willOpen);
+}
+
+// ===== WAKE LOCK — mantiene la pantalla encendida durante el entreno =====
+let wakeLockSentinel = null;
+let wakeLockAcquiring = false;
+async function acquireWakeLock() {
+  // request() es async — sin este guard, cambiar de pestaña/app y volver varias
+  // veces seguidas puede disparar varias adquisiciones en paralelo antes de que
+  // la primera termine de resolver.
+  if (wakeLockAcquiring || wakeLockSentinel) return;
+  wakeLockAcquiring = true;
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLockSentinel = await navigator.wakeLock.request('screen');
+      wakeLockSentinel.addEventListener('release', () => { wakeLockSentinel = null; });
+    }
+  } catch (e) { console.warn('Wake Lock no disponible:', e); }
+  finally { wakeLockAcquiring = false; }
+}
+function releaseWakeLock() {
+  if (wakeLockSentinel) { wakeLockSentinel.release().catch(()=>{}); wakeLockSentinel = null; }
+}
+// El navegador libera el wake lock solo al perder visibilidad (cambiar de app/apagar
+// pantalla) — hay que re-adquirirlo al volver si el entreno sigue en curso.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && isWorkoutStarted() && !wakeLockSentinel) {
+    acquireWakeLock();
+  }
+});
 
 function handleStartWorkout() {
   setWorkoutStarted(true);
   startGlobalTimer();
+  acquireWakeLock();
   loadClientExercises();
   updateStrongFlowBtn();
   showToast('🏃 ¡Entreno iniciado! Dale con todo 💪');
@@ -2755,6 +2906,7 @@ function handleStartWorkout() {
 async function handleFinishWorkout() {
   const elapsedSeconds = stopGlobalTimer();
   setWorkoutStarted(false);
+  releaseWakeLock();
   // Save training time
   const addedMin = Math.round(elapsedSeconds / 60);
   if(addedMin > 0 && currentClient) {
@@ -11302,6 +11454,7 @@ async function saveCircuitToSupabase(groupName, logsKey, exIds, rounds) {
   const {error} = await sb.from('exercise_logs').insert(inserts);
   if(error){ showToast('❌ '+error.message); return; }
   showToast(`✅ Circuito ${groupName} guardado 💪`);
+  loadClientExercises();
 }
 
 function setCircuitUnit(groupName, unit, btn) {
