@@ -1358,6 +1358,7 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
       </select>
     </div>
     <div class="form-group"><label class="form-label">Fecha de inicio</label><input class="form-input" type="date" id="ep-start-date"></div>
+    <div class="form-group"><label class="form-label">Fecha de fin de periodo pagado</label><input class="form-input" type="date" id="ep-end-date"></div>
     <div class="form-group"><label class="form-label">Próximo pago</label><input class="form-input" type="date" id="ep-date"></div>
     <div class="form-group"><label class="form-label">Monto ($)</label><input class="form-input" type="number" id="ep-amount" placeholder="0.00"></div>
     <button class="btn-primary" onclick="updatePayment()">Guardar</button>
@@ -3935,6 +3936,7 @@ function renderCoachClients(clients) {
     const badgeClass = getPaymentBadgeClass(d);
     const badgeText = getPaymentBadgeText(d);
     const startDateStr = c.start_date ? formatDate(c.start_date) : (c.created_at ? new Date(c.created_at).toLocaleDateString('es-CR',{day:'numeric',month:'short',year:'numeric'}) : null);
+    const endDateStr = c.program_end_date ? formatDate(c.program_end_date) : null;
     const typeTag = c.client_type ? `<span class="client-type-tag">${c.client_type==='Virtual'?'V':'H'}</span>` : '';
     const isLift = c.program_type === 'lift';
     const isEvo = c.program_type === 'evolution';
@@ -3946,7 +3948,7 @@ function renderCoachClients(clients) {
       <div class="client-avatar" style="${c.is_churn ? 'opacity:0.5;' : ''}">${getInitials(c.name)}</div>
       <div class="client-info">
         <div class="client-name" style="display:flex;align-items:center;gap:6px;${c.is_churn ? 'color:var(--gray4);' : ''}">${c.name}${typeTag}${evolutionBadge}${liftBadge}${(window._clientsWithReminder||new Set()).has(c.id)?'<div style="width:22px;height:22px;border-radius:5px;background:#fff3e0;display:flex;align-items:center;justify-content:center;font-size:12px;">⏰</div>':''}</div>
-        <div class="client-meta">@${c.username} · ${c.days_trained||0} días${startDateStr?` · Inicio: ${startDateStr}`:''}${clientSortMode==='last_active'?(()=>{const t=(window._lastTrainedMap||{})[c.id];return t?` · 🟢 ${new Date(t).toLocaleDateString('es-CR',{weekday:'short',day:'numeric',month:'short'})}`:' · ⚫ Sin entreno';})():''}</div>
+        <div class="client-meta">@${c.username} · ${c.days_trained||0} días${startDateStr?` · Inicio: ${startDateStr}`:''}${endDateStr?` · Fin: ${endDateStr}`:''}${clientSortMode==='last_active'?(()=>{const t=(window._lastTrainedMap||{})[c.id];return t?` · 🟢 ${new Date(t).toLocaleDateString('es-CR',{weekday:'short',day:'numeric',month:'short'})}`:' · ⚫ Sin entreno';})():''}</div>
       </div>
       ${churnBadge}
     </div>`;
@@ -4004,6 +4006,7 @@ async function openCoachClient(clientId) {
   const {data:c} = await sb.from('clients').select('*').eq('id',clientId).single();
   currentClient=c;
   const startDateStr = c.start_date ? formatDate(c.start_date) : null;
+  const endDateStr = c.program_end_date ? formatDate(c.program_end_date) : null;
   const typeTag = c.client_type ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:10px;font-weight:800;background:var(--orange-light);color:var(--orange);border:1.5px solid var(--orange-mid);font-family:'DM Mono',monospace;margin-left:6px;">${c.client_type==='Virtual'?'V':'H'}</span>` : '';
   const isLiftDetail = c.program_type === 'lift';
   const isEvoDetail = c.program_type === 'evolution';
@@ -4013,7 +4016,7 @@ async function openCoachClient(clientId) {
     <div>
       <div class="profile-name" style="display:flex;align-items:center;">${c.name}${typeTag}${evoTag}</div>
       <div class="profile-username">@${c.username}${c.client_type?' · '+c.client_type:''}</div>
-      ${startDateStr?`<div style="font-size:11px;color:var(--orange);margin-top:2px;">📅 Inicio: ${startDateStr}</div>`:''}
+      ${startDateStr?`<div style="font-size:11px;color:var(--orange);margin-top:2px;">📅 Inicio: ${startDateStr}${endDateStr?` · Fin: ${endDateStr}`:''}</div>`:''}
     </div>`;
   const d=daysUntil(c.next_payment_date);
   const dColor = d!==null&&d<=2?'var(--red)':d!==null&&d<=5?'var(--yellow)':'var(--black)';
@@ -4051,6 +4054,7 @@ async function openCoachClient(clientId) {
   document.getElementById('ep-date').value=c.next_payment_date||'';
   document.getElementById('ep-amount').value=c.payment_amount||'';
   document.getElementById('ep-start-date').value=c.start_date||'';
+  document.getElementById('ep-end-date').value=c.program_end_date||'';
   document.getElementById('ep-client-type').value=c.client_type||'';
   renderCoachLiftCard(c);
   logsVisible = false;
@@ -8357,8 +8361,9 @@ async function updatePayment() {
   const date=document.getElementById('ep-date').value;
   const amount=document.getElementById('ep-amount').value;
   const startDate=document.getElementById('ep-start-date').value;
+  const endDate=document.getElementById('ep-end-date').value;
   const clientType=document.getElementById('ep-client-type').value;
-  await sb.from('clients').update({next_payment_date:date||null,payment_amount:amount||null,start_date:startDate||null,client_type:clientType||null}).eq('id',currentClient.id);
+  await sb.from('clients').update({next_payment_date:date||null,payment_amount:amount||null,start_date:startDate||null,program_end_date:endDate||null,client_type:clientType||null}).eq('id',currentClient.id);
   closeModal('modal-edit-payment');
   showToast('✅ Cliente actualizado');
   openCoachClient(currentClient.id);
