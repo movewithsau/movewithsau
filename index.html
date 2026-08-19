@@ -533,7 +533,15 @@ body.lift-mode #strongflow-btn { display:none !important; }
   <div class="topbar"><div class="topbar-logo">Move With Sau</div><div class="topbar-action" onclick="handleLogout()">Salir</div></div>
   <div id="workout-header-block" style="display:none;position:sticky;top:0;z-index:99;background:#111;padding:14px 20px;align-items:center;justify-content:space-between;gap:12px;">
     <div style="min-width:0;">
-      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.14em;color:var(--gray4);text-transform:uppercase;">Entrenando</div>
+      <div style="display:flex;align-items:center;gap:6px;min-width:0;">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.14em;color:var(--gray4);text-transform:uppercase;flex-shrink:0;">Entrenando</div>
+        <!-- Switcher discreto de día: solo visible con entreno en curso -->
+        <div id="workout-header-dayswitch" onclick="openDaySwitcher()" style="display:none;align-items:center;gap:3px;cursor:pointer;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.08em;color:var(--orange);text-transform:uppercase;min-width:0;" title="Cambiar de día">
+          <span style="color:var(--gray4);">·</span>
+          <span id="workout-header-daylabel" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+          <span style="font-size:10px;line-height:1;">✎</span>
+        </div>
+      </div>
       <div id="workout-header-exname" style="font-size:14px;font-weight:700;color:white;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</div>
     </div>
     <div style="text-align:right;flex-shrink:0;">
@@ -1302,6 +1310,21 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
   </div>
 </div>
 
+<!-- ===== DAY SWITCHER (cliente, durante el entreno) ===== -->
+<div id="modal-day-switcher" style="display:none;position:fixed;inset:0;z-index:310;align-items:flex-end;justify-content:center;">
+  <div onclick="closeDaySwitcher()" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);"></div>
+  <div style="position:relative;width:100%;max-width:480px;background:var(--white);border-radius:24px 24px 0 0;overflow:hidden;max-height:70vh;display:flex;flex-direction:column;">
+    <div style="background:#111111;padding:16px 20px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0;">
+      <div style="min-width:0;">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.14em;color:var(--orange);text-transform:uppercase;">Cambiar de día</div>
+        <div id="day-switcher-week" style="font-family:'Playfair Display',serif;font-size:17px;font-weight:900;color:white;margin-top:2px;">—</div>
+      </div>
+      <div onclick="closeDaySwitcher()" style="width:30px;height:30px;background:rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:white;flex-shrink:0;">×</div>
+    </div>
+    <div id="day-switcher-list" style="overflow-y:auto;padding:6px 0 26px;"><div class="spinner" style="width:18px;height:18px;margin:16px auto;"></div></div>
+  </div>
+</div>
+
 <!-- ===== STRONGFLOW POPUP ===== -->
 <div id="modal-strongflow" style="display:none;position:fixed;inset:0;z-index:300;align-items:flex-end;justify-content:center;">
   <!-- backdrop -->
@@ -1533,7 +1556,7 @@ const sb = createClient(
 let currentUser = null, currentClient = null, currentExercise = null;
 let clientWeek = 1, clientDay = null, currentPlanDayId = null;
 let weeklyTrackerWeek = 1;
-let prevWeekLogsCache = {}; // { exName: { setNum: {weight, reps, unit} } }
+let prevWeekLogsCache = {}; // { exerciseId (semana actual): { setNum: {weight, reps, unit} } }
 // Estado de abierto/cerrado del acordeón de ejercicios, elegido a mano por el cliente
 // (independiente de cuál sea "el primero pendiente"). Se resetea al cambiar de día.
 let accordionOverrides = new Map();
@@ -2488,6 +2511,102 @@ function getDayShortLabel(dayValue, idx) {
   return dayValue;
 }
 
+// ===== DAY SWITCHER — cambiar de día durante un entreno en curso =====
+// Solo ofrece los días de la SEMANA ACTUAL (clientWeek). El timer global no se
+// toca: cambiar de día no reinicia ni detiene el cronómetro del entreno.
+
+// ¿Hay sets tipeados en el día actual que todavía no se mandaron a Supabase?
+// Los inputs se persisten en localStorage a medida que se escriben (mws_slogs_/
+// mws_clogs_), y el ejercicio queda marcado como done recién al tocar "Guardar ✓".
+// Entonces: dato en localStorage + ejercicio NO done = cambio sin guardar.
+function hasUnsavedDayData() {
+  if(!currentClient || !clientDay) return false;
+  const done = getCompletedExercises();
+  const keys = [
+    `mws_slogs_${currentClient.id}_w${clientWeek}_${clientDay}`,
+    `mws_clogs_${currentClient.id}_w${clientWeek}_${clientDay}`
+  ];
+  for(const k of keys) {
+    let logs = {};
+    try { logs = JSON.parse(localStorage.getItem(k) || '{}'); } catch { continue; }
+    for(const entryKey of Object.keys(logs)) {
+      const val = logs[entryKey] || {};
+      if(!val.w && !val.r) continue;
+      const exId = entryKey.replace(/_[sr]\d+$/, '');
+      if(!done[exId]) return true;
+    }
+  }
+  return false;
+}
+
+async function openDaySwitcher() {
+  if(!currentClient) return;
+  const modal = document.getElementById('modal-day-switcher');
+  const list = document.getElementById('day-switcher-list');
+  const weekEl = document.getElementById('day-switcher-week');
+  if(!modal || !list) return;
+  modal.style.display = 'flex';
+  weekEl.textContent = clientWeek === 5 ? 'Deload' : 'Semana ' + clientWeek;
+  list.innerHTML = '<div class="spinner" style="width:18px;height:18px;margin:16px auto;"></div>';
+
+  const {data:planDays} = await sb.from('monthly_plans')
+    .select('day_of_week,id,day_order')
+    .eq('client_id', currentClient.id)
+    .eq('week_number', clientWeek)
+    .order('day_order',{ascending:true,nullsFirst:false})
+    .order('id',{ascending:true});
+
+  if(!planDays || planDays.length === 0) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--gray4);padding:18px 20px;">Sin días de entrenamiento esta semana.</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  planDays.forEach((pd, idx) => {
+    const day = pd.day_of_week;
+    const isActive = day === clientDay;
+    const item = document.createElement('div');
+    item.style.cssText = `padding:14px 20px;font-size:15px;cursor:pointer;display:flex;align-items:center;gap:10px;`
+      + `font-weight:${isActive?'700':'500'};color:${isActive?'var(--orange)':'var(--black)'};`
+      + `background:${isActive?'var(--orange-light)':'var(--white)'};`
+      + (idx < planDays.length-1 ? 'border-bottom:1px solid var(--gray1);' : '');
+    const dot = document.createElement('div');
+    dot.style.cssText = isActive
+      ? 'width:12px;height:12px;border-radius:50%;background:var(--orange);flex-shrink:0;'
+      : 'width:12px;height:12px;border-radius:50%;border:1.5px solid var(--gray3);flex-shrink:0;';
+    const name = document.createElement('span');
+    name.style.cssText = 'flex:1;';
+    name.textContent = getDayShortLabel(day, idx);
+    item.appendChild(dot);
+    item.appendChild(name);
+    if(isActive) {
+      const badge = document.createElement('span');
+      badge.style.cssText = "font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;color:var(--orange);text-transform:uppercase;";
+      badge.textContent = 'Actual';
+      item.appendChild(badge);
+    }
+    item.onclick = () => switchWorkoutDay(day);
+    list.appendChild(item);
+  });
+}
+
+function closeDaySwitcher() {
+  const modal = document.getElementById('modal-day-switcher');
+  if(modal) modal.style.display = 'none';
+}
+
+function switchWorkoutDay(day) {
+  if(day === clientDay) { closeDaySwitcher(); return; }
+  if(hasUnsavedDayData() && !confirm('Tenés cambios sin guardar en este día, ¿querés continuar y cambiar de día de todos modos?')) return;
+  closeDaySwitcher();
+  clientDay = day;
+  // loadClientDayStrip() re-pinta la card de la Hoy y al final llama a
+  // loadClientExercises(), que es quien reasigna currentPlanDayId y refresca el
+  // header. El timer global sigue corriendo: no se toca startGlobalTimer/stopGlobalTimer.
+  loadClientDayStrip();
+  showToast('📅 Cambiaste a ' + getDayShortLabel(day, 0));
+}
+
 async function loadClientExercises() {
   // Token de request: loadClientExercises es async con varios await (planDay, exs,
   // logs de semana anterior) — si el cliente cambia de día/semana dos veces rápido,
@@ -2545,40 +2664,65 @@ async function loadClientExercises() {
   try { circuitLogs = JSON.parse(localStorage.getItem(circuitLogsKey)||'{}'); } catch{}
 
   // ── Fetch prev week logs (S1→S2, S2→S3, S3→S4, S5 nada) ──
+  // Alcance de la comparación: MISMO ejercicio, MISMO día de la semana, semana anterior.
+  // Antes esto barría todos los plan_days de la semana previa y matcheaba por nombre,
+  // así que un movimiento repetido en dos días (ej. Hip Thrust pesado el Día 2 y ligero
+  // el Día 4) comparaba contra el log más reciente cronológicamente — o sea, contra el
+  // otro día. Ahora se acota a un único plan_day: el del mismo day_of_week.
+  // El índice es por exercise_id de la semana ACTUAL (no por nombre), para que dos
+  // instancias del mismo movimiento en el mismo día tampoco se pisen entre sí.
   const prevByEx = {};
   if(clientWeek >= 2 && clientWeek <= 4) {
     try {
       const prevWeek = clientWeek - 1;
-      const exNames = exs.map(e=>e.name);
-      const {data:prevPlanDays} = await sb.from('monthly_plans')
+      const {data:prevPlanDay} = await sb.from('monthly_plans')
         .select('id')
         .eq('client_id', currentClient.id)
-        .eq('week_number', prevWeek);
-      if(prevPlanDays && prevPlanDays.length > 0) {
-        const prevPlanDayIds = prevPlanDays.map(p=>p.id);
+        .eq('week_number', prevWeek)
+        .eq('day_of_week', clientDay)
+        .maybeSingle();
+      // Sin contraparte de ese mismo día en la semana anterior (ej. el coach reordenó
+      // el plan) no se compara contra nada: preferimos no mostrar dato antes que
+      // mostrar el de otro día.
+      if(prevPlanDay) {
+        const exNames = exs.map(e=>e.name);
         const {data:prevExs} = await sb.from('exercises')
-          .select('id,name')
-          .in('plan_day_id', prevPlanDayIds)
+          .select('id,name,order_index')
+          .eq('plan_day_id', prevPlanDay.id)
           .in('name', exNames);
         if(prevExs && prevExs.length > 0) {
-          const nameById = {};
-          prevExs.forEach(e=>{ nameById[e.id]=e.name; });
-          const prevExIds = prevExs.map(e=>e.id);
-          const {data:prevLogs} = await sb.from('exercise_logs')
-            .select('exercise_id,set_number,weight,reps_done,weight_unit')
-            .in('exercise_id', prevExIds)
-            .eq('client_id', currentClient.id)
-            .order('logged_at',{ascending:false})
-            .limit(prevExIds.length * 8);
-          if(prevLogs) {
-            prevLogs.forEach(l=>{
-              const name = nameById[l.exercise_id];
-              if(!name) return;
-              if(!prevByEx[name]) prevByEx[name]={};
-              if(!prevByEx[name][l.set_number]) {
-                prevByEx[name][l.set_number]={weight:l.weight,reps:l.reps_done,unit:l.weight_unit||'kg'};
-              }
-            });
+          // Emparejamiento 1-a-1 ejercicio actual ↔ ejercicio de la semana pasada.
+          // Si el mismo nombre aparece repetido dentro del día, desempata el
+          // order_index más cercano (y cada fila previa se consume una sola vez).
+          const prevIdToCurId = new Map();
+          const taken = new Set();
+          exs.forEach(cur => {
+            const cands = prevExs.filter(p => p.name === cur.name && !taken.has(p.id));
+            if(cands.length === 0) return;
+            const curIdx = cur.order_index ?? 0;
+            cands.sort((a,b) => Math.abs((a.order_index??0)-curIdx) - Math.abs((b.order_index??0)-curIdx));
+            taken.add(cands[0].id);
+            prevIdToCurId.set(cands[0].id, cur.id);
+          });
+          const prevExIds = [...prevIdToCurId.keys()];
+          if(prevExIds.length > 0) {
+            const {data:prevLogs} = await sb.from('exercise_logs')
+              .select('exercise_id,set_number,weight,reps_done,weight_unit')
+              .in('exercise_id', prevExIds)
+              .eq('client_id', currentClient.id)
+              .eq('week_number', prevWeek)
+              .order('logged_at',{ascending:false})
+              .limit(prevExIds.length * 8);
+            if(prevLogs) {
+              prevLogs.forEach(l=>{
+                const curId = prevIdToCurId.get(l.exercise_id);
+                if(!curId) return;
+                if(!prevByEx[curId]) prevByEx[curId]={};
+                if(!prevByEx[curId][l.set_number]) {
+                  prevByEx[curId][l.set_number]={weight:l.weight,reps:l.reps_done,unit:l.weight_unit||'kg'};
+                }
+              });
+            }
           }
         }
       }
@@ -2626,6 +2770,13 @@ async function loadClientExercises() {
     }
     const headerNameEl = document.getElementById('workout-header-exname');
     if (headerNameEl) headerNameEl.textContent = firstPendingItem ? firstPendingItem.label : '¡Todo completado! 🎉';
+    // Switcher de día en el header: se muestra solo mientras el entreno está en curso.
+    const daySwitchEl = document.getElementById('workout-header-dayswitch');
+    if (daySwitchEl) {
+      daySwitchEl.style.display = workoutStarted ? 'flex' : 'none';
+      const dayLabelHeaderEl = document.getElementById('workout-header-daylabel');
+      if (dayLabelHeaderEl) dayLabelHeaderEl.textContent = getDayShortLabel(clientDay, 0);
+    }
   }
 
   // Warmup banner
@@ -2682,7 +2833,7 @@ async function loadClientExercises() {
           const wVal = saved.w||'';
           const rVal = saved.r||'';
           const isDone = saved.w && saved.r;
-          const prevC = prevByEx[se.name]?.[r];
+          const prevC = prevByEx[se.id]?.[r];
           const phCW = prevC?.weight || 'kg';
           const phCR = prevC?.reps || 'reps';
           return `<td style="padding:4px;text-align:center;border-bottom:1px solid var(--gray2);">
@@ -2768,7 +2919,7 @@ async function loadClientExercises() {
         const wVal = saved.w||'';
         const rVal = saved.r||'';
         const filled = saved.w && saved.r;
-        const prev = prevByEx[ex.name]?.[s];
+        const prev = prevByEx[ex.id]?.[s];
         const phW = prev?.weight || currentWeightUnit;
         const phR = prev?.reps || 'reps';
         setRows += `<tr>
@@ -9012,6 +9163,7 @@ async function renderWeeklyTracker(clientId) {
               </span>
             ` : `<span onclick="addNewSession('${pd.id}','${clientId}',${week},this)" style="font-size:11px;font-weight:600;color:var(--gray4);cursor:pointer;background:var(--gray1);padding:2px 7px;border-radius:6px;border:1px dashed var(--gray3);" title="Agregar tiempo">+ tiempo</span>`}
             <button onclick="toggleDayLogs('${pd.id}','${label.replace(/'/g,"\\'")}',this)" style="background:none;border:none;color:var(--orange);font-size:11px;font-weight:700;cursor:pointer;padding:2px 4px;">Logs ›</button>
+            <button onclick="deleteDayRecord('${pd.id}','${clientId}',${week},'${label.replace(/'/g,"\\'")}')" title="Borrar registro de este día" style="background:none;border:none;color:var(--gray3);font-size:13px;line-height:1;cursor:pointer;padding:2px 3px;">🗑</button>
           </div>
         </div>
         <div id="day-logs-${pd.id}" style="display:none;"></div>`;
@@ -9075,6 +9227,100 @@ async function markDayTrained(planDayId, clientId, week) {
   if(daysEl) daysEl.textContent = newDays;
   showToast('✅ Día marcado como entrenado');
   await renderWeeklyTracker(clientId);
+}
+
+// Borra el registro completo de un día puntual (sesión + logs de ejercicios) para
+// limpiar días marcados como completados por error.
+//
+// Los filtros de borrado espejan EXACTAMENTE los de lectura de renderWeeklyTracker:
+// exercise_logs por exercise_id nomás, y workout_sessions por client_id+plan_day_id.
+// Nada de week_number acá: plan_day_id ya codifica semana+día (monthly_plans es una
+// fila por cliente+semana+día), y exercise_logs.week_number se escribe desde el global
+// clientWeek, que puede quedar desincronizado — si filtrábamos por él, el delete
+// matcheaba cero filas SIN tirar error y el día seguía apareciendo completado.
+//
+// OJO con el esquema: exercise_logs NO tiene plan_day_id — se vincula al día vía
+// exercise_id (exercises.plan_day_id). Y workout_ratings se guarda por (client_id,
+// date), sin FK a workout_sessions: solo se borra el rating de esa fecha si al cliente
+// no le queda ninguna otra sesión ese mismo día.
+async function deleteDayRecord(planDayId, clientId, week, label) {
+  const weekLabel = week === 5 ? 'Deload' : 'Semana ' + week;
+  if(!confirm(`¿Seguro que querés borrar el registro de ${label} — ${weekLabel}? Esto eliminará la sesión y todos los logs de ejercicios guardados para este día. Esta acción no se puede deshacer.`)) return;
+
+  let deletedLogs = 0, deletedSessions = 0;
+
+  // 1. Sesión de ese día (puede no existir si solo hay logs sueltos).
+  //    Mismo par de filtros que usa markDayTrained y que el unique de la tabla.
+  const {data:sess, error:sessErr} = await sb.from('workout_sessions')
+    .select('id,duration_minutes,session_date')
+    .eq('client_id', clientId)
+    .eq('plan_day_id', planDayId)
+    .maybeSingle();
+  if(sessErr){ showToast('❌ '+sessErr.message); return; }
+
+  // 2. Logs de ejercicios de ese día. exercise_id ya encadena a plan_day → cliente,
+  //    así que no hace falta (ni conviene) filtrar por client_id.
+  const {data:exs} = await sb.from('exercises').select('id').eq('plan_day_id', planDayId);
+  const exIds = (exs||[]).map(e=>e.id);
+  if(exIds.length > 0) {
+    // .select() sobre el delete devuelve las filas borradas: sin esto, una policy de
+    // RLS que bloquee el delete se ve igual que un borrado exitoso (0 filas, sin error).
+    const {data:delLogs, error:logErr} = await sb.from('exercise_logs')
+      .delete()
+      .in('exercise_id', exIds)
+      .select('id');
+    if(logErr){ showToast('❌ '+logErr.message); return; }
+    deletedLogs = (delLogs||[]).length;
+  }
+
+  // 3. Sesión + devolución del tiempo/días acumulados al cliente
+  if(sess) {
+    const {data:delSess, error:delErr} = await sb.from('workout_sessions').delete().eq('id', sess.id).select('id');
+    if(delErr){ showToast('❌ '+delErr.message); return; }
+    deletedSessions = (delSess||[]).length;
+
+    const {data:cl} = await sb.from('clients')
+      .select('total_training_minutes,days_trained')
+      .eq('id', clientId)
+      .maybeSingle();
+    if(cl) {
+      const newTotal = Math.max(0, (cl.total_training_minutes||0) - (sess.duration_minutes||0));
+      const newDays = Math.max(0, (cl.days_trained||0) - 1);
+      await sb.from('clients').update({total_training_minutes:newTotal, days_trained:newDays}).eq('id', clientId);
+      if(currentClient && currentClient.id === clientId) {
+        currentClient.total_training_minutes = newTotal;
+        currentClient.days_trained = newDays;
+      }
+      const daysEl = document.getElementById('coach-c-days');
+      if(daysEl) daysEl.textContent = newDays;
+      const timeEl = document.querySelector('.payment-val-time');
+      if(timeEl) timeEl.textContent = `${Math.floor(newTotal/60)}h ${newTotal%60}min`;
+    }
+
+    // 4. Rating del día — solo si no queda ninguna otra sesión en esa fecha
+    if(sess.session_date) {
+      const {data:sameDay} = await sb.from('workout_sessions')
+        .select('id')
+        .eq('client_id', clientId)
+        .eq('session_date', sess.session_date)
+        .limit(1);
+      if(!sameDay || sameDay.length === 0) {
+        await sb.from('workout_ratings').delete().eq('client_id', clientId).eq('date', sess.session_date);
+      }
+    }
+  }
+
+  // 5. Re-render completo del tracker: recalcula dots + barra de progreso y
+  // reconstruye las filas, con lo cual el detalle expandido de logs se colapsa solo.
+  await renderWeeklyTracker(clientId);
+
+  if(deletedLogs === 0 && deletedSessions === 0) {
+    // Ni error ni filas: casi siempre es una policy de RLS bloqueando el DELETE.
+    console.warn('deleteDayRecord: 0 filas borradas', {planDayId, clientId, week, exIds});
+    showToast('⚠️ No se borró nada — revisá los permisos (RLS) de la tabla', 4000);
+    return;
+  }
+  showToast(`🗑 Registro eliminado (${deletedLogs} logs${deletedSessions?' + sesión':''})`);
 }
 
 async function changeTrackerWeek(week, clientId) {
@@ -11366,10 +11612,10 @@ async function saveSoloToSupabase(exId, logsKey, sets) {
   const inserts = [];
   let totalWeight = 0;
 
-  // Find exercise name for prev week comparison
-  const exNameEl = document.querySelector(`[id^="unit-solo-${exId}"]`)?.closest('.fade-up')?.querySelector('[style*="text-decoration:underline"]');
-  const exName = exNameEl?.textContent?.trim() || null;
-  const prevSets = exName ? (prevWeekLogsCache[exName] || {}) : {};
+  // Comparación de semana anterior — misma fuente que el ↑ inline de las tarjetas
+  // (prevWeekLogsCache), ya acotada a este mismo día. Se indexa por el exercise_id
+  // de esta semana, así que no hace falta rastrear el nombre desde el DOM.
+  const prevSets = prevWeekLogsCache[exId] || {};
 
   // Check for progressions
   const progressions = [];
