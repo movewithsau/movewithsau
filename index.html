@@ -1253,9 +1253,12 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
 
     <!-- EJERCICIOS PANEL -->
     <div id="coaching-panel-exercises" style="display:none;">
-      <div style="margin-bottom:14px;">
-        <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:900;">Biblioteca de Ejercicios</div>
-        <div style="font-size:11px;color:var(--gray4);margin-top:3px;">Todos tus ejercicios guardados</div>
+      <div style="margin-bottom:14px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+        <div>
+          <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:900;">Biblioteca de Ejercicios</div>
+          <div style="font-size:11px;color:var(--gray4);margin-top:3px;">Todos tus ejercicios guardados</div>
+        </div>
+        <button onclick="exportExerciseLibrary()" style="background:var(--gray1);color:var(--gray5);border:1.5px solid var(--gray3);border-radius:var(--radius-sm);padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;flex-shrink:0;">📋 Exportar JSON</button>
       </div>
       <input class="form-input" id="ex-coaching-search" placeholder="🔍 Buscar ejercicio..." oninput="renderExCoaching()" style="margin-bottom:10px;">
       <div class="filter-chips" id="ex-coaching-chips">
@@ -12923,6 +12926,26 @@ async function loadExCoaching() {
   const {data} = await sb.from('exercise_library').select('*').eq('coach_id',currentUser.id).order('name');
   allExCoaching = data || [];
   renderExCoaching();
+}
+
+async function exportExerciseLibrary() {
+  const {data, error} = await sb.from('exercise_library').select('*').eq('coach_id',currentUser.id).order('name');
+  if(error){ showToast('❌ '+error.message); return; }
+  const json = JSON.stringify(data || [], null, 2);
+  try {
+    await navigator.clipboard.writeText(json);
+    showToast('✅ Copiado al portapapeles');
+  } catch(e) {
+    showToast('❌ No se pudo copiar');
+    return;
+  }
+  const blob = new Blob([json], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'exercise-library.json';
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function setExCoachingFilter(cat, el) {
