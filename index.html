@@ -598,6 +598,7 @@ body.lift-mode #strongflow-btn { display:none !important; }
     <!-- TAB NAVIGATION -->
     <div style="display:flex;gap:12px;margin-bottom:20px;border-bottom:1.5px solid var(--gray2);padding-bottom:12px;">
       <div class="client-plan-tab-chip active" onclick="switchClientPlanTab('plans', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;background:var(--gray1);color:var(--black);font-size:13px;font-weight:600;transition:all 0.2s;">📋 Mi Plan</div>
+      <div class="client-plan-tab-chip" onclick="switchClientPlanTab('progress', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;color:var(--gray4);font-size:13px;font-weight:600;transition:all 0.2s;">📈 Tu progreso</div>
       <div class="client-plan-tab-chip" onclick="switchClientPlanTab('tests', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;color:var(--gray4);font-size:13px;font-weight:600;transition:all 0.2s;">📊 Evaluaciones</div>
       <div class="client-plan-tab-chip" onclick="switchClientPlanTab('habits', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;color:var(--gray4);font-size:13px;font-weight:600;transition:all 0.2s;">✅ Mis Hábitos</div>
       <div class="client-plan-tab-chip" onclick="switchClientPlanTab('extras', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;color:var(--gray4);font-size:13px;font-weight:600;transition:all 0.2s;">⚡ Extras</div>
@@ -609,8 +610,15 @@ body.lift-mode #strongflow-btn { display:none !important; }
       <div id="c-guidelines-list"></div>
     </div>
 
+    <!-- PROGRESS TAB -->
+    <div id="client-progress-tab" style="display:none;">
+      <div id="c-progress-current"><div class="spinner"></div></div>
+      <div id="c-progress-history"></div>
+    </div>
+
     <!-- HABITS TAB -->
     <div id="client-habits-tab" style="display:none;">
+      <div id="c-sleep-card" style="margin-bottom:24px;"></div>
       <div id="c-habits-list"><div class="spinner"></div></div>
     </div>
 
@@ -819,6 +827,13 @@ body.lift-mode #strongflow-btn { display:none !important; }
     <div class="payment-card" id="coach-payment-card"></div>
     <div class="section-header"><div class="section-title">Días entrenados</div></div>
     <div class="stat-row"><div class="stat-card"><div class="stat-num" id="coach-c-days">0</div><div class="stat-label">Total</div></div><div class="stat-card"><div class="stat-num" id="coach-c-week-trained">0</div><div class="stat-label">Esta semana</div></div></div>
+    <div style="display:flex;align-items:center;gap:8px;margin:6px 0 8px;">
+      <span style="font-size:11px;color:var(--gray4);font-weight:600;">Ajuste manual</span>
+      <button onclick="adjustDaysTrained(-1)" style="width:24px;height:24px;border-radius:6px;border:1.5px solid var(--gray2);background:white;font-size:14px;font-weight:700;line-height:1;cursor:pointer;font-family:'DM Sans',sans-serif;">−</button>
+      <span id="coach-c-days-adj" style="min-width:22px;text-align:center;font-size:13px;font-weight:700;">0</span>
+      <button onclick="adjustDaysTrained(1)" style="width:24px;height:24px;border-radius:6px;border:1.5px solid var(--gray2);background:white;font-size:14px;font-weight:700;line-height:1;cursor:pointer;font-family:'DM Sans',sans-serif;">+</button>
+      <span id="coach-c-days-adj-saved" style="font-size:11px;color:var(--green);opacity:0;transition:opacity .3s;">✓ Guardado</span>
+    </div>
 
     <div class="section-header">
       <div class="section-title">Plan mensual</div>
@@ -872,6 +887,10 @@ body.lift-mode #strongflow-btn { display:none !important; }
     <div id="coach-reminders-panel" style="margin-bottom:12px;"></div>
     <div class="section-header"><div class="section-title">Seguimiento semanal</div></div>
     <div id="coach-weekly-tracker" style="margin-bottom:4px;"></div>
+    <div class="section-header" style="margin-top:4px;"><div class="section-title">😴 Sueño</div></div>
+    <div id="coach-sleep-panel" style="margin-bottom:4px;"></div>
+    <div class="section-header" style="margin-top:4px;"><div class="section-title">📈 Progreso</div></div>
+    <div id="coach-progress-panel" style="margin-bottom:4px;"></div>
     <div class="section-header"><div class="section-title">Tu Plan MOVE</div><div class="section-action" onclick="showModal('modal-upload-pdf')">+ PDF</div></div>
     <div id="coach-plans-list"></div>
     <div class="section-header" style="margin-top:8px;">
@@ -2124,12 +2143,13 @@ async function initClient() {
   if(cd?.id) sb.from('clients').update({last_active: new Date().toISOString()}).eq('id',cd.id).then(()=>{});
   const firstName = (cd?.name||currentUser.name||'').split(' ')[0];
   document.getElementById('c-greeting-name').textContent = firstName;
-  document.getElementById('c-days-trained').textContent = cd?.days_trained||0;
+  const cTotalDays = (cd?.days_trained||0)+(cd?.days_trained_adjustment||0);
+  document.getElementById('c-days-trained').textContent = cTotalDays;
   document.getElementById('c-week-num').textContent = clientWeek;
   document.getElementById('c-profile-name').textContent = cd?.name||currentUser.name;
   document.getElementById('c-profile-username').textContent = '@'+currentUser.username;
   applyAvatarToProfile();
-  document.getElementById('c-profile-days').textContent = cd?.days_trained||0;
+  document.getElementById('c-profile-days').textContent = cTotalDays;
   document.getElementById('c-profile-week').textContent = clientWeek;
   document.getElementById('c-initial-weight').textContent = cd?.initial_weight||'—';
   document.getElementById('c-current-weight').textContent = cd?.current_weight||'—';
@@ -2610,6 +2630,254 @@ function switchWorkoutDay(day) {
   showToast('📅 Cambiaste a ' + getDayShortLabel(day, 0));
 }
 
+// ===== CIRCUIT TIMER MODE =====
+// Opt-in per-session countdown assist for circuit blocks. Never touches the
+// existing kg/reps inputs or their save flow — purely visual/sonar overlay.
+
+let circuitTimerData = {};   // group -> {exercises:[{id,name,seconds}], rounds, restSecs, allTimeBased}
+let circuitTimerState = {};  // group -> {mode, phase, round, exIndex, remaining, paused, intervalId}
+
+function repsRangeIsTimeBased(repsRange) {
+  return /\d+\s*(s|min|seg)/i.test(repsRange || '');
+}
+
+function parseTimerSeconds(repsRange) {
+  if(!repsRange) return 30;
+  const m = repsRange.match(/(\d+)(?:-(\d+))?\s*(s|seg|min)/i);
+  if(!m) return 30;
+  let val = parseInt(m[1], 10);
+  if(m[2]) val = Math.round((val + parseInt(m[2], 10)) / 2);
+  if(m[3].toLowerCase() === 'min') val *= 60;
+  return val;
+}
+
+let _cueAudioCtx = null;
+function getCueAudioContext() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if(!AC) return null;
+  if(!_cueAudioCtx) _cueAudioCtx = new AC();
+  if(_cueAudioCtx.state === 'suspended') _cueAudioCtx.resume();
+  return _cueAudioCtx;
+}
+
+function playTone(freq, ctx, delay) {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+  const t0 = ctx.currentTime + delay;
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(0.35, t0 + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(t0);
+  osc.stop(t0 + 0.2);
+}
+
+// Single entry point for all timer sounds. type: 'work' | 'rest'. double: true
+// marks the end of an interval / start of the next one. Swap the oscillator
+// internals for uploaded audio clips later without touching any call site.
+function playCue(type, double) {
+  const ctx = getCueAudioContext();
+  if(!ctx) return;
+  const freq = type === 'rest' ? 330 : 880;
+  playTone(freq, ctx, 0);
+  if(double) playTone(freq, ctx, 0.2);
+}
+
+function toggleCircuitTimerMode(group) {
+  const state = circuitTimerState[group] || (circuitTimerState[group] = {mode:'manual'});
+  if(state.mode === 'timer') {
+    clearInterval(state.intervalId);
+    state.mode = 'manual';
+  } else {
+    const data = circuitTimerData[group];
+    state.mode = 'timer';
+    state.round = 1;
+    state.exIndex = 0;
+    state.paused = false;
+    state.intervalId = null;
+    state.customRest = data ? data.restSecs : 60;
+    state.phase = data && data.allTimeBased ? 'idle' : 'reps';
+    acquireWakeLock();
+  }
+  renderCircuitTimerUI(group);
+}
+
+function startCircuitTicking(group) {
+  const state = circuitTimerState[group];
+  clearInterval(state.intervalId);
+  state.intervalId = setInterval(() => tickCircuitTimer(group), 1000);
+}
+
+function tickCircuitTimer(group) {
+  const state = circuitTimerState[group];
+  if(!state || state.paused) return;
+  state.remaining--;
+  if(state.remaining <= 0) {
+    clearInterval(state.intervalId);
+    state.intervalId = null;
+    advanceCircuitPhase(group);
+  } else {
+    renderCircuitTimerUI(group);
+  }
+}
+
+function startCircuitWork(group, playSound) {
+  const state = circuitTimerState[group];
+  const data = circuitTimerData[group];
+  state.phase = 'work';
+  state.remaining = data.exercises[state.exIndex].seconds;
+  if(playSound) playCue('work');
+  renderCircuitTimerUI(group);
+  startCircuitTicking(group);
+}
+
+function advanceCircuitPhase(group) {
+  const state = circuitTimerState[group];
+  const data = circuitTimerData[group];
+  if(!state || !data) return;
+
+  if(state.phase === 'work') {
+    if(state.exIndex + 1 < data.exercises.length) {
+      playCue('work', true);
+      state.exIndex++;
+      state.phase = 'buffer';
+      state.remaining = 15;
+      renderCircuitTimerUI(group);
+      startCircuitTicking(group);
+    } else {
+      playCue('rest');
+      state.phase = 'rest';
+      state.remaining = data.restSecs;
+      renderCircuitTimerUI(group);
+      startCircuitTicking(group);
+    }
+  } else if(state.phase === 'buffer') {
+    startCircuitWork(group, true);
+  } else if(state.phase === 'rest') {
+    playCue('rest', true);
+    if(state.round + 1 <= data.rounds) {
+      state.round++;
+      state.exIndex = 0;
+      if(data.allTimeBased) {
+        startCircuitWork(group, true);
+      } else {
+        state.phase = 'reps';
+        renderCircuitTimerUI(group);
+      }
+    } else {
+      state.phase = 'done';
+      renderCircuitTimerUI(group);
+    }
+  }
+}
+
+function startCircuitTimerFlow(group) {
+  if(!circuitTimerState[group]) return;
+  startCircuitWork(group, true);
+}
+
+function finishCircuitRoundManual(group) {
+  const state = circuitTimerState[group];
+  const data = circuitTimerData[group];
+  if(!state || !data || state.phase !== 'reps') return;
+  playCue('rest');
+  state.phase = 'rest';
+  state.remaining = state.customRest || data.restSecs;
+  renderCircuitTimerUI(group);
+  startCircuitTicking(group);
+}
+
+function setCircuitCustomRest(group, value) {
+  const state = circuitTimerState[group];
+  const data = circuitTimerData[group];
+  if(!state) return;
+  const secs = parseInt(value, 10);
+  state.customRest = (secs > 0) ? secs : (data ? data.restSecs : 60);
+}
+
+function pauseResumeCircuitTimer(group) {
+  const state = circuitTimerState[group];
+  if(!state) return;
+  state.paused = !state.paused;
+  renderCircuitTimerUI(group);
+}
+
+function skipCircuitInterval(group) {
+  const state = circuitTimerState[group];
+  if(!state || !['work','buffer','rest'].includes(state.phase)) return;
+  clearInterval(state.intervalId);
+  state.intervalId = null;
+  advanceCircuitPhase(group);
+}
+
+function renderCircuitTimerUI(group) {
+  const container = document.getElementById('timer-panel-' + group);
+  if(!container) return;
+  const state = circuitTimerState[group];
+  const data = circuitTimerData[group];
+  const checkbox = document.getElementById('timer-toggle-' + group);
+  if(checkbox) checkbox.checked = !!(state && state.mode === 'timer');
+
+  if(!state || state.mode !== 'timer' || !data) {
+    container.style.display = 'none';
+    container.innerHTML = '';
+    return;
+  }
+  container.style.display = 'block';
+
+  const roundLabel = `Ronda ${state.round}/${data.rounds}`;
+  let inner = '';
+
+  if(state.phase === 'idle') {
+    inner = `
+      <div style="text-align:center;padding:14px 0;">
+        <div style="font-size:12px;color:var(--gray4);margin-bottom:10px;">${roundLabel} · Listo para arrancar</div>
+        <button onclick="startCircuitTimerFlow('${group}')" style="padding:12px 28px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">▶ Iniciar Circuito</button>
+      </div>`;
+  } else if(state.phase === 'work' || state.phase === 'buffer' || state.phase === 'rest') {
+    const label = state.phase === 'work' ? (data.exercises[state.exIndex]?.name || '')
+      : state.phase === 'buffer' ? '🔄 Transición'
+      : 'Descanso';
+    const subLabel = state.phase === 'buffer' ? `Siguiente: ${data.exercises[state.exIndex]?.name || ''}` : '';
+    const color = state.phase === 'rest' ? 'var(--blue)' : state.phase === 'buffer' ? 'var(--gray5)' : 'var(--orange)';
+    inner = `
+      <div style="text-align:center;padding:14px 0;">
+        <div style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;">${roundLabel}</div>
+        <div style="font-size:14px;font-weight:700;color:var(--black);margin-bottom:6px;">${label}</div>
+        ${subLabel ? `<div style="font-size:12px;color:var(--gray5);margin-bottom:6px;">${subLabel}</div>` : ''}
+        <div style="font-family:'DM Mono',monospace;font-size:48px;font-weight:900;color:${color};line-height:1;margin-bottom:14px;">${state.remaining}</div>
+        <div style="display:flex;gap:8px;justify-content:center;">
+          <button onclick="pauseResumeCircuitTimer('${group}')" style="padding:8px 18px;background:var(--gray1);color:var(--black);border:1.5px solid var(--gray2);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">${state.paused?'▶ Reanudar':'⏸ Pausar'}</button>
+          <button onclick="skipCircuitInterval('${group}')" style="padding:8px 18px;background:var(--gray1);color:var(--black);border:1.5px solid var(--gray2);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">⏭ Saltar</button>
+        </div>
+      </div>`;
+  } else if(state.phase === 'reps') {
+    inner = `
+      <div style="text-align:center;padding:14px 0;">
+        <div style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;">${roundLabel}</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px;">
+          <label for="rest-input-${group}" style="font-size:12px;color:var(--gray5);font-weight:600;">Descanso entre rondas</label>
+          <input type="number" id="rest-input-${group}" value="${state.customRest}" min="1" onchange="setCircuitCustomRest('${group}', this.value)" style="width:56px;padding:5px 6px;border:1.5px solid var(--gray2);border-radius:6px;font-size:13px;text-align:center;font-family:'DM Sans',sans-serif;outline:none;">
+          <span style="font-size:12px;color:var(--gray5);">seg</span>
+        </div>
+        <button onclick="finishCircuitRoundManual('${group}')" style="width:100%;padding:12px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✅ Terminé la ronda</button>
+      </div>`;
+  } else if(state.phase === 'done') {
+    inner = `
+      <div style="text-align:center;padding:16px 0;">
+        <div style="font-size:15px;font-weight:700;color:var(--green);">🎉 Circuito completo</div>
+      </div>`;
+  }
+
+  container.innerHTML = `<div style="background:var(--gray1);border-radius:12px;">${inner}</div>`;
+}
+
+function syncCircuitTimerPanels(groups) {
+  groups.forEach(group => renderCircuitTimerUI(group));
+}
+
 async function loadClientExercises() {
   // Token de request: loadClientExercises es async con varios await (planDay, exs,
   // logs de semana anterior) — si el cliente cambia de día/semana dos veces rápido,
@@ -2870,6 +3138,13 @@ async function loadClientExercises() {
         }
       }
 
+      circuitTimerData[ex.superset_group] = {
+        exercises: g.map(se => ({id: se.id, name: se.name, seconds: parseTimerSeconds(se.reps_range)})),
+        rounds,
+        restSecs,
+        allTimeBased: g.every(se => repsRangeIsTimeBased(se.reps_range))
+      };
+
       const circuitItemKey = `circuit-${ex.superset_group}`;
       const circuitDone = g.every(se => !!done[se.id]);
       const circuitOpen = isItemOpen(circuitItemKey);
@@ -2891,6 +3166,11 @@ async function loadClientExercises() {
             <button onclick="setCircuitUnit('${ex.superset_group}','lb',this)" class="unit-btn" style="padding:4px 10px;font-size:11px;">lb</button>
           </div>
         </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--gray5);cursor:pointer;margin-bottom:8px;">
+          <input type="checkbox" id="timer-toggle-${ex.superset_group}" onchange="toggleCircuitTimerMode('${ex.superset_group}')" style="width:16px;height:16px;accent-color:var(--orange);cursor:pointer;">
+          ⏱ Modo Timer
+        </label>
+        <div id="timer-panel-${ex.superset_group}" style="display:none;margin-bottom:10px;"></div>
         <div style="overflow-x:auto;">
           <table style="width:100%;border-collapse:collapse;min-width:${g.length*100+60}px;">
             <thead>
@@ -3000,6 +3280,9 @@ async function loadClientExercises() {
   </div>`;
 
   list.innerHTML = startBtnHtml + warmupBanner + exHtml + finishBtnHtml + cooldownBanner;
+
+  // Re-sync any running Circuit Timer panels after the DOM was rebuilt
+  syncCircuitTimerPanels([...renderedGroups]);
 
   // Update home timer badge if workout started
   if(workoutStarted) updateHomeBadge();
@@ -3459,17 +3742,22 @@ function switchClientPlanTab(tab, chipEl) {
   chipEl.style.background = 'var(--gray1)';
   chipEl.style.color = 'var(--black)';
   document.getElementById('client-plans-tab').style.display = 'none';
+  document.getElementById('client-progress-tab').style.display = 'none';
   document.getElementById('client-tests-tab').style.display = 'none';
   document.getElementById('client-habits-tab').style.display = 'none';
   document.getElementById('client-extras-tab').style.display = 'none';
   if(tab === 'plans') {
     document.getElementById('client-plans-tab').style.display = 'block';
+  } else if(tab === 'progress') {
+    document.getElementById('client-progress-tab').style.display = 'block';
+    loadClientProgress();
   } else if(tab === 'tests') {
     document.getElementById('client-tests-tab').style.display = 'block';
     loadClientTests();
   } else if(tab === 'habits') {
     document.getElementById('client-habits-tab').style.display = 'block';
     loadClientHabits();
+    loadClientSleep();
   } else if(tab === 'extras') {
     document.getElementById('client-extras-tab').style.display = 'block';
     loadClientExtras();
@@ -4277,7 +4565,7 @@ function renderCoachClients(clients) {
       <div class="client-avatar" style="${c.is_churn ? 'opacity:0.5;' : ''}">${getInitials(c.name)}</div>
       <div class="client-info">
         <div class="client-name" style="display:flex;align-items:center;gap:6px;${c.is_churn ? 'color:var(--gray4);' : ''}">${c.name}${typeTag}${evolutionBadge}${liftBadge}${(window._clientsWithReminder||new Set()).has(c.id)?'<div style="width:22px;height:22px;border-radius:5px;background:#fff3e0;display:flex;align-items:center;justify-content:center;font-size:12px;">⏰</div>':''}</div>
-        <div class="client-meta">@${c.username} · ${c.days_trained||0} días${startDateStr?` · Inicio: ${startDateStr}`:''}${endDateStr?` · Fin: ${endDateStr}`:''}${clientSortMode==='last_active'?(()=>{const t=(window._lastTrainedMap||{})[c.id];return t?` · 🟢 ${new Date(t).toLocaleDateString('es-CR',{weekday:'short',day:'numeric',month:'short'})}`:' · ⚫ Sin entreno';})():''}</div>
+        <div class="client-meta">@${c.username} · ${(c.days_trained||0)+(c.days_trained_adjustment||0)} días${startDateStr?` · Inicio: ${startDateStr}`:''}${endDateStr?` · Fin: ${endDateStr}`:''}${clientSortMode==='last_active'?(()=>{const t=(window._lastTrainedMap||{})[c.id];return t?` · 🟢 ${new Date(t).toLocaleDateString('es-CR',{weekday:'short',day:'numeric',month:'short'})}`:' · ⚫ Sin entreno';})():''}</div>
       </div>
       ${churnBadge}
     </div>`;
@@ -4388,7 +4676,9 @@ async function openCoachClient(clientId) {
   renderCoachLiftCard(c);
   logsVisible = false;
   logsFilterDate = null;
-  document.getElementById('coach-c-days').textContent=c.days_trained||0;
+  window._coachDaysBase = c.days_trained||0;
+  document.getElementById('coach-c-days-adj').textContent = (c.days_trained_adjustment>0?'+':'')+(c.days_trained_adjustment||0);
+  renderCoachDaysTotal();
   loadWeekTrainedCount(c.id);
   loadCoachClientDetail(clientId);
   loadCoachPlans();
@@ -4400,6 +4690,8 @@ async function openCoachClient(clientId) {
   loadCoachAICounts(clientId);
   loadTrainerNotes(clientId);
   loadWeeklyTracker(clientId);
+  loadCoachSleep(clientId);
+  loadCoachProgress(clientId);
   showScreen('screen-coach-client');
 }
 
@@ -4960,12 +5252,33 @@ async function loadWeekTrainedCount(clientId) {
   if(allLogs) {
     const allUniqueDays = new Set(allLogs.map(l => l.logged_at.split('T')[0]));
     const realTotal = allUniqueDays.size;
-    document.getElementById('coach-c-days').textContent = realTotal;
-    // Sync the stored value if it's off
+    window._coachDaysBase = realTotal;
+    renderCoachDaysTotal();
+    // Sync the stored value if it's off (this base counter is separate from the manual adjustment)
     if(realTotal !== (currentClient?.days_trained||0)) {
       await sb.from('clients').update({days_trained: realTotal}).eq('id', clientId);
       if(currentClient) currentClient.days_trained = realTotal;
     }
+  }
+}
+
+function renderCoachDaysTotal() {
+  const base = window._coachDaysBase ?? (currentClient?.days_trained||0);
+  const adj = currentClient?.days_trained_adjustment||0;
+  document.getElementById('coach-c-days').textContent = base + adj;
+}
+
+async function adjustDaysTrained(delta) {
+  if(!currentClient?.id) return;
+  const newAdj = (currentClient.days_trained_adjustment||0) + delta;
+  currentClient.days_trained_adjustment = newAdj;
+  document.getElementById('coach-c-days-adj').textContent = (newAdj>0?'+':'')+newAdj;
+  renderCoachDaysTotal();
+  const {error} = await sb.from('clients').update({days_trained_adjustment:newAdj}).eq('id',currentClient.id);
+  if(!error) {
+    const saved = document.getElementById('coach-c-days-adj-saved');
+    saved.style.opacity='1';
+    setTimeout(()=>{ saved.style.opacity='0'; },1200);
   }
 }
 
@@ -13854,6 +14167,381 @@ async function toggleHabit(habitId, checked) {
   }
   // Refresh counts without full reload
   loadClientHabits();
+}
+
+// ===== SLEEP TRACKING (shared helpers + client + coach) =====
+
+function getWeekDates(offsetWeeks = 0) {
+  const now = new Date();
+  const day = now.getDay();
+  const diffToMonday = (day === 0 ? -6 : 1 - day) - (offsetWeeks * 7);
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday);
+  const dates = [];
+  for(let i=0; i<7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    dates.push(d);
+  }
+  return dates;
+}
+
+function fmtDateKey(d) {
+  return d.toISOString().split('T')[0];
+}
+
+function fmtSleepTime(iso) {
+  if(!iso) return '-';
+  return new Date(iso).toLocaleTimeString('es-CR', {hour:'2-digit', minute:'2-digit'});
+}
+
+async function loadClientSleep() {
+  const container = document.getElementById('c-sleep-card');
+  if(!container || !currentClient) return;
+  container.innerHTML = '<div class="spinner"></div>';
+
+  const {data:openLog} = await sb.from('sleep_logs').select('*').eq('client_id', currentClient.id).is('sleep_end', null).order('sleep_start', {ascending:false}).limit(1).maybeSingle();
+  window._clientSleepOpen = openLog || null;
+
+  const weekDates = getWeekDates(0);
+  const weekStartISO = fmtDateKey(weekDates[0]) + 'T00:00:00';
+  const weekEndDate = new Date(weekDates[6]); weekEndDate.setDate(weekEndDate.getDate() + 1);
+  const weekEndISO = fmtDateKey(weekEndDate) + 'T00:00:00';
+  const {data:weekLogs} = await sb.from('sleep_logs').select('*').eq('client_id', currentClient.id).gte('sleep_start', weekStartISO).lt('sleep_start', weekEndISO);
+
+  const byDay = {};
+  (weekLogs||[]).forEach(l => { byDay[fmtDateKey(new Date(l.sleep_start))] = l; });
+
+  const isSleeping = !!openLog;
+  const dayNames = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+
+  container.innerHTML = `
+    <div style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;">Registro de sueño</div>
+    <div style="background:var(--white);border:1.5px solid var(--gray2);border-radius:16px;padding:16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:15px;font-weight:700;">${isSleeping?'😴 Durmiendo':'☀️ Despierto'}</div>
+        ${isSleeping?`<div style="font-size:12px;color:var(--gray4);margin-top:2px;">Desde las ${fmtSleepTime(openLog.sleep_start)}</div>`:''}
+      </div>
+      <button onclick="toggleSleep()" style="padding:10px 20px;border-radius:10px;border:none;font-size:14px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;background:${isSleeping?'var(--gray1)':'var(--orange)'};color:${isSleeping?'var(--black)':'white'};">${isSleeping?'OFF':'ON'}</button>
+    </div>
+    <div style="background:var(--white);border:1.5px solid var(--gray2);border-radius:16px;overflow:hidden;">
+      ${weekDates.map((d,i) => {
+        const key = fmtDateKey(d);
+        const log = byDay[key];
+        const hours = (log && log.duration_minutes!=null) ? (log.duration_minutes/60).toFixed(1) : null;
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;${i<6?'border-bottom:1px solid var(--gray2);':''}">
+          <div style="font-size:13px;font-weight:700;width:36px;">${dayNames[i]}</div>
+          <div style="font-size:12px;color:var(--gray4);flex:1;text-align:center;">${log?fmtSleepTime(log.sleep_start):'-'} → ${log?fmtSleepTime(log.sleep_end):'-'}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--orange);width:50px;text-align:right;">${hours!=null?hours+'h':'-'}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+async function toggleSleep() {
+  if(!currentClient) return;
+  const open = window._clientSleepOpen;
+  if(open) {
+    const end = new Date();
+    const start = new Date(open.sleep_start);
+    const durationMinutes = Math.max(0, Math.round((end - start) / 60000));
+    const {error} = await sb.from('sleep_logs').update({sleep_end: end.toISOString(), duration_minutes: durationMinutes}).eq('id', open.id);
+    if(error) { showToast('❌ ' + error.message); return; }
+    showToast('☀️ ¡Buenos días!');
+  } else {
+    const {error} = await sb.from('sleep_logs').insert([{client_id: currentClient.id, sleep_start: new Date().toISOString()}]);
+    if(error) { showToast('❌ ' + error.message); return; }
+    showToast('😴 ¡Buenas noches!');
+  }
+  loadClientSleep();
+}
+
+// ===== COACH SLEEP VIEW =====
+
+async function loadCoachSleep(clientId) {
+  const container = document.getElementById('coach-sleep-panel');
+  if(!container || !clientId) return;
+  container.innerHTML = '<div class="spinner"></div>';
+
+  const weeks = [];
+  for(let w=0; w<4; w++) weeks.push(getWeekDates(w));
+  const earliestISO = fmtDateKey(weeks[3][0]) + 'T00:00:00';
+
+  const {data:logs} = await sb.from('sleep_logs').select('*').eq('client_id', clientId).gte('sleep_start', earliestISO).order('sleep_start', {ascending:true});
+
+  const byDay = {};
+  (logs||[]).forEach(l => { byDay[fmtDateKey(new Date(l.sleep_start))] = l; });
+
+  const dayNames = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+
+  container.innerHTML = weeks.map((weekDates, wIdx) => {
+    const weekId = `coach-sleep-week-${wIdx}`;
+    let totalMin = 0, countDays = 0;
+    const rows = weekDates.map((d,i) => {
+      const key = fmtDateKey(d);
+      const log = byDay[key];
+      if(log && log.duration_minutes!=null) { totalMin += log.duration_minutes; countDays++; }
+      const hours = (log && log.duration_minutes!=null) ? (log.duration_minutes/60).toFixed(1) : null;
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;${i<6?'border-bottom:1px solid var(--gray1);':''}">
+        <div style="font-size:12px;font-weight:700;width:36px;">${dayNames[i]}</div>
+        <div style="font-size:11px;color:var(--gray4);flex:1;text-align:center;">${log?fmtSleepTime(log.sleep_start):'-'} → ${log?fmtSleepTime(log.sleep_end):'-'}</div>
+        <div style="font-size:12px;font-weight:700;color:var(--orange);width:44px;text-align:right;">${hours!=null?hours+'h':'-'}</div>
+      </div>`;
+    }).join('');
+    const avg = countDays>0 ? (totalMin/countDays/60).toFixed(1) : null;
+    const rangeLabel = `${weekDates[0].toLocaleDateString('es-CR',{day:'numeric',month:'short'})} - ${weekDates[6].toLocaleDateString('es-CR',{day:'numeric',month:'short'})}`;
+    return `<div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 14px;margin-bottom:8px;">
+      <div onclick="toggleCoachSleepWeek('${weekId}')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+        <div>
+          <div style="font-size:13px;font-weight:700;">${wIdx===0?'Esta semana':rangeLabel}</div>
+          <div style="font-size:11px;color:var(--gray4);">${rangeLabel}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="font-size:15px;font-weight:900;color:var(--orange);">${avg!=null?avg+'h prom.':'-'}</div>
+          <span id="${weekId}-arrow" style="font-size:14px;color:var(--gray4);transition:transform 0.2s;display:inline-block;">▸</span>
+        </div>
+      </div>
+      <div id="${weekId}" style="display:none;margin-top:10px;border-top:1px solid var(--gray2);padding-top:8px;">${rows}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleCoachSleepWeek(weekId) {
+  const el = document.getElementById(weekId);
+  const arrow = document.getElementById(weekId + '-arrow');
+  if(!el) return;
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : 'block';
+  if(arrow) arrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(90deg)';
+}
+
+// ===== CLIENT PROGRESS (peso + fotos semanales) =====
+
+let selectedProgressPhotos = {front:null, side:null, back:null};
+
+function handleProgressPhotoSelect(key, input) {
+  const file = input.files[0];
+  selectedProgressPhotos[key] = file || null;
+  const box = document.getElementById(`progress-photo-${key}-box`);
+  if(!box) return;
+  if(file) {
+    const url = URL.createObjectURL(file);
+    box.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;">`;
+  } else {
+    box.innerHTML = `<div style="font-size:22px;">📷</div>`;
+  }
+}
+
+function renderProgressForm() {
+  const slots = [['front','Frente'],['side','Lado'],['back','Espalda']];
+  return `
+    <div style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;">Registro de esta semana</div>
+    <div style="background:var(--white);border:1.5px solid var(--gray2);border-radius:16px;padding:16px;margin-bottom:20px;">
+      <label style="font-size:12px;font-weight:700;color:var(--gray4);display:block;margin-bottom:4px;">Peso (kg) *</label>
+      <input class="form-input" type="number" step="0.1" id="progress-weight-input" placeholder="Ej: 72.5" style="width:100%;box-sizing:border-box;margin-bottom:16px;">
+      <div style="display:flex;gap:10px;margin-bottom:16px;">
+        ${slots.map(([key,label]) => `
+          <div style="flex:1;text-align:center;">
+            <div class="upload-area" style="padding:0;height:90px;overflow:hidden;margin-bottom:6px;display:flex;align-items:center;justify-content:center;" onclick="document.getElementById('progress-photo-${key}').click()">
+              <div id="progress-photo-${key}-box" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                <div style="font-size:22px;">📷</div>
+              </div>
+            </div>
+            <div class="upload-text" style="font-size:11px;">${label}</div>
+            <input type="file" id="progress-photo-${key}" accept="image/*" capture="environment" style="display:none" onchange="handleProgressPhotoSelect('${key}', this)">
+          </div>
+        `).join('')}
+      </div>
+      <label style="font-size:12px;font-weight:700;color:var(--gray4);display:block;margin-bottom:4px;">Reflexión de la semana (opcional)</label>
+      <textarea id="progress-notes-input" class="form-textarea" rows="3" placeholder="¿Cómo te sentiste esta semana? Energía, sueño, antojos, motivación..." style="width:100%;box-sizing:border-box;font-size:13px;line-height:1.5;resize:vertical;margin-bottom:16px;"></textarea>
+      <button class="btn-primary" onclick="saveProgressLog()">Guardar progreso</button>
+    </div>
+  `;
+}
+
+async function progressPhotoThumbs(log) {
+  const slots = [['photo_front_path','Frente'],['photo_side_path','Lado'],['photo_back_path','Espalda']];
+  const thumbs = await Promise.all(slots.map(async ([field,label]) => {
+    const path = log[field];
+    if(!path) return `<div style="flex:1;text-align:center;"><div style="width:100%;aspect-ratio:3/4;background:var(--gray1);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--gray4);font-size:10px;">Sin foto</div><div style="font-size:10px;color:var(--gray4);margin-top:4px;">${label}</div></div>`;
+    const {data} = await sb.storage.from('progress-photos').createSignedUrl(path, 300);
+    const url = data?.signedUrl || '';
+    return `<div style="flex:1;text-align:center;"><img src="${url}" onclick="window.open('${url}','_blank')" style="width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:10px;cursor:pointer;"><div style="font-size:10px;color:var(--gray4);margin-top:4px;">${label}</div></div>`;
+  }));
+  return thumbs.join('');
+}
+
+async function renderProgressLockedCard(log) {
+  const weekDates = getWeekDates(0);
+  const nextMonday = new Date(weekDates[0]);
+  nextMonday.setDate(nextMonday.getDate() + 7);
+  const nextMondayStr = nextMonday.toLocaleDateString('es-CR', {day:'numeric', month:'long'});
+  const thumbsHtml = await progressPhotoThumbs(log);
+  return `
+    <div style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;">Registro de esta semana</div>
+    <div style="background:var(--green-light);border:1.5px solid var(--green);border-radius:16px;padding:16px;margin-bottom:20px;">
+      <div style="font-size:15px;font-weight:700;color:var(--green);margin-bottom:2px;">✅ Ya registraste tu progreso de esta semana</div>
+      <div style="font-size:12px;color:var(--gray5);margin-bottom:14px;">Próximo registro disponible el ${nextMondayStr}</div>
+      <div style="font-size:20px;font-weight:900;margin-bottom:12px;">${log.weight_kg} kg</div>
+      <div style="display:flex;gap:10px;margin-bottom:14px;">${thumbsHtml}</div>
+      ${log.notes ? `<div style="background:var(--white);border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:13px;line-height:1.5;color:var(--black);white-space:pre-wrap;">${escHtml(log.notes)}</div>` : ''}
+      <button id="undo-progress-btn" onclick="undoProgressLog('${log.id}', this)" style="width:100%;padding:10px;background:transparent;color:var(--gray5);border:1.5px solid var(--gray3);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">↩️ Deshacer y volver a registrar</button>
+    </div>
+  `;
+}
+
+async function undoProgressLog(logId, btn) {
+  if(btn && btn.dataset.confirming !== 'true') {
+    btn.dataset.confirming = 'true';
+    btn.textContent = '⚠️ ¿Seguro? Tocá de nuevo para borrar';
+    btn.style.color = 'var(--red)';
+    btn.style.borderColor = 'var(--red)';
+    clearTimeout(window._undoProgressResetTimer);
+    window._undoProgressResetTimer = setTimeout(() => {
+      if(!btn.isConnected) return;
+      btn.dataset.confirming = 'false';
+      btn.textContent = '↩️ Deshacer y volver a registrar';
+      btn.style.color = 'var(--gray5)';
+      btn.style.borderColor = 'var(--gray3)';
+    }, 4000);
+    return;
+  }
+  const {data:log} = await sb.from('client_progress_logs').select('*').eq('id', logId).maybeSingle();
+  if(!log) return;
+  const paths = [log.photo_front_path, log.photo_side_path, log.photo_back_path].filter(Boolean);
+  if(paths.length) {
+    await sb.storage.from('progress-photos').remove(paths);
+  }
+  const {error} = await sb.from('client_progress_logs').delete().eq('id', logId);
+  if(error) { showToast('❌ ' + error.message); return; }
+  showToast('↩️ Registro borrado, podés volver a completarlo');
+  loadClientProgress();
+}
+
+async function loadClientProgress() {
+  const curEl = document.getElementById('c-progress-current');
+  const histEl = document.getElementById('c-progress-history');
+  if(!curEl || !currentClient) return;
+  curEl.innerHTML = '<div class="spinner"></div>';
+  histEl.innerHTML = '';
+
+  const weekStart = fmtDateKey(getWeekDates(0)[0]);
+  const {data:existing} = await sb.from('client_progress_logs').select('*').eq('client_id', currentClient.id).eq('week_start_date', weekStart).maybeSingle();
+
+  if(existing) {
+    curEl.innerHTML = await renderProgressLockedCard(existing);
+  } else {
+    selectedProgressPhotos = {front:null, side:null, back:null};
+    curEl.innerHTML = renderProgressForm();
+  }
+
+  loadProgressHistory();
+}
+
+async function saveProgressLog() {
+  if(!currentClient) return;
+  const weightInput = document.getElementById('progress-weight-input');
+  const weight = parseFloat(weightInput?.value);
+  if(!weight || weight <= 0) { showToast('⚠️ Ingresá tu peso'); return; }
+
+  const weekStart = fmtDateKey(getWeekDates(0)[0]);
+  const paths = {};
+  for(const key of ['front','side','back']) {
+    const file = selectedProgressPhotos[key];
+    if(file) {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const filePath = `${currentClient.id}/${weekStart}_${key}_${Date.now()}_${safeName}`;
+      const {error:upErr} = await sb.storage.from('progress-photos').upload(filePath, file);
+      if(upErr) { showToast('❌ ' + upErr.message); return; }
+      paths[key] = filePath;
+    }
+  }
+
+  const notesInput = document.getElementById('progress-notes-input');
+  const notes = notesInput?.value.trim() || null;
+
+  const {error} = await sb.from('client_progress_logs').insert([{
+    client_id: currentClient.id,
+    week_start_date: weekStart,
+    weight_kg: weight,
+    photo_front_path: paths.front || null,
+    photo_side_path: paths.side || null,
+    photo_back_path: paths.back || null,
+    notes: notes
+  }]);
+  if(error) {
+    if(error.code === '23505') { showToast('⚠️ Ya registraste tu progreso esta semana'); loadClientProgress(); return; }
+    showToast('❌ ' + error.message); return;
+  }
+  showToast('✅ Progreso guardado');
+  loadClientProgress();
+}
+
+async function loadProgressHistory() {
+  const el = document.getElementById('c-progress-history');
+  if(!el || !currentClient) return;
+  const weekStart = fmtDateKey(getWeekDates(0)[0]);
+  const {data:logs} = await sb.from('client_progress_logs').select('*').eq('client_id', currentClient.id).lt('week_start_date', weekStart).order('week_start_date', {ascending:false});
+  if(!logs || logs.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;">Historial</div><div id="c-progress-history-list"><div class="spinner"></div></div>';
+  const rowsHtml = await Promise.all(logs.map(async log => {
+    const thumbsHtml = await progressPhotoThumbs(log);
+    const label = new Date(log.week_start_date + 'T00:00:00').toLocaleDateString('es-CR', {day:'numeric', month:'short', year:'numeric'});
+    return `<div style="background:var(--white);border:1.5px solid var(--gray2);border-radius:16px;padding:14px 16px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:700;color:var(--gray4);">Semana del ${label}</div>
+        <div style="font-size:16px;font-weight:900;color:var(--orange);">${log.weight_kg} kg</div>
+      </div>
+      <div style="display:flex;gap:10px;${log.notes?'margin-bottom:10px;':''}">${thumbsHtml}</div>
+      ${log.notes ? `<div style="font-size:12px;line-height:1.5;color:var(--gray5);white-space:pre-wrap;">${escHtml(log.notes)}</div>` : ''}
+    </div>`;
+  }));
+  const listEl = document.getElementById('c-progress-history-list');
+  if(listEl) listEl.innerHTML = rowsHtml.join('');
+}
+
+// ===== COACH PROGRESS VIEW =====
+
+async function loadCoachProgress(clientId) {
+  const container = document.getElementById('coach-progress-panel');
+  if(!container || !clientId) return;
+  container.innerHTML = '<div class="spinner"></div>';
+  const {data:logs} = await sb.from('client_progress_logs').select('*').eq('client_id', clientId).order('week_start_date', {ascending:false});
+  if(!logs || logs.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📈</div><div class="empty-text">Sin registros de progreso aún.</div></div>';
+    return;
+  }
+
+  const tableRows = logs.map(log => {
+    const label = new Date(log.week_start_date + 'T00:00:00').toLocaleDateString('es-CR', {day:'numeric', month:'short', year:'numeric'});
+    return `<div style="padding:8px 0;border-bottom:1px solid var(--gray1);">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:12px;color:var(--gray4);">${label}</div>
+        <div style="font-size:13px;font-weight:700;">${log.weight_kg} kg</div>
+      </div>
+      ${log.notes ? `<div style="font-size:12px;line-height:1.5;color:var(--gray5);margin-top:4px;white-space:pre-wrap;">${escHtml(log.notes)}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  const photoBlocks = await Promise.all(logs.map(async log => {
+    const label = new Date(log.week_start_date + 'T00:00:00').toLocaleDateString('es-CR', {day:'numeric', month:'short'});
+    const thumbsHtml = await progressPhotoThumbs(log);
+    return `<div style="margin-bottom:10px;">
+      <div style="font-size:11px;font-weight:700;color:var(--gray4);margin-bottom:6px;">${label}</div>
+      <div style="display:flex;gap:8px;">${thumbsHtml}</div>
+    </div>`;
+  }));
+
+  container.innerHTML = `
+    <div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 14px;margin-bottom:8px;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px;">Peso por semana</div>
+      ${tableRows}
+    </div>
+    <div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 14px;margin-bottom:8px;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px;">Fotos por semana</div>
+      ${photoBlocks.join('')}
+    </div>
+  `;
 }
 
 // ===== AI GENERATOR (MOVE STRONG FLOW) =====
