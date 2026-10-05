@@ -2279,14 +2279,31 @@ async function saveGoal() {
   showToast('✅ Meta guardada 💪');
 }
 
+function getClientTotalWeeks() { return currentClient?.total_weeks || 5; }
+function getDeloadWeeks() {
+  const d = currentClient?.deload_weeks;
+  return (Array.isArray(d) && d.length) ? d : [5];
+}
+function isDeloadWeek(w) { return getDeloadWeeks().includes(w); }
+function isRotationWeek(w) {
+  const r = currentClient?.rotation_weeks;
+  return Array.isArray(r) && r.includes(w);
+}
+function weekLabelFor(w) { return isDeloadWeek(w) ? 'Deload' : 'Semana ' + w; }
+function weekSubFor(w, base) {
+  return w===1 ? base : isDeloadWeek(w) ? 'Deload' : isRotationWeek(w) ? 'Rotación' : 'Progresión';
+}
+
 function updateClientWeekUI() {
-  document.getElementById('c-greeting-week').textContent = clientWeek===5?'Semana 5 · Deload':'Semana '+clientWeek+' de tu plan mensual 💪';
+  document.getElementById('c-greeting-week').textContent = isDeloadWeek(clientWeek)
+    ? 'Semana '+clientWeek+' · Deload'
+    : getClientTotalWeeks() > 5 ? 'Semana '+clientWeek+' de '+getClientTotalWeeks()+' 💪' : 'Semana '+clientWeek+' de tu plan mensual 💪';
   document.getElementById('c-week-num').textContent = clientWeek;
 }
 
 function getVisibleWeeks() {
   const hidden = currentClient?.hidden_weeks || [];
-  return [1,2,3,4,5].filter(w => !hidden.includes(w));
+  return Array.from({length:getClientTotalWeeks()}, (_,i)=>i+1).filter(w => !hidden.includes(w));
 }
 function getNextVisibleWeek(current, dir) {
   const visible = getVisibleWeeks();
@@ -2305,7 +2322,7 @@ async function loadClientDayStrip() {
   // Auto-skip hidden weeks
   const _hw = currentClient?.hidden_weeks || [];
   if(_hw.length > 0 && _hw.includes(clientWeek)) {
-    const _vw = [1,2,3,4,5].filter(w => !_hw.includes(w));
+    const _vw = getVisibleWeeks();
     if(_vw.length > 0) { clientWeek = _vw[0]; updateClientWeekUI(); }
   }
   const {data:planDays} = await sb.from('monthly_plans').select('day_of_week,id,day_order').eq('client_id',currentClient.id).eq('week_number',clientWeek).order('day_order',{ascending:true,nullsFirst:false}).order('id',{ascending:true});
@@ -2368,10 +2385,10 @@ async function loadClientDayStrip() {
   weekCenter.style.cssText = 'text-align:center;flex:1;';
   const weekName = document.createElement('div');
   weekName.style.cssText = "font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--black);";
-  weekName.textContent = clientWeek===5?'Deload':'Semana '+clientWeek;
+  weekName.textContent = weekLabelFor(clientWeek);
   const weekSub = document.createElement('div');
   weekSub.style.cssText = 'font-size:11px;color:var(--orange);font-weight:600;margin-top:1px;';
-  weekSub.textContent = clientWeek===1?'Semana base':clientWeek===5?'Deload':'Progresión';
+  weekSub.textContent = weekSubFor(clientWeek,'Semana base');
   weekCenter.appendChild(weekName);
   weekCenter.appendChild(weekSub);
 
@@ -2569,7 +2586,7 @@ async function openDaySwitcher() {
   const weekEl = document.getElementById('day-switcher-week');
   if(!modal || !list) return;
   modal.style.display = 'flex';
-  weekEl.textContent = clientWeek === 5 ? 'Deload' : 'Semana ' + clientWeek;
+  weekEl.textContent = weekLabelFor(clientWeek);
   list.innerHTML = '<div class="spinner" style="width:18px;height:18px;margin:16px auto;"></div>';
 
   const {data:planDays} = await sb.from('monthly_plans')
@@ -2934,7 +2951,7 @@ async function loadClientExercises() {
   let circuitLogs = {};
   try { circuitLogs = JSON.parse(localStorage.getItem(circuitLogsKey)||'{}'); } catch{}
 
-  // ── Fetch prev week logs (S1→S2, S2→S3, S3→S4, S5 nada) ──
+  // ── Fetch prev week logs (semana N vs N-1, saltando deloads; el deload no compara) ──
   // Alcance de la comparación: MISMO ejercicio, MISMO día de la semana, semana anterior.
   // Antes esto barría todos los plan_days de la semana previa y matcheaba por nombre,
   // así que un movimiento repetido en dos días (ej. Hip Thrust pesado el Día 2 y ligero
@@ -2943,9 +2960,11 @@ async function loadClientExercises() {
   // El índice es por exercise_id de la semana ACTUAL (no por nombre), para que dos
   // instancias del mismo movimiento en el mismo día tampoco se pisen entre sí.
   const prevByEx = {};
-  if(clientWeek >= 2 && clientWeek <= 4) {
+  if(clientWeek >= 2 && !isDeloadWeek(clientWeek)) {
     try {
-      const prevWeek = clientWeek - 1;
+      // Tras un deload se compara contra la última semana no-deload (no contra cargas ligeras)
+      let prevWeek = clientWeek - 1;
+      while(prevWeek > 1 && isDeloadWeek(prevWeek)) prevWeek--;
       const {data:prevPlanDay} = await sb.from('monthly_plans')
         .select('id')
         .eq('client_id', currentClient.id)
@@ -5314,7 +5333,7 @@ function renderPlanOverview() {
   const hiddenWeeks = currentClient?.hidden_weeks || [];
   const isSelectedHidden = hiddenWeeks.includes(planOverviewSelectedWeek);
 
-  const selectedWeekLabel = planOverviewSelectedWeek === 5 ? 'Deload' : 'Semana ' + planOverviewSelectedWeek;
+  const selectedWeekLabel = weekLabelFor(planOverviewSelectedWeek);
   container.innerHTML = `
     <!-- Week selector chips -->
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
@@ -5324,7 +5343,7 @@ function renderPlanOverview() {
         const bg = isSel ? (isHid ? '#9e9e9e' : 'var(--orange)') : (isHid ? '#f5f5f5' : 'var(--gray1)');
         const border = isSel ? (isHid ? '#9e9e9e' : 'var(--orange)') : (isHid ? '#bdbdbd' : 'var(--gray2)');
         const color = isSel ? 'white' : (isHid ? '#9e9e9e' : 'var(--gray5)');
-        const baseLabel = w===5?'Deload':'Semana '+w;
+        const baseLabel = weekLabelFor(w);
         const label = isHid ? `<span style="text-decoration:line-through;opacity:0.7;">${baseLabel}</span>` : baseLabel;
         return `<button onclick="selectPlanOverviewWeek(${w})" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid ${border};background:${bg};color:${color};cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;">${label}</button>`;
       }).join('')}
@@ -5365,7 +5384,7 @@ async function toggleHiddenWeek(w) {
   const {error} = await sb.from('clients').update({hidden_weeks: hidden}).eq('id', currentClient.id);
   if(error){ showToast('❌ Error guardando'); return; }
   currentClient.hidden_weeks = hidden;
-  const label = w===5?'Deload':'Semana '+w;
+  const label = weekLabelFor(w);
   showToast(hidden.includes(w) ? '👁️ '+label+' oculta pa\' el cliente' : '👁️ '+label+' visible pa\' el cliente');
   renderPlanOverview();
 }
@@ -5613,7 +5632,7 @@ async function openSwapWeekSelector() {
   sheet.id = 'swap-week-sheet';
   sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:700;display:flex;align-items:flex-end;justify-content:center;';
 
-  const weekLabel = n => n === 5 ? 'Deload' : 'Semana ' + n;
+  const weekLabel = n => weekLabelFor(n);
 
   sheet.innerHTML = `
     <div style="background:var(--white);border-radius:20px 20px 0 0;
@@ -5880,7 +5899,7 @@ async function deleteAllExercises(planDayId) {
 }
 
 async function deleteWeek(weekNum) {
-  const weekLabel = weekNum === 5 ? 'Deload' : 'Semana ' + weekNum;
+  const weekLabel = weekLabelFor(weekNum);
   if (!confirm(`¿Borrar ${weekLabel} completa? Se eliminarán todos sus días y ejercicios. Esto no se puede deshacer.`)) return;
   const {data: planDays} = await sb.from('monthly_plans').select('id').eq('client_id', currentClient.id).eq('week_number', weekNum);
   if (planDays && planDays.length > 0) {
@@ -6004,7 +6023,7 @@ async function openQuickSeries() {
   const weekNums = [...new Set(planDays.map(p => p.week_number))].sort((a,b)=>a-b);
 
   // Header label
-  const weekLabel = w => w === 5 ? 'DL' : 'S' + w;
+  const weekLabel = w => isDeloadWeek(w) ? 'DL' : 'S' + w;
 
   let html = `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
     <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif;">
@@ -6134,7 +6153,7 @@ async function openQuickRPE() {
   });
 
   const weekNums = [...new Set(planDays.map(p => p.week_number))].sort((a,b)=>a-b);
-  const weekLabel = w => w === 5 ? 'DL' : 'S' + w;
+  const weekLabel = w => isDeloadWeek(w) ? 'DL' : 'S' + w;
 
   let html = '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">' +
     '<table style="width:100%;border-collapse:collapse;">' +
@@ -6348,7 +6367,7 @@ async function buildWeekTabs() {
   const hasWeeks=existing?[...new Set(existing.map(e=>e.week_number))]:[];
   const tabs=document.getElementById('builder-week-tabs');
   if(!tabs)return;
-  tabs.innerHTML=[1,2,3,4,5].map(w=>`<div class="week-tab${w===builderWeek?' active':''}${hasWeeks.includes(w)?' has-data':''}" onclick="switchBuilderWeek(${w})">${w===builderWeek?'● ':''}${w===5?'Deload':'Semana '+w}</div>`).join('');
+  tabs.innerHTML=Array.from({length:getClientTotalWeeks()},(_,i)=>i+1).map(w=>`<div class="week-tab${w===builderWeek?' active':''}${hasWeeks.includes(w)?' has-data':''}" onclick="switchBuilderWeek(${w})">${w===builderWeek?'● ':''}${weekLabelFor(w)}</div>`).join('');
   document.getElementById('copy-week-btn').style.display=builderWeek>1?'block':'none';
 }
 
@@ -9390,8 +9409,8 @@ async function renderWeeklyTracker(clientId) {
     .order('day_order',{ascending:true,nullsFirst:false})
     .order('id',{ascending:true});
 
-  const weekLabel = week===5?'Deload':'Semana '+week;
-  const weekSub = week===1?'Base':week===5?'Deload':'Progresión';
+  const weekLabel = weekLabelFor(week);
+  const weekSub = weekSubFor(week,'Base');
 
   if(!planDays || planDays.length===0) {
     container.innerHTML = `
@@ -9525,7 +9544,7 @@ function buildTrackerWeekNav(clientId, weekLabel, weekSub, week) {
         <div style="font-family:'Playfair Display',serif;font-size:14px;font-weight:700;">${weekLabel}</div>
         <div style="font-size:10px;color:var(--orange);font-weight:600;">${weekSub}</div>
       </div>
-      <button onclick="changeTrackerWeek(${week+1},'${clientId}')" ${week>=5?'disabled':''} style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--gray2);background:var(--gray1);font-size:15px;cursor:pointer;${week>=5?'opacity:0.3;':''};display:flex;align-items:center;justify-content:center;">›</button>
+      <button onclick="changeTrackerWeek(${week+1},'${clientId}')" ${week>=getClientTotalWeeks()?'disabled':''} style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--gray2);background:var(--gray1);font-size:15px;cursor:pointer;${week>=getClientTotalWeeks()?'opacity:0.3;':''};display:flex;align-items:center;justify-content:center;">›</button>
     </div>`;
 }
 
@@ -9560,7 +9579,7 @@ async function markDayTrained(planDayId, clientId, week) {
 // date), sin FK a workout_sessions: solo se borra el rating de esa fecha si al cliente
 // no le queda ninguna otra sesión ese mismo día.
 async function deleteDayRecord(planDayId, clientId, week, label) {
-  const weekLabel = week === 5 ? 'Deload' : 'Semana ' + week;
+  const weekLabel = weekLabelFor(week);
   if(!confirm(`¿Seguro que querés borrar el registro de ${label} — ${weekLabel}? Esto eliminará la sesión y todos los logs de ejercicios guardados para este día. Esta acción no se puede deshacer.`)) return;
 
   let deletedLogs = 0, deletedSessions = 0;
@@ -9640,7 +9659,7 @@ async function deleteDayRecord(planDayId, clientId, week, label) {
 }
 
 async function changeTrackerWeek(week, clientId) {
-  weeklyTrackerWeek = Math.max(1, Math.min(5, week));
+  weeklyTrackerWeek = Math.max(1, Math.min(getClientTotalWeeks(), week));
   await renderWeeklyTracker(clientId);
 }
 
@@ -13434,7 +13453,7 @@ async function showCopyDayModal() {
         <div style="font-size:12px;color:var(--gray5);margin-bottom:14px;">Copiando: Semana ${builderWeek} · ${builderDay}</div>
         <div class="notes-label" style="margin-bottom:8px;">Semana destino</div>
         <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
-          ${[1,2,3,4,5].map(w=>`<button onclick="selectCopyWeek(${w},this)" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid var(--gray2);background:var(--gray1);color:var(--gray5);cursor:pointer;font-family:'DM Sans',sans-serif;" id="copy-w-${w}">${w===5?'Deload':'Semana '+w}</button>`).join('')}
+          ${Array.from({length:getClientTotalWeeks()},(_,i)=>i+1).map(w=>`<button onclick="selectCopyWeek(${w},this)" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid var(--gray2);background:var(--gray1);color:var(--gray5);cursor:pointer;font-family:'DM Sans',sans-serif;" id="copy-w-${w}">${weekLabelFor(w)}</button>`).join('')}
         </div>
         <div class="notes-label" style="margin-bottom:8px;">Día destino</div>
         <div style="margin-bottom:14px;">
@@ -13515,7 +13534,7 @@ async function showCopyWeekModal() {
         <div style="font-size:12px;color:var(--gray5);margin-bottom:14px;">Copiando: Semana ${builderWeek} completa (todos los días)</div>
         <div class="notes-label" style="margin-bottom:8px;">Semana destino</div>
         <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
-          ${[1,2,3,4,5].map(w=>`<button onclick="selectCopyWeekTarget(${w},this)" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid var(--gray2);background:var(--gray1);color:var(--gray5);cursor:pointer;font-family:'DM Sans',sans-serif;" id="cw-w-${w}">${w===5?'Deload':'Semana '+w}</button>`).join('')}
+          ${Array.from({length:getClientTotalWeeks()},(_,i)=>i+1).map(w=>`<button onclick="selectCopyWeekTarget(${w},this)" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid var(--gray2);background:var(--gray1);color:var(--gray5);cursor:pointer;font-family:'DM Sans',sans-serif;" id="cw-w-${w}">${weekLabelFor(w)}</button>`).join('')}
         </div>
         <div class="notes-label" style="margin-bottom:8px;">Cliente destino</div>
         <select id="cw-client-sel" class="form-select" style="margin-bottom:18px;" onchange="copyWeekTargetClientId=this.value">
@@ -15036,7 +15055,12 @@ async function analyzeTrainingJSON() {
   try { parsed = JSON.parse(raw); } catch(e) {
     showToast('❌ JSON inválido: '+e.message, 4000); return;
   }
-  if (parsed.type !== 'training' || !Array.isArray(parsed.days)) {
+  const isV2 = parsed && parsed.type === 'training' && parsed.version === 2 && Array.isArray(parsed.phases);
+  let v2 = null;
+  if (isV2) {
+    v2 = _validateTrainingV2(parsed);
+    if (!v2) return;
+  } else if (parsed.type !== 'training' || !Array.isArray(parsed.days)) {
     showToast('❌ Falta type:"training" o el array "days"', 4000); return;
   }
 
@@ -15047,29 +15071,135 @@ async function analyzeTrainingJSON() {
   const libMap = {};
   library.forEach(ex => { libMap[_normStr(ex.name)] = ex; });
 
-  const days = [...parsed.days].sort((a,b)=>(a.day_order||0)-(b.day_order||0));
-  const processedDays = days.map(day => ({
-    day_name: day.day_name,
-    day_order: day.day_order || 0,
-    replaceMode: true,
-    exercises: (day.exercises||[]).map((ex,i) => {
-      const m = libMap[_normStr(ex.name)];
-      return {
-        jsonName: ex.name,
-        reps_range: ex.reps_range || '',
-        order_index: ex.order_index != null ? ex.order_index : i,
-        by_week: ex.by_week || {},
-        circuit_group: ex.circuit_group || null,
-        circuit_rounds: ex.circuit_group ? (ex.circuit_rounds || null) : null,
-        status: m ? 'match' : 'pending',
-        resolvedType: m ? 'library' : null,
-        resolvedData: m ? {name:m.name, muscle_group:m.muscle_group, video_url:m.video_url, tag:m.tag} : null
-      };
-    })
-  }));
+  const mapEx = (ex,i) => {
+    const m = libMap[_normStr(ex.name)];
+    return {
+      jsonName: ex.name,
+      reps_range: ex.reps_range || '',
+      order_index: ex.order_index != null ? ex.order_index : i,
+      by_week: ex.by_week || {},
+      circuit_group: ex.circuit_group || null,
+      circuit_rounds: ex.circuit_group ? (ex.circuit_rounds || null) : null,
+      status: m ? 'match' : 'pending',
+      resolvedType: m ? 'library' : null,
+      resolvedData: m ? {name:m.name, muscle_group:m.muscle_group, video_url:m.video_url, tag:m.tag} : null
+    };
+  };
 
-  _tImport = { days: processedDays, library, activeDay: 0, searchActive: null, searchQuery: '', newFormActive: null, renamingDay: false };
+  let processedDays, meta = null, phases = null;
+  if (isV2) {
+    // Aplanar: cada (fase × día) → una entrada; ejercicios ordenados por order_index (fallback: posición)
+    processedDays = [];
+    v2.phases.forEach(ph => {
+      [...ph.days].sort((a,b)=>a.day_order-b.day_order).forEach(day => {
+        const exs = (day.exercises||[])
+          .map((ex,i) => ({ex, i, oi: ex.order_index != null ? ex.order_index : i}))
+          .sort((a,b) => (a.oi-b.oi) || (a.i-b.i))
+          .map(o => mapEx(o.ex, o.i));
+        processedDays.push({
+          day_name: day.day_name, day_order: day.day_order,
+          phase: ph.phase, phaseName: ph.name || ('Mes '+ph.phase),
+          replaceMode: true, exercises: exs
+        });
+      });
+    });
+    meta = { total_weeks: v2.total_weeks, deload_weeks: v2.deload_weeks, rotation_weeks: v2.rotation_weeks };
+    phases = v2.phases.map(ph => ({phase: ph.phase, name: ph.name || ('Mes '+ph.phase)}));
+  } else {
+    const days = [...parsed.days].sort((a,b)=>(a.day_order||0)-(b.day_order||0));
+    processedDays = days.map(day => ({
+      day_name: day.day_name,
+      day_order: day.day_order || 0,
+      replaceMode: true,
+      exercises: (day.exercises||[]).map(mapEx)
+    }));
+  }
+
+  _tImport = { days: processedDays, library, activeDay: 0, searchActive: null, searchQuery: '', newFormActive: null, renamingDay: false,
+    meta, phases, activePhase: phases ? phases[0].phase : null };
   renderTrainingPreview();
+}
+
+// Valida el formato v2 (12 semanas). Muestra toast y devuelve null si hay error.
+function _validateTrainingV2(p) {
+  const fail = msg => { showToast('❌ '+msg, 5000); return null; };
+  const isInt = n => Number.isInteger(n);
+  const total = p.total_weeks;
+  if (!isInt(total) || total < 1 || total > 12) return fail('total_weeks debe ser un entero entre 1 y 12');
+  const checkList = (key) => {
+    const arr = p[key] == null ? [] : p[key];
+    if (!Array.isArray(arr)) return fail(key+' debe ser un array');
+    const bad = arr.find(w => !isInt(w) || w < 1 || w > total);
+    if (bad !== undefined) return fail(`${key}: la semana ${bad} está fuera de 1–${total}`);
+    return arr;
+  };
+  const deload = checkList('deload_weeks'); if (!deload) return null;
+  const rotation = checkList('rotation_weeks'); if (!rotation) return null;
+  if (!p.phases.length) return fail('phases está vacío');
+
+  const seenWeeks = {};
+  let refDays = null; // day_order → day_name de la primera fase
+  for (let pi = 0; pi < p.phases.length; pi++) {
+    const ph = p.phases[pi];
+    const tag = `Fase ${ph && ph.phase != null ? ph.phase : pi+1}`;
+    if (!ph || !Array.isArray(ph.weeks) || !ph.weeks.length) return fail(tag+': falta el array "weeks"');
+    if (!Array.isArray(ph.days)) return fail(tag+': falta el array "days"');
+    if (ph.phase == null) ph.phase = pi + 1;
+    for (const w of ph.weeks) {
+      if (!isInt(w) || w < 1 || w > total) return fail(`${tag}: la semana ${w} está fuera de 1–${total}`);
+      if (seenWeeks[w] != null) return fail(`La semana ${w} aparece en la fase ${seenWeeks[w]} y en la fase ${ph.phase} (solapamiento)`);
+      seenWeeks[w] = ph.phase;
+    }
+    const cur = {};
+    for (const d of ph.days) {
+      if (!d || !d.day_name || !isInt(d.day_order)) return fail(`${tag}: cada día necesita day_name y day_order entero`);
+      if (cur[d.day_order] != null) return fail(`${tag}: day_order ${d.day_order} repetido`);
+      cur[d.day_order] = d.day_name;
+      if (d.exercises != null && !Array.isArray(d.exercises)) return fail(`${tag} · ${d.day_name}: "exercises" debe ser un array`);
+      for (const ex of (d.exercises||[])) {
+        for (const k of Object.keys(ex.by_week || {})) {
+          const w = Number(k);
+          if (!ph.weeks.includes(w)) return fail(`${tag} · ${d.day_name} · "${ex.name}": by_week "${k}" no pertenece a las semanas de la fase (${ph.weeks.join(',')})`);
+        }
+      }
+    }
+    if (!refDays) { refDays = cur; continue; }
+    const orders = new Set([...Object.keys(refDays), ...Object.keys(cur)]);
+    for (const o of orders) {
+      if (refDays[o] !== cur[o]) {
+        return fail(`Día inconsistente entre fases: day_order ${o} es "${refDays[o] ?? '(no existe)'}" en la fase ${p.phases[0].phase ?? 1} y "${cur[o] ?? '(no existe)'}" en la fase ${ph.phase}`);
+      }
+    }
+  }
+  return { total_weeks: total, deload_weeks: deload, rotation_weeks: rotation, phases: p.phases };
+}
+
+// Índices de _tImport.days que comparten día (v2: mismo day_order en todas las fases; legacy: solo el propio)
+function _tImportSameDayIdx(di) {
+  const d = _tImport.days[di];
+  if (!_tImport.meta) return [di];
+  return _tImport.days.map((x,i)=>x.day_order===d.day_order?i:-1).filter(i=>i>=0);
+}
+function _tImportSetPhase(phase) {
+  const cur = _tImport.days[_tImport.activeDay];
+  _tImport.activePhase = phase;
+  let idx = _tImport.days.findIndex(d=>d.phase===phase && cur && d.day_order===cur.day_order);
+  if (idx < 0) idx = _tImport.days.findIndex(d=>d.phase===phase);
+  _tImport.activeDay = idx;
+  _tImport.searchActive = null; _tImport.newFormActive = null; _tImport.renamingDay = false;
+  renderTrainingPreview();
+}
+// v2: aplica la resolución a todos los pendientes con el mismo nombre en todos los días y fases
+function _tImportPropagateResolution(srcEx) {
+  if (!_tImport.meta) return;
+  const key = _normStr(srcEx.jsonName);
+  _tImport.days.forEach(d => d.exercises.forEach(ex => {
+    if (ex !== srcEx && ex.status === 'pending' && _normStr(ex.jsonName) === key) {
+      ex.status = srcEx.status;
+      ex.resolvedType = srcEx.resolvedType;
+      ex.resolvedData = {...srcEx.resolvedData};
+    }
+  }));
 }
 
 function renderTrainingPreview() {
@@ -15081,7 +15211,7 @@ function renderTrainingPreview() {
   const allWeeks = [...new Set(
     day.exercises.flatMap(ex => Object.keys(ex.by_week).map(Number))
   )].sort((a,b)=>a-b);
-  const wLabel = w => w===5?'DL':'S'+w;
+  const wLabel = _tImport.meta ? (w => _tImport.meta.deload_weeks.includes(w)?'DL':'S'+w) : (w => w===5?'DL':'S'+w);
   const allResolved = _tImport.days.every(d => d.exercises.every(ex => ex.status !== 'pending'));
 
   // Circuit validation
@@ -15099,7 +15229,14 @@ function renderTrainingPreview() {
   });
 
   // Tabs
+  const phaseChips = _tImport.phases ? `<div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;">${_tImport.phases.map(ph=>{
+    const on = ph.phase===_tImport.activePhase;
+    const pend = _tImport.days.filter(d=>d.phase===ph.phase).reduce((n,d)=>n+d.exercises.filter(e=>e.status==='pending').length,0);
+    return `<div onclick="_tImportSetPhase(${ph.phase})" style="padding:6px 14px;font-size:12px;font-weight:700;border-radius:20px;cursor:pointer;white-space:nowrap;flex-shrink:0;border:1.5px solid ${on?'var(--blue)':'var(--gray2)'};background:${on?'var(--blue)':'transparent'};color:${on?'white':'var(--gray5)'};">${_esc(ph.name)}${pend?` <span style="background:var(--orange);color:white;border-radius:20px;font-size:9px;padding:1px 5px;">${pend}</span>`:''}</div>`;
+  }).join('')}</div>` : '';
+
   const tabs = _tImport.days.map((d,i) => {
+    if (_tImport.phases && d.phase !== _tImport.activePhase) return '';
     const pending = d.exercises.filter(e=>e.status==='pending').length;
     const active = i===di;
     return `<div onclick="_tImport.activeDay=${i};_tImport.searchActive=null;_tImport.newFormActive=null;_tImport.renamingDay=false;renderTrainingPreview()"
@@ -15126,11 +15263,11 @@ function renderTrainingPreview() {
       </div>`}
     <div style="display:flex;align-items:center;gap:8px;">
       <span style="font-size:11px;font-weight:700;color:var(--gray5);">Modo:</span>
-      <button onclick="_tImport.days[${di}].replaceMode=true;renderTrainingPreview()"
+      <button onclick="_tImportSetMode(${di},true)"
         style="font-size:11px;padding:5px 12px;border-radius:20px;cursor:pointer;font-family:'DM Sans',sans-serif;
         border:1.5px solid ${day.replaceMode?'var(--red)':'var(--gray2)'};
         background:${day.replaceMode?'var(--red)':'transparent'};color:${day.replaceMode?'white':'var(--gray5)'};">🔄 Reemplazar</button>
-      <button onclick="_tImport.days[${di}].replaceMode=false;renderTrainingPreview()"
+      <button onclick="_tImportSetMode(${di},false)"
         style="font-size:11px;padding:5px 12px;border-radius:20px;cursor:pointer;font-family:'DM Sans',sans-serif;
         border:1.5px solid ${!day.replaceMode?'var(--blue)':'var(--gray2)'};
         background:${!day.replaceMode?'var(--blue)':'transparent'};color:${!day.replaceMode?'white':'var(--gray5)'};">➕ Agregar/Actualizar</button>
@@ -15225,7 +15362,8 @@ function renderTrainingPreview() {
   const pendingCount = day.exercises.filter(e=>e.status==='pending').length;
 
   body.innerHTML = `
-    <div style="display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;border-bottom:2px solid var(--gray2);margin:-16px -16px 14px -16px;padding:0 16px;">${tabs}</div>
+    ${_tImport.phases ? `<div style="margin:0 0 6px;font-size:11px;color:var(--gray4);">Plan de ${_tImport.meta.total_weeks} semanas${_tImport.meta.deload_weeks.length?` · Deload: S${_tImport.meta.deload_weeks.join(', S')}`:''}${_tImport.meta.rotation_weeks.length?` · Rotación: S${_tImport.meta.rotation_weeks.join(', S')}`:''}</div>${phaseChips}` : ''}
+    <div style="display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;border-bottom:2px solid var(--gray2);margin:${_tImport.phases?'0':'-16px'} -16px 14px -16px;padding:0 16px;">${tabs}</div>
     ${toggle}
     <div style="margin-bottom:14px;">
       <div style="font-size:11px;font-weight:700;color:var(--gray5);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">
@@ -15274,6 +15412,7 @@ function _tImportSelectLibrary(dayIdx, exIdx, libId) {
   ex.status = 'resolved';
   ex.resolvedType = 'library';
   ex.resolvedData = {name:lib.name, muscle_group:lib.muscle_group, video_url:lib.video_url, tag:lib.tag};
+  _tImportPropagateResolution(ex);
   _tImport.searchActive = null;
   _tImport.searchQuery = '';
   renderTrainingPreview();
@@ -15303,14 +15442,20 @@ function _tImportSaveNew(dayIdx, exIdx) {
   ex.status = 'resolved';
   ex.resolvedType = 'new';
   ex.resolvedData = {name, muscle_group: muscle, video_url: video, tag};
+  _tImportPropagateResolution(ex);
   _tImport.newFormActive = null;
+  renderTrainingPreview();
+}
+
+function _tImportSetMode(dayIdx, replace) {
+  _tImportSameDayIdx(dayIdx).forEach(i => { _tImport.days[i].replaceMode = replace; });
   renderTrainingPreview();
 }
 
 function _tImportSaveDayName(dayIdx) {
   const val = (document.getElementById('ti-day-name-inp')?.value||'').trim();
   if (!val) { showToast('⚠️ El nombre no puede estar vacío', 2000); return; }
-  _tImport.days[dayIdx].day_name = val;
+  _tImportSameDayIdx(dayIdx).forEach(i => { _tImport.days[i].day_name = val; });
   _tImport.renamingDay = false;
   renderTrainingPreview();
 }
@@ -15396,7 +15541,7 @@ async function confirmTrainingImport() {
             video_url: ex.resolvedData?.video_url||null,
             rest_seconds: 60,
             superset_group: isCircuit ? ex.circuit_group : null,
-            circuit_rounds: isCircuit ? ex.circuit_rounds : null
+            circuit_rounds: isCircuit ? (bw.rounds ?? ex.circuit_rounds) : null
           };
           if (day.replaceMode) {
             const {error} = await sb.from('exercises').insert([{...payload, order_index: nextOrder++}]);
@@ -15410,7 +15555,7 @@ async function confirmTrainingImport() {
                 sets: isCircuitU ? 1 : (bw.sets||3),
                 rpe: bw.rpe??null, reps_range: ex.reps_range||'',
                 superset_group: isCircuitU ? ex.circuit_group : null,
-                circuit_rounds: isCircuitU ? ex.circuit_rounds : null
+                circuit_rounds: isCircuitU ? (bw.rounds ?? ex.circuit_rounds) : null
               }).eq('id', found.id);
               if (error) throw error;
             } else {
@@ -15421,6 +15566,18 @@ async function confirmTrainingImport() {
           }
         }
       }
+    }
+
+    // v2: persistir la configuración de semanas del cliente (el camino legacy no toca estas columnas)
+    if (_tImport.meta) {
+      const m = _tImport.meta;
+      const {error:cErr} = await sb.from('clients')
+        .update({total_weeks: m.total_weeks, deload_weeks: m.deload_weeks, rotation_weeks: m.rotation_weeks})
+        .eq('id', currentClient.id);
+      if (cErr) throw cErr;
+      currentClient.total_weeks = m.total_weeks;
+      currentClient.deload_weeks = m.deload_weeks;
+      currentClient.rotation_weeks = m.rotation_weeks;
     }
 
     closeModal('modal-training-import');
