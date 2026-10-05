@@ -10471,6 +10471,26 @@ META EMOCIONAL: Que el cliente entienda que comer bien no es complicado. Que sep
   return basePrompt;
 }
 
+// Respuesta de /api/chat: devuelve el texto o null si falló (HTTP !ok, data.error o content vacío)
+function chatReplyOrNull(response, data) {
+  if(!response.ok || data?.error) return null;
+  return data?.choices?.[0]?.message?.content || null;
+}
+// Historial para el modelo sin los mensajes de error que se guardaron cuando el proxy estaba caído
+const CHAT_ERROR_TEXT = 'Hubo un error, intentá de nuevo.';
+function chatHistoryForModel(history) {
+  return history.filter(m => !(m.role === 'assistant' && m.content === CHAT_ERROR_TEXT));
+}
+const CHAT_UNAVAILABLE_MSG = 'El asistente no está disponible ahora, intentá en un rato';
+
+// ===== Ajustes de los chats IA — cambiar acá =====
+const STRONGFLOW_MAX_WORDS = 80;   // largo máximo de las respuestas de StrongFlow (palabras)
+const NUTRIFLEX_MAX_WORDS = 120;   // largo máximo de las respuestas de NutriFlex (palabras)
+// Regla de largo que se agrega al final del prompt de sistema (sin tocar el prompt base)
+function chatBrevityRule(maxWords) {
+  return `\n\nLONGITUD DE RESPUESTA — REGLA OBLIGATORIA: respondé en máximo ${maxWords} palabras. Andá directo al punto: sin introducción, sin resumen final, sin tablas ni títulos, y con listas de 3 puntos como mucho. Si el tema da para más, cerrá con una sola línea ofreciendo ampliar. Los números (macros, kcal, series, repeticiones) siempre exactos.`;
+}
+
 async function sendFoodMessage() {
   const input = document.getElementById('food-input');
   if(!input) return;
@@ -10532,19 +10552,19 @@ ${currentClient.macros_notas ? `Notas del coach: ${currentClient.macros_notas}` 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
         max_tokens: 1000,
         messages: [
-          {role: 'system', content: buildNutriflexSystemPrompt() + (window._foodLibraryContext||'') + '\n\n' + clientContext},
-          ...foodChatHistory.slice(-20)
+          {role: 'system', content: buildNutriflexSystemPrompt() + (window._foodLibraryContext||'') + '\n\n' + clientContext + chatBrevityRule(NUTRIFLEX_MAX_WORDS)},
+          ...chatHistoryForModel(foodChatHistory).slice(-20)
         ]
       })
     });
-    const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content || 'Hubo un error, intentá de nuevo.';
+    const data = await response.json().catch(()=>null);
+    const reply = chatReplyOrNull(response, data);
 
     // Remove typing indicator
     document.getElementById(typingId)?.remove();
+    if(!reply) { showToast('❌ '+CHAT_UNAVAILABLE_MSG, 4000); return; }
 
     // Add assistant message
     const assistantMsg = {role:'assistant', content:reply};
@@ -12222,17 +12242,17 @@ async function sendStrongFlowMessage() {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'llama-3.3-70b-versatile',
         max_tokens:800,
         messages:[
-          {role:'system', content:STRONGFLOW_SYSTEM_PROMPT+clientCtx},
-          ...sfChatHistory.slice(-16)
+          {role:'system', content:STRONGFLOW_SYSTEM_PROMPT+clientCtx+chatBrevityRule(STRONGFLOW_MAX_WORDS)},
+          ...chatHistoryForModel(sfChatHistory).slice(-16)
         ]
       })
     });
-    const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content || 'Hubo un error, intentá de nuevo.';
+    const data = await response.json().catch(()=>null);
+    const reply = chatReplyOrNull(response, data);
     document.getElementById(typingId)?.remove();
+    if(!reply) { showToast('❌ '+CHAT_UNAVAILABLE_MSG, 4000); return; }
     const assistantMsg = {role:'assistant', content:reply};
     sfChatHistory.push(assistantMsg);
     if(currentClient) await sb.from('training_chats').insert([{client_id:currentClient.id, role:'assistant', content:reply}]);
@@ -12614,7 +12634,6 @@ REGLAS:
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
         max_tokens: 1200,
         messages: [
           { role: 'system', content: systemPrompt },
@@ -12622,8 +12641,14 @@ REGLAS:
         ]
       })
     });
-    const data = await resp.json();
-    const raw = (data.choices?.[0]?.message?.content || data.content?.map(b=>b.text||'').join('') || '').replace(/```json|```/g,'').trim();
+    const data = await resp.json().catch(()=>null);
+    const rawText = (!resp.ok || data?.error) ? '' : (data?.choices?.[0]?.message?.content || data?.content?.map(b=>b.text||'').join('') || '');
+    if(!rawText) {
+      document.getElementById('ai-result-area').innerHTML = `<div class="ai-error">${CHAT_UNAVAILABLE_MSG}.</div>`;
+      btn.disabled = false; btn.textContent = '✨ Generar con IA';
+      return;
+    }
+    const raw = rawText.replace(/```json|```/g,'').trim();
     const plan = JSON.parse(raw);
     aiGeneratedPlan = plan;
     aiGeneratedPlan._clientId = clientId;
