@@ -228,6 +228,11 @@ body.lift-mode #strongflow-btn { display:none !important; }
 /* WEEK PLAN BUILDER */
 .week-tab-row { display:flex; gap:6px; margin-bottom:14px; overflow-x:auto; scrollbar-width:none; }
 .week-tab-row::-webkit-scrollbar { display:none; }
+/* Tira de pestañas de "Tu Plan MOVE": scroll horizontal, los chips no se parten ni se encogen */
+.client-plan-tabs { position:relative; display:flex; gap:8px; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:none; margin:0 -20px 20px; padding:0 20px 12px; border-bottom:1.5px solid var(--gray2); }
+.client-plan-tabs::-webkit-scrollbar { display:none; }
+.client-plan-tab-chip { flex:0 0 auto; white-space:nowrap; }
+#screen-client-plan .scroll-body { overflow-x:hidden; }
 .week-tab { flex-shrink:0; padding:7px 14px; border-radius:20px; font-size:12px; font-weight:600; background:var(--white); color:var(--gray4); cursor:pointer; border:1.5px solid var(--gray2); }
 .week-tab.active { background:var(--orange); color:white; border-color:var(--orange); }
 .week-tab.has-data { border-color:var(--orange); color:var(--orange); }
@@ -596,7 +601,7 @@ body.lift-mode #strongflow-btn { display:none !important; }
     <div style="margin-bottom:18px;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Tu programa</div><div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;">Tu Plan MOVE</div></div>
     
     <!-- TAB NAVIGATION -->
-    <div style="display:flex;gap:12px;margin-bottom:20px;border-bottom:1.5px solid var(--gray2);padding-bottom:12px;">
+    <div class="client-plan-tabs">
       <div class="client-plan-tab-chip active" onclick="switchClientPlanTab('plans', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;background:var(--gray1);color:var(--black);font-size:13px;font-weight:600;transition:all 0.2s;">📋 Mi Plan</div>
       <div class="client-plan-tab-chip" onclick="switchClientPlanTab('progress', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;color:var(--gray4);font-size:13px;font-weight:600;transition:all 0.2s;">📈 Tu progreso</div>
       <div class="client-plan-tab-chip" onclick="switchClientPlanTab('tests', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;color:var(--gray4);font-size:13px;font-weight:600;transition:all 0.2s;">📊 Evaluaciones</div>
@@ -3760,6 +3765,9 @@ function switchClientPlanTab(tab, chipEl) {
   chipEl.classList.add('active');
   chipEl.style.background = 'var(--gray1)';
   chipEl.style.color = 'var(--black)';
+  // Centrar el chip activo en la tira (sin scrollIntoView: también movería .scroll-body en horizontal)
+  const strip = chipEl.parentElement;
+  if(strip && strip.scrollTo) strip.scrollTo({left: chipEl.offsetLeft - (strip.clientWidth - chipEl.offsetWidth)/2, behavior:'smooth'});
   document.getElementById('client-plans-tab').style.display = 'none';
   document.getElementById('client-progress-tab').style.display = 'none';
   document.getElementById('client-tests-tab').style.display = 'none';
@@ -14362,18 +14370,59 @@ function toggleCoachSleepWeek(weekId) {
 // ===== CLIENT PROGRESS (peso + fotos semanales) =====
 
 let selectedProgressPhotos = {front:null, side:null, back:null};
+let progressPhotoUrls = {front:null, side:null, back:null};
+
+function revokeProgressPhotoUrl(key) {
+  if(progressPhotoUrls[key]) { URL.revokeObjectURL(progressPhotoUrls[key]); progressPhotoUrls[key] = null; }
+}
 
 function handleProgressPhotoSelect(key, input) {
-  const file = input.files[0];
-  selectedProgressPhotos[key] = file || null;
+  let file = input.files[0] || null;
+  revokeProgressPhotoUrl(key);
+  if(file && !(file.type || '').startsWith('image/')) {
+    showToast('⚠️ Elegí una imagen');
+    input.value = '';
+    file = null;
+  }
+  selectedProgressPhotos[key] = file;
   const box = document.getElementById(`progress-photo-${key}-box`);
   if(!box) return;
   if(file) {
     const url = URL.createObjectURL(file);
+    progressPhotoUrls[key] = url;
     box.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;">`;
   } else {
     box.innerHTML = `<div style="font-size:22px;">📷</div>`;
   }
+}
+
+// Reduce la foto (lado mayor máx 1600 px, JPEG 0.85, respetando la orientación EXIF).
+// Devuelve un Blob, o null si falla (en ese caso se sube el original).
+async function compressProgressPhoto(file) {
+  try {
+    let bmp;
+    try {
+      bmp = await createImageBitmap(file, {imageOrientation:'from-image'});
+    } catch(e) {
+      bmp = await new Promise((resolve, reject) => {
+        const img = new Image();
+        const u = URL.createObjectURL(file);
+        img.onload = () => { URL.revokeObjectURL(u); resolve(img); };
+        img.onerror = () => { URL.revokeObjectURL(u); reject(new Error('img')); };
+        img.src = u;
+      });
+    }
+    const w = bmp.width || bmp.naturalWidth, h = bmp.height || bmp.naturalHeight;
+    const scale = Math.min(1, 1600 / Math.max(w, h));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(w * scale);
+    canvas.height = Math.round(h * scale);
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    if(bmp.close) bmp.close();
+    return await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+  } catch(e) { return null; }
 }
 
 function renderProgressForm() {
@@ -14392,13 +14441,13 @@ function renderProgressForm() {
               </div>
             </div>
             <div class="upload-text" style="font-size:11px;">${label}</div>
-            <input type="file" id="progress-photo-${key}" accept="image/*" capture="environment" style="display:none" onchange="handleProgressPhotoSelect('${key}', this)">
+            <input type="file" id="progress-photo-${key}" accept="image/*" style="display:none" onchange="handleProgressPhotoSelect('${key}', this)">
           </div>
         `).join('')}
       </div>
       <label style="font-size:12px;font-weight:700;color:var(--gray4);display:block;margin-bottom:4px;">Reflexión de la semana (opcional)</label>
       <textarea id="progress-notes-input" class="form-textarea" rows="3" placeholder="¿Cómo te sentiste esta semana? Energía, sueño, antojos, motivación..." style="width:100%;box-sizing:border-box;font-size:13px;line-height:1.5;resize:vertical;margin-bottom:16px;"></textarea>
-      <button class="btn-primary" onclick="saveProgressLog()">Guardar progreso</button>
+      <button class="btn-primary" id="save-progress-btn" onclick="saveProgressLog()">Guardar progreso</button>
     </div>
   `;
 }
@@ -14468,6 +14517,7 @@ async function loadClientProgress() {
   if(!curEl || !currentClient) return;
   curEl.innerHTML = '<div class="spinner"></div>';
   histEl.innerHTML = '';
+  ['front','side','back'].forEach(revokeProgressPhotoUrl);
 
   const weekStart = fmtDateKey(getWeekDates(0)[0]);
   const {data:existing} = await sb.from('client_progress_logs').select('*').eq('client_id', currentClient.id).eq('week_start_date', weekStart).maybeSingle();
@@ -14488,15 +14538,32 @@ async function saveProgressLog() {
   const weight = parseFloat(weightInput?.value);
   if(!weight || weight <= 0) { showToast('⚠️ Ingresá tu peso'); return; }
 
+  // Evitar doble tap (doble insert → 23505 y fotos huérfanas)
+  const saveBtn = document.getElementById('save-progress-btn');
+  if(saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Guardando...'; }
+  const restoreBtn = () => { if(saveBtn && saveBtn.isConnected) { saveBtn.disabled = false; saveBtn.textContent = 'Guardar progreso'; } };
+
   const weekStart = fmtDateKey(getWeekDates(0)[0]);
   const paths = {};
+  const removeUploaded = async () => {
+    const up = Object.values(paths);
+    if(up.length) await sb.storage.from('progress-photos').remove(up);
+  };
   for(const key of ['front','side','back']) {
     const file = selectedProgressPhotos[key];
     if(file) {
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      let body = file;
+      let safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      let uploadOpts;
+      const compressed = await compressProgressPhoto(file);
+      if(compressed && compressed.size < file.size) {
+        body = compressed;
+        safeName = `${key}.jpg`;
+        uploadOpts = {contentType:'image/jpeg'};
+      }
       const filePath = `${currentClient.id}/${weekStart}_${key}_${Date.now()}_${safeName}`;
-      const {error:upErr} = await sb.storage.from('progress-photos').upload(filePath, file);
-      if(upErr) { showToast('❌ ' + upErr.message); return; }
+      const {error:upErr} = await sb.storage.from('progress-photos').upload(filePath, body, uploadOpts);
+      if(upErr) { await removeUploaded(); restoreBtn(); showToast('❌ ' + upErr.message); return; }
       paths[key] = filePath;
     }
   }
@@ -14514,6 +14581,8 @@ async function saveProgressLog() {
     notes: notes
   }]);
   if(error) {
+    await removeUploaded();
+    restoreBtn();
     if(error.code === '23505') { showToast('⚠️ Ya registraste tu progreso esta semana'); loadClientProgress(); return; }
     showToast('❌ ' + error.message); return;
   }
