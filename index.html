@@ -8574,18 +8574,58 @@ async function createNewMesocycle() {
   if (error) { showToast('❌ ' + error.message); return; }
 
   const { data: s1Days } = await sb.from('monthly_plans')
-    .select('id').eq('client_id', currentClient.id).eq('week_number', 1);
+    .select('id,day_of_week').eq('client_id', currentClient.id).eq('week_number', 1);
   if (s1Days && s1Days.length) {
     const s1DayIds = s1Days.map(d => d.id);
     const { data: s1ExsFull } = await sb.from('exercises')
-      .select('id,name').in('plan_day_id', s1DayIds).order('order_index');
+      .select('id,name,plan_day_id,order_index').in('plan_day_id', s1DayIds).order('order_index');
 
-    const { data: s1Logs } = await sb.from('exercise_logs')
-      .select('exercise_id,weight,reps_done,set_number')
-      .eq('client_id', currentClient.id).eq('week_number', 1);
-    const { data: s4Logs } = await sb.from('exercise_logs')
-      .select('exercise_id,weight,reps_done,set_number')
-      .eq('client_id', currentClient.id).eq('week_number', 4);
+    // Cada semana tiene sus propios plan_days y exercises (IDs distintos): los logs de S4 cuelgan
+    // de los ejercicios de S4, no de los de S1. Se empareja cada ejercicio de S1 con su contraparte
+    // de S4 (mismo día + mismo nombre, desempate por order_index; cada fila de S4 se usa una sola vez).
+    const { data: s4Days } = await sb.from('monthly_plans')
+      .select('id,day_of_week').eq('client_id', currentClient.id).eq('week_number', 4);
+    let s4ExsFull = [];
+    if (s4Days && s4Days.length) {
+      const { data: s4Exs } = await sb.from('exercises')
+        .select('id,name,plan_day_id,order_index').in('plan_day_id', s4Days.map(d => d.id));
+      s4ExsFull = s4Exs || [];
+    }
+    const s1DayOf = Object.fromEntries(s1Days.map(d => [d.id, d.day_of_week]));
+    const s4DayOf = Object.fromEntries((s4Days || []).map(d => [d.id, d.day_of_week]));
+    const s1List = s1ExsFull || [];
+    const s1ToS4 = new Map();
+    const taken = new Set();
+    // Pasada 1: mismo día + mismo nombre
+    s1List.forEach(cur => {
+      const cands = s4ExsFull.filter(p => p.name === cur.name
+        && s4DayOf[p.plan_day_id] === s1DayOf[cur.plan_day_id] && !taken.has(p.id));
+      if (!cands.length) return;
+      const curIdx = cur.order_index ?? 0;
+      cands.sort((a, b) => Math.abs((a.order_index ?? 0) - curIdx) - Math.abs((b.order_index ?? 0) - curIdx));
+      taken.add(cands[0].id);
+      s1ToS4.set(cur.id, cands[0].id);
+    });
+    // Pasada 2 (respaldo): sin contraparte en el mismo día, solo si el nombre aparece UNA vez en toda S4
+    // y no está tomado. Si es ambiguo se deja vacío (mejor vacío que dato del día equivocado).
+    s1List.forEach(cur => {
+      if (s1ToS4.has(cur.id)) return;
+      const sameName = s4ExsFull.filter(p => p.name === cur.name);
+      if (sameName.length === 1 && !taken.has(sameName[0].id)) {
+        taken.add(sameName[0].id);
+        s1ToS4.set(cur.id, sameName[0].id);
+      }
+    });
+
+    const fetchLogs = async (ids, week) => {
+      if (!ids.length) return [];
+      const { data } = await sb.from('exercise_logs')
+        .select('exercise_id,weight,reps_done,set_number')
+        .in('exercise_id', ids).eq('client_id', currentClient.id).eq('week_number', week).limit(5000);
+      return data || [];
+    };
+    const s1Logs = await fetchLogs(s1List.map(e => e.id), 1);
+    const s4Logs = await fetchLogs([...s1ToS4.values()], 4);
 
     const buildLogMap = (logs) => {
       const map = {};
@@ -8604,7 +8644,7 @@ async function createNewMesocycle() {
         .filter(ex => { if (seen.has(ex.name)) return false; seen.add(ex.name); return true; })
         .map((ex, i) => {
           const s1 = s1Map[ex.id];
-          const s4 = s4Map[ex.id];
+          const s4 = s4Map[s1ToS4.get(ex.id)];
           return {
             mesocycle_id: newMeso.id,
             exercise_name: ex.name,
