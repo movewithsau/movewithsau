@@ -259,6 +259,22 @@ body.lift-mode #strongflow-btn { display:none !important; }
 /* Chevron que rota al abrir */
 .chev { display:inline-flex; color:var(--icon-rest); transition:transform 0.2s; }
 @media (prefers-reduced-motion:reduce) { .chev { transition:none; } }
+/* ===== HOY: portada naranja (antes del entreno) ===== */
+.hoy-cover { position:fixed; top:0; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px; z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 28px 96px; box-sizing:border-box; overflow:hidden; isolation:isolate; color:#FFFFFF; text-align:center; background:linear-gradient(180deg,#DD4A0A 0%,#F75A0E 45%,#F46A1F 100%); }
+.hoy-cover[hidden] { display:none; }
+.hoy-cover::before { content:''; position:absolute; inset:0; z-index:-2; pointer-events:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40.529' height='70.2' viewBox='0 0 31.176 54'%3E%3Cpath d='M15.588 0L31.176 9V27L15.588 36L0 27V9Z M15.588 36V54' fill='none' stroke='%23FFFFFF' stroke-opacity='0.34' stroke-width='0.7'/%3E%3C/svg%3E"); background-size:40.529px 70.2px; -webkit-mask-image:linear-gradient(180deg,#000 0%,transparent 80%); mask-image:linear-gradient(180deg,#000 0%,transparent 80%); }
+.hoy-cover-honey { position:absolute; left:0; top:0; width:100%; height:100%; z-index:-1; pointer-events:none; }
+.hoy-cover-badge { width:112px; height:112px; border-radius:50%; background:rgba(255,255,255,0.2); border:2px solid rgba(255,255,255,0.85); display:flex; align-items:center; justify-content:center; margin-bottom:20px; }
+.hoy-cover-badge .ico { stroke-width:1.75; }
+.hoy-cover-pill { background:#FFFFFF; color:var(--orange-text); border-radius:20px; padding:6px 14px; font-family:'DM Mono',monospace; font-size:11px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.hoy-cover-title { margin:12px 0 28px; font-family:'Playfair Display',serif; font-weight:900; font-size:32px; line-height:1.15; color:#FFFFFF; }
+.hoy-cover-btn { width:100%; min-height:56px; border:0; border-radius:16px; background:#FFFFFF; color:var(--orange-text); display:flex; align-items:center; justify-content:center; gap:10px; font-family:'DM Sans',sans-serif; font-size:17px; font-weight:700; cursor:pointer; box-shadow:0 6px 18px rgba(120,40,0,0.28); }
+.hoy-cover-btn .ico { color:var(--orange); }
+/* Nav sobre la portada: blanco (activo 100% y negrita, el resto 88%) */
+#screen-client-home.cover-on .bottom-nav::before { display:none; }
+#screen-client-home.cover-on .bottom-nav .nav-item .nav-icon, #screen-client-home.cover-on .bottom-nav .nav-item .nav-label { color:rgba(255,255,255,0.88); }
+#screen-client-home.cover-on .bottom-nav .nav-item:nth-child(1) .nav-icon { color:#FFFFFF; }
+#screen-client-home.cover-on .bottom-nav .nav-item:nth-child(1) .nav-label { color:#FFFFFF; font-weight:700; }
 #screen-client-plan .scroll-body { overflow-x:hidden; }
 .week-tab { flex-shrink:0; padding:7px 14px; border-radius:20px; font-size:12px; font-weight:600; background:var(--white); color:var(--gray4); cursor:pointer; border:1.5px solid var(--gray2); }
 .week-tab.active { background:var(--orange); color:white; border-color:var(--orange); }
@@ -747,6 +763,17 @@ body.lift-mode #strongflow-btn { display:none !important; }
       <svg viewBox="0 0 240 240" width="50" height="50" xmlns="http://www.w3.org/2000/svg"><circle cx="120" cy="120" r="112" fill="#111111" stroke="#F75A0E" stroke-width="10"/><text x="120" y="122" text-anchor="middle" dominant-baseline="central" font-family="DM Sans, Arial, sans-serif" font-size="110" font-weight="700" fill="#F75A0E">?</text></svg>
     </div>
     <a href="https://wa.me/50672083564" target="_blank" style="width:50px;height:50px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,211,102,0.4);text-decoration:none;font-size:26px;" aria-label="WhatsApp"><svg class="ico" width="26" height="26" aria-hidden="true" focusable="false" style="color:#fff"><use href="#i-message-circle"/></svg></a>
+  </div>
+  <!-- Portada de Hoy: tapa el Hoy de siempre hasta tocar "Entrenar" (solo visual) -->
+  <div id="hoy-cover" class="hoy-cover" hidden>
+    <svg class="hoy-cover-honey" aria-hidden="true" focusable="false" viewBox="0 0 390 844" preserveAspectRatio="xMidYMin slice"><defs><linearGradient id="hoy-honey-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E08A0B"/><stop offset="0.5" stop-color="#D97706"/><stop offset="1" stop-color="#CC6A04"/></linearGradient></defs>
+      <path fill="url(#hoy-honey-grad)" d="M0 0H390V170L377 170Q365 170 365 190V249A13 13 0 0 1 339 249V190Q339 170 327 170L319 170Q307 170 307 190V413A17 17 0 0 1 273 413V190Q273 170 261 170L248 170Q236 170 236 190V299A11 11 0 0 1 214 299V190Q214 170 202 170L182 170Q170 170 170 190V560A20 20 0 0 1 130 560V190Q130 170 118 170L99 170Q87 170 87 190V358A12 12 0 0 1 63 358V190Q63 170 51 170L48 170Q36 170 36 190V236A14 14 0 0 1 8 236V190Q8 170 0 170Z"/>
+      <g fill="none" stroke="#FFD166" stroke-opacity="0.75" stroke-width="2.5" stroke-linecap="round"><path d="M42 200V228"/><path d="M92 200V340"/><path d="M176 200V520"/><path d="M219 200V282"/><path d="M279 200V392"/><path d="M345 200V240"/></g>
+    </svg>
+    <div class="hoy-cover-badge"><svg class="ico" width="56" height="56" aria-hidden="true" focusable="false"><use href="#i-dumbbell"/></svg></div>
+    <div class="hoy-cover-pill" id="hoy-cover-pill">Semana 1</div>
+    <h1 class="hoy-cover-title">¡Vamos Con TODA Hoy CHAMP!</h1>
+    <button type="button" class="hoy-cover-btn" id="hoy-cover-btn" onclick="enterTraining()"><svg class="ico" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-play"/></svg>Entrenar</button>
   </div>
   <div class="bottom-nav">
     <div class="nav-item active" onclick="clientNav('home',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-sun"/></svg></div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
@@ -2397,6 +2424,7 @@ async function initClient() {
   document.getElementById('lift-home-block').style.display = 'none';
   document.getElementById('lift-missions-block').style.display = 'none';
   if (applyTrainingAccessGate()) { loadClientDayStrip(); }
+  showHoyCover();
   loadClientPlans();
   loadTodayRating().catch(()=>{});
   if(localStorage.getItem('mws_timer_running') === '1') startTimerDisplay();
@@ -2579,6 +2607,8 @@ async function loadClientDayStrip(opts) {
     const firstIncomplete = planDays ? planDays.find(p => !completedDayIds.has(p.id)) : null;
     clientDay = firstIncomplete ? firstIncomplete.day_of_week : (hasDays[0]||null);
   }
+
+  updateHoyCover();
 
   // ── Combined week + day card ──
   const card = document.createElement('div');
@@ -3872,6 +3902,40 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+// ===== HOY: PORTADA =====
+// Portada naranja antes del entreno. Solo visual: no lee ni escribe nada en la base.
+// El Hoy de siempre sigue cargando detrás; "Entrenar" solo lo descubre.
+function hoyCoverAllowed() {
+  if (!currentClient || currentClient.program_type === 'lift' || currentClient.is_churn) return false;
+  if (currentClient.training_access === false) return false;
+  if (isWorkoutStarted() || workoutLock) return false;
+  return true;
+}
+function setHoyCover(on) {
+  const cover = document.getElementById('hoy-cover');
+  const screen = document.getElementById('screen-client-home');
+  if (!cover || !screen) return;
+  cover.hidden = !on;
+  screen.classList.toggle('cover-on', on);
+}
+function updateHoyCoverPill() {
+  const pill = document.getElementById('hoy-cover-pill');
+  if (pill) pill.textContent = 'Semana ' + clientWeek + (clientDay ? ' · ' + getDayShortLabel(clientDay, 0) : '');
+}
+function showHoyCover() {
+  if (!hoyCoverAllowed()) return;
+  updateHoyCoverPill();
+  setHoyCover(true);
+}
+// Tras cada carga de la tira de días: semana/día al día, y fuera si el día quedó "En curso".
+function updateHoyCover() {
+  updateHoyCoverPill();
+  if (!hoyCoverAllowed()) setHoyCover(false);
+}
+function enterTraining() {
+  setHoyCover(false);
+}
+
 function handleStartWorkout() {
   setWorkoutStarted(true);
   startGlobalTimer();
@@ -4989,7 +5053,7 @@ function applyTrainingAccessGate() {
 function clientNav(tab,el) {
   document.querySelectorAll('#screen-client-home .nav-item,#screen-client-plan .nav-item,#screen-client-profile .nav-item,#screen-client-food .nav-item,#screen-client-coaching .nav-item').forEach(n=>n.classList.remove('active'));
   el.classList.add('active');
-  if(tab==='home'){showScreen('screen-client-home');if(currentClient?.program_type==='lift'){renderLiftDay(liftViewDay||getLiftCurrentDayNumber(currentClient));}else if(applyTrainingAccessGate()){loadClientDayStrip();}}
+  if(tab==='home'){showScreen('screen-client-home');if(currentClient?.program_type==='lift'){renderLiftDay(liftViewDay||getLiftCurrentDayNumber(currentClient));}else if(applyTrainingAccessGate()){loadClientDayStrip();showHoyCover();}}
   else if(tab==='food'){showScreen('screen-client-food');loadFoodScreen();}
   else if(tab==='plan'){showScreen('screen-client-plan');loadClientPlans();loadClientTests();}
   else if(tab==='profile'){showScreen('screen-client-profile');loadClientContractPanel();}
