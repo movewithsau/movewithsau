@@ -375,6 +375,11 @@ body.lift-mode #strongflow-btn { display:none !important; }
 .pg-acc-btn[aria-expanded="true"] .chev { transform:rotate(180deg); }
 .pg-acc-body { padding:0 16px 16px; }
 .pg-compare { width:100%; box-sizing:border-box; min-height:64px; border:1.5px solid #F75A0E; border-radius:16px; background:rgba(247,90,14,0.2); color:#FF8A4C; display:flex; align-items:center; gap:12px; padding:0 16px; text-align:left; font-family:'DM Sans',sans-serif; cursor:pointer; margin-bottom:12px; }
+@keyframes pg-draw { from { stroke-dashoffset:1; } to { stroke-dashoffset:0; } }
+@keyframes pg-pop { from { opacity:0; } to { opacity:1; } }
+.pg-ln { stroke-dasharray:1; stroke-dashoffset:0; animation:pg-draw 1.2s ease-out both; }
+.pg-pp { animation:pg-pop 0.45s ease-out both; }
+@media (prefers-reduced-motion:reduce) { .pg-ln, .pg-pp { animation:none; } }
 #screen-client-plan .scroll-body { overflow-x:hidden; }
 .week-tab { flex-shrink:0; padding:7px 14px; border-radius:20px; font-size:12px; font-weight:600; background:var(--white); color:var(--gray4); cursor:pointer; border:1.5px solid var(--gray2); }
 .week-tab.active { background:var(--orange); color:white; border-color:var(--orange); }
@@ -4058,6 +4063,136 @@ function toggleProgressWeek() {
   btn.setAttribute('aria-expanded', String(open));
   body.hidden = !open;
 }
+// ---- Gráficos (solo lectura: exercise_logs, workout_sessions, client_progress_logs, monthly_plans) ----
+function pgNum(n) { return Number(n).toLocaleString('es-CR', { maximumFractionDigits: 1 }); }
+function pgSigned(n) { const r = Math.round(n * 10) / 10; return (r > 0 ? '+' : r < 0 ? '−' : '') + pgNum(Math.abs(r)); }
+// logged_at viene sin zona (UTC): se pasa a fecha de Costa Rica
+function pgCRDate(raw) {
+  const s = String(raw || '');
+  const dt = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(s) ? s : s + 'Z');
+  return isNaN(dt) ? null : dt.toLocaleDateString('en-CA', { timeZone: 'America/Costa_Rica' });
+}
+function pgWeekKey(dateStr) {
+  const dt = new Date(dateStr + 'T12:00:00');
+  const day = dt.getDay();
+  dt.setDate(dt.getDate() + (day === 0 ? -6 : 1 - day));
+  return fmtDateKey(dt);
+}
+function pgEmpty(text) { return `<div class="pg-empty">${icon('trending-up', 44)}<div>${text}</div></div>`; }
+function pgLine(values, labels, aria) {
+  const n = values.length, x0 = 24, x1 = 296;
+  const min = Math.min(...values), max = Math.max(...values);
+  const xs = values.map((_, i) => n === 1 ? (x0 + x1) / 2 : x0 + (x1 - x0) * i / (n - 1));
+  const ys = values.map(v => max === min ? 62 : 100 - 76 * (v - min) / (max - min));
+  const path = xs.map((x, i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${ys[i].toFixed(1)}`).join(' ');
+  const marks = xs.map((x, i) => {
+    const last = i === n - 1;
+    return `<use class="pg-pp" style="animation-delay:${(0.1 + i * 1 / Math.max(1, n - 1)).toFixed(2)}s" href="#pg-hxs" x="${x.toFixed(1)}" y="${ys[i].toFixed(1)}" fill="${last ? '#F75A0E' : '#2A2420'}" stroke="#F75A0E" stroke-width="2"/>`;
+  }).join('');
+  const lbls = xs.map((x, i) => `<text x="${x.toFixed(1)}" y="122"${i === n - 1 ? ' font-weight="700" fill="#FF8A4C"' : ''}>${labels[i]}</text>`).join('');
+  return `<svg role="img" aria-label="${aria}" width="100%" viewBox="0 0 320 130" style="margin-top:6px;display:block;">
+    <g stroke="#FFFFFF" stroke-opacity="0.16" stroke-width="1"><line x1="10" y1="100" x2="310" y2="100"/><line x1="10" y1="62" x2="310" y2="62"/><line x1="10" y1="24" x2="310" y2="24"/></g>
+    <path class="pg-ln" pathLength="1" d="${path}" fill="none" stroke="#F75A0E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${marks}
+    <g font-family="DM Sans, sans-serif" font-size="12" text-anchor="middle" fill="#C9C0B3" aria-hidden="true">${lbls}</g>
+  </svg>`;
+}
+
+// 1) ¿Cuánto entrené? Días con registros o sesión, por semana (lunes a domingo), últimas 4 semanas.
+function pgTrainedChart(logs, sessions, planDays) {
+  const days = new Set();
+  logs.forEach(l => { const k = pgCRDate(l.logged_at); if (k) days.add(k); });
+  sessions.forEach(s => { if (s.session_date) days.add(String(s.session_date).slice(0, 10)); });
+  const weeks = [3, 2, 1, 0].map(off => getWeekDates(off).map(fmtDateKey).filter(k => days.has(k)).length);
+  const total = weeks.reduce((a, b) => a + b, 0);
+  // Meta: días del plan de la semana actual (cuando exista la meta propia del Bloque E, se usa esa)
+  const meta = Math.min(7, new Set(planDays.map(p => p.day_of_week)).size);
+  const rows = Math.max(4, meta, ...weeks);
+  const base = 34 + 24 * (rows - 1);
+  const xs = [40, 110, 180, 250];
+  let filled = '', outline = '';
+  weeks.forEach((n, i) => {
+    for (let k = 0; k < n; k++) filled += `<use class="pg-pp" style="animation-delay:${(i * 0.1 + k * 0.08).toFixed(2)}s" href="#pg-hx" x="${xs[i]}" y="${base - 24 * k}"/>`;
+    if (i === 3) for (let k = n; k < meta; k++) outline += `<use class="pg-pp" style="animation-delay:${(0.46 + (k - n) * 0.08).toFixed(2)}s" href="#pg-hx" x="${xs[i]}" y="${base - 24 * k}"/>`;
+  });
+  const metaY = base - 24 * (meta - 1) - 13;
+  const metaHtml = meta ? `<line x1="10" y1="${metaY}" x2="300" y2="${metaY}" stroke="#8A8176" stroke-width="1.25" stroke-dasharray="4 4"/><text x="300" y="${metaY - 7}" text-anchor="end" font-family="DM Sans, sans-serif" font-size="11" fill="#C9C0B3">Meta ${meta}</text>` : '';
+  const aria = `Días entrenados por semana: ${weeks[0]}, ${weeks[1]}, ${weeks[2]} y ${weeks[3]} en la semana actual.` + (meta ? ` Meta: ${meta} por semana.` : '');
+  return `<div class="pg-card pg-chart">
+    <span class="pg-mono">¿Cuánto entrené?</span>
+    <div class="pg-big-row"><span class="pg-big">${total}</span><span class="pg-sub">${total === 1 ? 'día' : 'días'} en 4 semanas</span></div>
+    <svg role="img" aria-label="${aria}" width="100%" viewBox="0 0 310 ${base + 32}" style="margin-top:8px;display:block;">
+      ${metaHtml}
+      <g fill="#F75A0E">${filled}</g>
+      <g fill="none" stroke="#6B6259" stroke-width="1.5">${outline}</g>
+      <g font-family="DM Sans, sans-serif" font-size="12" text-anchor="middle" fill="#C9C0B3" aria-hidden="true">
+        <text x="40" y="${base + 27}">S1</text><text x="110" y="${base + 27}">S2</text><text x="180" y="${base + 27}">S3</text><text x="250" y="${base + 27}" font-weight="700" fill="#FF8A4C">Esta</text>
+      </g>
+    </svg>
+  </div>`;
+}
+
+// 2) ¿Estoy progresando? El ejercicio con más semanas con peso registrado; mayor peso de cada semana (kg).
+function pgLiftChart(logs) {
+  const byName = new Map();
+  logs.forEach(l => {
+    const name = l.exercises && l.exercises.name;
+    const w = parseFloat(l.weight);
+    const day = pgCRDate(l.logged_at);
+    if (!name || !(w > 0) || !day) return;
+    const kg = l.weight_unit === 'lb' ? w * 0.45359237 : w;
+    const wk = pgWeekKey(day);
+    if (!byName.has(name)) byName.set(name, new Map());
+    const m = byName.get(name);
+    m.set(wk, Math.max(m.get(wk) || 0, kg));
+  });
+  let best = null;
+  byName.forEach((m, name) => { if (!best || m.size > best.m.size) best = { name, m }; });
+  const head = '<span class="pg-mono">¿Estoy progresando?</span>';
+  if (!best || best.m.size < 2) return `<div class="pg-card pg-chart">${head}${pgEmpty('Cuando registres peso en un mismo ejercicio durante dos semanas, acá vas a ver tu avance.')}</div>`;
+  const vals = [...best.m.entries()].sort((a, b) => a[0] < b[0] ? -1 : 1).slice(-6).map(e => Math.round(e[1] * 10) / 10);
+  const last = vals[vals.length - 1];
+  const name = escHtml(best.name);
+  return `<div class="pg-card pg-chart">${head}
+    <div class="pg-big-row"><span class="pg-big">${pgNum(last)} kg</span><span class="pg-sub">${name}</span></div>
+    <div class="pg-note">${pgSigned(last - vals[0])} kg desde la semana 1</div>
+    ${pgLine(vals, vals.map((_, i) => 'S' + (i + 1)), `${name}: ${vals.map(pgNum).join(', ')} kilos por semana`)}
+  </div>`;
+}
+
+// 3) Mi peso: peso registrado cada semana en Tu progreso (client_progress_logs).
+function pgWeightChart(rows) {
+  const list = rows.filter(r => r.weight_kg != null && !isNaN(parseFloat(r.weight_kg)));
+  const head = '<span class="pg-mono">Mi peso</span>';
+  if (list.length < 2) return `<div class="pg-card pg-chart">${head}${pgEmpty('Registrá tu peso al menos dos semanas y acá vas a ver tu curva.')}</div>`;
+  const vals = list.slice(-6).map(r => parseFloat(r.weight_kg));
+  const last = vals[vals.length - 1];
+  const first = parseFloat(list[0].weight_kg);
+  const isThisWeek = list[list.length - 1].week_start_date === fmtDateKey(getWeekDates(0)[0]);
+  return `<div class="pg-card pg-chart">${head}
+    <div class="pg-big-row"><span class="pg-big">${pgNum(last)} kg</span><span class="pg-sub">${isThisWeek ? 'registro de esta semana' : 'último registro'}</span></div>
+    <div class="pg-note">${pgSigned(last - first)} kg desde que empezaste</div>
+    ${pgLine(vals, vals.map(pgNum), `Peso registrado por semana: ${vals.map(pgNum).join(', ')} kilos`)}
+  </div>`;
+}
+
+async function loadProgressCharts() {
+  const el = document.getElementById('progress-charts');
+  if (!el || !currentClient) return;
+  const cid = currentClient.id;
+  el.innerHTML = '<div class="spinner"></div>';
+  const [logsRes, sessRes, weightsRes, planRes] = await Promise.all([
+    sb.from('exercise_logs').select('logged_at,weight,weight_unit,exercises(name)').eq('client_id', cid).order('logged_at', { ascending: false }).limit(5000),
+    sb.from('workout_sessions').select('session_date').eq('client_id', cid),
+    sb.from('client_progress_logs').select('week_start_date,weight_kg').eq('client_id', cid).order('week_start_date', { ascending: true }),
+    sb.from('monthly_plans').select('day_of_week').eq('client_id', cid).eq('week_number', clientWeek)
+  ]);
+  if (!currentClient || currentClient.id !== cid) return;
+  const logs = (logsRes.data || []).slice().reverse();
+  const defs = `<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><path id="pg-hx" d="M0 -11L9.5 -5.5V5.5L0 11L-9.5 5.5V-5.5Z"/><path id="pg-hxs" d="M0 -8L6.9 -4V4L0 8L-6.9 4V-4Z"/></defs></svg>`;
+  el.innerHTML = defs + pgTrainedChart(logs, sessRes.data || [], planRes.data || []) + pgLiftChart(logs) + pgWeightChart(weightsRes.data || []);
+}
+
 function openPhotoCompare() {}
 
 // ===== PERFIL: HITOS =====
@@ -16354,6 +16489,7 @@ async function loadClientProgress() {
   }
 
   loadProgressHistory();
+  loadProgressCharts();
 }
 
 async function saveProgressLog() {
