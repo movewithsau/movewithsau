@@ -275,6 +275,18 @@ body.lift-mode #strongflow-btn { display:none !important; }
 #screen-client-home.cover-on .bottom-nav .nav-item .nav-icon, #screen-client-home.cover-on .bottom-nav .nav-item .nav-label { color:rgba(255,255,255,0.88); }
 #screen-client-home.cover-on .bottom-nav .nav-item:nth-child(1) .nav-icon { color:#FFFFFF; }
 #screen-client-home.cover-on .bottom-nav .nav-item:nth-child(1) .nav-label { color:#FFFFFF; font-weight:700; }
+/* Abeja al tocar "Entrenar": cruza en curva (~0.85s) y recién ahí se muestra el entreno */
+.bee-flight { position:absolute; left:0; top:0; width:390px; height:844px; transform-origin:0 0; pointer-events:none; overflow:hidden; display:none; z-index:2; }
+.bee-flight.flying { display:block; }
+.bee-flight .bee { position:absolute; left:0; top:0; width:72px; height:54px; offset-path:path('M40 610C120 520 140 650 205 545S300 380 450 300'); offset-rotate:auto; opacity:0; }
+.bee-flight .trail { stroke-dasharray:0.22 2; stroke-dashoffset:0.22; opacity:0; }
+.bee-flight.flying .bee { animation:bee-fly 0.85s linear forwards; }
+.bee-flight.flying .trail { animation:bee-trail 0.85s linear forwards; }
+.bee-flight .wing { transform-box:fill-box; transform-origin:50% 100%; animation:bee-flap 0.14s ease-in-out infinite alternate; }
+@keyframes bee-fly { 0% { offset-distance:0%; opacity:0; } 8% { opacity:1; } 90% { offset-distance:100%; opacity:1; } 100% { offset-distance:100%; opacity:0; } }
+@keyframes bee-trail { 0% { stroke-dashoffset:0.22; opacity:0; } 8% { opacity:0.6; } 90% { stroke-dashoffset:-0.78; opacity:0.6; } 100% { stroke-dashoffset:-0.78; opacity:0; } }
+@keyframes bee-flap { from { transform:scaleY(1); } to { transform:scaleY(0.4); } }
+@media (prefers-reduced-motion:reduce) { .bee-flight .bee, .bee-flight .trail { animation:none !important; opacity:0; } .bee-flight .wing { animation:none; } }
 #screen-client-plan .scroll-body { overflow-x:hidden; }
 .week-tab { flex-shrink:0; padding:7px 14px; border-radius:20px; font-size:12px; font-weight:600; background:var(--white); color:var(--gray4); cursor:pointer; border:1.5px solid var(--gray2); }
 .week-tab.active { background:var(--orange); color:white; border-color:var(--orange); }
@@ -774,6 +786,19 @@ body.lift-mode #strongflow-btn { display:none !important; }
     <div class="hoy-cover-pill" id="hoy-cover-pill">Semana 1</div>
     <h1 class="hoy-cover-title">¡Vamos Con TODA Hoy CHAMP!</h1>
     <button type="button" class="hoy-cover-btn" id="hoy-cover-btn" onclick="enterTraining()"><svg class="ico" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-play"/></svg>Entrenar</button>
+    <div class="bee-flight" id="bee-flight" aria-hidden="true">
+      <svg width="390" height="844" viewBox="0 0 390 844" style="position:absolute;left:0;top:0" focusable="false"><path class="trail" pathLength="1" d="M40 610C120 520 140 650 205 545S300 380 450 300" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/></svg>
+      <div class="bee"><svg width="72" height="54" viewBox="0 0 72 54" fill="none" stroke="#FFFFFF" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+        <path class="wing" fill="rgba(255,255,255,0.18)" d="M30 22C22 18 21 4 29 3C37 2 35 15 30 22Z"/>
+        <path class="wing" fill="rgba(255,255,255,0.18)" d="M36 21C33 12 40 3 47 6C52 9 44 18 36 21Z"/>
+        <ellipse cx="34" cy="33" rx="17" ry="11.5"/>
+        <path d="M28 22.5Q32 33 28 43.5"/><path d="M38 22Q42 33 38 44"/>
+        <circle cx="54" cy="30" r="7"/>
+        <circle cx="56" cy="29" r="1.2" fill="#FFFFFF" stroke="none"/>
+        <path d="M56 24Q58 16 63 15"/><path d="M59 26Q64 21 68 22"/>
+        <path d="M17 33L11 34"/>
+      </svg></div>
+    </div>
   </div>
   <div class="bottom-nav">
     <div class="nav-item active" onclick="clientNav('home',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-sun"/></svg></div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
@@ -3932,8 +3957,23 @@ function updateHoyCover() {
   updateHoyCoverPill();
   if (!hoyCoverAllowed()) setHoyCover(false);
 }
+let hoyCoverFlying = false;
 function enterTraining() {
-  setHoyCover(false);
+  if (hoyCoverFlying) return;
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const canFly = window.CSS && CSS.supports && CSS.supports('offset-path', "path('M0 0')");
+  const layer = document.getElementById('bee-flight');
+  const cover = document.getElementById('hoy-cover');
+  if (reduce || !canFly || !layer || !cover) { setHoyCover(false); return; }
+  hoyCoverFlying = true;
+  // El vuelo está dibujado sobre 390 px de ancho: se escala al ancho real de la pantalla
+  layer.style.transform = 'scale(' + (cover.clientWidth / 390) + ')';
+  layer.classList.add('flying');
+  setTimeout(() => {
+    layer.classList.toggle('flying', false);
+    hoyCoverFlying = false;
+    setHoyCover(false);
+  }, 850);
 }
 
 function handleStartWorkout() {
