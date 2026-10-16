@@ -428,6 +428,15 @@ body.lift-mode #strongflow-btn { display:none !important; }
 .hive-goal-chip[aria-pressed="true"] { background:#FEEBE0; border-color:var(--orange); color:var(--orange-text); font-weight:700; }
 .hive-week { display:flex; align-items:center; gap:10px; margin-top:12px; font-size:14px; color:var(--gray5); }
 .hive-share { width:100%; min-height:52px; border:0; border-radius:14px; background:var(--orange); color:#FFFFFF; display:flex; align-items:center; justify-content:center; gap:10px; font-family:'DM Sans',sans-serif; font-size:16px; font-weight:700; cursor:pointer; margin-bottom:12px; }
+.hive-sheet { position:fixed; inset:0; z-index:300; background:rgba(0,0,0,0.5); display:flex; align-items:flex-end; justify-content:center; }
+.hive-sheet[hidden] { display:none; }
+.hive-sheet-inner { width:100%; max-width:480px; background:#FFFFFF; border-radius:20px 20px 0 0; padding:16px 20px 28px; box-sizing:border-box; max-height:94vh; overflow-y:auto; }
+.hive-sheet-head { display:flex; align-items:center; justify-content:space-between; }
+.hive-sheet-title { font-family:'Playfair Display',serif; font-weight:900; font-size:22px; }
+.hive-sheet-preview { display:flex; justify-content:center; margin:14px 0; }
+.hive-sheet-preview canvas { height:auto; max-height:46vh; max-width:100%; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.18); }
+.hive-sheet-actions { display:flex; flex-direction:column; gap:10px; }
+.hive-btn-2 { width:100%; min-height:52px; border-radius:14px; border:1.5px solid var(--line); background:#FFFFFF; color:var(--ink); display:flex; align-items:center; justify-content:center; gap:10px; font-family:'DM Sans',sans-serif; font-size:16px; font-weight:700; cursor:pointer; }
 #screen-client-plan .scroll-body { overflow-x:hidden; }
 .week-tab { flex-shrink:0; padding:7px 14px; border-radius:20px; font-size:12px; font-weight:600; background:var(--white); color:var(--gray4); cursor:pointer; border:1.5px solid var(--gray2); }
 .week-tab.active { background:var(--orange); color:white; border-color:var(--orange); }
@@ -4511,7 +4520,143 @@ async function setHiveGoal(n) {
     showToast('Meta guardada', 'success');
   } finally { hiveGoalBusy = false; }
 }
-function openHiveShare() {}
+// ---- Compartir mi mes: imagen armada en <canvas> (sin librerías), Web Share con archivo o descarga ----
+let hiveShareFormat = 'story';
+function hiveHexPath(ctx, cx, cy, r) {
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - r);
+  ctx.lineTo(cx + 0.866 * r, cy - r / 2); ctx.lineTo(cx + 0.866 * r, cy + r / 2);
+  ctx.lineTo(cx, cy + r); ctx.lineTo(cx - 0.866 * r, cy + r / 2); ctx.lineTo(cx - 0.866 * r, cy - r / 2);
+  ctx.closePath();
+}
+function hiveFit(ctx, text, maxW) {
+  if (ctx.measureText(text).width <= maxW) return text;
+  let t = text;
+  while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+  return t + '…';
+}
+async function drawHiveCanvas(format) {
+  const dd = hiveData;
+  const W = 1080, H = format === 'story' ? 1920 : 1080;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  try { await Promise.all([document.fonts.load('900 64px "Playfair Display"'), document.fonts.load('500 32px "DM Mono"'), document.fonts.load('700 32px "DM Sans"')]); } catch (e) {}
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#DD4A0A'); g.addColorStop(0.45, '#F75A0E'); g.addColorStop(1, '#F46A1F');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  const story = format === 'story';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = `500 ${story ? 40 : 32}px "DM Mono", monospace`;
+  ctx.fillText('M O V E S   H I V E', W / 2, story ? 170 : 100);
+  ctx.font = `900 ${story ? 96 : 64}px "Playfair Display", serif`;
+  ctx.fillText(hiveMonthLabel(dd.ym), W / 2, story ? 290 : 180);
+  // Panal sin números: entrenado blanco relleno, el resto en contorno
+  const [y, m] = dd.ym.split('-').map(Number);
+  const offset = (new Date(y, m - 1, 1).getDay() + 6) % 7;
+  const rows = Math.ceil((offset + dd.last) / 7);
+  const s = story ? 2.75 : 1.55;
+  const gridW = 370 * s, gridH = (36 + 39 * (rows - 1) + 30) * s;
+  const ox = (W - gridW) / 2, oy = story ? 420 : 220;
+  for (let day = 1; day <= dd.last; day++) {
+    const idx = offset + day - 1, r = Math.floor(idx / 7), c = idx % 7;
+    const cx = ox + (48 + 45 * c + (r % 2 ? 22.5 : 0)) * s, cy = oy + (36 + 39 * r) * s;
+    hiveHexPath(ctx, cx, cy, 24 * s);
+    const key = `${dd.ym}-${String(day).padStart(2, '0')}`;
+    if (dd.days.has(key)) { ctx.fillStyle = '#FFFFFF'; ctx.fill(); }
+    else { ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 2.5 * (s / 1.5); ctx.stroke(); }
+  }
+  // Números del mes
+  const hours = Math.round(dd.hours * 10) / 10;
+  const stats = [[String(dd.count), dd.count === 1 ? 'entreno' : 'entrenos'], [pgNum(hours), 'horas']];
+  const top = oy + gridH + (story ? 200 : 70);
+  stats.forEach(([v, l], i) => {
+    const cx = W / 2 + (i === 0 ? -1 : 1) * (story ? 220 : 200);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `900 ${story ? 120 : 84}px "Playfair Display", serif`;
+    ctx.fillText(v, cx, top);
+    ctx.font = `700 ${story ? 38 : 30}px "DM Sans", sans-serif`;
+    ctx.fillText(l, cx, top + (story ? 56 : 44));
+  });
+  if (dd.best) {
+    const by = top + (story ? 260 : 130);
+    ctx.font = `900 ${story ? 72 : 52}px "Playfair Display", serif`;
+    ctx.fillText(pgNum(Math.round(dd.best.kg * 10) / 10) + ' kg', W / 2, by);
+    ctx.font = `700 ${story ? 36 : 28}px "DM Sans", sans-serif`;
+    ctx.fillText(hiveFit(ctx, 'Mayor peso · ' + dd.best.name, W - 160), W / 2, by + (story ? 54 : 42));
+  }
+  ctx.font = `500 ${story ? 34 : 28}px "DM Mono", monospace`;
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  ctx.fillText('Move With Sau', W / 2, H - (story ? 110 : 50));
+  return cv;
+}
+async function openHiveShare() {
+  if (!hiveData) return;
+  let sh = document.getElementById('hive-share-sheet');
+  if (!sh) {
+    sh = document.createElement('div');
+    sh.id = 'hive-share-sheet';
+    sh.className = 'hive-sheet';
+    sh.setAttribute('role', 'dialog');
+    sh.setAttribute('aria-modal', 'true');
+    sh.setAttribute('aria-label', 'Compartir mi mes');
+    sh.onclick = e => { if (e.target === sh) closeHiveShare(); };
+    document.body.appendChild(sh);
+  }
+  sh.hidden = false;
+  renderHiveShare();
+}
+function closeHiveShare() { const sh = document.getElementById('hive-share-sheet'); if (sh) { sh.hidden = true; sh.innerHTML = ''; } }
+function setHiveShareFormat(f) { hiveShareFormat = f; renderHiveShare(); }
+async function renderHiveShare() {
+  const sh = document.getElementById('hive-share-sheet');
+  if (!sh || !hiveData) return;
+  const fmtBtn = (f, label) => `<button type="button" class="hive-goal-chip" aria-pressed="${hiveShareFormat === f}" onclick="setHiveShareFormat('${f}')">${label}</button>`;
+  sh.innerHTML = `<div class="hive-sheet-inner">
+    <div class="hive-sheet-head"><div class="hive-sheet-title">Compartir mi mes</div>
+      <button type="button" class="icon-btn" style="background:#F1ECE4;color:var(--ink);border-radius:50%;" aria-label="Cerrar" onclick="closeHiveShare()">${icon('x', 18)}</button></div>
+    <div class="hive-goal-chips" role="group" aria-label="Formato">${fmtBtn('story', 'Stories')}${fmtBtn('chat', 'Chat')}</div>
+    <div class="hive-sheet-preview" id="hive-share-preview"><div class="spinner"></div></div>
+    <div class="hive-sheet-actions">
+      <button type="button" class="hive-share" style="margin:0;" onclick="shareHiveImage()">${icon('share', 20)}Compartir</button>
+      <button type="button" class="hive-btn-2" onclick="downloadHiveImage()">${icon('download', 20)}Guardar imagen</button>
+    </div>
+  </div>`;
+  const cv = await drawHiveCanvas(hiveShareFormat);
+  const box = document.getElementById('hive-share-preview');
+  if (!box) return;
+  cv.setAttribute('role', 'img');
+  cv.setAttribute('aria-label', `Vista previa: ${hiveMonthLabel(hiveData.ym)}, ${hiveData.count} entrenos`);
+  box.innerHTML = '';
+  box.appendChild(cv);
+}
+function hiveCanvasBlob() {
+  const cv = document.querySelector('#hive-share-preview canvas');
+  return new Promise(res => cv ? cv.toBlob(res, 'image/png') : res(null));
+}
+async function downloadHiveImage() {
+  const blob = await hiveCanvasBlob();
+  if (!blob) return;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `moves-hive-${hiveData.ym}-${hiveShareFormat}.png`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+async function shareHiveImage() {
+  const blob = await hiveCanvasBlob();
+  if (!blob) return;
+  const file = new File([blob], `moves-hive-${hiveData.ym}.png`, { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'MOVES HIVE' }); }
+    catch (e) { if (e && e.name !== 'AbortError') showToast('No se pudo compartir. Probá con Guardar imagen.', 'error', 4000); }
+  } else {
+    downloadHiveImage();
+    showToast('Tu navegador no comparte imágenes: la guardamos para que la subas vos.', 3500);
+  }
+}
 
 // ===== PERFIL: HITOS =====
 // Solo lectura: usa el mismo número que "Días entrenados" (#c-profile-days). Se redibuja
