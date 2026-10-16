@@ -16556,21 +16556,35 @@ async function loadProgressHistory() {
   const weekStart = fmtDateKey(getWeekDates(0)[0]);
   const {data:logs} = await sb.from('client_progress_logs').select('*').eq('client_id', currentClient.id).lt('week_start_date', weekStart).order('week_start_date', {ascending:false});
   if(!logs || logs.length === 0) { el.innerHTML = ''; return; }
-  el.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;">Historial</div><div id="c-progress-history-list"><div class="spinner"></div></div>';
-  const rowsHtml = await Promise.all(logs.map(async log => {
-    const thumbsHtml = await progressPhotoThumbs(log);
+  // Una fila desplegable por semana; las fotos (URLs firmadas) se piden recién al abrirla
+  window._progressHistoryLogs = logs;
+  el.innerHTML = logs.map((log, i) => {
     const label = new Date(log.week_start_date + 'T00:00:00').toLocaleDateString('es-CR', {day:'numeric', month:'short', year:'numeric'});
-    return `<div style="background:var(--white);border:1.5px solid var(--gray2);border-radius:16px;padding:14px 16px;margin-bottom:8px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <div style="font-size:12px;font-weight:700;color:var(--gray4);">Semana del ${label}</div>
-        <div style="font-size:16px;font-weight:900;color:var(--orange);">${log.weight_kg} kg</div>
-      </div>
-      <div style="display:flex;gap:10px;${log.notes?'margin-bottom:10px;':''}">${thumbsHtml}</div>
-      ${log.notes ? `<div style="font-size:12px;line-height:1.5;color:var(--gray5);white-space:pre-wrap;">${escHtml(log.notes)}</div>` : ''}
+    return `<div class="pg-card">
+      <button type="button" class="pg-acc-btn" id="pg-hist-btn-${i}" aria-expanded="false" aria-controls="pg-hist-body-${i}" onclick="toggleProgressHistory(${i})">
+        <span><span class="pg-acc-title" style="margin-top:0;">Semana del ${label}</span><span class="pg-acc-weight">${pgNum(log.weight_kg)} kg</span></span>
+        <span class="chev">${icon('chevron-down', 20)}</span>
+      </button>
+      <div class="pg-acc-body" id="pg-hist-body-${i}" hidden></div>
     </div>`;
-  }));
-  const listEl = document.getElementById('c-progress-history-list');
-  if(listEl) listEl.innerHTML = rowsHtml.join('');
+  }).join('');
+}
+
+async function toggleProgressHistory(i) {
+  const btn = document.getElementById('pg-hist-btn-' + i);
+  const body = document.getElementById('pg-hist-body-' + i);
+  if (!btn || !body) return;
+  const open = btn.getAttribute('aria-expanded') !== 'true';
+  btn.setAttribute('aria-expanded', String(open));
+  body.hidden = !open;
+  if (!open || body.dataset.loaded) return;
+  const log = window._progressHistoryLogs && window._progressHistoryLogs[i];
+  if (!log) return;
+  body.dataset.loaded = '1';
+  body.innerHTML = '<div class="spinner"></div>';
+  const thumbs = await progressPhotoThumbs(log);
+  body.innerHTML = `<div style="display:flex;gap:10px;">${thumbs}</div>` +
+    (log.notes ? `<div style="font-size:14px;line-height:1.5;color:#E8E2D9;margin-top:12px;white-space:pre-wrap;">${escHtml(log.notes)}</div>` : '');
 }
 
 // ===== COACH PROGRESS VIEW =====
