@@ -287,6 +287,19 @@ body.lift-mode #strongflow-btn { display:none !important; }
 @keyframes bee-trail { 0% { stroke-dashoffset:0.22; opacity:0; } 8% { opacity:0.6; } 90% { stroke-dashoffset:-0.78; opacity:0.6; } 100% { stroke-dashoffset:-0.78; opacity:0; } }
 @keyframes bee-flap { from { transform:scaleY(1); } to { transform:scaleY(0.4); } }
 @media (prefers-reduced-motion:reduce) { .bee-flight .bee, .bee-flight .trail { animation:none !important; opacity:0; } .bee-flight .wing { animation:none; } }
+/* ===== HOY: línea de tiempo del día (Get Ready -> ejercicios -> Done) ===== */
+.tl { position:relative; }
+.tl::before { content:''; position:absolute; left:15px; top:22px; bottom:34px; width:2px; background:#DDD5C9; }
+.tl-row { position:relative; display:flex; gap:12px; align-items:flex-start; }
+.tl-node { flex-shrink:0; margin-top:10px; position:relative; z-index:1; }
+.tl-card { flex:1; min-width:0; }
+.tl-plain { padding-left:44px; position:relative; z-index:1; }
+.tl-step { border-radius:16px; padding:12px 14px; margin-bottom:12px; }
+.tl-step-head { display:flex; align-items:center; gap:12px; }
+.tl-step-ico { width:36px; height:36px; border-radius:10px; background:#FFFFFF; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.tl-step-title { font-size:15px; font-weight:700; color:var(--ink); }
+.tl-step-sub { font-size:13px; color:var(--gray5); }
+.tl-step-text { font-size:13px; font-weight:700; color:var(--black); line-height:1.4; margin-top:10px; }
 #screen-client-plan .scroll-body { overflow-x:hidden; }
 .week-tab { flex-shrink:0; padding:7px 14px; border-radius:20px; font-size:12px; font-weight:600; background:var(--white); color:var(--gray4); cursor:pointer; border:1.5px solid var(--gray2); }
 .week-tab.active { background:var(--orange); color:white; border-color:var(--orange); }
@@ -3623,17 +3636,23 @@ async function loadClientExercises() {
     }
   }
 
-  // Warmup banner
-  const warmupBanner = `<div class="fade-up" style="background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:10px;display:flex;align-items:flex-start;gap:14px;">
-    <div style="width:44px;height:44px;border-radius:12px;background:#FDEEE6;color:var(--orange);display:flex;align-items:center;justify-content:center;flex-shrink:0;">${icon('flame', 22)}</div>
-    <div style="flex:1;">
-      <div style="font-size:13px;font-weight:700;color:var(--black);margin-bottom:3px;">Recuerda calentar por 5 minutos antes de empezar con la rutina.</div>
+  // Estados de la línea de tiempo (solo visual): Get Ready queda hecho al iniciar el
+  // entreno o con algún ejercicio hecho; "el siguiente" es el primer ejercicio pendiente.
+  const getReadyDone = workoutStarted || itemsOrder.some(it => it.isDone);
+  const allItemsDone = itemsOrder.length > 0 && itemsOrder.every(it => it.isDone);
+  const tlState = (key, isDone) => isDone ? 'done' : (getReadyDone && firstPendingItem && firstPendingItem.key === key) ? 'next' : 'todo';
+
+  // Warmup banner -> tarjeta "Get Ready" de la línea de tiempo
+  const warmupBanner = `<div class="tl-row fade-up">${tlNode(getReadyDone ? 'done' : 'next')}<div class="tl-card"><div class="tl-step" style="background:#FDEEE6;border:1.5px solid #F8D8C8;">
+    <div class="tl-step-head"><div class="tl-step-ico" style="color:var(--orange);">${icon('flame', 20)}</div><div><div class="tl-step-title">Get Ready</div><div class="tl-step-sub">5 minutos</div></div></div>
+    <div>
+      <div class="tl-step-text">Recuerda calentar por 5 minutos antes de empezar con la rutina.</div>
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px;">
         <a href="https://youtube.com/shorts/GnBbaPlj6Ls?si=Ie-UQwwa8OpIkn-x" target="_blank" style="display:inline-flex;align-items:center;gap:5px;min-height:44px;font-size:12px;font-weight:700;color:var(--orange-text);text-decoration:none;">${icon('play', 14)}Video guía</a>
         <span style="font-size:11px;color:var(--gray5);">+ 5 minutos del Cardio que prefieras</span>
       </div>
     </div>
-  </div>`;
+  </div></div></div>`;
 
   let exHtml = '';
   const renderedGroups = new Set();
@@ -3721,11 +3740,10 @@ async function loadClientExercises() {
       const circuitItemKey = `circuit-${ex.superset_group}`;
       const circuitDone = g.every(se => !!done[se.id]);
       const circuitOpen = isItemOpen(circuitItemKey);
-      exHtml += `<div class="fade-up" style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;border-left:3px solid var(--orange);${circuitDone?'opacity:0.85;':''}">
+      exHtml += `<!--tl-item:${tlState(circuitItemKey, circuitDone)}--><div class="fade-up" style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;border-left:3px solid var(--orange);${circuitDone?'opacity:0.85;':''}">
         <div onclick="toggleAccordionItem('${circuitItemKey}')" style="padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;">
-          <div class="ex-check-badge${circuitDone?' done':''}" id="acc-check-${circuitItemKey}">${circuitDone?'✓':''}</div>
           <div style="flex:1;min-width:0;font-size:14px;font-weight:700;color:var(--black);">Circuito ${ex.superset_group}</div>
-          <div id="acc-chevron-${circuitItemKey}" style="font-size:16px;color:var(--gray4);flex-shrink:0;transition:transform 0.2s;transform:${circuitOpen?'rotate(180deg)':''};">▾</div>
+          <div id="acc-chevron-${circuitItemKey}" class="chev" style="flex-shrink:0;transform:${circuitOpen?'rotate(180deg)':''};">${icon('chevron-down', 20)}</div>
         </div>
         <div class="acc-body" id="acc-body-${circuitItemKey}" style="display:${circuitOpen?'block':'none'};padding:0 14px 12px;">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;">
@@ -3800,11 +3818,10 @@ async function loadClientExercises() {
       const unitToggleId = `unit-solo-${ex.id}`;
       const soloItemKey = `solo-${ex.id}`;
       const soloOpen = isItemOpen(soloItemKey);
-      exHtml+=`<div class="fade-up" style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;${isDone?'opacity:0.85;':''}">
+      exHtml+=`<!--tl-item:${tlState(soloItemKey, isDone)}--><div class="fade-up" style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;${isDone?'opacity:0.85;':''}">
         <div onclick="toggleAccordionItem('${soloItemKey}')" style="padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;">
-          <div class="ex-check-badge${isDone?' done':''}" id="acc-check-${soloItemKey}">${isDone?'✓':''}</div>
           <div style="flex:1;min-width:0;font-size:14px;font-weight:700;color:var(--black);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${ex.name}</div>
-          <div id="acc-chevron-${soloItemKey}" style="font-size:16px;color:var(--gray4);flex-shrink:0;transition:transform 0.2s;transform:${soloOpen?'rotate(180deg)':''};">▾</div>
+          <div id="acc-chevron-${soloItemKey}" class="chev" style="flex-shrink:0;transform:${soloOpen?'rotate(180deg)':''};">${icon('chevron-down', 20)}</div>
         </div>
         <div class="acc-body" id="acc-body-${soloItemKey}" style="display:${soloOpen?'block':'none'};padding:0 14px 12px;">
         <!-- Header -->
@@ -3844,15 +3861,21 @@ async function loadClientExercises() {
     : '';
 
   // Cooldown banner
-  const cooldownBanner = `<div class="fade-up" style="background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-top:4px;margin-bottom:10px;display:flex;align-items:flex-start;gap:14px;">
-    <div style="width:44px;height:44px;border-radius:12px;background:#EAF2FB;color:#2E6FB5;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${icon('wind', 22)}</div>
-    <div style="flex:1;">
-      <div style="font-size:13px;font-weight:700;color:var(--black);margin-bottom:3px;">Recuerda estirar por 5–10 minutos luego de terminar con todos los ejercicios.</div>
+  const cooldownBanner = `<div class="tl-row fade-up">${tlNode(allItemsDone ? 'done' : 'todo')}<div class="tl-card"><div class="tl-step" style="background:#EAF2FB;border:1.5px solid #CFE0F3;">
+    <div class="tl-step-head"><div class="tl-step-ico" style="color:#2E6FB5;">${icon('wind', 20)}</div><div><div class="tl-step-title">Done</div><div class="tl-step-sub">5–10 minutos</div></div></div>
+    <div>
+      <div class="tl-step-text">Recuerda estirar por 5–10 minutos luego de terminar con todos los ejercicios.</div>
       <a href="https://youtube.com/shorts/rrM_wtKObK4?si=xA6v3gRrLhrCbwjU" target="_blank" style="display:inline-flex;align-items:center;gap:5px;min-height:44px;font-size:12px;font-weight:700;color:#2E6FB5;text-decoration:none;">${icon('play', 14)}Video guía</a>
     </div>
-  </div>`;
+  </div></div></div>`;
 
-  list.innerHTML = startBtnHtml + warmupBanner + exHtml + finishBtnHtml + cooldownBanner;
+  // Cada tarjeta trae adelante su marcador <!--tl-item:estado-->: se envuelve con su nodo del riel.
+  const tlItemsHtml = exHtml.split('<!--tl-item:').filter(Boolean).map(chunk => {
+    const end = chunk.indexOf('-->');
+    return `<div class="tl-row">${tlNode(chunk.slice(0, end))}<div class="tl-card">${chunk.slice(end + 3)}</div></div>`;
+  }).join('');
+  const finishRowHtml = finishBtnHtml ? `<div class="tl-plain">${finishBtnHtml}</div>` : '';
+  list.innerHTML = startBtnHtml + `<div class="tl">` + warmupBanner + tlItemsHtml + finishRowHtml + cooldownBanner + `</div>`;
 
   // Re-sync any running Circuit Timer panels after the DOM was rebuilt
   syncCircuitTimerPanels([...renderedGroups]);
@@ -3926,6 +3949,15 @@ document.addEventListener('visibilitychange', () => {
     acquireWakeLock();
   }
 });
+
+// ===== HOY: LÍNEA DE TIEMPO =====
+// Nodo hexagonal del riel. state: 'done' (relleno naranja + check tinta) | 'next' (borde naranja) | 'todo' (borde gris)
+function tlNode(state) {
+  const fill = state === 'done' ? '#F75A0E' : '#FFFFFF';
+  const stroke = state === 'todo' ? '#C9C0B3' : '#F75A0E';
+  const check = state === 'done' ? '<polyline points="9.5 14.2 12.6 17.2 18.5 10.8" fill="none" stroke="#1A1714" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>' : '';
+  return `<svg class="tl-node" aria-hidden="true" focusable="false" width="32" height="32" viewBox="0 0 28 28"><path d="M14 2L24.4 8V20L14 26L3.6 20V8Z" fill="${fill}" stroke="${stroke}" stroke-width="${state === 'next' ? 2.2 : 2}" stroke-linejoin="round"/>${check}</svg>`;
+}
 
 // ===== HOY: PORTADA =====
 // Portada naranja antes del entreno. Solo visual: no lee ni escribe nada en la base.
