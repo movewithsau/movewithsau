@@ -346,6 +346,35 @@ body.lift-mode #strongflow-btn { display:none !important; }
 .food-btn { width:100%; min-height:52px; border-radius:12px; display:flex; align-items:center; justify-content:center; gap:10px; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:700; cursor:pointer; }
 .food-btn-pdf { margin-top:12px; border:0; background:var(--ink); color:#FFFFFF; }
 .food-btn-wa { margin-top:10px; border:1.5px solid #1E9E52; background:#E7F7EC; color:#15803D; }
+/* ===== TU PROGRESO: modo oscuro, solo mientras esta pestaña está abierta ===== */
+#screen-client-plan { position:relative; isolation:isolate; }
+#screen-client-plan::before, #screen-client-plan::after { content:''; position:fixed; top:0; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px; z-index:-1; pointer-events:none; opacity:0; transition:opacity 0.25s; }
+#screen-client-plan::before { background:linear-gradient(180deg,#0F0D0C 0%,#171311 50%,#1F1A17 100%); }
+#screen-client-plan::after { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40.529' height='70.2' viewBox='0 0 31.176 54'%3E%3Cpath d='M15.588 0L31.176 9V27L15.588 36L0 27V9Z M15.588 36V54' fill='none' stroke='%23FFFFFF' stroke-opacity='0.10' stroke-width='0.6'/%3E%3C/svg%3E"); background-size:40.529px 70.2px; -webkit-mask-image:linear-gradient(180deg,#000 0%,transparent 70%); mask-image:linear-gradient(180deg,#000 0%,transparent 70%); }
+#screen-client-plan.progress-dark::before, #screen-client-plan.progress-dark::after { opacity:1; }
+#screen-client-plan.progress-dark { --white:#2A2420; --black:#FFFFFF; --ink:#FFFFFF; --gray1:#1A1613; --gray2:#3A322D; --gray3:#5A514A; --gray4:#C9C0B3; --gray5:#C9C0B3; --line:rgba(255,255,255,0.08); --orange-text:#FF8A4C; --icon-rest:#B9B1A6; --icon-empty:#8A8176; --cream:#1F1A17; color:#FFFFFF; }
+#screen-client-plan.progress-dark .topbar { background:rgba(15,13,12,0.94); border-bottom-color:rgba(255,255,255,0.08); }
+#screen-client-plan.progress-dark .client-plan-tabs { border-bottom-color:rgba(255,255,255,0.08); }
+#screen-client-plan.progress-dark .client-plan-tab-chip { background:rgba(255,255,255,0.08) !important; color:#C9C0B3 !important; }
+#screen-client-plan.progress-dark .client-plan-tab-chip.active { background:rgba(247,90,14,0.2) !important; color:#FF8A4C !important; }
+#screen-client-plan.progress-dark .bottom-nav::before { background:linear-gradient(180deg,rgba(31,26,23,0) 0%,rgba(31,26,23,0.94) 55%,#1F1A17 75%); }
+@media (prefers-reduced-motion:reduce) { #screen-client-plan::before, #screen-client-plan::after { transition:none; } }
+.pg-card { background:#2A2420; border:1px solid rgba(255,255,255,0.08); border-radius:16px; color:#FFFFFF; margin-bottom:12px; }
+.pg-chart { padding:16px 16px 10px; }
+.pg-mono { display:block; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; color:#FF8A4C; text-transform:uppercase; }
+.pg-big-row { display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 8px; margin-top:6px; }
+.pg-big { font-family:'Playfair Display',serif; font-weight:900; font-size:36px; line-height:1; color:#F75A0E; }
+.pg-sub { font-size:14px; color:#C9C0B3; }
+.pg-note { font-size:13px; color:#C9C0B3; margin-top:4px; }
+.pg-empty { display:flex; flex-direction:column; align-items:center; gap:10px; padding:18px 8px 12px; text-align:center; color:#C9C0B3; font-size:14px; line-height:1.5; }
+.pg-empty .ico { color:#8A8176; }
+.pg-acc-btn { width:100%; box-sizing:border-box; min-height:64px; border:0; background:none; color:inherit; padding:0 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; text-align:left; font-family:'DM Sans',sans-serif; cursor:pointer; }
+.pg-acc-title { display:block; font-size:16px; font-weight:700; margin-top:2px; }
+.pg-acc-weight { display:block; font-size:14px; font-weight:700; color:#F75A0E; margin-top:2px; }
+.pg-acc-btn .chev { color:#C9C0B3; }
+.pg-acc-btn[aria-expanded="true"] .chev { transform:rotate(180deg); }
+.pg-acc-body { padding:0 16px 16px; }
+.pg-compare { width:100%; box-sizing:border-box; min-height:64px; border:1.5px solid #F75A0E; border-radius:16px; background:rgba(247,90,14,0.2); color:#FF8A4C; display:flex; align-items:center; gap:12px; padding:0 16px; text-align:left; font-family:'DM Sans',sans-serif; cursor:pointer; margin-bottom:12px; }
 #screen-client-plan .scroll-body { overflow-x:hidden; }
 .week-tab { flex-shrink:0; padding:7px 14px; border-radius:20px; font-size:12px; font-weight:600; background:var(--white); color:var(--gray4); cursor:pointer; border:1.5px solid var(--gray2); }
 .week-tab.active { background:var(--orange); color:white; border-color:var(--orange); }
@@ -888,8 +917,22 @@ body.lift-mode #strongflow-btn { display:none !important; }
 
     <!-- PROGRESS TAB -->
     <div id="client-progress-tab" style="display:none;">
-      <div id="c-progress-current"><div class="spinner"></div></div>
+      <div id="progress-charts"></div>
+      <div class="pg-card">
+        <button type="button" class="pg-acc-btn" id="pg-week-btn" aria-expanded="false" aria-controls="pg-week-body" onclick="toggleProgressWeek()">
+          <span><span class="pg-mono">Esta semana</span><span class="pg-acc-title">Registrar peso, fotos y reflexión</span></span>
+          <span class="chev"><svg class="ico" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-chevron-down"/></svg></span>
+        </button>
+        <div class="pg-acc-body" id="pg-week-body" hidden>
+          <div id="c-progress-current"><div class="spinner"></div></div>
+        </div>
+      </div>
       <div id="c-progress-history"></div>
+      <button type="button" class="pg-compare" onclick="openPhotoCompare()">
+        <svg class="ico" width="24" height="24" aria-hidden="true" focusable="false"><use href="#i-columns-2"/></svg>
+        <span style="flex:1;"><span style="display:block;font-size:16px;font-weight:700;">Comparar fotos</span><span style="display:block;font-size:13px;color:#C9C0B3;margin-top:1px;">Elegí dos fotos y mirá tu cambio</span></span>
+        <svg class="ico" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-chevron-right"/></svg>
+      </button>
     </div>
 
     <!-- MI DIARIO TAB (reemplaza la UI vieja de hábitos + sueño) -->
@@ -4005,6 +4048,18 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+// ===== TU PROGRESO =====
+// Todo lo de esta pestaña es solo lectura, salvo el formulario de "Esta semana" (el de siempre).
+function toggleProgressWeek() {
+  const btn = document.getElementById('pg-week-btn');
+  const body = document.getElementById('pg-week-body');
+  if (!btn || !body) return;
+  const open = btn.getAttribute('aria-expanded') !== 'true';
+  btn.setAttribute('aria-expanded', String(open));
+  body.hidden = !open;
+}
+function openPhotoCompare() {}
+
 // ===== PERFIL: HITOS =====
 // Solo lectura: usa el mismo número que "Días entrenados" (#c-profile-days). Se redibuja
 // cada vez que ese número cambia, sin tocar initClient ni el cierre de entreno.
@@ -4474,6 +4529,7 @@ async function loadClientProtocolsView() {
 
 // ===== TESTS (EVALUACIONES) =====
 function switchClientPlanTab(tab, chipEl) {
+  document.getElementById('screen-client-plan').classList.toggle('progress-dark', tab === 'progress');
   document.querySelectorAll('.client-plan-tab-chip').forEach(c => { c.classList.remove('active'); c.style.background='transparent'; c.style.color='var(--gray4)'; });
   chipEl.classList.add('active');
   chipEl.style.background = 'var(--gray1)';
