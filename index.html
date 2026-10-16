@@ -478,6 +478,76 @@ body.lift-mode #strongflow-btn { display:none !important; }
 #churn-overlay { display:none; position:fixed; inset:0; z-index:9999; backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); background:rgba(255,255,255,0.55); align-items:center; justify-content:center; padding:24px; }
 #churn-overlay.active { display:flex; }
 #churn-overlay-card { background:var(--white); border-radius:24px; padding:36px 28px; text-align:center; box-shadow:0 12px 48px rgba(0,0,0,0.18); max-width:320px; width:100%; border:2px solid var(--gray2); }
+
+/* ===== MI DIARIO ===== */
+:root {
+  --emo-alegre:#4CC26A; --emo-alegre-border:#3DB05C; --emo-alegre-tint:#E6F6EB;
+  --emo-neutro:#FFD02F; --emo-neutro-border:#E5A800; --emo-neutro-tint:#FFF5D1;
+  --emo-down:#2E8B8B;   --emo-down-border:#2E8B8B;   --emo-down-tint:#E1F0F0;
+}
+.diary-seg { display:flex; background:var(--gray1); border-radius:12px; padding:4px; margin-bottom:16px; }
+.diary-seg button { flex:1; min-height:44px; border:none; background:transparent; border-radius:9px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:700; color:var(--gray4); cursor:pointer; transition:all 0.2s; }
+.diary-seg button[aria-pressed="true"] { background:var(--white); color:var(--black); box-shadow:var(--shadow); }
+.diary-card { background:var(--white); border:1.5px solid var(--gray2); border-radius:var(--radius); padding:16px; margin-bottom:16px; }
+.diary-new-card { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.diary-btn-orange { min-height:44px; padding:0 22px; border:none; border-radius:var(--radius-sm); background:var(--orange); color:#fff; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; cursor:pointer; }
+.diary-btn-ghost { min-height:44px; width:100%; border:1.5px solid var(--gray3); border-radius:var(--radius-sm); background:var(--white); color:var(--black); font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; cursor:pointer; }
+.diary-label { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.15em; text-transform:uppercase; color:var(--orange); }
+.diary-h { font-family:'Playfair Display',serif; font-size:20px; font-weight:900; color:var(--black); }
+.diary-tiles { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.diary-tile { background:var(--white); border:1.5px solid var(--gray2); border-radius:12px; padding:12px 8px; text-align:center; min-width:0; }
+.diary-tile-num { font-family:'Playfair Display',serif; font-size:24px; font-weight:900; color:var(--black); line-height:1.1; }
+.diary-tile-lbl { font-size:11px; color:var(--gray4); font-weight:600; margin-top:2px; }
+.diary-link { background:none; border:none; color:var(--orange); font-family:'DM Sans',sans-serif; font-size:12px; font-weight:700; cursor:pointer; min-height:44px; padding:0 4px; }
+.diary-row { display:flex; align-items:center; gap:12px; width:100%; min-height:56px; padding:10px 12px; background:var(--white); border:none; text-align:left; font-family:'DM Sans',sans-serif; color:var(--black); cursor:pointer; }
+.diary-row-date { font-family:'DM Mono',monospace; font-size:11px; color:var(--gray5); width:46px; flex-shrink:0; letter-spacing:0.04em; }
+.diary-row-main { flex:1; min-width:0; }
+.diary-row-name { font-size:14px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.diary-row-sub { font-size:12px; color:var(--gray4); margin-top:1px; }
+.diary-list { background:var(--white); border:1.5px solid var(--gray2); border-radius:var(--radius); overflow:hidden; }
+.diary-item + .diary-item { border-top:1px solid var(--gray2); }
+.diary-detail { padding:0 12px 14px 70px; font-size:13px; line-height:1.5; color:var(--black); }
+.diary-detail-k { font-size:11px; font-weight:700; color:var(--gray4); text-transform:uppercase; letter-spacing:0.06em; margin-top:8px; }
+.diary-detail img { width:100%; max-height:360px; object-fit:cover; border-radius:10px; margin-top:10px; display:block; }
+.diary-chips { display:flex; flex-wrap:wrap; gap:8px; }
+.diary-chip { min-height:44px; padding:0 14px; border-radius:22px; border:1.5px solid var(--gray3); background:var(--white); font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; color:var(--black); cursor:pointer; transition:all 0.15s; }
+.diary-chip[aria-pressed="true"] { background:var(--black); border-color:var(--black); color:#fff; }
+.diary-chips-scroll { display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; padding-bottom:2px; margin-bottom:12px; }
+.diary-chips-scroll::-webkit-scrollbar { display:none; }
+.diary-chips-scroll .diary-chip { flex:0 0 auto; }
+.diary-full { position:fixed; inset:0; z-index:300; background:var(--gray1); overflow-y:auto; -webkit-overflow-scrolling:touch; transition:background-color 0.25s; }
+.diary-full-inner { max-width:480px; margin:0 auto; padding:12px 16px 48px; box-sizing:border-box; }
+.diary-full-top { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+.diary-back { width:44px; height:44px; border:none; background:transparent; font-size:22px; cursor:pointer; color:var(--black); border-radius:50%; }
+.diary-field { margin-bottom:18px; }
+.diary-field > label:not(.diary-goal):not(.diary-photo), .diary-field-lbl { display:block; font-size:12px; font-weight:700; color:var(--gray5); margin-bottom:6px; }
+.diary-help { font-size:11px; color:var(--gray4); margin-top:4px; }
+.diary-full .form-input, .diary-full .form-textarea, .diary-sheet .form-input { width:100%; box-sizing:border-box; min-height:44px; background:var(--white); }
+.diary-opt-row { display:flex; align-items:stretch; gap:6px; margin-bottom:6px; }
+.diary-opt { flex:1; min-height:48px; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 14px; border-radius:12px; border:1.5px solid var(--gray2); background:var(--white); font-family:'DM Sans',sans-serif; font-size:14px; font-weight:600; color:var(--black); text-align:left; cursor:pointer; min-width:0; }
+.diary-opt[aria-pressed="true"] { border-color:var(--black); box-shadow:inset 0 0 0 1px var(--black); }
+.diary-opt small { font-size:10px; font-weight:700; color:var(--gray4); text-transform:uppercase; letter-spacing:0.06em; flex-shrink:0; }
+.diary-opt-more { width:44px; flex-shrink:0; border-radius:12px; border:1.5px solid var(--gray2); background:var(--white); font-size:18px; font-weight:900; color:var(--gray5); cursor:pointer; }
+.diary-opt-menu { display:flex; gap:6px; margin:0 0 8px; }
+.diary-opt-menu button { flex:1; min-height:44px; border-radius:10px; border:1.5px solid var(--gray3); background:var(--white); font-family:'DM Sans',sans-serif; font-size:13px; font-weight:700; cursor:pointer; }
+.diary-emo-row { display:flex; gap:8px; }
+.diary-emo { flex:1; min-height:92px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; border-radius:14px; border:2px solid transparent; background:rgba(255,255,255,0.55); font-family:'DM Sans',sans-serif; font-size:13px; font-weight:700; color:var(--black); cursor:pointer; transition:all 0.2s; }
+.diary-emo svg { transform:scale(0.88); transition:transform 0.2s; }
+.diary-emo[aria-pressed="true"] { background:#fff; }
+.diary-emo[aria-pressed="true"] svg { transform:scale(1.18); }
+.diary-emo[data-emo="alegre"][aria-pressed="true"] { border-color:var(--emo-alegre-border); }
+.diary-emo[data-emo="neutro"][aria-pressed="true"] { border-color:var(--emo-neutro-border); }
+.diary-emo[data-emo="down"][aria-pressed="true"] { border-color:var(--emo-down-border); }
+.diary-goal { display:flex; align-items:flex-start; gap:12px; padding:14px; background:var(--white); border:1.5px solid var(--gray2); border-radius:12px; cursor:pointer; }
+.diary-goal input { width:22px; height:22px; accent-color:var(--orange); margin-top:1px; flex-shrink:0; }
+.diary-dark-card { background:var(--black); color:#fff; border-radius:12px; padding:14px 16px; font-size:14px; line-height:1.5; margin-top:10px; }
+.diary-photo { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; min-height:120px; padding:16px; border:2px dashed var(--gray3); border-radius:14px; background:rgba(255,255,255,0.6); cursor:pointer; text-align:center; }
+.diary-photo img { width:100%; max-height:260px; object-fit:cover; border-radius:10px; }
+.diary-kind-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; }
+.diary-kind-btn { display:flex; flex-direction:column; align-items:center; gap:10px; min-height:44px; padding:16px 8px; border-radius:18px; border:1px solid #E8E3DC; background:#FFFFFF; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:700; color:#1A1714; cursor:pointer; min-width:0; }
+.diary-kind-btn:active { transform:scale(0.98); opacity:0.9; }
+.diary-ico { display:inline-flex; vertical-align:middle; }
+.diary-time-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 </style>
 </head>
 <body>
@@ -605,7 +675,7 @@ body.lift-mode #strongflow-btn { display:none !important; }
       <div class="client-plan-tab-chip active" onclick="switchClientPlanTab('plans', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;background:var(--gray1);color:var(--black);font-size:13px;font-weight:600;transition:all 0.2s;">📋 Mi Plan</div>
       <div class="client-plan-tab-chip" onclick="switchClientPlanTab('progress', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;color:var(--gray4);font-size:13px;font-weight:600;transition:all 0.2s;">📈 Tu progreso</div>
       <div class="client-plan-tab-chip" onclick="switchClientPlanTab('tests', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;color:var(--gray4);font-size:13px;font-weight:600;transition:all 0.2s;">📊 Evaluaciones</div>
-      <div class="client-plan-tab-chip" onclick="switchClientPlanTab('habits', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;color:var(--gray4);font-size:13px;font-weight:600;transition:all 0.2s;">✅ Mis Hábitos</div>
+      <div class="client-plan-tab-chip" onclick="switchClientPlanTab('habits', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;color:var(--gray4);font-size:13px;font-weight:600;transition:all 0.2s;">📔 Mi diario</div>
       <div class="client-plan-tab-chip" onclick="switchClientPlanTab('extras', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;color:var(--gray4);font-size:13px;font-weight:600;transition:all 0.2s;">⚡ Extras</div>
     </div>
 
@@ -621,10 +691,9 @@ body.lift-mode #strongflow-btn { display:none !important; }
       <div id="c-progress-history"></div>
     </div>
 
-    <!-- HABITS TAB -->
+    <!-- MI DIARIO TAB (reemplaza la UI vieja de hábitos + sueño) -->
     <div id="client-habits-tab" style="display:none;">
-      <div id="c-sleep-card" style="margin-bottom:24px;"></div>
-      <div id="c-habits-list"><div class="spinner"></div></div>
+      <div id="c-diary-root"><div class="spinner"></div></div>
     </div>
 
     <!-- EXTRAS TAB -->
@@ -892,8 +961,13 @@ body.lift-mode #strongflow-btn { display:none !important; }
     <div id="coach-reminders-panel" style="margin-bottom:12px;"></div>
     <div class="section-header"><div class="section-title">Seguimiento semanal</div></div>
     <div id="coach-weekly-tracker" style="margin-bottom:4px;"></div>
-    <div class="section-header" style="margin-top:4px;"><div class="section-title">😴 Sueño</div></div>
-    <div id="coach-sleep-panel" style="margin-bottom:4px;"></div>
+    <div id="coach-diary-section">
+      <div class="section-header" style="margin-top:4px;"><div class="section-title">📔 Diario</div></div>
+      <div id="coach-diary-panel" style="margin-bottom:4px;"></div>
+    </div>
+    <!-- Sueño viejo (sleep_logs): oculto, reemplazado por el bloque Diario (diary_sleep) -->
+    <div class="section-header" style="margin-top:4px;display:none;"><div class="section-title">😴 Sueño</div></div>
+    <div id="coach-sleep-panel" style="margin-bottom:4px;display:none;"></div>
     <div class="section-header" style="margin-top:4px;"><div class="section-title">📈 Progreso</div></div>
     <div id="coach-progress-panel" style="margin-bottom:4px;"></div>
     <div class="section-header"><div class="section-title">Tu Plan MOVE</div><div class="section-action" onclick="showModal('modal-upload-pdf')">+ PDF</div></div>
@@ -3783,8 +3857,7 @@ function switchClientPlanTab(tab, chipEl) {
     loadClientTests();
   } else if(tab === 'habits') {
     document.getElementById('client-habits-tab').style.display = 'block';
-    loadClientHabits();
-    loadClientSleep();
+    loadClientDiary();
   } else if(tab === 'extras') {
     document.getElementById('client-extras-tab').style.display = 'block';
     loadClientExtras();
@@ -4717,7 +4790,8 @@ async function openCoachClient(clientId) {
   loadCoachAICounts(clientId);
   loadTrainerNotes(clientId);
   loadWeeklyTracker(clientId);
-  loadCoachSleep(clientId);
+  // loadCoachSleep(clientId); — tarjeta vieja oculta; el sueño se ve en el bloque Diario
+  loadCoachDiary(c);
   loadCoachProgress(clientId);
   showScreen('screen-coach-client');
 }
@@ -14407,6 +14481,991 @@ function toggleCoachSleepWeek(weekId) {
   if(arrow) arrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(90deg)';
 }
 
+// ===== MI DIARIO (cliente + coach) =====
+// Tablas: diary_entries (sesiones/hábitos), diary_options (actividades propias), diary_sleep (1 fila por día).
+// Fotos: bucket privado diary-photos/{client_id}/{entry_id}.jpg — solo el cliente las ve.
+// Fechas: entry_date / sleep_date = fecha LOCAL del dispositivo (diaryLocalDate), nunca toISOString.
+
+const DIARY_SESSION_TYPES = [['cardio','Cardio'],['fuerza','Fuerza'],['movilidad','Movilidad'],['deporte','Deporte'],['otro','Otro']];
+const DIARY_REASONS = ['Entrenamiento','Sueño','Trabajo','Relaciones','Plata','Cuerpo','Salud'];
+const DIARY_EMOTIONS = {
+  alegre: {label:'Alegre', tint:'var(--emo-alegre-tint)'},
+  neutro: {label:'Neutro', tint:'var(--emo-neutro-tint)'},
+  down:   {label:'Down',   tint:'var(--emo-down-tint)'}
+};
+const DIARY_EMOTION_SHAPES = {
+  alegre: `<g fill="#4CC26A"><path d="M24 25 C20 8 4 6 5 20 C6 32 18 34 24 25Z"/><path d="M24 25 C28 8 44 6 43 20 C42 32 30 34 24 25Z"/><path d="M24 25 C18 30 9 33 11 41 C15 46 23 40 24 25Z"/><path d="M24 25 C30 30 39 33 37 41 C33 46 25 40 24 25Z"/></g>`,
+  neutro: `<path d="M8 36 C8 20 15 12 24 12 C33 12 40 20 40 36Z" fill="#FFD02F" stroke="#FFD02F" stroke-width="4" stroke-linejoin="round"/>`,
+  down:   `<path d="M24 12 L36 24 L24 36 L12 24Z" fill="#2E8B8B" stroke="#2E8B8B" stroke-width="5" stroke-linejoin="round"/>`
+};
+const DIARY_MONTHS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const DIARY_MONTHS_SHORT = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+
+// Mensajes positivos: (a) hábito nuevo creado, (b) "¿Cumpliste tu última meta?" marcado.
+const DIARY_POSITIVE_MESSAGES = {
+  newHabit: {
+    alegre: [
+      '¡Hábito nuevo en tu diario! Así se construye, paso a paso. 🔥', // TODO(Sau): reemplazar
+      'Lo nombraste, ahora es tuyo. A darle. 💪', // TODO(Sau): reemplazar
+      '¡Qué buena energía para arrancar algo nuevo!' // TODO(Sau): reemplazar
+    ],
+    neutro: [
+      'Un hábito nuevo, sin presión. Lo importante es aparecer. 🙌', // TODO(Sau): reemplazar
+      'Ya quedó guardado. Constancia antes que perfección.' // TODO(Sau): reemplazar
+    ],
+    down: [
+      'Aunque el día pese, empezaste algo por vos. Eso cuenta mucho. 🤍', // TODO(Sau): reemplazar
+      'Pequeño paso, gran decisión. Aquí estamos.' // TODO(Sau): reemplazar
+    ]
+  },
+  goalMet: {
+    alegre: [
+      '¡Meta cumplida! Eso es identidad MOVE. 🏆', // TODO(Sau): reemplazar
+      'Dijiste que lo ibas a hacer y lo hiciste. 🔥' // TODO(Sau): reemplazar
+    ],
+    neutro: [
+      'Cumpliste lo que te propusiste. Eso suma, aunque no se sienta épico.', // TODO(Sau): reemplazar
+      'Meta lista. Una más en la cuenta.' // TODO(Sau): reemplazar
+    ],
+    down: [
+      'Hasta en un día pesado cumpliste tu meta. Eso es fuerza real. 🤍', // TODO(Sau): reemplazar
+      'Lo lograste igual. Date crédito por eso.' // TODO(Sau): reemplazar
+    ]
+  }
+};
+
+function pickDiaryMessage(trigger, emotion) {
+  const pool = DIARY_POSITIVE_MESSAGES[trigger] || {};
+  let list = pool[emotion];
+  if(!list || !list.length) list = Object.values(pool).flat();
+  if(!list.length) return '¡Bien ahí! 🔥';
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+// Íconos de línea (decorativos) para Sueño / Sesión / Hábito
+const DIARY_ICON_PATHS = {
+  sleep:   '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
+  session: '<polyline points="3 12 7 12 10 4 14 20 17 12 21 12"/>',
+  habit:   '<circle cx="12" cy="12" r="9"/><polyline points="8 12.5 11 15.5 16 9.5"/>'
+};
+function diaryIcon(name, size) {
+  return `<svg class="diary-ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${DIARY_ICON_PATHS[name] || ''}</svg>`;
+}
+
+function diaryEmotionSvg(emotion, size, labelled) {
+  const shape = DIARY_EMOTION_SHAPES[emotion];
+  if(!shape) return '';
+  const a11y = labelled ? `role="img" aria-label="${DIARY_EMOTIONS[emotion].label}"` : 'aria-hidden="true"';
+  return `<svg viewBox="0 0 48 48" width="${size}" height="${size}" ${a11y} focusable="false">${shape}</svg>`;
+}
+
+// ---- helpers de fecha (locales) ----
+function diaryLocalDate(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function diaryMonthKey(dateStr) { return String(dateStr).slice(0,7); }
+function diaryMonthRange(ym) {
+  const [y,m] = ym.split('-').map(Number);
+  const last = new Date(y, m, 0).getDate();
+  return [`${ym}-01`, `${ym}-${String(last).padStart(2,'0')}`];
+}
+function diaryMonthName(ym) { return DIARY_MONTHS[Number(ym.slice(5,7)) - 1] || ''; }
+function diaryMonthChipLabel(ym) {
+  const name = diaryMonthName(ym);
+  const cap = name.charAt(0).toUpperCase() + name.slice(1);
+  return ym.slice(0,4) === String(new Date().getFullYear()) ? cap : `${cap.slice(0,3)} ${ym.slice(0,4)}`;
+}
+function diaryFmtDay(dateStr) {
+  const [, m, d] = String(dateStr).split('-');
+  return `${Number(d)} ${DIARY_MONTHS_SHORT[Number(m)-1] || ''}`;
+}
+function diaryTypeLabel(t) { const f = DIARY_SESSION_TYPES.find(x => x[0] === t); return f ? f[1] : ''; }
+function diarySubtitle(e, withCalories) {
+  if(e.kind === 'habit') return 'Hábito';
+  const parts = ['Sesión'];
+  if(e.session_type) parts.push(diaryTypeLabel(e.session_type));
+  if(e.duration_minutes) parts.push(e.duration_minutes + ' min');
+  if(withCalories && e.calories) parts.push(e.calories + ' kcal');
+  return parts.join(' · ');
+}
+function diaryTimeToMin(t) { if(!t) return null; const [h,m] = t.split(':').map(Number); return h*60 + m; }
+function diarySleepMinutes(bed, wake) {
+  const b = diaryTimeToMin(bed), w = diaryTimeToMin(wake);
+  if(b == null || w == null) return null;
+  let diff = w - b;
+  if(diff <= 0) diff += 1440; // cruza medianoche
+  return diff;
+}
+function diaryFmtDuration(min) { return `${Math.floor(min/60)} h ${min%60} min`; }
+function diaryEscLike(str) { return String(str).replace(/[\\%_]/g, c => '\\' + c); }
+function diaryAvgHours(rows) {
+  const vals = (rows||[]).map(r => Number(r.hours)).filter(v => !isNaN(v) && v > 0);
+  return vals.length ? (vals.reduce((a,b) => a+b, 0) / vals.length).toFixed(1) : null;
+}
+
+// ---- estado ----
+const diaryState = {
+  view: 'month',                       // 'month' | 'total'
+  lists: {
+    'c-diary-body':          {month:null, filter:'all'},   // tab "Registros totales"
+    'diary-list-sheet-body': {month:null, filter:'all'}    // "Cargar más"
+  },
+  entriesById: {},
+  flash: null
+};
+let diaryForm = null;
+
+function diaryIsAllowed() { return !!currentClient && currentClient.program_type !== 'lift'; }
+
+// ---- pantalla principal ----
+async function loadClientDiary() {
+  const root = document.getElementById('c-diary-root');
+  if(!root || !currentClient) return;
+  if(!diaryIsAllowed()) { root.innerHTML = ''; return; }
+  root.innerHTML = `
+    <div class="diary-seg" role="group" aria-label="Vista del diario">
+      <button type="button" aria-pressed="${diaryState.view==='month'}" onclick="setDiaryView('month')">Este mes</button>
+      <button type="button" aria-pressed="${diaryState.view==='total'}" onclick="setDiaryView('total')">Registros totales</button>
+    </div>
+    <div id="c-diary-body"><div class="spinner"></div></div>`;
+  if(diaryState.view === 'total') await renderDiaryList('c-diary-body');
+  else await renderDiaryMonthView();
+}
+
+function setDiaryView(view) {
+  diaryState.view = view;
+  loadClientDiary();
+}
+
+async function renderDiaryMonthView() {
+  const body = document.getElementById('c-diary-body');
+  if(!body) return;
+  const cid = currentClient.id;
+  const ym = diaryMonthKey(diaryLocalDate());
+  const [from, to] = diaryMonthRange(ym);
+  const [entriesRes, sleepRes] = await Promise.all([
+    sb.from('diary_entries').select('id,kind,entry_date,activity_name,session_type,duration_minutes,emotion,created_at')
+      .eq('client_id', cid).gte('entry_date', from).lte('entry_date', to)
+      .order('entry_date', {ascending:false}).order('created_at', {ascending:false}),
+    sb.from('diary_sleep').select('hours').eq('client_id', cid).gte('sleep_date', from).lte('sleep_date', to)
+  ]);
+  if(entriesRes.error) { body.innerHTML = `<div class="empty-state"><div class="empty-text">No se pudo cargar tu diario. ${escHtml(entriesRes.error.message)}</div></div>`; return; }
+  if(diaryState.view !== 'month') return;
+  const entries = entriesRes.data || [];
+  const sessions = entries.filter(e => e.kind === 'session').length;
+  const habits = entries.filter(e => e.kind === 'habit').length;
+  const avg = diaryAvgHours(sleepRes.data);
+  const recent = entries.slice(0, 2);
+  const flash = diaryState.flash;
+  diaryState.flash = null;
+
+  body.innerHTML = `
+    ${flash ? `<div class="diary-dark-card" role="status" style="margin:0 0 16px;">${escHtml(flash)}</div>` : ''}
+    <div class="diary-card diary-new-card">
+      <div>
+        <div style="font-size:16px;font-weight:800;">Nueva entrada</div>
+        <div style="font-size:13px;color:var(--gray4);margin-top:2px;">¿Qué acabás de lograr?</div>
+      </div>
+      <button type="button" class="diary-btn-orange" onclick="openDiaryNewEntry()">Abrir</button>
+    </div>
+
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px;">
+      <div class="diary-h">Tus resultados</div>
+      <div class="diary-label">${diaryMonthName(ym).toUpperCase()}</div>
+    </div>
+    <div class="diary-tiles">
+      <div class="diary-tile"><div style="color:var(--orange);">${diaryIcon('sleep', 20)}</div><div class="diary-tile-num">${avg ?? '-'}</div><div class="diary-tile-lbl">${avg ? 'h promedio' : 'Sueño'}</div></div>
+      <div class="diary-tile"><div style="color:var(--orange);">${diaryIcon('session', 20)}</div><div class="diary-tile-num">${sessions}</div><div class="diary-tile-lbl">Sesiones</div></div>
+      <div class="diary-tile"><div style="color:var(--orange);">${diaryIcon('habit', 20)}</div><div class="diary-tile-num">${habits}</div><div class="diary-tile-lbl">Hábitos</div></div>
+    </div>
+    <div style="text-align:right;margin-bottom:12px;"><button type="button" class="diary-link" onclick="openDiaryNewEntry()">¿Falta alguna?</button></div>
+
+    <div class="diary-h" style="margin-bottom:10px;">Tus registros</div>
+    ${recent.length ? `<div class="diary-list" style="margin-bottom:12px;">${recent.map(e => `
+      <div class="diary-item"><div class="diary-row" style="cursor:default;">
+        <div class="diary-row-date">${diaryFmtDay(e.entry_date)}</div>
+        <div class="diary-row-main"><div class="diary-row-name">${escHtml(e.activity_name)}</div><div class="diary-row-sub">${escHtml(diarySubtitle(e))}</div></div>
+        ${diaryEmotionSvg(e.emotion, 38, true)}
+      </div></div>`).join('')}</div>`
+    : `<div class="diary-card" style="text-align:center;color:var(--gray4);font-size:13px;">Todavía no hay registros este mes. ¡Arrancá con el primero!</div>`}
+    <button type="button" class="diary-btn-ghost" onclick="openDiaryListSheet()">Cargar más</button>`;
+}
+
+// ---- lista por mes (compartida: "Registros totales" y "Cargar más") ----
+async function renderDiaryList(containerId) {
+  const el = document.getElementById(containerId);
+  const st = diaryState.lists[containerId];
+  if(!el || !st || !currentClient) return;
+  const cid = currentClient.id;
+  const thisMonth = diaryMonthKey(diaryLocalDate());
+  if(!st.month) st.month = thisMonth;
+  el.innerHTML = '<div class="spinner"></div>';
+  const [from, to] = diaryMonthRange(st.month);
+  const [datesRes, entriesRes] = await Promise.all([
+    sb.from('diary_entries').select('entry_date').eq('client_id', cid).order('entry_date', {ascending:false}).limit(5000),
+    sb.from('diary_entries').select('*').eq('client_id', cid).gte('entry_date', from).lte('entry_date', to)
+      .order('entry_date', {ascending:false}).order('created_at', {ascending:false})
+  ]);
+  if(entriesRes.error) { el.innerHTML = `<div class="empty-state"><div class="empty-text">${escHtml(entriesRes.error.message)}</div></div>`; return; }
+  const months = [...new Set([thisMonth, st.month, ...(datesRes.data||[]).map(d => diaryMonthKey(d.entry_date))])].sort().reverse();
+  const all = entriesRes.data || [];
+  all.forEach(e => { diaryState.entriesById[e.id] = e; });
+  const shown = st.filter === 'all' ? all : all.filter(e => e.kind === st.filter);
+  const filters = [['all','Todos'],['session','Sesiones'],['habit','Hábitos']];
+
+  el.innerHTML = `
+    <div class="diary-chips-scroll" role="group" aria-label="Mes">
+      ${months.map(m => `<button type="button" class="diary-chip" aria-pressed="${m===st.month}" onclick="setDiaryListMonth('${containerId}','${m}')">${diaryMonthChipLabel(m)}</button>`).join('')}
+    </div>
+    <div class="diary-seg" role="group" aria-label="Filtro">
+      ${filters.map(([k,l]) => `<button type="button" aria-pressed="${st.filter===k}" onclick="setDiaryListFilter('${containerId}','${k}')">${l}</button>`).join('')}
+    </div>
+    ${shown.length ? `<div class="diary-list">${shown.map(e => renderDiaryListItem(e, containerId)).join('')}</div>`
+      : `<div class="diary-card" style="text-align:center;color:var(--gray4);font-size:13px;">Sin registros en ${diaryMonthName(st.month)}.</div>`}`;
+}
+
+function renderDiaryListItem(e, containerId) {
+  const domId = `${containerId}-it-${e.id}`;
+  const reasons = Array.isArray(e.reasons) ? e.reasons.filter(Boolean) : [];
+  return `<div class="diary-item">
+    <button type="button" class="diary-row" aria-expanded="false" aria-controls="${domId}" onclick="toggleDiaryItem('${e.id}','${containerId}',this)">
+      <div class="diary-row-date">${diaryFmtDay(e.entry_date)}</div>
+      <div class="diary-row-main"><div class="diary-row-name">${escHtml(e.activity_name)}</div><div class="diary-row-sub">${escHtml(diarySubtitle(e, true))}</div></div>
+      ${diaryEmotionSvg(e.emotion, 34, true)}
+    </button>
+    <div class="diary-detail" id="${domId}" hidden>
+      ${e.notes ? `<div class="diary-detail-k">Notas</div><div style="white-space:pre-wrap;">${escHtml(e.notes)}</div>` : ''}
+      ${reasons.length ? `<div class="diary-detail-k">Qué tiene que ver</div><div>${reasons.map(escHtml).join(' · ')}</div>` : ''}
+      ${e.reason_text ? `<div class="diary-detail-k">Contaste</div><div style="white-space:pre-wrap;">${escHtml(e.reason_text)}</div>` : ''}
+      ${e.next_goal ? `<div class="diary-detail-k">Próxima meta</div><div>${escHtml(e.next_goal)}</div>` : ''}
+      ${e.goal_entry_id ? `<div class="diary-detail-k">Meta anterior</div><div>${e.goal_met ? `<span style="color:var(--orange);">${diaryIcon('habit', 18)}</span> Cumplida` : 'No cumplida'}</div>` : ''}
+      <div data-photo-slot></div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button type="button" class="diary-btn-ghost" onclick="editDiaryEntry('${e.id}')">Editar</button>
+        <button type="button" class="diary-btn-ghost" style="color:var(--red);border-color:var(--red);" onclick="deleteDiaryEntry('${e.id}')">Borrar</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function setDiaryListMonth(containerId, ym) { diaryState.lists[containerId].month = ym; renderDiaryList(containerId); }
+function setDiaryListFilter(containerId, f) { diaryState.lists[containerId].filter = f; renderDiaryList(containerId); }
+
+async function toggleDiaryItem(id, containerId, btn) {
+  const panel = document.getElementById(`${containerId}-it-${id}`);
+  if(!panel) return;
+  const open = panel.hidden;
+  panel.hidden = !open;
+  btn.setAttribute('aria-expanded', String(open));
+  const slot = panel.querySelector('[data-photo-slot]');
+  if(!slot) return;
+  if(!open) { slot.innerHTML = ''; return; } // la foto solo existe mientras el registro está abierto
+  const e = diaryState.entriesById[id];
+  if(!e || !e.photo_path) return;
+  slot.innerHTML = '<div class="spinner"></div>';
+  const {data, error} = await sb.storage.from('diary-photos').createSignedUrl(e.photo_path, 120);
+  if(panel.hidden) { slot.innerHTML = ''; return; }
+  slot.innerHTML = (error || !data?.signedUrl)
+    ? '<div class="diary-help">No se pudo cargar la foto.</div>'
+    : `<img src="${data.signedUrl}" alt="Foto del registro ${escHtml(e.activity_name)}">`;
+}
+
+function openDiaryListSheet() {
+  diaryState.lists['diary-list-sheet-body'] = {month:null, filter:'all'};
+  diaryOpenFull('diary-list-sheet', `
+    <div class="diary-full-inner">
+      <div class="diary-full-top">
+        <button type="button" class="diary-back" aria-label="Volver" onclick="diaryCloseFull('diary-list-sheet')">←</button>
+        <div class="diary-h">Tus registros</div>
+      </div>
+      <div id="diary-list-sheet-body"></div>
+    </div>`, 'Tus registros');
+  renderDiaryList('diary-list-sheet-body');
+}
+
+function diaryOpenFull(id, html, label) {
+  document.getElementById(id)?.remove();
+  const ov = document.createElement('div');
+  ov.id = id;
+  ov.className = 'diary-full';
+  ov.setAttribute('role', 'dialog');
+  ov.setAttribute('aria-modal', 'true');
+  if(label) ov.setAttribute('aria-label', label);
+  ov.innerHTML = html;
+  document.body.appendChild(ov);
+  return ov;
+}
+function diaryCloseFull(id) { document.getElementById(id)?.remove(); }
+
+function diaryRefreshAfterChange() {
+  loadClientDiary();
+  if(document.getElementById('diary-list-sheet')) renderDiaryList('diary-list-sheet-body');
+}
+
+// ---- modal "Nueva entrada" ----
+function openDiaryNewEntry() {
+  if(!diaryIsAllowed()) return;
+  document.getElementById('diary-new-sheet')?.remove();
+  const firstName = escHtml((currentClient?.name || '').split(' ')[0]);
+  const ov = document.createElement('div');
+  ov.id = 'diary-new-sheet';
+  ov.className = 'modal-overlay open diary-sheet';
+  ov.onclick = (ev) => { if(ev.target === ov) ov.remove(); };
+  ov.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="diary-new-title">
+      <button type="button" class="modal-close" aria-label="Cerrar" style="background:none;border:none;min-width:44px;min-height:44px;font-family:inherit;" onclick="document.getElementById('diary-new-sheet')?.remove()">×</button>
+      <div id="diary-new-content">
+        <div class="modal-title" id="diary-new-title">Hola hola, ${firstName}. ¿Qué acabás de lograr?</div>
+        <div class="diary-kind-grid">
+          <button type="button" class="diary-kind-btn" onclick="openDiarySleepForm()">${diaryIcon('sleep', 26)}<span>Sueño</span></button>
+          <button type="button" class="diary-kind-btn" onclick="document.getElementById('diary-new-sheet')?.remove();openDiaryForm('session')">${diaryIcon('session', 26)}<span>Sesión</span></button>
+          <button type="button" class="diary-kind-btn" onclick="document.getElementById('diary-new-sheet')?.remove();openDiaryForm('habit')">${diaryIcon('habit', 26)}<span>Hábito</span></button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+}
+
+// ---- sueño ----
+async function openDiarySleepForm() {
+  const box = document.getElementById('diary-new-content');
+  if(!box) return;
+  box.innerHTML = '<div class="spinner"></div>';
+  const today = diaryLocalDate();
+  const {data:existing} = await sb.from('diary_sleep').select('bedtime,wake_time').eq('client_id', currentClient.id).eq('sleep_date', today).maybeSingle();
+  const bed = existing?.bedtime ? existing.bedtime.slice(0,5) : '';
+  const wake = existing?.wake_time ? existing.wake_time.slice(0,5) : '';
+  box.innerHTML = `
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+      <button type="button" class="diary-back" aria-label="Volver" onclick="openDiaryNewEntry()">←</button>
+      <div class="modal-title" style="margin:0;">Sueño</div>
+    </div>
+    <div class="diary-time-row" style="margin-bottom:12px;">
+      <div class="diary-field" style="margin:0;"><label for="diary-bed">Aprox. a qué hora te dormiste</label><input class="form-input" type="time" id="diary-bed" value="${bed}" oninput="updateDiarySleepPreview()"></div>
+      <div class="diary-field" style="margin:0;"><label for="diary-wake">Aprox. a qué hora despertaste</label><input class="form-input" type="time" id="diary-wake" value="${wake}" oninput="updateDiarySleepPreview()"></div>
+    </div>
+    <div id="diary-sleep-preview" style="font-size:14px;font-weight:700;margin-bottom:6px;" aria-live="polite"></div>
+    ${existing ? '<div class="diary-help" style="margin-bottom:12px;">Ya registraste el sueño de hoy; si guardás, se reemplaza.</div>' : '<div style="height:12px;"></div>'}
+    <button type="button" class="btn-primary" id="diary-sleep-save" onclick="saveDiarySleep()">Guardar</button>`;
+  updateDiarySleepPreview();
+}
+
+function updateDiarySleepPreview() {
+  const el = document.getElementById('diary-sleep-preview');
+  if(!el) return;
+  const min = diarySleepMinutes(document.getElementById('diary-bed')?.value, document.getElementById('diary-wake')?.value);
+  el.textContent = min == null ? '' : `Dormiste aprox. ${diaryFmtDuration(min)}`;
+}
+
+async function saveDiarySleep() {
+  const bed = document.getElementById('diary-bed')?.value;
+  const wake = document.getElementById('diary-wake')?.value;
+  const min = diarySleepMinutes(bed, wake);
+  if(min == null) { showToast('⚠️ Poné las dos horas'); return; }
+  const btn = document.getElementById('diary-sleep-save');
+  if(btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+  const now = new Date().toISOString();
+  const {error} = await sb.from('diary_sleep').upsert({
+    client_id: currentClient.id,
+    sleep_date: diaryLocalDate(),
+    bedtime: bed,
+    wake_time: wake,
+    hours: Math.round(min / 60 * 100) / 100,
+    is_migrated: false,
+    updated_at: now
+  }, {onConflict: 'client_id,sleep_date'});
+  if(error) { if(btn) { btn.disabled = false; btn.textContent = 'Guardar'; } showToast('❌ ' + error.message); return; }
+  document.getElementById('diary-new-sheet')?.remove();
+  showToast('Sueño guardado');
+  diaryRefreshAfterChange();
+}
+
+// ---- form de sesión / hábito ----
+function diaryOptKey(o) { return o.source === 'own' ? `own:${o.option_id}` : o.synthetic ? 'cur' : `${o.source}:${o.source_ref}`; }
+
+async function loadDiaryOptions(kind) {
+  const cid = currentClient.id;
+  const [refRes, ownRes] = await Promise.all([
+    kind === 'session'
+      ? sb.from('extra_sessions').select('id,name').eq('client_id', cid).order('order_index', {ascending:true})
+      : sb.from('habits').select('id,name').eq('client_id', cid).order('order_index', {ascending:true}),
+    sb.from('diary_options').select('id,name,session_type').eq('client_id', cid).eq('kind', kind).order('name', {ascending:true})
+  ]);
+  const src = kind === 'session' ? 'extras' : 'coach';
+  return [
+    ...(refRes.data || []).map(r => ({source:src, source_ref:String(r.id), option_id:null, name:r.name, session_type:null})),
+    ...(ownRes.data || []).map(o => ({source:'own', source_ref:null, option_id:o.id, name:o.name, session_type:o.session_type || null}))
+  ];
+}
+
+async function openDiaryForm(kind, entry = null) {
+  if(!diaryIsAllowed()) return;
+  const today = diaryLocalDate();
+  diaryForm = {
+    kind, editing: entry, mode: 'pre', options: [], selected: null,
+    sessionType: entry?.session_type || null,
+    emotion: entry?.emotion || null,
+    reasons: new Set(Array.isArray(entry?.reasons) ? entry.reasons : []),
+    goal: null, goalChecked: false, goalInit: false, goalMsg: null, goalToken: 0,
+    photoFile: null, photoUrl: null, photoRemove: false, menuKey: null
+  };
+  const isSession = kind === 'session';
+  const ov = diaryOpenFull('diary-form', `
+    <div class="diary-full-inner">
+      <div class="diary-full-top">
+        <button type="button" class="diary-back" aria-label="Volver" onclick="closeDiaryForm()">←</button>
+        <div class="diary-h">${entry ? 'Editar' : 'Registrar'} ${isSession ? 'sesión' : 'hábito'}</div>
+      </div>
+
+      <div class="diary-field">
+        <label for="df-date">Fecha</label>
+        <input class="form-input" type="date" id="df-date" value="${entry?.entry_date || today}" max="${today}" onchange="diaryRefreshGoal()">
+        <div class="diary-help">Hoy por defecto. Si se te pasó una, cambiala al día en que ocurrió.</div>
+      </div>
+
+      <div class="diary-field">
+        <div class="diary-seg" role="group" aria-label="Tipo de actividad" style="margin-bottom:10px;">
+          <button type="button" data-mode="pre" aria-pressed="true" onclick="setDiaryFormMode('pre')">Pre-registradas</button>
+          <button type="button" data-mode="new" aria-pressed="false" onclick="setDiaryFormMode('new')">Registrar nueva</button>
+        </div>
+        <div id="df-activity"><div class="spinner"></div></div>
+      </div>
+
+      ${isSession ? `
+      <div class="diary-field">
+        <div class="diary-field-lbl" id="df-type-lbl">Tipo *</div>
+        <div class="diary-chips" role="group" aria-labelledby="df-type-lbl" id="df-type">
+          ${DIARY_SESSION_TYPES.map(([v,l]) => `<button type="button" class="diary-chip" data-type="${v}" aria-pressed="false" onclick="setDiarySessionType('${v}')">${l}</button>`).join('')}
+        </div>
+      </div>
+      <div class="diary-field diary-time-row">
+        <div><label for="df-duration" class="diary-field-lbl">Duración (min)</label><input class="form-input" type="number" inputmode="numeric" min="0" id="df-duration" value="${entry?.duration_minutes ?? ''}" placeholder="Opcional"></div>
+        <div><label for="df-calories" class="diary-field-lbl">Calorías</label><input class="form-input" type="number" inputmode="numeric" min="0" id="df-calories" value="${entry?.calories ?? ''}" placeholder="Opcional"></div>
+      </div>` : ''}
+
+      <div class="diary-field">
+        <label for="df-notes">Notas</label>
+        <textarea class="form-textarea" id="df-notes" rows="3" placeholder="Opcional">${escHtml(entry?.notes || '')}</textarea>
+      </div>
+
+      <div class="diary-field">
+        <div class="diary-field-lbl" id="df-emo-lbl">¿Cómo te sentís? *</div>
+        <div class="diary-emo-row" role="group" aria-labelledby="df-emo-lbl">
+          ${Object.entries(DIARY_EMOTIONS).map(([k,v]) => `<button type="button" class="diary-emo" data-emo="${k}" aria-pressed="false" onclick="setDiaryEmotion('${k}')">${diaryEmotionSvg(k, 48, false)}<span>${v.label}</span></button>`).join('')}
+        </div>
+        <div id="df-reasons" hidden style="margin-top:14px;">
+          <div class="diary-field-lbl" id="df-reasons-lbl">¿Qué tiene que ver?</div>
+          <div class="diary-chips" role="group" aria-labelledby="df-reasons-lbl">
+            ${DIARY_REASONS.map(r => `<button type="button" class="diary-chip" data-reason="${escHtml(r)}" aria-pressed="false" onclick="toggleDiaryReason(this)">${r}</button>`).join('')}
+          </div>
+          <button type="button" class="diary-link" id="df-more-btn" onclick="toggleDiaryMore()" aria-expanded="false">+ Contar más</button>
+          <div id="df-more" hidden>
+            <label for="df-reason-text" class="diary-field-lbl">Contá más (opcional)</label>
+            <textarea class="form-textarea" id="df-reason-text" rows="3">${escHtml(entry?.reason_text || '')}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="diary-field">
+        <label for="df-next-goal">Próxima meta</label>
+        <input class="form-input" type="text" id="df-next-goal" value="${escHtml(entry?.next_goal || '')}" placeholder="Opcional">
+      </div>
+
+      <div class="diary-field" id="df-goal"></div>
+
+      <div class="diary-field" id="df-photo"></div>
+
+      <button type="button" class="btn-primary" id="df-save" onclick="saveDiaryEntry()">Guardar</button>
+    </div>`, entry ? 'Editar registro' : 'Nuevo registro');
+  ov.style.backgroundColor = 'var(--gray1)';
+
+  // estado inicial de chips / emoción
+  if(diaryForm.sessionType) setDiarySessionType(diaryForm.sessionType);
+  document.querySelectorAll('#df-reasons [data-reason]').forEach(b => b.setAttribute('aria-pressed', String(diaryForm.reasons.has(b.dataset.reason))));
+  if(diaryForm.emotion) setDiaryEmotion(diaryForm.emotion);
+  if(entry?.reason_text) toggleDiaryMore(true);
+  renderDiaryPhoto();
+
+  const options = await loadDiaryOptions(kind);
+  if(!diaryForm || diaryForm.kind !== kind || diaryForm.editing !== entry) return;
+  diaryForm.options = options;
+  if(entry) {
+    let sel = options.find(o => (entry.option_id && o.option_id === entry.option_id) ||
+      (!entry.option_id && entry.source !== 'own' && entry.source_ref && o.source === entry.source && o.source_ref === entry.source_ref));
+    if(!sel) {
+      // La opción ya no existe (borrada o renombrada en el origen): se conserva lo del registro
+      sel = {source:entry.source, source_ref:entry.source_ref, option_id:entry.option_id, name:entry.activity_name, session_type:null, synthetic:true};
+      diaryForm.options = [sel, ...options];
+    }
+    diaryForm.selected = sel;
+  }
+  renderDiaryActivity();
+  diaryRefreshGoal();
+}
+
+function closeDiaryForm() {
+  if(diaryForm?.photoUrl) URL.revokeObjectURL(diaryForm.photoUrl);
+  diaryForm = null;
+  diaryCloseFull('diary-form');
+}
+
+function setDiaryFormMode(mode) {
+  if(!diaryForm) return;
+  diaryForm.mode = mode;
+  diaryForm.menuKey = null;
+  document.querySelectorAll('#diary-form [data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+  renderDiaryActivity();
+  diaryRefreshGoal();
+}
+
+function renderDiaryActivity() {
+  const el = document.getElementById('df-activity');
+  const f = diaryForm;
+  if(!el || !f) return;
+  if(f.mode === 'new') {
+    el.innerHTML = `
+      <label for="df-new-name" class="diary-field-lbl">Nombre</label>
+      <input class="form-input" type="text" id="df-new-name" maxlength="80" placeholder="${f.kind === 'session' ? 'Ej: Caminata con mi perro' : 'Ej: Tomar 2L de agua'}" oninput="clearTimeout(window._diaryNameT);window._diaryNameT=setTimeout(diaryRefreshGoal,450)">
+      <div class="diary-help">Se guarda en tus actividades para que la reusés.</div>`;
+    return;
+  }
+  if(!f.options.length) {
+    el.innerHTML = `<div class="diary-help" style="font-size:13px;">Todavía no hay ${f.kind === 'session' ? 'sesiones' : 'hábitos'} pre-registrados. Usá "Registrar nueva".</div>`;
+    return;
+  }
+  const tag = o => o.synthetic ? 'Actual' : o.source === 'extras' ? 'Extras' : o.source === 'coach' ? 'De tu coach' : 'Tuya';
+  el.innerHTML = f.options.map(o => {
+    const key = diaryOptKey(o);
+    const sel = f.selected && diaryOptKey(f.selected) === key;
+    const own = o.source === 'own' && !o.synthetic;
+    return `<div class="diary-opt-row">
+        <button type="button" class="diary-opt" aria-pressed="${!!sel}" onclick="selectDiaryOption('${key}')"><span style="overflow:hidden;text-overflow:ellipsis;">${escHtml(o.name)}</span><small>${tag(o)}</small></button>
+        ${own ? `<button type="button" class="diary-opt-more" aria-label="Opciones de ${escHtml(o.name)}" aria-expanded="${f.menuKey === key}" onclick="toggleDiaryOptMenu('${key}')">⋯</button>` : ''}
+      </div>
+      ${own && f.menuKey === key ? `<div class="diary-opt-menu">
+        <button type="button" onclick="renameDiaryOption('${o.option_id}')">Renombrar</button>
+        <button type="button" style="color:var(--red);border-color:var(--red);" onclick="deleteDiaryOption('${o.option_id}')">Borrar</button>
+      </div>` : ''}`;
+  }).join('');
+}
+
+function selectDiaryOption(key) {
+  const f = diaryForm;
+  if(!f) return;
+  const o = f.options.find(x => diaryOptKey(x) === key);
+  if(!o) return;
+  f.selected = o;
+  if(f.kind === 'session' && o.session_type) setDiarySessionType(o.session_type);
+  renderDiaryActivity();
+  diaryRefreshGoal();
+}
+
+function toggleDiaryOptMenu(key) {
+  if(!diaryForm) return;
+  diaryForm.menuKey = diaryForm.menuKey === key ? null : key;
+  renderDiaryActivity();
+}
+
+async function renameDiaryOption(optionId) {
+  const f = diaryForm;
+  const o = f?.options.find(x => x.option_id === optionId && x.source === 'own');
+  if(!o) return;
+  const name = (prompt('Nuevo nombre', o.name) || '').trim();
+  if(!name || name === o.name) return;
+  const {error} = await sb.from('diary_options').update({name}).eq('id', optionId).eq('client_id', currentClient.id);
+  if(error) { showToast(error.code === '23505' ? '⚠️ Ya tenés una actividad con ese nombre' : '❌ ' + error.message); return; }
+  o.name = name;
+  f.menuKey = null;
+  renderDiaryActivity();
+  showToast('✏️ Nombre actualizado');
+}
+
+async function deleteDiaryOption(optionId) {
+  const f = diaryForm;
+  const o = f?.options.find(x => x.option_id === optionId && x.source === 'own');
+  if(!o) return;
+  if(!confirm(`¿Borrar "${o.name}" de tus actividades?\n\nTus registros anteriores se quedan como están.`)) return;
+  const {error} = await sb.from('diary_options').delete().eq('id', optionId).eq('client_id', currentClient.id);
+  if(error) { showToast('❌ ' + error.message); return; }
+  f.options = f.options.filter(x => x !== o);
+  if(f.selected === o) f.selected = null;
+  f.menuKey = null;
+  renderDiaryActivity();
+  diaryRefreshGoal();
+  showToast('🗑️ Actividad borrada');
+}
+
+function setDiarySessionType(type) {
+  if(!diaryForm) return;
+  diaryForm.sessionType = type;
+  document.querySelectorAll('#df-type [data-type]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.type === type)));
+}
+
+function setDiaryEmotion(emo) {
+  const f = diaryForm;
+  if(!f) return;
+  f.emotion = emo;
+  document.querySelectorAll('#diary-form [data-emo]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.emo === emo)));
+  const ov = document.getElementById('diary-form');
+  if(ov) ov.style.backgroundColor = DIARY_EMOTIONS[emo].tint;
+  const reasons = document.getElementById('df-reasons');
+  if(reasons) reasons.hidden = false;
+  if(f.goalChecked) { f.goalMsg = pickDiaryMessage('goalMet', emo); renderDiaryGoal(); }
+}
+
+function toggleDiaryReason(btn) {
+  const f = diaryForm;
+  if(!f) return;
+  const r = btn.dataset.reason;
+  if(f.reasons.has(r)) f.reasons.delete(r); else f.reasons.add(r);
+  btn.setAttribute('aria-pressed', String(f.reasons.has(r)));
+}
+
+function toggleDiaryMore(forceOpen) {
+  const box = document.getElementById('df-more');
+  const btn = document.getElementById('df-more-btn');
+  if(!box) return;
+  box.hidden = forceOpen === true ? false : !box.hidden;
+  if(btn) btn.setAttribute('aria-expanded', String(!box.hidden));
+  if(!box.hidden && forceOpen !== true) document.getElementById('df-reason-text')?.focus();
+}
+
+// Identidad de la actividad actual, para buscar la meta anterior
+function diaryCurrentIdentity() {
+  const f = diaryForm;
+  if(!f) return null;
+  if(f.mode === 'pre') {
+    const s = f.selected;
+    if(!s) return null;
+    return {option_id: s.option_id || null, source: s.source, source_ref: s.source_ref || null, name: s.name};
+  }
+  const name = (document.getElementById('df-new-name')?.value || '').trim();
+  if(!name) return null;
+  const own = f.options.find(o => o.source === 'own' && !o.synthetic && o.name.toLowerCase() === name.toLowerCase());
+  if(own) return {option_id: own.option_id, source: 'own', source_ref: null, name: own.name};
+  return {option_id: null, source: 'own', source_ref: null, name};
+}
+
+async function diaryRefreshGoal() {
+  const f = diaryForm;
+  if(!f) return;
+  const token = ++f.goalToken;
+  const ident = diaryCurrentIdentity();
+  if(!ident) { f.goal = null; renderDiaryGoal(); return; }
+  const cid = currentClient.id;
+  const date = document.getElementById('df-date')?.value || diaryLocalDate();
+  let q = sb.from('diary_entries').select('id,next_goal').eq('client_id', cid).eq('kind', f.kind)
+    .not('next_goal', 'is', null).neq('next_goal', '').lte('entry_date', date);
+  if(ident.option_id) q = q.eq('option_id', ident.option_id);
+  else if(ident.source_ref) q = q.eq('source', ident.source).eq('source_ref', ident.source_ref);
+  else q = q.is('option_id', null).is('source_ref', null).ilike('activity_name', diaryEscLike(ident.name));
+  const {data:cands} = await q.order('entry_date', {ascending:false}).order('created_at', {ascending:false}).limit(20);
+  if(diaryForm !== f || token !== f.goalToken) return;
+  const editingId = f.editing?.id;
+  const list = (cands || []).filter(c => c.id !== editingId);
+  let goal = null;
+  if(list.length) {
+    let answeredQ = sb.from('diary_entries').select('goal_entry_id').eq('client_id', cid).in('goal_entry_id', list.map(c => c.id));
+    if(editingId) answeredQ = answeredQ.neq('id', editingId);
+    const {data:answered} = await answeredQ;
+    if(diaryForm !== f || token !== f.goalToken) return;
+    const done = new Set((answered || []).map(a => a.goal_entry_id));
+    const open = list.filter(c => !done.has(c.id));
+    goal = open.find(c => c.id === f.editing?.goal_entry_id) || open[0] || null;
+  }
+  if(!f.goalInit && f.editing && goal && goal.id === f.editing.goal_entry_id) {
+    f.goalChecked = f.editing.goal_met === true;
+    f.goalInit = true;
+  }
+  if(!goal || goal.id !== f.goal?.id) {
+    if(f.goal) { f.goalChecked = false; f.goalMsg = null; }
+  }
+  f.goal = goal;
+  renderDiaryGoal();
+}
+
+function renderDiaryGoal() {
+  const el = document.getElementById('df-goal');
+  const f = diaryForm;
+  if(!el || !f) return;
+  if(!f.goal) { el.innerHTML = ''; el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = `
+    <label class="diary-goal" for="df-goal-check">
+      <input type="checkbox" id="df-goal-check" ${f.goalChecked ? 'checked' : ''} onchange="toggleDiaryGoal(this.checked)">
+      <span><span style="display:block;font-size:14px;font-weight:700;">¿Cumpliste tu última meta?</span>
+      <span style="display:block;font-size:12px;color:var(--gray4);margin-top:2px;">Tu meta anterior: ${escHtml(f.goal.next_goal)}</span></span>
+    </label>
+    ${f.goalChecked && f.goalMsg ? `<div class="diary-dark-card" role="status">${escHtml(f.goalMsg)}</div>` : ''}`;
+}
+
+function toggleDiaryGoal(checked) {
+  const f = diaryForm;
+  if(!f) return;
+  f.goalChecked = checked;
+  f.goalMsg = checked ? pickDiaryMessage('goalMet', f.emotion) : null;
+  renderDiaryGoal();
+}
+
+function renderDiaryPhoto() {
+  const el = document.getElementById('df-photo');
+  const f = diaryForm;
+  if(!el || !f) return;
+  const hasSaved = !!f.editing?.photo_path && !f.photoRemove;
+  let inner;
+  if(f.photoFile && f.photoUrl) {
+    inner = `<img src="${f.photoUrl}" alt="Vista previa de la foto">`;
+  } else if(hasSaved) {
+    inner = `<div style="font-size:28px;" aria-hidden="true">📷</div><div style="font-size:14px;font-weight:700;">Ya tenés una foto guardada</div><div class="diary-help">Tocá para cambiarla</div>`;
+  } else {
+    inner = `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--gray5)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+      <div style="font-size:14px;font-weight:700;">Subí una foto del momento</div><div class="diary-help" style="margin:0;">Representá tu presente</div>`;
+  }
+  el.innerHTML = `
+    <label class="diary-photo" aria-label="Foto opcional del momento">
+      ${inner}
+      <input type="file" accept="image/*" style="display:none" onchange="handleDiaryPhoto(this)">
+    </label>
+    ${(f.photoFile || hasSaved) ? `<div style="text-align:right;"><button type="button" class="diary-link" style="color:var(--red);" onclick="removeDiaryPhoto()">Quitar foto</button></div>` : ''}`;
+}
+
+function handleDiaryPhoto(input) {
+  const f = diaryForm;
+  if(!f) return;
+  const file = input.files[0] || null;
+  if(file && !(file.type || '').startsWith('image/')) { showToast('⚠️ Elegí una imagen'); input.value = ''; return; }
+  if(f.photoUrl) URL.revokeObjectURL(f.photoUrl);
+  f.photoFile = file;
+  f.photoUrl = file ? URL.createObjectURL(file) : null;
+  renderDiaryPhoto();
+}
+
+function removeDiaryPhoto() {
+  const f = diaryForm;
+  if(!f) return;
+  if(f.photoUrl) URL.revokeObjectURL(f.photoUrl);
+  f.photoFile = null;
+  f.photoUrl = null;
+  if(f.editing?.photo_path) f.photoRemove = true;
+  renderDiaryPhoto();
+}
+
+function diaryIntOrNull(id) {
+  const v = document.getElementById(id)?.value;
+  if(v == null || v === '') return null;
+  const n = parseInt(v, 10);
+  return isNaN(n) || n < 0 ? null : n;
+}
+
+async function saveDiaryEntry() {
+  const f = diaryForm;
+  if(!f || !currentClient) return;
+  const cid = currentClient.id;
+  const today = diaryLocalDate();
+  const date = document.getElementById('df-date')?.value;
+  if(!date || date > today) { showToast('⚠️ Elegí una fecha (no puede ser futura)'); return; }
+
+  let act = null;
+  let newName = '';
+  if(f.mode === 'pre') {
+    act = f.selected;
+    if(!act) { showToast('⚠️ Elegí una actividad'); return; }
+  } else {
+    newName = (document.getElementById('df-new-name')?.value || '').trim();
+    if(!newName) { showToast('⚠️ Escribí el nombre'); return; }
+  }
+  if(f.kind === 'session' && !f.sessionType) { showToast('⚠️ Elegí el tipo de sesión'); return; }
+  if(!f.emotion) { showToast('⚠️ Contanos cómo te sentís'); return; }
+
+  const btn = document.getElementById('df-save');
+  if(btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+  const fail = (msg) => { if(btn && btn.isConnected) { btn.disabled = false; btn.textContent = 'Guardar'; } showToast(msg); };
+
+  // Actividad nueva -> opción propia (se reutiliza si ya existe con el mismo nombre)
+  let createdHabit = false;
+  if(f.mode === 'new') {
+    const existing = f.options.find(o => o.source === 'own' && !o.synthetic && o.name.toLowerCase() === newName.toLowerCase());
+    if(existing) {
+      act = existing;
+    } else {
+      const {data:row, error} = await sb.from('diary_options').insert([{
+        client_id: cid, kind: f.kind, name: newName,
+        session_type: f.kind === 'session' ? f.sessionType : null
+      }]).select('id,name,session_type').maybeSingle();
+      let opt = row;
+      if(error && error.code === '23505') {
+        const {data:dup} = await sb.from('diary_options').select('id,name,session_type').eq('client_id', cid).eq('kind', f.kind).ilike('name', diaryEscLike(newName)).limit(1).maybeSingle();
+        opt = dup;
+      } else if(error) { fail('❌ ' + error.message); return; }
+      else createdHabit = f.kind === 'habit';
+      if(!opt) { fail('❌ No se pudo guardar la actividad'); return; }
+      act = {source:'own', source_ref:null, option_id:opt.id, name:opt.name, session_type:opt.session_type};
+    }
+  }
+
+  const isSession = f.kind === 'session';
+  const reasonText = (document.getElementById('df-reason-text')?.value || '').trim();
+  const payload = {
+    kind: f.kind,
+    entry_date: date,
+    activity_name: act.name,
+    option_id: act.option_id || null,
+    source: act.source,
+    source_ref: act.source_ref || null,
+    session_type: isSession ? f.sessionType : null,
+    duration_minutes: isSession ? diaryIntOrNull('df-duration') : null,
+    calories: isSession ? diaryIntOrNull('df-calories') : null,
+    notes: (document.getElementById('df-notes')?.value || '').trim() || null,
+    emotion: f.emotion,
+    reasons: [...f.reasons],
+    reason_text: reasonText || null,
+    next_goal: (document.getElementById('df-next-goal')?.value || '').trim() || null,
+    goal_entry_id: f.goal ? f.goal.id : null,
+    goal_met: f.goal ? !!f.goalChecked : null
+  };
+
+  const editing = f.editing;
+  const id = editing ? editing.id : crypto.randomUUID();
+  if(editing) {
+    const {error} = await sb.from('diary_entries').update({...payload, updated_at: new Date().toISOString()}).eq('id', id).eq('client_id', cid);
+    if(error) { fail('❌ ' + error.message); return; }
+  } else {
+    const {error} = await sb.from('diary_entries').insert([{id, client_id: cid, ...payload}]);
+    if(error) { fail('❌ ' + error.message); return; }
+  }
+
+  // Foto: el registro ya está guardado; si la foto falla, solo se avisa
+  let photoFailed = false;
+  const oldPath = editing?.photo_path || null;
+  if(f.photoFile) {
+    const compressed = await compressProgressPhoto(f.photoFile, 1280, 0.8);
+    const path = `${cid}/${id}.jpg`;
+    const {error:upErr} = await sb.storage.from('diary-photos').upload(path, compressed || f.photoFile, {
+      contentType: compressed ? 'image/jpeg' : (f.photoFile.type || 'image/jpeg'), upsert: true
+    });
+    if(upErr) photoFailed = true;
+    else {
+      if(oldPath && oldPath !== path) await sb.storage.from('diary-photos').remove([oldPath]);
+      if(oldPath !== path) {
+        const {error:pErr} = await sb.from('diary_entries').update({photo_path: path}).eq('id', id).eq('client_id', cid);
+        if(pErr) photoFailed = true;
+      }
+    }
+  } else if(f.photoRemove && oldPath) {
+    await sb.storage.from('diary-photos').remove([oldPath]);
+    await sb.from('diary_entries').update({photo_path: null}).eq('id', id).eq('client_id', cid);
+  }
+
+  const emotion = f.emotion;
+  closeDiaryForm();
+  if(createdHabit) diaryState.flash = pickDiaryMessage('newHabit', emotion);
+  if(photoFailed) showToast('⚠️ Se guardó, pero la foto no se pudo subir', 4000);
+  else showToast(editing ? 'Registro actualizado' : 'Registro guardado');
+  if(createdHabit && diaryState.view !== 'month') diaryState.view = 'month';
+  diaryRefreshAfterChange();
+}
+
+function editDiaryEntry(id) {
+  const e = diaryState.entriesById[id];
+  if(!e) return;
+  openDiaryForm(e.kind, e);
+}
+
+async function deleteDiaryEntry(id) {
+  const e = diaryState.entriesById[id];
+  if(!e || !currentClient) return;
+  if(!confirm(`¿Borrar "${e.activity_name}" del ${diaryFmtDay(e.entry_date)}?\n\nEsta acción no se puede deshacer.`)) return;
+  const {error} = await sb.from('diary_entries').delete().eq('id', id).eq('client_id', currentClient.id);
+  if(error) { showToast('❌ ' + error.message); return; }
+  if(e.photo_path) await sb.storage.from('diary-photos').remove([e.photo_path]);
+  delete diaryState.entriesById[id];
+  showToast('🗑️ Registro borrado');
+  diaryRefreshAfterChange();
+}
+
+// ===== COACH: bloque Diario =====
+// Privado del cliente — NUNCA se piden: reasons, reason_text, photo_path.
+const DIARY_COACH_COLUMNS = 'id,kind,entry_date,activity_name,source,session_type,duration_minutes,calories,notes,emotion,next_goal,goal_met,goal_entry_id,created_at';
+
+async function loadCoachDiary(c, ym) {
+  const section = document.getElementById('coach-diary-section');
+  const panel = document.getElementById('coach-diary-panel');
+  if(!section || !panel || !c) return;
+  if(c.program_type === 'lift') { section.style.display = 'none'; panel.innerHTML = ''; return; }
+  section.style.display = '';
+  window._coachDiaryClient = c;
+  const token = window._coachDiaryToken = (window._coachDiaryToken || 0) + 1;
+  const thisMonth = diaryMonthKey(diaryLocalDate());
+  ym = ym || thisMonth;
+  const [from, to] = diaryMonthRange(ym);
+  panel.innerHTML = '<div class="spinner"></div>';
+  const [datesRes, sleepDatesRes, entriesRes, sleepRes] = await Promise.all([
+    sb.from('diary_entries').select('entry_date').eq('client_id', c.id).order('entry_date', {ascending:false}).limit(5000),
+    sb.from('diary_sleep').select('sleep_date').eq('client_id', c.id).order('sleep_date', {ascending:false}).limit(5000),
+    sb.from('diary_entries').select(DIARY_COACH_COLUMNS).eq('client_id', c.id).gte('entry_date', from).lte('entry_date', to)
+      .order('entry_date', {ascending:false}).order('created_at', {ascending:false}),
+    sb.from('diary_sleep').select('sleep_date,bedtime,wake_time,hours').eq('client_id', c.id).gte('sleep_date', from).lte('sleep_date', to)
+      .order('sleep_date', {ascending:false})
+  ]);
+  if(token !== window._coachDiaryToken) return;
+  if(entriesRes.error) { panel.innerHTML = `<div style="font-size:13px;color:var(--red);padding:8px 0;">${escHtml(entriesRes.error.message)}</div>`; return; }
+  const months = [...new Set([thisMonth, ym,
+    ...(datesRes.data||[]).map(d => diaryMonthKey(d.entry_date)),
+    ...(sleepDatesRes.data||[]).map(d => diaryMonthKey(d.sleep_date))])].sort().reverse();
+  const entries = entriesRes.data || [];
+  const sleeps = sleepRes.data || [];
+
+  // Texto de la meta anterior para las entradas que respondieron una
+  const goalText = {};
+  entries.forEach(e => { if(e.next_goal) goalText[e.id] = e.next_goal; });
+  const missing = [...new Set(entries.map(e => e.goal_entry_id).filter(gid => gid && !goalText[gid]))];
+  if(missing.length) {
+    const {data:prev} = await sb.from('diary_entries').select('id,next_goal').eq('client_id', c.id).in('id', missing);
+    (prev||[]).forEach(p => { goalText[p.id] = p.next_goal; });
+    if(token !== window._coachDiaryToken) return;
+  }
+
+  const avg = diaryAvgHours(sleeps);
+  const sessions = entries.filter(e => e.kind === 'session').length;
+  const habits = entries.filter(e => e.kind === 'habit').length;
+  const emo = {alegre:0, neutro:0, down:0};
+  entries.forEach(e => { if(emo[e.emotion] != null) emo[e.emotion]++; });
+  const srcLabel = s => s === 'extras' ? 'Extras' : s === 'coach' ? 'Asignado' : 'Propia';
+
+  panel.innerHTML = `
+    <div class="diary-chips-scroll" role="group" aria-label="Mes del diario">
+      ${months.map(m => `<button type="button" class="diary-chip" aria-pressed="${m===ym}" onclick="loadCoachDiary(window._coachDiaryClient,'${m}')">${diaryMonthChipLabel(m)}</button>`).join('')}
+    </div>
+    <div class="diary-tiles" style="margin-bottom:8px;">
+      <div class="diary-tile"><div class="diary-tile-num" style="font-size:20px;">${avg ?? '-'}</div><div class="diary-tile-lbl">${avg ? 'h sueño prom.' : 'Sueño'}</div></div>
+      <div class="diary-tile"><div class="diary-tile-num" style="font-size:20px;">${sessions}</div><div class="diary-tile-lbl">Sesiones</div></div>
+      <div class="diary-tile"><div class="diary-tile-num" style="font-size:20px;">${habits}</div><div class="diary-tile-lbl">Hábitos</div></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      ${Object.keys(emo).map(k => `<div class="diary-tile" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;">${diaryEmotionSvg(k, 24, true)}<span style="font-size:15px;font-weight:800;">${emo[k]}</span></div>`).join('')}
+    </div>
+    ${sleeps.length ? `<details style="margin-bottom:12px;"><summary style="font-size:12px;font-weight:700;color:var(--gray5);cursor:pointer;min-height:32px;">${diaryIcon('sleep', 18)} Sueño del mes (${sleeps.length} días)</summary>
+      <div class="diary-list" style="margin-top:6px;">${sleeps.map(s => `<div class="diary-item"><div class="diary-row" style="cursor:default;min-height:40px;">
+        <div class="diary-row-date">${diaryFmtDay(s.sleep_date)}</div>
+        <div class="diary-row-main" style="font-size:12px;color:var(--gray5);">${s.bedtime ? s.bedtime.slice(0,5) : '-'} → ${s.wake_time ? s.wake_time.slice(0,5) : '-'}</div>
+        <div style="font-size:13px;font-weight:800;color:var(--orange);">${s.hours != null ? Number(s.hours).toFixed(1) + 'h' : '-'}</div>
+      </div></div>`).join('')}</div></details>` : ''}
+    ${entries.length ? `<div class="diary-list">${entries.map(e => `<div class="diary-item" style="padding:10px 12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="diary-row-date">${diaryFmtDay(e.entry_date)}</div>
+          <div class="diary-row-main">
+            <div class="diary-row-name">${escHtml(e.activity_name)}</div>
+            <div class="diary-row-sub">${escHtml(diarySubtitle(e, true))} · ${srcLabel(e.source)}</div>
+          </div>
+          ${e.emotion ? `<div style="display:flex;flex-direction:column;align-items:center;">${diaryEmotionSvg(e.emotion, 28, true)}<span style="font-size:10px;color:var(--gray4);">${DIARY_EMOTIONS[e.emotion]?.label || ''}</span></div>` : '<span style="font-size:10px;color:var(--gray4);">Sin emoción</span>'}
+        </div>
+        ${e.notes ? `<div style="font-size:12px;color:var(--black);margin:6px 0 0 56px;white-space:pre-wrap;">📝 ${escHtml(e.notes)}</div>` : ''}
+        ${e.next_goal ? `<div style="font-size:12px;color:var(--gray5);margin:4px 0 0 56px;">🎯 Próxima meta: ${escHtml(e.next_goal)}</div>` : ''}
+        ${e.goal_entry_id ? `<div style="font-size:12px;margin:4px 0 0 56px;color:${e.goal_met ? 'var(--green)' : 'var(--gray5)'};">${e.goal_met ? diaryIcon('habit', 18) + ' Cumplió' : '✗ No cumplió'} la meta anterior${goalText[e.goal_entry_id] ? ': ' + escHtml(goalText[e.goal_entry_id]) : ''}</div>` : ''}
+      </div>`).join('')}</div>`
+      : `<div style="font-size:13px;color:var(--gray4);padding:4px 0 12px;">Sin registros en ${diaryMonthName(ym)}.</div>`}`;
+}
+
 // ===== CLIENT PROGRESS (peso + fotos semanales) =====
 
 let selectedProgressPhotos = {front:null, side:null, back:null};
@@ -14436,9 +15495,9 @@ function handleProgressPhotoSelect(key, input) {
   }
 }
 
-// Reduce la foto (lado mayor máx 1600 px, JPEG 0.85, respetando la orientación EXIF).
+// Reduce la foto (lado mayor máx 1600 px, JPEG 0.85 por defecto — Mi diario usa 1280/0.8, respetando la orientación EXIF).
 // Devuelve un Blob, o null si falla (en ese caso se sube el original).
-async function compressProgressPhoto(file) {
+async function compressProgressPhoto(file, maxSide = 1600, quality = 0.85) {
   try {
     let bmp;
     try {
@@ -14453,7 +15512,7 @@ async function compressProgressPhoto(file) {
       });
     }
     const w = bmp.width || bmp.naturalWidth, h = bmp.height || bmp.naturalHeight;
-    const scale = Math.min(1, 1600 / Math.max(w, h));
+    const scale = Math.min(1, maxSide / Math.max(w, h));
     const canvas = document.createElement('canvas');
     canvas.width = Math.round(w * scale);
     canvas.height = Math.round(h * scale);
@@ -14461,7 +15520,7 @@ async function compressProgressPhoto(file) {
     ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
     if(bmp.close) bmp.close();
-    return await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+    return await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
   } catch(e) { return null; }
 }
 
