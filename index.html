@@ -1426,6 +1426,29 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
   </div>
 </div>
 
+<!-- ===== CONFIRMAR CAMBIO DE DÍA (salida de emergencia del bloqueo de entreno) ===== -->
+<div id="modal-workout-unlock" style="display:none;position:fixed;inset:0;z-index:320;align-items:center;justify-content:center;padding:16px;">
+  <div onclick="closeWorkoutUnlockModal()" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);"></div>
+  <div style="position:relative;width:100%;max-width:360px;background:var(--white);border-radius:20px;padding:22px 20px 18px;">
+    <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:900;color:var(--black);margin-bottom:6px;">¿Qué querés hacer con este día?</div>
+    <div id="workout-unlock-dayname" style="font-size:13px;color:var(--gray5);margin-bottom:16px;">—</div>
+    <div id="workout-unlock-options" style="display:flex;flex-direction:column;gap:8px;">
+      <button onclick="finishLockedDay()" style="width:100%;padding:12px 14px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;text-align:left;display:block;border:none;background:var(--orange);color:white;">🏁 Terminar el día<span style="display:block;font-size:11px;font-weight:500;margin-top:2px;color:rgba(255,255,255,0.85);">Lo que registraste se guarda y el día queda completado.</span></button>
+      <button onclick="confirmWorkoutUnlock()" style="width:100%;padding:12px 14px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;text-align:left;display:block;border:1.5px solid var(--gray2);background:var(--gray1);color:var(--black);">📅 Cambiar de día<span style="display:block;font-size:11px;font-weight:500;margin-top:2px;color:var(--gray5);">Tus registros de hoy se mantienen.</span></button>
+      <button onclick="showDeleteLockedDayConfirm()" style="width:100%;padding:12px 14px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;text-align:left;display:block;border:1.5px solid #e53935;background:#fff0f0;color:#e53935;">🗑 Borrar registros de hoy<span style="display:block;font-size:11px;font-weight:500;margin-top:2px;color:#e53935;">Se borra lo que registraste hoy en este día.</span></button>
+      <button onclick="closeWorkoutUnlockModal()" style="width:100%;padding:10px;border:none;background:none;color:var(--gray4);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Cancelar</button>
+    </div>
+    <!-- Segundo paso para borrar (sin confirm() nativo: en PWA/WebView puede no mostrarse) -->
+    <div id="workout-unlock-delete-confirm" style="display:none;">
+      <div style="background:#fff0f0;border:1.5px solid #e53935;border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;line-height:1.5;color:#b71c1c;margin-bottom:12px;">¿Seguro que querés borrar los registros de hoy de este día? Esto no se puede deshacer.</div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="hideDeleteLockedDayConfirm()" style="flex:1;padding:11px;border-radius:var(--radius-sm);border:1.5px solid var(--gray2);background:var(--gray1);color:var(--black);font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Volver</button>
+        <button id="workout-unlock-delete-btn" onclick="deleteLockedDayLogs()" style="flex:1;padding:11px;border-radius:var(--radius-sm);border:none;background:#e53935;color:white;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Sí, borrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ===== STRONGFLOW POPUP ===== -->
 <div id="modal-strongflow" style="display:none;position:fixed;inset:0;z-index:300;align-items:flex-end;justify-content:center;">
   <!-- backdrop -->
@@ -2391,12 +2414,13 @@ function getNextVisibleWeek(current, dir) {
 }
 
 function changeClientWeek(dir) {
+  if(workoutLock) { showWorkoutLockToast(); return; }
   clientWeek = getNextVisibleWeek(clientWeek, dir);
   updateClientWeekUI();
   loadClientDayStrip();
 }
 
-async function loadClientDayStrip() {
+async function loadClientDayStrip(opts) {
   if(!currentClient)return;
   // Auto-skip hidden weeks
   const _hw = currentClient?.hidden_weeks || [];
@@ -2404,6 +2428,15 @@ async function loadClientDayStrip() {
     const _vw = getVisibleWeeks();
     if(_vw.length > 0) { clientWeek = _vw[0]; updateClientWeekUI(); }
   }
+  // Bloqueo de entrenamiento: si hay un día en curso hoy, manda sobre cualquier
+  // selección previa (memoria, auto-select o semana por defecto).
+  workoutLock = await getActiveLock(currentClient.id);
+  if(workoutLock) {
+    clientWeek = workoutLock.week;
+    clientDay = workoutLock.day;
+    updateClientWeekUI();
+  }
+  const isLocked = !!workoutLock;
   const {data:planDays} = await sb.from('monthly_plans').select('day_of_week,id,day_order').eq('client_id',currentClient.id).eq('week_number',clientWeek).order('day_order',{ascending:true,nullsFirst:false}).order('id',{ascending:true});
 
   const strip = document.getElementById('c-day-strip');
@@ -2446,6 +2479,15 @@ async function loadClientDayStrip() {
   const topLabel = document.createElement('div');
   topLabel.style.cssText = 'font-size:10px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:0.12em;padding:12px 16px 0;';
   topLabel.textContent = 'Entrenando hoy';
+  if(isLocked) {
+    topLabel.style.display = 'flex';
+    topLabel.style.alignItems = 'center';
+    topLabel.style.justifyContent = 'space-between';
+    const lockBadge = document.createElement('span');
+    lockBadge.style.cssText = "font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.1em;color:var(--green);background:var(--green-light);padding:2px 8px;border-radius:20px;text-transform:uppercase;";
+    lockBadge.textContent = '● En curso';
+    topLabel.appendChild(lockBadge);
+  }
   card.appendChild(topLabel);
 
   // ── Week row ──
@@ -2457,8 +2499,8 @@ async function loadClientDayStrip() {
   prevBtn.textContent = '‹';
   const _hasPrev = getVisibleWeeks().some(w => w < clientWeek);
   prevBtn.disabled = !_hasPrev;
-  if(!_hasPrev) prevBtn.style.opacity = '0.3';
-  prevBtn.onclick = () => { clientWeek = getNextVisibleWeek(clientWeek, -1); clientDay=null; updateClientWeekUI(); loadClientDayStrip(); };
+  if(!_hasPrev || isLocked) prevBtn.style.opacity = '0.3';
+  prevBtn.onclick = () => { if(workoutLock) { showWorkoutLockToast(); return; } clientWeek = getNextVisibleWeek(clientWeek, -1); clientDay=null; updateClientWeekUI(); loadClientDayStrip(); };
 
   const weekCenter = document.createElement('div');
   weekCenter.style.cssText = 'text-align:center;flex:1;';
@@ -2476,8 +2518,8 @@ async function loadClientDayStrip() {
   nextBtn.textContent = '›';
   const _hasNext = getVisibleWeeks().some(w => w > clientWeek);
   nextBtn.disabled = !_hasNext;
-  if(!_hasNext) nextBtn.style.opacity = '0.3';
-  nextBtn.onclick = () => { clientWeek = getNextVisibleWeek(clientWeek, 1); clientDay=null; updateClientWeekUI(); loadClientDayStrip(); };
+  if(!_hasNext || isLocked) nextBtn.style.opacity = '0.3';
+  nextBtn.onclick = () => { if(workoutLock) { showWorkoutLockToast(); return; } clientWeek = getNextVisibleWeek(clientWeek, 1); clientDay=null; updateClientWeekUI(); loadClientDayStrip(); };
 
   weekRow.appendChild(prevBtn);
   weekRow.appendChild(weekCenter);
@@ -2589,7 +2631,11 @@ async function loadClientDayStrip() {
 
     item.appendChild(dot);
     item.appendChild(nameSpan);
-    item.onclick = () => { clientDay=day; list.style.display='none'; arrow.style.transform=''; loadClientDayStrip(); };
+    if(isLocked && !isActive) { item.style.opacity = '0.4'; item.style.cursor = 'not-allowed'; }
+    item.onclick = () => {
+      if(workoutLock && day !== clientDay) { showWorkoutLockToast(); return; }
+      clientDay=day; list.style.display='none'; arrow.style.transform=''; loadClientDayStrip();
+    };
     list.appendChild(item);
   });
 
@@ -2610,9 +2656,20 @@ async function loadClientDayStrip() {
 
   wrapper.appendChild(list);
   card.appendChild(wrapper);
+  // Salida de emergencia del bloqueo: discreta, debajo del selector.
+  if(isLocked) {
+    const unlockRow = document.createElement('div');
+    unlockRow.style.cssText = 'display:flex;justify-content:flex-end;padding:0 16px 10px;margin-top:-4px;';
+    const unlockBtn = document.createElement('button');
+    unlockBtn.style.cssText = "background:none;border:none;padding:2px 0;font-size:11px;font-weight:600;color:var(--gray4);text-decoration:underline;cursor:pointer;font-family:'DM Sans',sans-serif;";
+    unlockBtn.textContent = 'Cambiar de día';
+    unlockBtn.onclick = (e) => { e.stopPropagation(); openWorkoutUnlockModal(); };
+    unlockRow.appendChild(unlockBtn);
+    card.appendChild(unlockRow);
+  }
   strip.appendChild(card);
 
-  loadClientExercises();
+  if(!opts?.skipExercises) loadClientExercises();
 }
 
 // Returns a display label for a day value
@@ -2629,6 +2686,257 @@ function getDayShortLabel(dayValue, idx) {
   // Fallback: full value (already short)
   return dayValue;
 }
+
+// ===== BLOQUEO DE ENTRENAMIENTO =====
+// El día activo sale de Supabase, no de memoria: initClient arranca siempre con
+// clientWeek=1/clientDay=null y el auto-select de loadClientDayStrip toma "el primer
+// día sin registros" — un Día 1 con 1-2 ejercicios ya cuenta como completado, así que
+// tras un refresh / reabrir la PWA el cliente saltaba al Día 2. Ahora, si hoy (hora
+// Costa Rica) hay registros en un día que no está terminado, ese día queda bloqueado.
+// Terminado = tocó "Finalizar entreno" (flag local o fila en workout_sessions) o todos
+// los ejercicios del día tienen al menos un registro. Solo regular/evoluTion; LIFT no.
+const WORKOUT_LOCK_TOAST = "Estás en pleno entrenamiento. Terminalo o usá 'Cambiar de día'.";
+let workoutLock = null; // { planDayId, week, day } | null
+
+// Fecha de hoy YYYY-MM-DD en America/Costa_Rica (no usar toISOString: es UTC).
+function todayCR() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Costa_Rica' });
+}
+// Rango [inicio, fin) del día calendario CR en ISO con offset, para filtrar timestamptz.
+// Costa Rica no tiene horario de verano: siempre UTC-6.
+function crDayRange(dateStr) {
+  const start = new Date(`${dateStr}T00:00:00-06:00`);
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  return { start: start.toISOString(), end: end.toISOString() };
+}
+function workoutUnlockKey(clientId, dateStr, planDayId) { return `move_unlock_${clientId}_${dateStr}_${planDayId}`; }
+function workoutFinishedKey(clientId, dateStr, planDayId) { return `move_finished_${clientId}_${dateStr}_${planDayId}`; }
+// Borrador de hoy: sets escritos en las tarjetas que todavía no se mandaron con
+// "Guardar ✓" (viven solo en localStorage, mws_slogs_/mws_clogs_). Sin esto, un cliente
+// que escribe sets y refresca antes de guardar no tiene nada en Supabase que lo bloquee.
+function workoutDraftKey(clientId, dateStr) { return `move_draft_${clientId}_${dateStr}`; }
+function hasDraftValues(clientId, week, day) {
+  for (const pre of ['mws_slogs_', 'mws_clogs_']) {
+    let logs = {};
+    try { logs = JSON.parse(localStorage.getItem(`${pre}${clientId}_w${week}_${day}`) || '{}'); } catch { continue; }
+    if (Object.values(logs).some(v => v && (v.w || v.r))) return true;
+  }
+  return false;
+}
+function getTodayDraft(clientId) {
+  try {
+    const d = JSON.parse(localStorage.getItem(workoutDraftKey(clientId, todayCR())) || 'null');
+    if (d && d.planDayId != null && hasDraftValues(clientId, d.week, d.day)) return d;
+  } catch {}
+  return null;
+}
+// Se llama desde saveSoloLog/saveCircuitLog (onchange). Re-pinta solo la card del
+// selector — no la lista de ejercicios, para no tocar los inputs del cliente.
+function markWorkoutDraftActivity() {
+  if (!currentClient || currentClient.program_type === 'lift' || !currentPlanDayId || !clientDay) return;
+  localStorage.setItem(workoutDraftKey(currentClient.id, todayCR()),
+    JSON.stringify({ planDayId: currentPlanDayId, week: clientWeek, day: clientDay, ts: Date.now() }));
+  if (!workoutLock || String(workoutLock.planDayId) !== String(currentPlanDayId)) {
+    loadClientDayStrip({ skipExercises: true });
+  }
+}
+
+async function getActiveLock(clientId) {
+  if (!clientId || !currentClient || currentClient.program_type === 'lift') return null;
+  try {
+    const today = todayCR();
+    const { start, end } = crDayRange(today);
+    const { data: todayLogs, error: e1 } = await sb.from('exercise_logs')
+      .select('exercise_id,logged_at')
+      .eq('client_id', clientId)
+      .gte('logged_at', start).lt('logged_at', end)
+      .order('logged_at', { ascending: false })
+      .limit(1000);
+    if (e1) return null;
+
+    // Candidatos: { pdId, ts } — días con actividad hoy, del más reciente al más viejo
+    const candidates = [];
+    const addCandidate = (pdId, ts) => {
+      const c = candidates.find(x => String(x.pdId) === String(pdId));
+      if (c) c.ts = Math.max(c.ts, ts); else candidates.push({ pdId, ts });
+    };
+    if (todayLogs && todayLogs.length > 0) {
+      const todayExIds = [...new Set(todayLogs.map(l => l.exercise_id))];
+      const { data: todayExs } = await sb.from('exercises').select('id,plan_day_id').in('id', todayExIds);
+      const exToPd = new Map((todayExs || []).map(e => [String(e.id), e.plan_day_id]));
+      todayLogs.forEach(l => {
+        const pd = exToPd.get(String(l.exercise_id));
+        // logged_at viene sin zona (UTC): forzar Z para parsearlo bien
+        const raw = String(l.logged_at || '');
+        const ts = Date.parse(/[zZ]|[+-]\d\d:?\d\d$/.test(raw) ? raw : raw + 'Z') || 0;
+        if (pd != null) addCandidate(pd, ts);
+      });
+    }
+    const draft = getTodayDraft(clientId);
+    if (draft) addCandidate(draft.planDayId, draft.ts || 0);
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => b.ts - a.ts);
+    const candidatePdIds = candidates.map(c => c.pdId);
+
+    const [{ data: pds }, { data: sessions }, { data: dayExs }] = await Promise.all([
+      sb.from('monthly_plans').select('id,week_number,day_of_week').eq('client_id', clientId).in('id', candidatePdIds),
+      sb.from('workout_sessions').select('plan_day_id').eq('client_id', clientId).in('plan_day_id', candidatePdIds),
+      sb.from('exercises').select('id,plan_day_id').in('plan_day_id', candidatePdIds)
+    ]);
+    if (!pds || pds.length === 0) return null;
+    const finishedBySession = new Set((sessions || []).map(s => String(s.plan_day_id)));
+
+    // Ejercicios con al menos un registro (cualquier fecha) — mismo criterio por
+    // ejercicio que el "done" de la tarjeta, pero leído de Supabase.
+    const allExIds = (dayExs || []).map(e => e.id);
+    const loggedExIds = new Set();
+    if (allExIds.length > 0) {
+      const { data: anyLogs } = await sb.from('exercise_logs').select('exercise_id')
+        .eq('client_id', clientId).in('exercise_id', allExIds).limit(5000);
+      (anyLogs || []).forEach(l => loggedExIds.add(String(l.exercise_id)));
+    }
+
+    for (const pdId of candidatePdIds) {
+      const pd = pds.find(p => String(p.id) === String(pdId));
+      if (!pd) continue;
+      if (localStorage.getItem(workoutUnlockKey(clientId, today, pdId)) === '1') continue;
+      if (localStorage.getItem(workoutFinishedKey(clientId, today, pdId)) === '1') continue;
+      if (finishedBySession.has(String(pdId))) continue;
+      const exsOfDay = (dayExs || []).filter(e => String(e.plan_day_id) === String(pdId));
+      if (exsOfDay.length > 0 && exsOfDay.every(e => loggedExIds.has(String(e.id)))) continue;
+      return { planDayId: pd.id, week: pd.week_number, day: pd.day_of_week };
+    }
+    return null;
+  } catch (e) {
+    // Ante un error de red no bloqueamos: mejor dejar elegir que trabar al cliente.
+    console.warn('getActiveLock failed:', e);
+    return null;
+  }
+}
+
+// Recalcula el bloqueo y re-pinta la card solo si algo cambió (evita re-renders
+// innecesarios al volver a la app).
+async function refreshWorkoutLock() {
+  if (!currentClient || currentClient.program_type === 'lift' || currentUser?.role === 'coach') return;
+  if (currentClient.training_access === false) return;
+  const lock = await getActiveLock(currentClient.id);
+  const prevId = workoutLock ? String(workoutLock.planDayId) : null;
+  const newId = lock ? String(lock.planDayId) : null;
+  const selectionMismatch = lock && (lock.week !== clientWeek || lock.day !== clientDay);
+  if (prevId !== newId || selectionMismatch) loadClientDayStrip();
+}
+
+function showWorkoutLockToast() { showToast(WORKOUT_LOCK_TOAST, 3000); }
+
+function openWorkoutUnlockModal() {
+  const m = document.getElementById('modal-workout-unlock');
+  const nameEl = document.getElementById('workout-unlock-dayname');
+  if (nameEl && workoutLock) nameEl.textContent = weekLabelFor(workoutLock.week) + ' · ' + getDayShortLabel(workoutLock.day, 0);
+  hideDeleteLockedDayConfirm();
+  if (m) m.style.display = 'flex';
+}
+function showDeleteLockedDayConfirm() {
+  const o = document.getElementById('workout-unlock-options');
+  const c = document.getElementById('workout-unlock-delete-confirm');
+  if (o) o.style.display = 'none';
+  if (c) c.style.display = 'block';
+}
+function hideDeleteLockedDayConfirm() {
+  const o = document.getElementById('workout-unlock-options');
+  const c = document.getElementById('workout-unlock-delete-confirm');
+  if (o) o.style.display = 'flex';
+  if (c) c.style.display = 'none';
+}
+function closeWorkoutUnlockModal() {
+  const m = document.getElementById('modal-workout-unlock');
+  if (m) m.style.display = 'none';
+}
+function confirmWorkoutUnlock() {
+  closeWorkoutUnlockModal();
+  if (!currentClient || !workoutLock) return;
+  // Persistente tras refresh: sin esto getActiveLock volvería a bloquear el mismo día.
+  // Los registros parciales no se tocan.
+  localStorage.setItem(workoutUnlockKey(currentClient.id, todayCR(), workoutLock.planDayId), '1');
+  workoutLock = null;
+  loadClientDayStrip();
+  showToast('🔓 Listo, elegí el día que querés entrenar.');
+}
+
+// Terminar el día bloqueado sin pasar por "Iniciar/Finalizar": deja una fila en
+// workout_sessions (igual que el "marcar entrenado" del coach) para que cuente como
+// completado en cualquier dispositivo. Los registros no se tocan.
+let workoutLockActionBusy = false;
+async function finishLockedDay() {
+  if (!currentClient || !workoutLock || workoutLockActionBusy) return;
+  workoutLockActionBusy = true;
+  const lock = workoutLock;
+  try {
+    const { data: existing } = await sb.from('workout_sessions').select('id')
+      .eq('client_id', currentClient.id).eq('plan_day_id', lock.planDayId).maybeSingle();
+    if (!existing) {
+      const { error } = await sb.from('workout_sessions').insert([{
+        client_id: currentClient.id, plan_day_id: lock.planDayId, week_number: lock.week,
+        session_date: todayCR(), duration_minutes: 0
+      }]);
+      if (error) { showToast('❌ No se pudo terminar el día: ' + error.message, 4000); return; }
+    }
+    localStorage.setItem(workoutFinishedKey(currentClient.id, todayCR(), lock.planDayId), '1');
+    closeWorkoutUnlockModal();
+    workoutLock = null;
+    loadClientDayStrip();
+    showToast('🏁 ¡Día terminado! Buen trabajo 💪');
+  } finally { workoutLockActionBusy = false; }
+}
+
+// Borra SOLO los registros de hoy (hora CR) de los ejercicios del día bloqueado, más
+// los borradores sin guardar de ese día. Registros de otras fechas no se tocan.
+async function deleteLockedDayLogs() {
+  if (!currentClient || !workoutLock || workoutLockActionBusy) return;
+  workoutLockActionBusy = true;
+  const delBtn = document.getElementById('workout-unlock-delete-btn');
+  if (delBtn) { delBtn.disabled = true; delBtn.textContent = 'Borrando…'; }
+  const lock = workoutLock;
+  const cid = currentClient.id;
+  try {
+    const { data: exs, error: exErr } = await sb.from('exercises').select('id').eq('plan_day_id', lock.planDayId);
+    if (exErr) { showToast('❌ ' + exErr.message, 4000); return; }
+    const exIds = (exs || []).map(e => e.id);
+    let deleted = 0;
+    if (exIds.length > 0) {
+      const { start, end } = crDayRange(todayCR());
+      const { data: toDel, error: selErr } = await sb.from('exercise_logs').select('id')
+        .eq('client_id', cid).in('exercise_id', exIds)
+        .gte('logged_at', start).lt('logged_at', end);
+      if (selErr) { showToast('❌ ' + selErr.message, 4000); return; }
+      const ids = (toDel || []).map(l => l.id);
+      if (ids.length > 0) {
+        const { data: delRows, error } = await sb.from('exercise_logs').delete().in('id', ids).select('id');
+        if (error) { showToast('❌ No se pudieron borrar: ' + error.message, 4000); return; }
+        deleted = (delRows || []).length;
+        // Un delete bloqueado por RLS no tira error: devuelve 0 filas.
+        if (deleted === 0) { showToast('❌ No se pudieron borrar los registros (permiso denegado).', 4500); return; }
+      }
+    }
+    // Borradores locales y checks de ese día
+    ['mws_slogs_', 'mws_clogs_', 'mws_done_'].forEach(pre => localStorage.removeItem(`${pre}${cid}_w${lock.week}_${lock.day}`));
+    const draft = getTodayDraft(cid);
+    if (!draft || String(draft.planDayId) === String(lock.planDayId)) localStorage.removeItem(workoutDraftKey(cid, todayCR()));
+    closeWorkoutUnlockModal();
+    workoutLock = null;
+    loadClientDayStrip();
+    showToast(deleted > 0
+      ? `🗑 ${deleted} registro${deleted === 1 ? '' : 's'} de hoy borrado${deleted === 1 ? '' : 's'}. Elegí el día que querés entrenar.`
+      : '🗑 Borrador limpiado. Elegí el día que querés entrenar.', 3500);
+  } finally {
+    workoutLockActionBusy = false;
+    if (delBtn) { delBtn.disabled = false; delBtn.textContent = 'Sí, borrar'; }
+  }
+}
+
+window.addEventListener('pageshow', (e) => { if (e.persisted) refreshWorkoutLock(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refreshWorkoutLock();
+});
 
 // ===== DAY SWITCHER — cambiar de día durante un entreno en curso =====
 // Solo ofrece los días de la SEMANA ACTUAL (clientWeek). El timer global no se
@@ -2660,6 +2968,8 @@ function hasUnsavedDayData() {
 
 async function openDaySwitcher() {
   if(!currentClient) return;
+  // Con día bloqueado, el ✎ del header lleva a la salida de emergencia.
+  if(workoutLock) { openWorkoutUnlockModal(); return; }
   const modal = document.getElementById('modal-day-switcher');
   const list = document.getElementById('day-switcher-list');
   const weekEl = document.getElementById('day-switcher-week');
@@ -2716,6 +3026,7 @@ function closeDaySwitcher() {
 
 function switchWorkoutDay(day) {
   if(day === clientDay) { closeDaySwitcher(); return; }
+  if(workoutLock) { closeDaySwitcher(); showWorkoutLockToast(); return; }
   if(hasUnsavedDayData() && !confirm('Tenés cambios sin guardar en este día, ¿querés continuar y cambiar de día de todos modos?')) return;
   closeDaySwitcher();
   clientDay = day;
@@ -3462,6 +3773,9 @@ function handleStartWorkout() {
 }
 
 async function handleFinishWorkout() {
+  // Bloqueo de entreno: "Finalizar" termina el día aunque el upsert a
+  // workout_sessions no se haga (ej. < 1 min de timer).
+  if(currentClient && currentPlanDayId) localStorage.setItem(workoutFinishedKey(currentClient.id, todayCR(), currentPlanDayId), '1');
   const elapsedSeconds = stopGlobalTimer();
   setWorkoutStarted(false);
   releaseWakeLock();
@@ -3505,6 +3819,7 @@ async function handleFinishWorkout() {
     showToast('🏁 ¡Entreno finalizado!');
   }
   loadClientExercises();
+  refreshWorkoutLock();
   updateStrongFlowBtn();
   // Show rating modal after a short delay for toast to show
   setTimeout(openRatingModal, 800);
@@ -3733,6 +4048,7 @@ async function saveLog() {
     goBack();
     // Refresh exercises list to show checkmark
     loadClientExercises();
+    refreshWorkoutLock();
   }, 600);
 }
 
@@ -12075,6 +12391,7 @@ function saveSoloLog(exId, setNum, logsKey) {
   try { logs = JSON.parse(localStorage.getItem(logsKey)||'{}'); } catch{}
   logs[`${exId}_s${setNum}`] = {w, r};
   localStorage.setItem(logsKey, JSON.stringify(logs));
+  markWorkoutDraftActivity();
   const filled = w && r;
   const wEl = document.getElementById(`slog-w-${exId}-s${setNum}`);
   const rEl = document.getElementById(`slog-r-${exId}-s${setNum}`);
@@ -12142,6 +12459,7 @@ async function saveSoloToSupabase(exId, logsKey, sets) {
     showToast('✅ ¡Guardado!');
   }
   loadClientExercises();
+  refreshWorkoutLock();
 }
 
 function setSoloUnit(exId, unit, btn) {
@@ -12160,6 +12478,7 @@ function saveCircuitLog(exId, round, logsKey) {
   const key = `${exId}_r${round}`;
   logs[key] = {w, r};
   localStorage.setItem(logsKey, JSON.stringify(logs));
+  markWorkoutDraftActivity();
   // Visual feedback — green border when filled
   const wEl = document.getElementById(`clog-w-${exId}-r${round}`);
   const rEl = document.getElementById(`clog-r-${exId}-r${round}`);
@@ -12190,6 +12509,7 @@ async function saveCircuitToSupabase(groupName, logsKey, exIds, rounds) {
   if(error){ showToast('❌ '+error.message); return; }
   showToast(`✅ Circuito ${groupName} guardado 💪`);
   loadClientExercises();
+  refreshWorkoutLock();
 }
 
 function setCircuitUnit(groupName, unit, btn) {
