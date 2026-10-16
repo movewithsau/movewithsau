@@ -380,6 +380,29 @@ body.lift-mode #strongflow-btn { display:none !important; }
 .pg-ln { stroke-dasharray:1; stroke-dashoffset:0; animation:pg-draw 1.2s ease-out both; }
 .pg-pp { animation:pg-pop 0.45s ease-out both; }
 @media (prefers-reduced-motion:reduce) { .pg-ln, .pg-pp { animation:none; } }
+/* Comparar fotos (pantalla completa, oscura) */
+.pg-cmp { position:fixed; inset:0; z-index:300; overflow-y:auto; -webkit-overflow-scrolling:touch; background:linear-gradient(180deg,#0F0D0C 0%,#171311 50%,#1F1A17 100%); color:#FFFFFF; }
+.pg-cmp[hidden] { display:none; }
+.pg-cmp-inner { max-width:480px; margin:0 auto; padding:16px 20px 40px; box-sizing:border-box; }
+.pg-cmp-back { min-height:44px; border:0; background:none; color:#C9C0B3; display:inline-flex; align-items:center; gap:4px; font-family:'DM Sans',sans-serif; font-size:14px; cursor:pointer; padding:0; margin-left:-4px; }
+.pg-cmp-title { margin:4px 0 0; font-family:'Playfair Display',serif; font-weight:900; font-size:32px; line-height:1.1; color:#FFFFFF; }
+.pg-cmp-chips { display:flex; gap:8px; margin:14px 0; flex-wrap:wrap; }
+.pg-cmp-chip { min-height:44px; padding:0 16px; border-radius:22px; border:1.5px solid transparent; background:rgba(255,255,255,0.08); color:#C9C0B3; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:500; cursor:pointer; }
+.pg-cmp-chip[aria-pressed="true"] { border-color:#F75A0E; background:rgba(247,90,14,0.2); color:#FF8A4C; font-weight:700; }
+.pg-cmp-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.pg-cmp-col { display:flex; flex-direction:column; gap:8px; min-width:0; }
+.pg-cmp-photo { aspect-ratio:3/4; border-radius:12px; background:#1A1613; display:flex; align-items:center; justify-content:center; color:#8A8176; overflow:hidden; }
+.pg-cmp-photo img { width:100%; height:100%; object-fit:cover; display:block; }
+.pg-cmp-select { width:100%; min-height:44px; border:1px solid rgba(255,255,255,0.28); border-radius:10px; background:#2A2420; color:#FFFFFF; padding:0 10px; font-family:'DM Sans',sans-serif; font-size:13px; }
+.pg-cmp-tag { min-height:44px; display:flex; align-items:center; justify-content:center; font-size:12px; color:#C9C0B3; text-align:center; }
+.pg-cmp-w { font-size:13px; font-weight:700; color:#F75A0E; text-align:center; }
+.pg-cmp-sep { height:1px; background:rgba(255,255,255,0.14); margin:14px 0; }
+.pg-cmp-change { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:14px; color:#C9C0B3; }
+.pg-cmp-delta { font-family:'Playfair Display',serif; font-weight:900; font-size:26px; line-height:1; color:#F75A0E; }
+.pg-cmp-gallery { position:relative; margin-top:12px; border:1.5px solid rgba(255,255,255,0.5); border-radius:12px; min-height:52px; display:flex; align-items:center; justify-content:center; gap:10px; font-size:15px; font-weight:700; cursor:pointer; color:#FFFFFF; }
+.pg-cmp-gallery input { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+.pg-cmp-link { display:block; margin:10px auto 0; min-height:44px; border:0; background:none; color:#FF8A4C; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; cursor:pointer; }
+.pg-cmp-hint { font-size:13px; color:#C9C0B3; text-align:center; margin-top:10px; line-height:1.5; }
 #screen-client-plan .scroll-body { overflow-x:hidden; }
 .week-tab { flex-shrink:0; padding:7px 14px; border-radius:20px; font-size:12px; font-weight:600; background:var(--white); color:var(--gray4); cursor:pointer; border:1.5px solid var(--gray2); }
 .week-tab.active { background:var(--orange); color:white; border-color:var(--orange); }
@@ -4193,7 +4216,114 @@ async function loadProgressCharts() {
   el.innerHTML = defs + pgTrainedChart(logs, sessRes.data || [], planRes.data || []) + pgLiftChart(logs) + pgWeightChart(weightsRes.data || []);
 }
 
-function openPhotoCompare() {}
+// ---- Comparar fotos (solo lectura). La foto de la galería solo vive en pantalla: no se sube ni se guarda. ----
+const PG_VIEWS = [['front', 'Frente', 'photo_front_path'], ['side', 'Lado', 'photo_side_path'], ['back', 'Espalda', 'photo_back_path']];
+let pgCmp = null;                // { logs, view, before, after, gallery }
+const pgSignedCache = new Map(); // URLs firmadas de esta apertura (duran 5 min)
+async function pgSignedUrl(path) {
+  if (pgSignedCache.has(path)) return pgSignedCache.get(path);
+  const { data } = await sb.storage.from('progress-photos').createSignedUrl(path, 300);
+  const url = (data && data.signedUrl) || '';
+  pgSignedCache.set(path, url);
+  return url;
+}
+function pgCmpField() { return PG_VIEWS.find(v => v[0] === pgCmp.view)[2]; }
+function pgCmpWithPhoto() { const f = pgCmpField(); return pgCmp.logs.filter(l => l[f]); }
+function pgCmpDefaults() {
+  const list = pgCmpWithPhoto();
+  pgCmp.before = list.length ? list[0].week_start_date : null;
+  pgCmp.after = list.length ? list[list.length - 1].week_start_date : null;
+}
+async function openPhotoCompare() {
+  if (!currentClient) return;
+  let ov = document.getElementById('photo-compare');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'photo-compare';
+    ov.className = 'pg-cmp';
+    ov.setAttribute('role', 'dialog');
+    ov.setAttribute('aria-modal', 'true');
+    ov.setAttribute('aria-label', 'Comparar fotos');
+    document.body.appendChild(ov);
+  }
+  ov.hidden = false;
+  ov.innerHTML = '<div class="spinner" style="margin-top:80px;"></div>';
+  pgSignedCache.clear();
+  const { data } = await sb.from('client_progress_logs')
+    .select('week_start_date,weight_kg,photo_front_path,photo_side_path,photo_back_path')
+    .eq('client_id', currentClient.id).order('week_start_date', { ascending: true });
+  pgCmp = { logs: data || [], view: 'front', before: null, after: null, gallery: null };
+  pgCmpDefaults();
+  pgCmpRender();
+}
+function closePhotoCompare() {
+  const ov = document.getElementById('photo-compare');
+  if (ov) { ov.hidden = true; ov.innerHTML = ''; }
+  if (pgCmp && pgCmp.gallery) URL.revokeObjectURL(pgCmp.gallery);
+  pgCmp = null;
+}
+function pgCmpView(view) { if (!pgCmp) return; pgCmp.view = view; pgCmpDefaults(); pgCmpRender(); }
+function pgCmpPick(side, key) { if (!pgCmp) return; pgCmp[side] = key; pgCmpRender(); }
+function pgCmpGallery(input) {
+  const file = input.files && input.files[0];
+  if (!file || !pgCmp) return;
+  if (pgCmp.gallery) URL.revokeObjectURL(pgCmp.gallery);
+  pgCmp.gallery = URL.createObjectURL(file);
+  pgCmpRender();
+}
+function pgCmpClearGallery() {
+  if (!pgCmp) return;
+  if (pgCmp.gallery) URL.revokeObjectURL(pgCmp.gallery);
+  pgCmp.gallery = null;
+  pgCmpRender();
+}
+async function pgCmpRender() {
+  const ov = document.getElementById('photo-compare');
+  if (!ov || !pgCmp) return;
+  const field = pgCmpField();
+  const viewLabel = PG_VIEWS.find(v => v[0] === pgCmp.view)[1];
+  const list = pgCmpWithPhoto();
+  const fmt = k => new Date(k + 'T00:00:00').toLocaleDateString('es-CR', { day: 'numeric', month: 'short', year: 'numeric' });
+  const byKey = k => pgCmp.logs.find(l => l.week_start_date === k);
+  const chips = PG_VIEWS.map(([k, label]) => `<button type="button" class="pg-cmp-chip" aria-pressed="${pgCmp.view === k}" onclick="pgCmpView('${k}')">${label}</button>`).join('');
+  const select = side => `<select class="pg-cmp-select" aria-label="Semana de la foto de ${side === 'before' ? 'antes' : 'ahora'}" onchange="pgCmpPick('${side}', this.value)">${list.map(l => `<option value="${l.week_start_date}"${l.week_start_date === pgCmp[side] ? ' selected' : ''}>${fmt(l.week_start_date)}</option>`).join('')}</select>`;
+  const col = (side, title) => {
+    const isGallery = side === 'after' && !!pgCmp.gallery;
+    const log = byKey(pgCmp[side]);
+    return `<div class="pg-cmp-col"><span class="pg-mono">${title}</span>
+      <div class="pg-cmp-photo" id="pg-cmp-ph-${side}">${icon('camera', 32)}</div>
+      ${isGallery ? '<div class="pg-cmp-tag">Foto de tu galería</div>' : (list.length ? select(side) : '<div class="pg-cmp-tag">Sin fotos</div>')}
+      <div class="pg-cmp-w">${!isGallery && log && log.weight_kg != null ? pgNum(log.weight_kg) + ' kg' : '—'}</div>
+    </div>`;
+  };
+  const b = byKey(pgCmp.before), a = byKey(pgCmp.after);
+  const delta = (!pgCmp.gallery && a && b && a.weight_kg != null && b.weight_kg != null) ? pgSigned(parseFloat(a.weight_kg) - parseFloat(b.weight_kg)) + ' kg' : '—';
+  const empty = !list.length ? `<div class="pg-cmp-hint">Todavía no tenés fotos de ${viewLabel.toLowerCase()} en tus registros.</div>` : '';
+  ov.innerHTML = `<div class="pg-cmp-inner">
+    <button type="button" class="pg-cmp-back" onclick="closePhotoCompare()">${icon('chevron-left', 18)}Mis registros</button>
+    <h1 class="pg-cmp-title">Comparar fotos</h1>
+    <div class="pg-cmp-chips">${chips}</div>
+    <div class="pg-card" style="padding:14px;">
+      <div class="pg-cmp-grid">${col('before', 'Antes')}${col('after', 'Ahora')}</div>
+      <div class="pg-cmp-sep"></div>
+      <div class="pg-cmp-change"><span>Cambio entre las dos</span><span class="pg-cmp-delta">${delta}</span></div>
+    </div>
+    ${empty}
+    <label class="pg-cmp-gallery">${icon('upload', 20)}Probar con otra foto de mi galería<input type="file" accept="image/*" onchange="pgCmpGallery(this)"></label>
+    ${pgCmp.gallery ? '<div class="pg-cmp-hint">La foto de tu galería solo se ve acá: no se sube ni se guarda.</div><button type="button" class="pg-cmp-link" onclick="pgCmpClearGallery()">Volver a mis fotos</button>' : ''}
+  </div>`;
+  const state = pgCmp;
+  for (const side of ['before', 'after']) {
+    let url = '';
+    if (side === 'after' && state.gallery) url = state.gallery;
+    else {
+      const log = byKey(state[side]);
+      if (log && log[field]) url = await pgSignedUrl(log[field]);
+    }
+    const box = document.getElementById('pg-cmp-ph-' + side);
+    if (url && box && pgCmp === state) box.innerHTML = `<img src="${url}" alt="Foto de ${side === 'before' ? 'antes' : 'ahora'}">`;
+  }
+}
 
 // ===== PERFIL: HITOS =====
 // Solo lectura: usa el mismo número que "Días entrenados" (#c-profile-days). Se redibuja
