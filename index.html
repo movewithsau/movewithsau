@@ -96,11 +96,12 @@ body::after { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.
 /* BOTTOM NAV */
 .bottom-nav { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px; background:transparent; display:flex; padding:8px 4px 20px; z-index:100; }
 .bottom-nav::before { content:''; position:absolute; left:0; right:0; bottom:0; height:130px; background:linear-gradient(180deg,rgba(251,248,244,0) 0%,rgba(251,248,244,0.94) 55%,#FBF8F4 75%); z-index:-1; pointer-events:none; }
-.nav-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; padding:4px 0; }
-.nav-icon { font-size:19px; }
-.nav-label { font-size:10px; font-weight:500; color:var(--gray4); }
-.nav-item.active .nav-label { color:var(--orange); }
-.nav-dot { width:4px; height:4px; border-radius:50%; background:var(--orange); opacity:0; margin-top:1px; }
+.nav-item { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; cursor:pointer; padding:4px 0; min-height:48px; }
+.nav-icon { display:flex; align-items:center; justify-content:center; height:22px; color:var(--icon-rest); }
+.nav-item.active .nav-icon { color:var(--orange); }
+.nav-label { font-size:11px; font-weight:500; color:var(--icon-rest); }
+.nav-item.active .nav-label { color:var(--orange-text); font-weight:700; }
+.nav-dot { display:none; }
 body.lift-mode #screen-client-home .bottom-nav .nav-item:nth-child(3), body.lift-mode #screen-client-plan .bottom-nav .nav-item:nth-child(3), body.lift-mode #screen-client-profile .bottom-nav .nav-item:nth-child(3), body.lift-mode #screen-client-food .bottom-nav .nav-item:nth-child(3), body.lift-mode #screen-client-coaching .bottom-nav .nav-item:nth-child(3) { display:none; }
 body.lift-mode #strongflow-btn { display:none !important; }
 .nav-item.active .nav-dot { opacity:1; }
@@ -732,10 +733,10 @@ body.lift-mode #strongflow-btn { display:none !important; }
     <a href="https://wa.me/50672083564" target="_blank" style="width:50px;height:50px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,211,102,0.4);text-decoration:none;font-size:26px;">💬</a>
   </div>
   <div class="bottom-nav">
-    <div class="nav-item active" onclick="clientNav('home',this)"><div class="nav-icon">🏋️</div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
-    <div class="nav-item" onclick="clientNav('food',this)"><div class="nav-icon">🥗</div><div class="nav-label">Food</div><div class="nav-dot"></div></div>
-    <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon">📋</div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
-    <div class="nav-item" onclick="clientNav('profile',this)"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div><div class="nav-dot"></div></div>
+    <div class="nav-item active" onclick="clientNav('home',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-sun"/></svg></div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('food',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-food"/></svg></div><div class="nav-label">Food</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-plan"/></svg></div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('profile',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></div><div class="nav-label">Perfil</div><div class="nav-dot"></div></div>
   </div>
 </div>
 <div class="screen" id="screen-client-plan">
@@ -784,10 +785,10 @@ body.lift-mode #strongflow-btn { display:none !important; }
   </div>
   <a href="https://wa.me/50672083564" target="_blank" style="position:fixed;bottom:80px;right:16px;width:50px;height:50px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,211,102,0.4);z-index:99;text-decoration:none;font-size:26px;">💬</a>
   <div class="bottom-nav">
-    <div class="nav-item" onclick="clientNav('home',this)"><div class="nav-icon">🏋️</div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
-    <div class="nav-item" onclick="clientNav('food',this)"><div class="nav-icon">🥗</div><div class="nav-label">Food</div><div class="nav-dot"></div></div>
-    <div class="nav-item active" onclick="clientNav('plan',this)"><div class="nav-icon">📋</div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
-    <div class="nav-item" onclick="clientNav('profile',this)"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('home',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-sun"/></svg></div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('food',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-food"/></svg></div><div class="nav-label">Food</div><div class="nav-dot"></div></div>
+    <div class="nav-item active" onclick="clientNav('plan',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-plan"/></svg></div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('profile',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></div><div class="nav-label">Perfil</div><div class="nav-dot"></div></div>
   </div>
 </div>
 
@@ -856,10 +857,10 @@ body.lift-mode #strongflow-btn { display:none !important; }
   </div>
   <a href="https://wa.me/50672083564" target="_blank" style="position:fixed;bottom:80px;right:16px;width:50px;height:50px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,211,102,0.4);z-index:99;text-decoration:none;font-size:26px;">💬</a>
   <div class="bottom-nav">
-    <div class="nav-item" onclick="clientNav('home',this)"><div class="nav-icon">🏋️</div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
-    <div class="nav-item" onclick="clientNav('food',this)"><div class="nav-icon">🥗</div><div class="nav-label">Food</div><div class="nav-dot"></div></div>
-    <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon">📋</div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
-    <div class="nav-item active" onclick="clientNav('profile',this)"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('home',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-sun"/></svg></div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('food',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-food"/></svg></div><div class="nav-label">Food</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-plan"/></svg></div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
+    <div class="nav-item active" onclick="clientNav('profile',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></div><div class="nav-label">Perfil</div><div class="nav-dot"></div></div>
   </div>
 </div>
 
@@ -871,10 +872,10 @@ body.lift-mode #strongflow-btn { display:none !important; }
   </div>
   <a href="https://wa.me/50672083564" target="_blank" style="position:fixed;bottom:80px;right:16px;width:50px;height:50px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,211,102,0.4);z-index:99;text-decoration:none;font-size:26px;">💬</a>
   <div class="bottom-nav">
-    <div class="nav-item" onclick="clientNav('home',this)"><div class="nav-icon">🏋️</div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
-    <div class="nav-item active" onclick="clientNav('food',this)"><div class="nav-icon">🥗</div><div class="nav-label">Food</div><div class="nav-dot"></div></div>
-    <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon">📋</div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
-    <div class="nav-item" onclick="clientNav('profile',this)"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('home',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-sun"/></svg></div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
+    <div class="nav-item active" onclick="clientNav('food',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-food"/></svg></div><div class="nav-label">Food</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-plan"/></svg></div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('profile',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></div><div class="nav-label">Perfil</div><div class="nav-dot"></div></div>
   </div>
 </div>
 
@@ -895,10 +896,10 @@ body.lift-mode #strongflow-btn { display:none !important; }
   </div>
   <a href="https://wa.me/50672083564" target="_blank" style="position:fixed;bottom:80px;right:16px;width:50px;height:50px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,211,102,0.4);z-index:99;text-decoration:none;font-size:26px;">💬</a>
   <div class="bottom-nav">
-    <div class="nav-item" onclick="clientNav('home',this)"><div class="nav-icon">🏋️</div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
-    <div class="nav-item active" onclick="clientNav('coaching',this)"><div class="nav-icon">🧭</div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
-    <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon">📋</div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
-    <div class="nav-item" onclick="clientNav('profile',this)"><div class="nav-icon">👤</div><div class="nav-label">Perfil</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('home',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-sun"/></svg></div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
+    <div class="nav-item active" onclick="clientNav('coaching',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-compass"/></svg></div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-plan"/></svg></div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('profile',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></div><div class="nav-label">Perfil</div><div class="nav-dot"></div></div>
   </div>
 </div>
 
@@ -4970,15 +4971,16 @@ function clientNav(tab,el) {
 function applyLiftNavPatch(isLift) {
   // Scopeado a las 5 screens de CLIENTE únicamente — un selector genérico ".bottom-nav"
   // también pisaría el nav-item(2) ("Machotes") de las screens del coach.
+  const icon_ = (name) => window.icon(name, 22);
   document.querySelectorAll('#screen-client-home .bottom-nav .nav-item:nth-child(2),#screen-client-plan .bottom-nav .nav-item:nth-child(2),#screen-client-profile .bottom-nav .nav-item:nth-child(2),#screen-client-food .bottom-nav .nav-item:nth-child(2),#screen-client-coaching .bottom-nav .nav-item:nth-child(2)').forEach(item => {
     const icon = item.querySelector('.nav-icon');
     const label = item.querySelector('.nav-label');
     if (isLift) {
-      if (icon) icon.textContent = '🧭';
+      if (icon) icon.innerHTML = icon_('compass');
       if (label) label.textContent = 'Coaching';
       item.onclick = () => clientNav('coaching', item);
     } else {
-      if (icon) icon.textContent = '🥗';
+      if (icon) icon.innerHTML = icon_('food');
       if (label) label.textContent = 'Food';
       item.onclick = () => clientNav('food', item);
     }
