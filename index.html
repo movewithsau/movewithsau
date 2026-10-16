@@ -110,7 +110,35 @@ body.lift-mode #strongflow-btn { display:none !important; }
 .nav-item.active .nav-dot { opacity:1; }
 
 /* LOGIN */
-#screen-login { background:var(--white); align-items:center; justify-content:center; padding:40px 32px; }
+#screen-login { background:linear-gradient(180deg,#EFE9E0,#FBF8F4); flex-direction:column; position:relative; isolation:isolate; overflow-x:hidden; }
+/* Login "versión miel": naranja arriba con miel, crema abajo (solo visual) */
+#screen-login .login-bg { position:absolute; left:0; top:0; width:100%; height:auto; z-index:-1; pointer-events:none; }
+#screen-login .login-drip { animation:login-drip 3.2s ease-in infinite; }
+@keyframes login-drip { 0% { transform:translateY(0); opacity:0; } 15% { opacity:1; } 80% { opacity:1; } 100% { transform:translateY(16px); opacity:0; } }
+@media (prefers-reduced-motion:reduce) { #screen-login .login-drip { animation:none; opacity:1; } }
+#screen-login .login-hero { height:330px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 20px; box-sizing:border-box; }
+#screen-login .login-badge { width:72px; height:72px; border-radius:50%; background:rgba(255,255,255,0.2); border:2px solid rgba(255,255,255,0.85); display:flex; align-items:center; justify-content:center; margin-bottom:14px; }
+#screen-login .login-logo { display:inline-block; background:#FFFFFF; color:#C2410C; border-radius:20px; padding:6px 14px; font-size:11px; font-weight:500; letter-spacing:0.14em; margin-bottom:12px; }
+#screen-login .login-title { font-size:44px; color:#FFFFFF; line-height:1.05; white-space:nowrap; margin-bottom:6px; }
+#screen-login .login-title br { display:none; }
+#screen-login .login-title span { color:#FFFFFF; }
+#screen-login .login-sub { font-size:15px; color:rgba(255,255,255,0.92); margin-bottom:0; }
+#screen-login .login-form { padding:62px 24px 40px; max-width:440px; width:100%; margin:0 auto; box-sizing:border-box; }
+#screen-login .form-label { font-family:'DM Mono',monospace; font-size:11px; font-weight:500; color:#C2410C; letter-spacing:0.14em; margin-bottom:6px; }
+#screen-login .login-field { position:relative; display:flex; align-items:center; }
+#screen-login .login-field > .ico { position:absolute; left:16px; color:#7A7167; pointer-events:none; }
+#screen-login .login-field .form-input { background:#FFFFFF; border:1px solid #EAE4DB; border-radius:14px; height:52px; padding:0 16px 0 46px; font-size:16px; }
+#screen-login .login-field .form-input#login-password { padding-right:52px; }
+#screen-login .login-eye { position:absolute; right:4px; width:44px; height:44px; border:0; background:none; color:#7A7167; display:flex; align-items:center; justify-content:center; cursor:pointer; border-radius:12px; }
+#screen-login .login-eye[aria-pressed="true"] { color:#C2410C; }
+#screen-login .login-remember { display:flex; align-items:center; gap:10px; min-height:44px; margin:2px 0 14px; }
+#screen-login .login-remember input { appearance:none; -webkit-appearance:none; width:22px; height:22px; margin:0; border-radius:6px; border:1.5px solid #C9C0B3; background:#FFFFFF; cursor:pointer; display:grid; place-content:center; flex-shrink:0; }
+#screen-login .login-remember input:checked { background:#F75A0E; border-color:#F75A0E; }
+#screen-login .login-remember input:checked::after { content:''; width:6px; height:11px; border:solid #FFFFFF; border-width:0 2.5px 2.5px 0; transform:translateY(-1px) rotate(45deg); }
+#screen-login .login-remember input:focus-visible { outline:2px solid #C2410C; outline-offset:2px; }
+#screen-login .login-remember label { font-size:14px; color:var(--gray5); cursor:pointer; min-height:44px; display:flex; align-items:center; }
+#screen-login .btn-primary { height:56px; padding:0; border-radius:16px; font-size:17px; font-weight:700; box-shadow:0 6px 18px rgba(247,90,14,0.3); }
+#screen-login .btn-secondary { height:52px; padding:0; border-radius:16px; border:1.5px solid #F75A0E; color:#C2410C; font-weight:700; }
 .login-logo { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.22em; color:var(--orange); text-transform:uppercase; text-align:center; margin-bottom:6px; }
 .login-title { font-family:'Playfair Display',serif; font-size:40px; font-weight:900; color:var(--black); text-align:center; line-height:1.0; margin-bottom:6px; }
 .login-title span { color:var(--orange); }
@@ -834,17 +862,27 @@ body.lift-mode #strongflow-btn { display:none !important; }
 
 <!-- ===== LOGIN ===== -->
 <div class="screen active" id="screen-login">
-  <div style="width:100%;">
-    <div style="margin-bottom:36px;text-align:center;">
-      <div class="login-logo">Exclusive Fitness Coaching</div>
-      <div class="login-title">Move With<br><span>Sau</span></div>
-      <div class="login-sub">Tu plataforma de entrenamiento</div>
-    </div>
-    <div class="form-group"><label class="form-label">Usuario</label><input class="form-input" id="login-username" placeholder="tu usuario" autocapitalize="none"></div>
-    <div class="form-group"><label class="form-label">Contraseña</label><input class="form-input" type="password" id="login-password" placeholder="••••••••"></div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-      <input type="checkbox" id="remember-me" style="accent-color:var(--orange);width:16px;height:16px;" checked>
-      <label for="remember-me" style="font-size:13px;color:var(--gray5);cursor:pointer;">Recordar mi sesión</label>
+  <svg class="login-bg" aria-hidden="true" focusable="false" viewBox="0 0 390 460" preserveAspectRatio="xMidYMin slice"><defs>
+    <linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DD4A0A"/><stop offset="0.7" stop-color="#F75A0E"/><stop offset="1" stop-color="#F46A1F"/></linearGradient>
+    <pattern id="lhx" width="31.176" height="54" patternUnits="userSpaceOnUse" patternTransform="scale(1.3)"><path d="M15.588 0L31.176 9V27L15.588 36L0 27V9Z M15.588 36V54" fill="none" stroke="#FFFFFF" stroke-opacity="0.34" stroke-width="0.7"/></pattern>
+    <linearGradient id="lfd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="0.85" stop-color="#000"/></linearGradient>
+    <mask id="lmk"><rect width="390" height="460" fill="url(#lfd)"/></mask></defs>
+    <path fill="url(#lg1)" d="M0 0H390V330L378 330Q366 330 366 348V358A12 12 0 0 1 342 358V348Q342 330 330 330L296 330Q284 330 284 348V352A10 10 0 0 1 264 352V348Q264 330 252 330L170 330Q158 330 158 348V366A14 14 0 0 1 130 366V348Q130 330 118 330L84 330Q72 330 72 348V356A12 12 0 0 1 48 356V348Q48 330 36 330L0 330Z"/>
+    <rect width="390" height="330" fill="url(#lhx)" mask="url(#lmk)"/>
+    <g class="login-drip"><path d="M144 388C139 395 139 401 144 404C149 401 149 395 144 388Z" fill="none" stroke="#D97706" stroke-width="2.25" stroke-linejoin="round"/></g>
+  </svg>
+  <div class="login-hero">
+    <div class="login-badge"><svg width="40" height="40" viewBox="-16 -16 32 32" aria-hidden="true" focusable="false"><g stroke="#FFFFFF" stroke-width="1.6" stroke-linejoin="round" fill="none"><path transform="translate(-5.2 -4.5)" d="M0 -6L5.2 -3V3L0 6L-5.2 3V-3Z"/><path transform="translate(5.2 -4.5)" d="M0 -6L5.2 -3V3L0 6L-5.2 3V-3Z"/><path transform="translate(0 4.5)" d="M0 -6L5.2 -3V3L0 6L-5.2 3V-3Z" fill="#FFFFFF"/></g></svg></div>
+    <div class="login-logo">Exclusive Fitness Coaching</div>
+    <div class="login-title">Move With<br> <span>Sau</span></div>
+    <div class="login-sub">Tu plataforma de entrenamiento</div>
+  </div>
+  <div class="login-form">
+    <div class="form-group"><label class="form-label" for="login-username">Usuario</label><div class="login-field"><svg class="ico" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-user"/></svg><input class="form-input" id="login-username" placeholder="tu usuario" autocapitalize="none"></div></div>
+    <div class="form-group"><label class="form-label" for="login-password">Contraseña</label><div class="login-field"><svg class="ico" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-lock"/></svg><input class="form-input" type="password" id="login-password" placeholder="••••••••"><button type="button" class="login-eye" id="login-eye" aria-label="Mostrar contraseña" aria-pressed="false" onclick="togglePasswordVisibility()"><svg class="ico" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-eye"/></svg></button></div></div>
+    <div class="login-remember">
+      <input type="checkbox" id="remember-me" checked>
+      <label for="remember-me">Recordar mi sesión</label>
     </div>
     <button class="btn-primary" onclick="handleLogin()">Entrar</button>
     <button class="btn-secondary" style="margin-top:10px;" onclick="showScreen('screen-register')">¿No tenés acceso? Solicítalo aquí</button>
@@ -2222,6 +2260,17 @@ function icon(name, size = 20, cls = '') {
 
 // Aviso breve. type: 'success' (check-circle) | 'error' (alert-triangle) | sin tipo (solo texto).
 // showToast(msg, 4000) sigue funcionando: un número como 2º argumento es la duración.
+// Login: mostrar/ocultar contraseña (solo cambia el type del input)
+function togglePasswordVisibility() {
+  const input = document.getElementById('login-password');
+  const btn = document.getElementById('login-eye');
+  if (!input || !btn) return;
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  btn.setAttribute('aria-pressed', String(show));
+  btn.setAttribute('aria-label', show ? 'Ocultar contraseña' : 'Mostrar contraseña');
+}
+
 function showToast(msg, type, dur) {
   if (typeof type === 'number') { dur = type; type = null; }
   const t = document.getElementById('toast');
