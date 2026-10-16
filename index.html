@@ -300,6 +300,32 @@ body.lift-mode #strongflow-btn { display:none !important; }
 .tl-step-title { font-size:15px; font-weight:700; color:var(--ink); }
 .tl-step-sub { font-size:13px; color:var(--gray5); }
 .tl-step-text { font-size:13px; font-weight:700; color:var(--black); line-height:1.4; margin-top:10px; }
+/* ===== PERFIL: naranja invertido (texto chico siempre sobre blanco) ===== */
+#screen-client-profile { position:relative; isolation:isolate; background:linear-gradient(180deg,#DD4A0A 0%,#F75A0E 45%,#F46A1F 100%); }
+#screen-client-profile::before { content:''; position:fixed; top:0; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px; z-index:-2; pointer-events:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40.529' height='70.2' viewBox='0 0 31.176 54'%3E%3Cpath d='M15.588 0L31.176 9V27L15.588 36L0 27V9Z M15.588 36V54' fill='none' stroke='%23FFFFFF' stroke-opacity='0.34' stroke-width='0.7'/%3E%3C/svg%3E"); background-size:40.529px 70.2px; -webkit-mask-image:linear-gradient(180deg,#000 0%,transparent 80%); mask-image:linear-gradient(180deg,#000 0%,transparent 80%); }
+#screen-client-profile .topbar { display:none; }
+.profile-honey { position:absolute; left:0; top:0; width:100%; height:auto; z-index:-1; pointer-events:none; }
+.profile-head { display:flex; flex-direction:column; align-items:center; padding:12px 0 18px; text-align:center; }
+.profile-pill-btn { margin-top:10px; min-height:44px; border:0; border-radius:22px; padding:0 16px; background:#FFFFFF; color:var(--orange-text); display:inline-flex; align-items:center; gap:8px; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; cursor:pointer; }
+.profile-name { margin-top:8px; font-family:'Playfair Display',serif; font-weight:900; font-size:30px; line-height:1.15; color:#FFFFFF; }
+.profile-user { font-size:15px; font-weight:700; color:#FFFFFF; margin-top:2px; }
+.section-pill { display:inline-block; background:#FFFFFF; color:var(--orange-text); border-radius:20px; padding:6px 14px; font-family:'DM Mono',monospace; font-size:11px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; margin:20px 0 10px; }
+#screen-client-profile .goal-card, #screen-client-profile .card, .milestones-card { background:#FFFFFF; border-radius:20px; box-shadow:0 6px 18px rgba(120,40,0,0.18); }
+#screen-client-profile .goal-card { padding:16px 20px 6px; }
+#screen-client-profile .goal-card .notes-label { font-family:'DM Mono',monospace; font-size:11px; font-weight:500; letter-spacing:0.14em; color:var(--gray5); }
+#screen-client-profile .goal-text { font-size:15px; }
+#screen-client-profile .goal-text span { color:var(--orange-text); }
+#screen-client-profile .goal-edit-btn { min-height:44px; line-height:44px; border:0; background:none; padding:0; color:var(--orange-text); font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; cursor:pointer; margin-top:2px; }
+#screen-client-profile .goal-edit-btn .ico { vertical-align:-3px; margin-right:6px; }
+.milestones-card { padding:16px; }
+.milestones-row { display:flex; justify-content:space-between; }
+.milestones-text { font-size:14px; color:var(--gray5); margin-top:10px; text-align:center; }
+.milestones-text b { color:var(--ink); }
+#screen-client-profile .btn-secondary { background:#FFFFFF; color:var(--orange-text); border:0; font-weight:700; min-height:48px; }
+#screen-client-profile .bottom-nav::before { background:linear-gradient(180deg,rgba(244,106,31,0) 0%,rgba(244,106,31,0.94) 55%,#F46A1F 75%); }
+#screen-client-profile .bottom-nav .nav-item .nav-icon, #screen-client-profile .bottom-nav .nav-item .nav-label { color:rgba(255,255,255,0.88); }
+#screen-client-profile .bottom-nav .nav-item:nth-child(4) .nav-icon { color:#FFFFFF; }
+#screen-client-profile .bottom-nav .nav-item:nth-child(4) .nav-label { color:#FFFFFF; font-weight:700; }
 #screen-client-plan .scroll-body { overflow-x:hidden; }
 .week-tab { flex-shrink:0; padding:7px 14px; border-radius:20px; font-size:12px; font-weight:600; background:var(--white); color:var(--gray4); cursor:pointer; border:1.5px solid var(--gray2); }
 .week-tab.active { background:var(--orange); color:white; border-color:var(--orange); }
@@ -877,18 +903,22 @@ body.lift-mode #strongflow-btn { display:none !important; }
 <div class="screen" id="screen-client-profile">
   <div class="topbar"><div class="topbar-logo">Move With Sau</div><div class="topbar-action" onclick="handleLogout()">Salir</div></div>
   <div class="scroll-body">
-    <div style="text-align:center;padding:20px 0 16px;">
-      <div id="c-profile-avatar" onclick="showAvatarPicker()" style="width:76px;height:76px;border-radius:50%;background:var(--orange-light);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--orange);cursor:pointer;transition:transform 0.15s;">--</div>
-      <div style="font-size:11px;color:var(--orange);font-weight:600;margin-bottom:10px;cursor:pointer;" onclick="showAvatarPicker()">Cambiar avatar</div>
-      <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;" id="c-profile-name">—</div>
-      <div style="font-size:12px;color:var(--gray4);margin-top:3px;" id="c-profile-username">—</div>
+    <svg class="profile-honey" aria-hidden="true" focusable="false" viewBox="0 0 390 340"><defs><linearGradient id="profile-honey-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E08A0B"/><stop offset="0.5" stop-color="#D97706"/><stop offset="1" stop-color="#CC6A04"/></linearGradient></defs>
+      <path fill="url(#profile-honey-grad)" d="M0 0H390V150L377 150Q365 150 365 170V207A13 13 0 0 1 339 207V170Q339 150 327 150L319 150Q307 150 307 170V283A17 17 0 0 1 273 283V170Q273 150 261 150L248 150Q236 150 236 170V239A11 11 0 0 1 214 239V170Q214 150 202 150L182 150Q170 150 170 170V320A20 20 0 0 1 130 320V170Q130 150 118 150L99 150Q87 150 87 170V268A12 12 0 0 1 63 268V170Q63 150 51 150L48 150Q36 150 36 170V211A14 14 0 0 1 8 211V170Q8 150 0 150Z"/>
+      <g fill="none" stroke="#FFD166" stroke-opacity="0.75" stroke-width="2.5" stroke-linecap="round"><path d="M42 180V200"/><path d="M92 180V250"/><path d="M176 180V300"/><path d="M219 180V225"/><path d="M279 180V265"/><path d="M345 180V195"/></g>
+    </svg>
+    <div class="profile-head">
+      <div id="c-profile-avatar" onclick="showAvatarPicker()" role="img" aria-label="Tu avatar">--</div>
+      <button type="button" class="profile-pill-btn" onclick="showAvatarPicker()"><svg class="ico" width="16" height="16" aria-hidden="true" focusable="false"><use href="#i-pencil"/></svg>Cambiar avatar</button>
+      <div class="profile-name" id="c-profile-name">—</div>
+      <div class="profile-user" id="c-profile-username">—</div>
     </div>
     <!-- 1. Meta -->
     <div class="goal-card" id="c-goal-card">
       <div class="notes-label" style="margin-bottom:6px;">Mi motivación</div>
       <div id="c-goal-display">
         <div class="goal-text" id="c-goal-text" style="color:var(--gray4);font-style:italic;">Toca para agregar tu meta...</div>
-        <span class="goal-edit-btn" onclick="showGoalEdit()">Editar meta</span>
+        <button type="button" class="goal-edit-btn" onclick="showGoalEdit()"><svg class="ico" width="16" height="16" aria-hidden="true" focusable="false"><use href="#i-pencil"/></svg>Editar meta</button>
       </div>
       <div id="c-goal-edit" style="display:none;">
         <input class="form-input" id="c-goal-input" placeholder="ej: perder 10kg" style="margin-bottom:8px;font-size:14px;">
@@ -896,6 +926,11 @@ body.lift-mode #strongflow-btn { display:none !important; }
         <button class="btn-primary" style="padding:11px;" onclick="saveGoal()">Guardar meta</button>
       </div>
     </div>
+    <!-- Hitos (cuenta = "Días entrenados", solo lectura) -->
+    <div class="section-pill">Hitos</div>
+    <div class="milestones-card" id="c-milestones"></div>
+    <!-- Tiempo total / Días / Semana: fuera de la pantalla (solo UI, el dato no cambia) -->
+    <div hidden>
     <!-- 2. Tiempo total entrenado -->
     <div class="card" style="margin-bottom:16px;text-align:center;">
       <div class="notes-label" style="margin-bottom:4px;">Tiempo total entrenado</div>
@@ -905,6 +940,7 @@ body.lift-mode #strongflow-btn { display:none !important; }
     <div class="stat-row">
       <div class="stat-card"><div class="stat-num" id="c-profile-days">0</div><div class="stat-label">Días entrenados</div></div>
       <div class="stat-card"><div class="stat-num" id="c-profile-week">1</div><div class="stat-label">Semana actual</div></div>
+    </div>
     </div>
     <!-- 5. Pesos -->
     <div id="c-weight-section">
@@ -930,9 +966,7 @@ body.lift-mode #strongflow-btn { display:none !important; }
     </div>
     </div>
     <!-- CONTRACT SECTION (client view) -->
-    <div class="section-header" style="margin-top:16px;">
-      <div class="section-title">Mi contrato</div>
-    </div>
+    <div class="section-pill">Mi contrato</div>
     <div id="client-contract-panel"><div class="spinner"></div></div>
     <button class="btn-secondary" onclick="handleLogout()" style="margin-top:16px;">Cerrar sesión</button>
   </div>
@@ -2032,8 +2066,7 @@ function applyAvatarToProfile() {
   const initials = getInitials(currentClient?.name||currentUser?.name||'');
   const bg = currentClient?.avatar_bg || 'orange';
   const type = currentClient?.avatar_type || 'initials';
-  const bgStyle = bg==='black' ? 'background:#111111;' : 'background:var(--orange-light);';
-  el.style.cssText = `width:76px;height:76px;border-radius:50%;${bgStyle}display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-weight:700;color:var(--orange);cursor:pointer;transition:transform 0.15s;font-size:${type==='initials'?'26':'34'}px;margin:0 auto 8px;`;
+  el.style.cssText = `width:96px;height:96px;border-radius:50%;background:#1A1714;border:3px solid #FFFFFF;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-weight:700;color:#FFFFFF;cursor:pointer;transition:transform 0.15s;font-size:${type==='initials'?'34':'46'}px;`;
   el.textContent = type==='initials' ? initials : type;
 }
 
@@ -3949,6 +3982,29 @@ document.addEventListener('visibilitychange', () => {
     acquireWakeLock();
   }
 });
+
+// ===== PERFIL: HITOS =====
+// Solo lectura: usa el mismo número que "Días entrenados" (#c-profile-days). Se redibuja
+// cada vez que ese número cambia, sin tocar initClient ni el cierre de entreno.
+const PROFILE_MILESTONES = [1, 10, 25, 50, 100];
+function renderProfileMilestones() {
+  const el = document.getElementById('c-milestones');
+  const src = document.getElementById('c-profile-days');
+  if (!el || !src) return;
+  const n = parseInt(src.textContent, 10) || 0;
+  const hex = m => {
+    const ok = n >= m;
+    return `<svg role="img" aria-label="Hito de ${m} entrenos, ${ok ? 'logrado' : 'pendiente'}" width="52" height="52" viewBox="0 0 48 48"><path d="M24 3L42 13.5V34.5L24 45L6 34.5V13.5Z" fill="${ok ? '#F75A0E' : 'none'}" stroke="${ok ? '#F75A0E' : '#C9C0B3'}" stroke-width="2.5" stroke-linejoin="round"/><text x="24" y="29" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="15" font-weight="700" fill="${ok ? '#1A1714' : '#6B6259'}">${m}</text></svg>`;
+  };
+  const next = PROFILE_MILESTONES.find(m => n < m);
+  const msg = next ? `Te faltan <b style="color:var(--orange-text)">${next - n}</b> para el hito de ${next}.` : 'Lograste todos los hitos.';
+  el.innerHTML = `<div class="milestones-row">${PROFILE_MILESTONES.map(hex).join('')}</div><div class="milestones-text">Entrenos acumulados: <b>${n}</b> · ${msg}</div>`;
+}
+(function () {
+  const src = document.getElementById('c-profile-days');
+  if (src) new MutationObserver(renderProfileMilestones).observe(src, { childList: true, characterData: true, subtree: true });
+  renderProfileMilestones();
+})();
 
 // ===== HOY: LÍNEA DE TIEMPO =====
 // Nodo hexagonal del riel. state: 'done' (relleno naranja + check tinta) | 'next' (borde naranja) | 'todo' (borde gris)
@@ -13735,9 +13791,10 @@ async function loadClientContractPanel() {
   }
   // Pending signature
   panel.innerHTML = `<div class="card">
-    <div style="background:var(--yellow-light);border:1.5px solid rgba(243,156,18,0.3);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;">
-      <div style="font-size:12px;font-weight:700;color:var(--yellow);">Pendiente de tu firma</div>
-      <div style="font-size:11px;color:var(--gray5);margin-top:2px;">Lee el contrato completo y confirma tu aceptación.</div>
+    <div style="display:flex;align-items:flex-start;gap:10px;background:#FBF1E1;border:1.5px solid #F1D9AE;border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+      <span style="color:#B45309;display:flex;margin-top:1px;">${icon('clock', 20)}</span>
+      <div><div style="font-size:14px;font-weight:700;color:#B45309;">Pendiente de tu firma</div>
+      <div style="font-size:13px;color:var(--gray5);margin-top:2px;">Lee el contrato completo y confirma tu aceptación.</div></div>
     </div>
     ${renderContractBody(contract)}
     <div style="margin-top:20px;padding-top:16px;border-top:2px solid var(--gray2);">
