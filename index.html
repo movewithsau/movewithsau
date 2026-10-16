@@ -4180,8 +4180,9 @@ function pgTrainedChart(logs, sessions, planDays) {
   sessions.forEach(s => { if (s.session_date) days.add(String(s.session_date).slice(0, 10)); });
   const weeks = [3, 2, 1, 0].map(off => getWeekDates(off).map(fmtDateKey).filter(k => days.has(k)).length);
   const total = weeks.reduce((a, b) => a + b, 0);
-  // Meta: días del plan de la semana actual (cuando exista la meta propia del Bloque E, se usa esa)
-  const meta = Math.min(7, new Set(planDays.map(p => p.day_of_week)).size);
+  // Meta: la que eligió el cliente en MOVES Hive (3/4/5); si no eligió, los días del plan de esta semana
+  const ownGoal = currentClient && [3, 4, 5].includes(currentClient.weekly_goal) ? currentClient.weekly_goal : 0;
+  const meta = ownGoal || Math.min(7, new Set(planDays.map(p => p.day_of_week)).size);
   const rows = Math.max(4, meta, ...weeks);
   const base = 34 + 24 * (rows - 1);
   const xs = [40, 110, 180, 250];
