@@ -47,7 +47,7 @@
   --gray1: #f7f6f4;
   --gray2: #edeae4;
   --gray3: #d5d0c8;
-  --gray4: #9e9a93;
+  --gray4: #7A7167;
   --gray5: #6B6259;
   --white: #ffffff;
   --green: #27ae60;
@@ -102,6 +102,9 @@ body::after { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.
 .nav-label { font-size:11px; font-weight:500; color:var(--icon-rest); }
 .nav-item.active .nav-label { color:var(--orange-text); font-weight:700; }
 .nav-dot { display:none; }
+/* Activo según la pantalla (clientNav/coachNav quitan .active del nav de la pantalla destino) */
+#screen-client-home .bottom-nav .nav-item:nth-child(1) .nav-icon, #screen-client-plan .bottom-nav .nav-item:nth-child(3) .nav-icon, #screen-client-profile .bottom-nav .nav-item:nth-child(4) .nav-icon, #screen-client-food .bottom-nav .nav-item:nth-child(2) .nav-icon, #screen-client-coaching .bottom-nav .nav-item:nth-child(2) .nav-icon, #screen-coach-home .bottom-nav .nav-item:nth-child(1) .nav-icon, #screen-ai-builder .bottom-nav .nav-item:nth-child(2) .nav-icon, #screen-templates .bottom-nav .nav-item:nth-child(2) .nav-icon, #screen-coach-settings .bottom-nav .nav-item:nth-child(5) .nav-icon, #screen-coach-data .bottom-nav .nav-item:nth-child(4) .nav-icon, #screen-coach-coaching .bottom-nav .nav-item:nth-child(3) .nav-icon { color:var(--orange); }
+#screen-client-home .bottom-nav .nav-item:nth-child(1) .nav-label, #screen-client-plan .bottom-nav .nav-item:nth-child(3) .nav-label, #screen-client-profile .bottom-nav .nav-item:nth-child(4) .nav-label, #screen-client-food .bottom-nav .nav-item:nth-child(2) .nav-label, #screen-client-coaching .bottom-nav .nav-item:nth-child(2) .nav-label, #screen-coach-home .bottom-nav .nav-item:nth-child(1) .nav-label, #screen-ai-builder .bottom-nav .nav-item:nth-child(2) .nav-label, #screen-templates .bottom-nav .nav-item:nth-child(2) .nav-label, #screen-coach-settings .bottom-nav .nav-item:nth-child(5) .nav-label, #screen-coach-data .bottom-nav .nav-item:nth-child(4) .nav-label, #screen-coach-coaching .bottom-nav .nav-item:nth-child(3) .nav-label { color:var(--orange-text); font-weight:700; }
 body.lift-mode #screen-client-home .bottom-nav .nav-item:nth-child(3), body.lift-mode #screen-client-plan .bottom-nav .nav-item:nth-child(3), body.lift-mode #screen-client-profile .bottom-nav .nav-item:nth-child(3), body.lift-mode #screen-client-food .bottom-nav .nav-item:nth-child(3), body.lift-mode #screen-client-coaching .bottom-nav .nav-item:nth-child(3) { display:none; }
 body.lift-mode #strongflow-btn { display:none !important; }
 .nav-item.active .nav-dot { opacity:1; }
@@ -244,7 +247,18 @@ body.lift-mode #strongflow-btn { display:none !important; }
 /* Tira de pestañas de "Tu Plan MOVE": scroll horizontal, los chips no se parten ni se encogen */
 .client-plan-tabs { position:relative; display:flex; gap:8px; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:none; margin:0 -20px 20px; padding:0 20px 12px; border-bottom:1.5px solid var(--gray2); }
 .client-plan-tabs::-webkit-scrollbar { display:none; }
-.client-plan-tab-chip { flex:0 0 auto; white-space:nowrap; }
+/* Chips de Tu Plan: el JS viejo pone colores inline al cambiar de pestaña; estos !important mandan */
+.client-plan-tab-chip { flex:0 0 auto; white-space:nowrap; display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:0 14px; border-radius:10px; font-size:14px; font-weight:500; cursor:pointer; transition:background 0.2s,color 0.2s; background:#F1ECE4 !important; color:var(--gray5) !important; }
+.client-plan-tab-chip.active { background:#FEEBE0 !important; color:var(--orange-text) !important; font-weight:700; }
+/* Botón solo-ícono: área táctil 44px */
+.icon-btn { display:inline-flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; padding:0; border:none; border-radius:10px; cursor:pointer; flex-shrink:0; }
+/* Píldoras de estado de evaluaciones */
+.status-pill { display:inline-flex; align-items:center; gap:5px; padding:5px 10px; border-radius:8px; font-size:12px; font-weight:700; white-space:nowrap; }
+.status-pill.pending { background:#FDEEE6; color:var(--orange-text); }
+.status-pill.done { background:#E7F7EC; color:#15803D; }
+/* Chevron que rota al abrir */
+.chev { display:inline-flex; color:var(--icon-rest); transition:transform 0.2s; }
+@media (prefers-reduced-motion:reduce) { .chev { transition:none; } }
 #screen-client-plan .scroll-body { overflow-x:hidden; }
 .week-tab { flex-shrink:0; padding:7px 14px; border-radius:20px; font-size:12px; font-weight:600; background:var(--white); color:var(--gray4); cursor:pointer; border:1.5px solid var(--gray2); }
 .week-tab.active { background:var(--orange); color:white; border-color:var(--orange); }
@@ -282,7 +296,7 @@ body.lift-mode #strongflow-btn { display:none !important; }
 
 /* PDF */
 .pdf-card { background:var(--white); border-radius:var(--radius); padding:12px 14px; box-shadow:var(--shadow); margin-bottom:8px; display:flex; align-items:center; gap:10px; }
-.pdf-icon { width:38px; height:38px; background:var(--red-light); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.pdf-icon { width:38px; height:38px; background:var(--red-light); color:var(--red); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
 .pdf-name { font-size:13px; font-weight:600; color:var(--black); margin-bottom:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pdf-date { font-size:10px; color:var(--gray4); }
 .pdf-open { margin-left:auto; color:var(--orange); font-size:13px; font-weight:600; text-decoration:none; flex-shrink:0; }
@@ -746,11 +760,11 @@ body.lift-mode #strongflow-btn { display:none !important; }
     
     <!-- TAB NAVIGATION -->
     <div class="client-plan-tabs">
-      <div class="client-plan-tab-chip active" onclick="switchClientPlanTab('plans', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;background:var(--gray1);color:var(--black);font-size:13px;font-weight:600;transition:all 0.2s;">📋 Mi Plan</div>
-      <div class="client-plan-tab-chip" onclick="switchClientPlanTab('progress', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;color:var(--gray4);font-size:13px;font-weight:600;transition:all 0.2s;">📈 Tu progreso</div>
-      <div class="client-plan-tab-chip" onclick="switchClientPlanTab('tests', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;color:var(--gray4);font-size:13px;font-weight:600;transition:all 0.2s;">📊 Evaluaciones</div>
-      <div class="client-plan-tab-chip" onclick="switchClientPlanTab('habits', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;color:var(--gray4);font-size:13px;font-weight:600;transition:all 0.2s;">📔 Mi diario</div>
-      <div class="client-plan-tab-chip" onclick="switchClientPlanTab('extras', this)" style="cursor:pointer;padding:8px 14px;border-radius:6px;color:var(--gray4);font-size:13px;font-weight:600;transition:all 0.2s;">⚡ Extras</div>
+      <div class="client-plan-tab-chip active" onclick="switchClientPlanTab('plans', this)"><svg class="ico" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-plan"/></svg>Mi Plan</div>
+      <div class="client-plan-tab-chip" onclick="switchClientPlanTab('progress', this)"><svg class="ico" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-trending-up"/></svg>Tu progreso</div>
+      <div class="client-plan-tab-chip" onclick="switchClientPlanTab('tests', this)"><svg class="ico" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-bar-chart"/></svg>Evaluaciones</div>
+      <div class="client-plan-tab-chip" onclick="switchClientPlanTab('habits', this)"><svg class="ico" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-notebook"/></svg>Mi diario</div>
+      <div class="client-plan-tab-chip" onclick="switchClientPlanTab('extras', this)"><svg class="ico" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-zap"/></svg>Extras</div>
     </div>
 
     <!-- PLANES TAB -->
@@ -885,13 +899,13 @@ body.lift-mode #strongflow-btn { display:none !important; }
   <div class="scroll-body">
     <div style="margin-bottom:18px;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">LIFT</div><div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;">Coaching</div></div>
 
-    <div style="font-size:16px;font-weight:700;color:var(--black);margin-bottom:10px;">📄 Documentos</div>
+    <div style="font-size:16px;font-weight:700;color:var(--black);margin-bottom:10px;">Documentos</div>
     <div id="lift-coaching-documents-list"><div class="spinner"></div></div>
 
-    <div style="font-size:16px;font-weight:700;color:var(--black);margin:22px 0 10px;">🗂️ Protocolos</div>
+    <div style="font-size:16px;font-weight:700;color:var(--black);margin:22px 0 10px;">Protocolos</div>
     <div id="lift-coaching-protocols-list"><div class="spinner"></div></div>
 
-    <div style="font-size:16px;font-weight:700;color:var(--black);margin:22px 0 10px;">📝 Notas</div>
+    <div style="font-size:16px;font-weight:700;color:var(--black);margin:22px 0 10px;">Notas</div>
     <div id="lift-coaching-guidelines-list"></div>
   </div>
   <a href="https://wa.me/50672083564" target="_blank" style="position:fixed;bottom:80px;right:16px;width:50px;height:50px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,211,102,0.4);z-index:99;text-decoration:none;font-size:26px;">💬</a>
@@ -990,7 +1004,7 @@ body.lift-mode #strongflow-btn { display:none !important; }
         <div class="section-action" onclick="openQuickRPE()" style="background:#fff3e0;color:#e65100;border:1.5px solid #e65100;padding:5px 10px;border-radius:6px;font-size:11px;">🎯 RPE</div>
         <div class="section-action" onclick="openQuickDayBuilder()" style="background:#f0fff4;color:#276749;border:1.5px solid #276749;padding:5px 10px;border-radius:6px;font-size:11px;">🚀 Rápido</div>
         <div class="section-action" onclick="openAssignTemplateModal()" style="background:var(--orange);color:white;padding:5px 10px;border-radius:6px;font-size:11px;">📋 Desde Template</div>
-        <div class="section-action" onclick="openTrainingImportModal()" style="background:#f0fff4;color:#276749;border:1.5px solid #276749;padding:5px 10px;border-radius:6px;font-size:11px;">📥 Pegar Plan</div>
+        <div class="section-action" onclick="openTrainingImportModal()" style="background:#f0fff4;color:#276749;border:1.5px solid #276749;padding:5px 10px;border-radius:6px;font-size:11px;display:inline-flex;align-items:center;gap:4px;"><svg class="ico" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-download"/></svg>Pegar Plan</div>
         <div class="section-action" onclick="showPlanBuilder()">+ Manual</div>
       </div>
     </div>
@@ -1060,10 +1074,10 @@ body.lift-mode #strongflow-btn { display:none !important; }
     </div>
     <div id="coach-habits-panel" style="margin-bottom:4px;"></div>
     <div class="section-header" style="margin-top:4px;">
-      <div class="section-title">⚡ Extras</div>
+      <div class="section-title" style="display:flex;align-items:center;gap:6px;"><svg class="ico" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-zap"/></svg>Extras</div>
       <div style="display:flex;gap:6px;align-items:center;">
-        <div class="section-action" onclick="openExtraFromMachotePicker()" style="background:#fef9e7;color:#d69e2e;border:1.5px solid #d69e2e;padding:5px 10px;border-radius:6px;font-size:11px;">⭐ Machotes</div>
-        <div class="section-action" onclick="openExtraSessionImportModal()" style="background:#f0fff4;color:#276749;border:1.5px solid #276749;padding:5px 10px;border-radius:6px;font-size:11px;">📥 Pegar</div>
+        <div class="section-action" onclick="openExtraFromMachotePicker()" style="background:#fef9e7;color:#d69e2e;border:1.5px solid #d69e2e;padding:5px 10px;border-radius:6px;font-size:11px;display:inline-flex;align-items:center;gap:4px;"><svg class="ico" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-star"/></svg>Machotes</div>
+        <div class="section-action" onclick="openExtraSessionImportModal()" style="background:#f0fff4;color:#276749;border:1.5px solid #276749;padding:5px 10px;border-radius:6px;font-size:11px;display:inline-flex;align-items:center;gap:4px;"><svg class="ico" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-download"/></svg>Pegar</div>
         <div class="section-action" onclick="openAddExtraSessionSheet()">+ Sesión</div>
       </div>
     </div>
@@ -1074,7 +1088,7 @@ body.lift-mode #strongflow-btn { display:none !important; }
     <div id="coach-training-panel"></div>
     <div class="section-header">
       <div class="section-title">Módulo Food</div>
-      <div class="section-action" onclick="openNutritionImportModal()" style="background:#f0fff4;color:#276749;border:1.5px solid #276749;padding:5px 10px;border-radius:6px;font-size:11px;">📥 Pegar Menú</div>
+      <div class="section-action" onclick="openNutritionImportModal()" style="background:#f0fff4;color:#276749;border:1.5px solid #276749;padding:5px 10px;border-radius:6px;font-size:11px;display:inline-flex;align-items:center;gap:4px;"><svg class="ico" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-download"/></svg>Pegar Menú</div>
     </div>
     <div id="coach-food-panel"></div>
     <!-- CONTRACT SECTION (coach view) -->
@@ -2338,7 +2352,7 @@ async function initClient() {
   if (weightSection) weightSection.style.display = (cd?.show_weight === false) ? 'none' : '';
   const totalMin = cd?.total_training_minutes||0;
   document.getElementById('c-total-time').textContent = `${Math.floor(totalMin/60)}h ${totalMin%60}min`;
-  document.getElementById('c-greeting-week').textContent = 'Semana 1 de tu plan mensual 💪';
+  document.getElementById('c-greeting-week').textContent = 'Semana 1 de tu plan mensual';
   // evoluTion appearance
   const greetingCard = document.querySelector('#screen-client-home .greeting-card');
   const topbarLogo = document.querySelector('#screen-client-home .topbar-logo');
@@ -2478,7 +2492,7 @@ function weekSubFor(w, base) {
 function updateClientWeekUI() {
   document.getElementById('c-greeting-week').textContent = isDeloadWeek(clientWeek)
     ? 'Semana '+clientWeek+' · Deload'
-    : getClientTotalWeeks() > 5 ? 'Semana '+clientWeek+' de '+getClientTotalWeeks()+' 💪' : 'Semana '+clientWeek+' de tu plan mensual 💪';
+    : getClientTotalWeeks() > 5 ? 'Semana '+clientWeek+' de '+getClientTotalWeeks() : 'Semana '+clientWeek+' de tu plan mensual';
   document.getElementById('c-week-num').textContent = clientWeek;
 }
 
@@ -3498,7 +3512,7 @@ async function loadClientExercises() {
   // de que el entreno sigue activo.
   const startBtnHtml = !workoutStarted
     ? `<button class="workout-action-btn workout-start-btn fade-up" onclick="handleStartWorkout()">
-        <span style="font-size:18px;">▶</span> Iniciar entreno
+        ${icon('play', 18)} Iniciar entreno
       </button>`
     : (currentClient.program_type === 'lift'
       ? `<div class="fade-up" style="background:var(--green-light);border:1.5px solid var(--green);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
@@ -3539,12 +3553,12 @@ async function loadClientExercises() {
   }
 
   // Warmup banner
-  const warmupBanner = `<div class="fade-up" style="background:linear-gradient(135deg,#fff8f5,#fff3ee);border:1.5px solid var(--orange-mid);border-radius:var(--radius);padding:13px 15px;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px;">
-    <div style="font-size:22px;flex-shrink:0;">🔥</div>
+  const warmupBanner = `<div class="fade-up" style="background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:10px;display:flex;align-items:flex-start;gap:14px;">
+    <div style="width:44px;height:44px;border-radius:12px;background:#FDEEE6;color:var(--orange);display:flex;align-items:center;justify-content:center;flex-shrink:0;">${icon('flame', 22)}</div>
     <div style="flex:1;">
       <div style="font-size:13px;font-weight:700;color:var(--black);margin-bottom:3px;">Recuerda calentar por 5 minutos antes de empezar con la rutina.</div>
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px;">
-        <a href="https://youtube.com/shorts/GnBbaPlj6Ls?si=Ie-UQwwa8OpIkn-x" target="_blank" style="font-size:11px;font-weight:700;color:var(--orange);text-decoration:none;background:var(--orange-light);padding:3px 9px;border-radius:20px;">▶ Video guía</a>
+        <a href="https://youtube.com/shorts/GnBbaPlj6Ls?si=Ie-UQwwa8OpIkn-x" target="_blank" style="display:inline-flex;align-items:center;gap:5px;min-height:44px;font-size:12px;font-weight:700;color:var(--orange-text);text-decoration:none;">${icon('play', 14)}Video guía</a>
         <span style="font-size:11px;color:var(--gray5);">+ 5 minutos del Cardio que prefieras</span>
       </div>
     </div>
@@ -3759,11 +3773,11 @@ async function loadClientExercises() {
     : '';
 
   // Cooldown banner
-  const cooldownBanner = `<div class="fade-up" style="background:linear-gradient(135deg,#f5faff,#eef5fb);border:1.5px solid var(--blue-light);border-radius:var(--radius);padding:13px 15px;margin-top:4px;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px;">
-    <div style="font-size:22px;flex-shrink:0;">🧊</div>
+  const cooldownBanner = `<div class="fade-up" style="background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-top:4px;margin-bottom:10px;display:flex;align-items:flex-start;gap:14px;">
+    <div style="width:44px;height:44px;border-radius:12px;background:#EAF2FB;color:#2E6FB5;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${icon('wind', 22)}</div>
     <div style="flex:1;">
       <div style="font-size:13px;font-weight:700;color:var(--black);margin-bottom:3px;">Recuerda estirar por 5–10 minutos luego de terminar con todos los ejercicios.</div>
-      <a href="https://youtube.com/shorts/rrM_wtKObK4?si=xA6v3gRrLhrCbwjU" target="_blank" style="font-size:11px;font-weight:700;color:var(--blue);text-decoration:none;background:var(--blue-light);padding:3px 9px;border-radius:20px;display:inline-block;margin-top:4px;">▶ Video guía</a>
+      <a href="https://youtube.com/shorts/rrM_wtKObK4?si=xA6v3gRrLhrCbwjU" target="_blank" style="display:inline-flex;align-items:center;gap:5px;min-height:44px;font-size:12px;font-weight:700;color:#2E6FB5;text-decoration:none;">${icon('play', 14)}Video guía</a>
     </div>
   </div>`;
 
@@ -4146,7 +4160,7 @@ async function loadClientPlans() {
   const {data:plans} = await sb.from('plans').select('*').eq('client_id',currentClient.id).order('uploaded_at',{ascending:false});
   const list=document.getElementById('c-plans-list');
   if(!plans||plans.length===0){list.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Tu coach aún no ha subido planes.</div></div>';}
-  else{list.innerHTML=plans.map(p=>`<div class="pdf-card fade-up"><div class="pdf-icon">📄</div><div style="flex:1;min-width:0;"><div class="pdf-name">${p.pdf_name}</div><div class="pdf-date">${new Date(p.uploaded_at).toLocaleDateString('es-CR')}</div></div><a class="pdf-open" href="${p.pdf_url}" target="_blank">Abrir</a></div>`).join('');}
+  else{list.innerHTML=plans.map(p=>`<div class="pdf-card fade-up"><div class="pdf-icon">${icon('file-text', 20)}</div><div style="flex:1;min-width:0;"><div class="pdf-name">${p.pdf_name}</div><div class="pdf-date">${new Date(p.uploaded_at).toLocaleDateString('es-CR')}</div></div><a class="pdf-open" href="${p.pdf_url}" target="_blank">Abrir</a></div>`).join('');}
   renderClientGuidelines();
 }
 
@@ -4158,12 +4172,12 @@ async function renderClientGuidelines(targetElId, idPrefix) {
     .eq('client_id', currentClient.id).order('order_index', {ascending: true});
   if (!data || !data.length) { el.innerHTML = ''; return; }
   el.innerHTML = `<div class="card" style="margin-top:12px;margin-bottom:0;padding-bottom:4px;">
-    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.12em;color:var(--orange);text-transform:uppercase;margin-bottom:10px;">📋 Guidelines</div>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.12em;color:var(--orange);text-transform:uppercase;margin-bottom:10px;">Guidelines</div>
     ${data.map((g, i) => `
       <div style="border-bottom:1px solid var(--gray1);">
         <div onclick="toggleClientGuideline('${prefix}-${i}','${prefix}-arr-${i}')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;cursor:pointer;">
           <div style="font-size:14px;font-weight:700;">${g.title}</div>
-          <span id="${prefix}-arr-${i}" style="font-size:16px;color:var(--gray4);transition:transform 0.2s;">▸</span>
+          <span id="${prefix}-arr-${i}" class="chev">${icon('chevron-down', 20)}</span>
         </div>
         <div id="${prefix}-${i}" style="display:none;padding-bottom:14px;font-size:13px;line-height:1.7;color:var(--black);">${g.content||''}</div>
       </div>`).join('')}
@@ -4176,7 +4190,7 @@ function toggleClientGuideline(contentId, arrowId) {
   if (!el) return;
   const open = el.style.display !== 'none';
   el.style.display = open ? 'none' : 'block';
-  if (arr) arr.style.transform = open ? '' : 'rotate(90deg)';
+  if (arr) arr.style.transform = open ? '' : 'rotate(180deg)';
 }
 
 // ===== LIFT — tab "Coaching" del cliente (Documentos / Protocolos / Notas) =====
@@ -4195,7 +4209,7 @@ async function loadClientDocuments() {
   if (!data || !data.length) { el.innerHTML = '<div style="font-size:13px;color:var(--gray4);text-align:center;padding:16px 0;">Tu coach todavía no subió documentos.</div>'; return; }
   el.innerHTML = data.map((d, i) => `
     <div class="pdf-card fade-up" style="cursor:pointer;" onclick="openClientDocument(${i})">
-      <div class="pdf-icon">📄</div>
+      <div class="pdf-icon">${icon('file-text', 20)}</div>
       <div style="flex:1;min-width:0;">
         <div class="pdf-name">${escHtml(d.title)}</div>
         <div class="pdf-date">${new Date(d.uploaded_at).toLocaleDateString('es-CR')}</div>
@@ -4222,7 +4236,7 @@ async function loadClientProtocolsView() {
     <div style="border-bottom:1px solid var(--gray1);">
       <div onclick="toggleClientGuideline('lift-proto-${i}','lift-proto-arr-${i}')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;cursor:pointer;">
         <div style="font-size:14px;font-weight:700;">${escHtml(p.title)}</div>
-        <span id="lift-proto-arr-${i}" style="font-size:16px;color:var(--gray4);transition:transform 0.2s;">▸</span>
+        <span id="lift-proto-arr-${i}" class="chev">${icon('chevron-down', 20)}</span>
       </div>
       <div id="lift-proto-${i}" style="display:none;padding-bottom:14px;font-size:13px;line-height:1.7;color:var(--black);">${p.content || ''}</div>
     </div>`).join('');
@@ -4277,12 +4291,12 @@ async function loadClientTests() {
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
         <div>
           <div style="font-size:15px;font-weight:700;color:var(--black);">${test.test_name}</div>
-          <div style="font-size:12px;color:var(--gray4);margin-top:2px;">📅 ${new Date(test.test_date).toLocaleDateString('es-CR')}</div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--gray5);margin-top:3px;">${icon('calendar', 14)}${new Date(test.test_date).toLocaleDateString('es-CR')}</div>
         </div>
-        <div style="padding:6px 12px;background:var(--orange-light);color:var(--orange);border-radius:6px;font-size:11px;font-weight:700;">${test.status === 'pending' ? '⏳ Pendiente' : '✅ Completado'}</div>
+        ${test.status === 'pending' ? `<span class="status-pill pending">${icon('clock', 14)}Pendiente</span>` : `<span class="status-pill done">${icon('check-circle', 14)}Completado</span>`}
       </div>
       
-      ${test.context_notes ? `<div style="padding:12px;background:var(--white);border-radius:8px;margin-bottom:12px;font-size:12px;color:var(--gray5);border-left:3px solid var(--orange);">📝 <strong>Contexto:</strong> ${test.context_notes}</div>` : ''}
+      ${test.context_notes ? `<div style="padding:12px;background:var(--white);border-radius:8px;margin-bottom:12px;font-size:12px;color:var(--gray5);border-left:3px solid var(--orange);"><strong>Contexto:</strong> ${test.context_notes}</div>` : ''}
       
       <button onclick="viewTestDetails('${test.id}')" style="width:100%;padding:12px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity 0.2s;">
         ${test.status === 'pending' ? 'Completar Evaluación' : 'Ver Detalles'}
@@ -4300,12 +4314,12 @@ async function viewTestDetails(testId) {
   const exercisesHTML = (exercises && exercises.length > 0) ? exercises.map((ex, i) => `
     <div style="background:var(--gray1);border:1.5px solid var(--gray2);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;">
       <div style="font-size:13px;font-weight:700;color:var(--black);margin-bottom:8px;">${i+1}. ${ex.exercise_name}</div>
-      ${ex.exercise_video_url ? `<div style="margin-bottom:10px;"><a href="${ex.exercise_video_url}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;background:var(--orange-light);color:var(--orange);border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;">▶ Ver video explicativo</a></div>` : ''}
-      ${ex.exercise_notes ? `<div style="font-size:12px;color:var(--gray5);margin-bottom:10px;padding:8px;background:var(--white);border-radius:6px;border-left:3px solid var(--orange);">💡 ${ex.exercise_notes}</div>` : ''}
+      ${ex.exercise_video_url ? `<div style="margin-bottom:10px;"><a href="${ex.exercise_video_url}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;background:var(--orange-light);color:var(--orange);border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;min-height:44px;box-sizing:border-box;">${icon('play', 14)}Ver video explicativo</a></div>` : ''}
+      ${ex.exercise_notes ? `<div style="font-size:12px;color:var(--gray5);margin-bottom:10px;padding:8px;background:var(--white);border-radius:6px;border-left:3px solid var(--orange);">${ex.exercise_notes}</div>` : ''}
       ${isPending ? `
         ${ex.exercise_result ? `
         <div style="display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--orange-light);border-radius:8px;margin-bottom:10px;">
-          <span style="font-size:11px;font-weight:700;color:var(--orange);letter-spacing:0.06em;text-transform:uppercase;white-space:nowrap;">🎯 Meta:</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--orange-text);letter-spacing:0.06em;text-transform:uppercase;white-space:nowrap;">${icon('target', 14)}Meta:</span>
           <span style="font-size:15px;font-weight:800;color:var(--orange);">${ex.exercise_result} <span style="font-size:12px;font-weight:600;">${ex.exercise_unit || ''}</span></span>
         </div>` : ''}
         <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">
@@ -4326,7 +4340,7 @@ async function viewTestDetails(testId) {
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
           ${ex.exercise_result ? `<span style="font-size:18px;font-weight:800;color:var(--orange);">${ex.exercise_result} <span style="font-size:13px;font-weight:600;color:var(--gray4);">${ex.exercise_unit || ''}</span></span>` : '<span style="font-size:13px;color:var(--gray4);">Sin resultado registrado</span>'}
         </div>
-        ${ex.client_notes ? `<div style="font-size:12px;color:var(--gray5);margin-top:8px;padding:8px;background:var(--white);border-radius:6px;">📝 ${ex.client_notes}</div>` : ''}
+        ${ex.client_notes ? `<div style="font-size:12px;color:var(--gray5);margin-top:8px;padding:8px;background:var(--white);border-radius:6px;">${ex.client_notes}</div>` : ''}
       `}
     </div>
   `).join('') : '<div style="text-align:center;padding:20px;color:var(--gray4);font-size:13px;">Esta evaluación no tiene ejercicios definidos.</div>';
@@ -4334,10 +4348,10 @@ async function viewTestDetails(testId) {
   document.getElementById('test-detail-modal-title').textContent = test.test_name;
   document.getElementById('test-detail-modal-body').innerHTML = `
     <div style="margin-bottom:14px;">
-      <span style="font-size:12px;color:var(--gray4);">📅 ${new Date(test.test_date).toLocaleDateString('es-CR')}</span>
-      <span style="margin-left:10px;padding:4px 10px;background:var(--orange-light);color:var(--orange);border-radius:6px;font-size:11px;font-weight:700;">${isPending ? '⏳ Pendiente' : '✅ Completado'}</span>
+      <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--gray5);">${icon('calendar', 14)}${new Date(test.test_date).toLocaleDateString('es-CR')}</span>
+      <span style="margin-left:10px;">${isPending ? `<span class="status-pill pending">${icon('clock', 14)}Pendiente</span>` : `<span class="status-pill done">${icon('check-circle', 14)}Completado</span>`}</span>
     </div>
-    ${test.context_notes ? `<div style="padding:12px;background:var(--white);border:1.5px solid var(--gray2);border-radius:8px;margin-bottom:14px;font-size:12px;color:var(--gray5);">📝 <strong>Contexto:</strong> ${test.context_notes}</div>` : ''}
+    ${test.context_notes ? `<div style="padding:12px;background:var(--white);border:1.5px solid var(--gray2);border-radius:8px;margin-bottom:14px;font-size:12px;color:var(--gray5);"><strong>Contexto:</strong> ${test.context_notes}</div>` : ''}
     <div style="font-size:12px;font-weight:700;color:var(--gray4);letter-spacing:0.08em;margin-bottom:10px;text-transform:uppercase;">Ejercicios</div>
     ${exercisesHTML}
     ${isPending ? `
@@ -4397,7 +4411,7 @@ async function viewCoachTestDetails(testId) {
     <div style="background:var(--gray1);border:1.5px solid var(--gray2);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;">
       <div style="font-size:13px;font-weight:700;color:var(--black);margin-bottom:6px;">${i+1}. ${ex.exercise_name}</div>
       ${ex.exercise_video_url ? `<div style="margin-bottom:8px;"><a href="${ex.exercise_video_url}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--orange-light);color:var(--orange);border-radius:6px;font-size:11px;font-weight:700;text-decoration:none;">▶ Video</a></div>` : ''}
-      ${ex.exercise_notes ? `<div style="font-size:12px;color:var(--gray5);margin-bottom:8px;padding:8px;background:var(--white);border-radius:6px;border-left:3px solid var(--orange);">💡 ${ex.exercise_notes}</div>` : ''}
+      ${ex.exercise_notes ? `<div style="font-size:12px;color:var(--gray5);margin-bottom:8px;padding:8px;background:var(--white);border-radius:6px;border-left:3px solid var(--orange);">${ex.exercise_notes}</div>` : ''}
       <div style="display:flex;align-items:center;gap:10px;">
         ${ex.exercise_result ? `<span style="font-size:18px;font-weight:800;color:${isCompleted ? '#22c55e' : 'var(--orange)'};">${ex.exercise_result} <span style="font-size:12px;font-weight:600;color:var(--gray4);">${ex.exercise_unit || ''}</span></span>` : `<span style="font-size:13px;color:var(--gray4);">${isCompleted ? 'Sin resultado' : 'Pendiente de completar'}</span>`}
       </div>
@@ -4576,21 +4590,21 @@ async function loadCoachTests(filter = 'all') {
         <div onclick="toggleTestCard('${test.id}')" style="display:flex;justify-content:space-between;align-items:center;padding:13px 14px;cursor:pointer;gap:10px;">
           <div style="flex:1;min-width:0;">
             <div style="font-size:14px;font-weight:700;color:var(--black);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${test.test_name}</div>
-            <div style="font-size:11px;color:var(--gray4);margin-top:2px;">👤 ${test.client.name} · 📅 ${new Date(test.test_date).toLocaleDateString('es-CR')}</div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--gray5);margin-top:3px;">${icon('user', 14)}${test.client.name} · ${icon('calendar', 14)}${new Date(test.test_date).toLocaleDateString('es-CR')}</div>
           </div>
           <div style="display:flex;align-items:center;gap:7px;flex-shrink:0;">
-            <div style="padding:4px 9px;background:var(--orange-light);color:var(--orange);border-radius:6px;font-size:11px;font-weight:700;">${test.status === 'pending' ? '⏳ Pendiente' : '✅ Completado'}</div>
-            <div id="test-chevron-${test.id}" style="font-size:11px;color:var(--gray4);transition:transform 0.2s;">▼</div>
+            ${test.status === 'pending' ? `<span class="status-pill pending">${icon('clock', 14)}Pendiente</span>` : `<span class="status-pill done">${icon('check-circle', 14)}Completado</span>`}
+            <div id="test-chevron-${test.id}" class="chev">${icon('chevron-down', 20)}</div>
           </div>
         </div>
         <div id="test-body-${test.id}" style="display:none;padding:0 14px 14px;border-top:1px solid var(--gray2);">
-          ${test.context_notes ? `<div style="padding:9px 11px;background:var(--white);border-radius:8px;margin:10px 0 8px;font-size:12px;color:var(--gray5);border-left:3px solid var(--orange);">📝 ${test.context_notes}</div>` : '<div style="height:10px;"></div>'}
+          ${test.context_notes ? `<div style="padding:9px 11px;background:var(--white);border-radius:8px;margin:10px 0 8px;font-size:12px;color:var(--gray5);border-left:3px solid var(--orange);">${test.context_notes}</div>` : '<div style="height:10px;"></div>'}
           <div style="display:flex;gap:8px;">
             <button onclick="viewCoachTestDetails('${test.id}')" style="flex:1;padding:10px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Ver Detalles</button>
-            <button onclick="saveExistingTestAsTemplate('${test.id}','${test.test_name.replace(/'/g,"\\'")}')" style="padding:10px 13px;background:#f0fff4;color:#276749;border:1.5px solid #276749;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;" title="Guardar como plantilla">💾</button>
-            <button onclick="openCopyTestModal(this)" data-test-id="${test.id}" data-test-name="${test.test_name}" style="padding:10px 13px;background:var(--gray2);color:var(--black);border:none;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;" title="Copiar a otro cliente">📋</button>
-            <button onclick="openEditTestModal('${test.id}')" style="padding:10px 13px;background:var(--gray2);color:var(--black);border:none;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;">✏️</button>
-            <button onclick="confirmDeleteTest('${test.id}','${test.test_name.replace(/'/g,"\\'")}')" style="padding:10px 13px;background:var(--red-light);color:var(--red);border:none;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;">🗑️</button>
+            <button onclick="saveExistingTestAsTemplate('${test.id}','${test.test_name.replace(/'/g,"\\'")}')" class="icon-btn" style="background:#f0fff4;color:#276749;border:1.5px solid #276749;border-radius:var(--radius-sm);" title="Guardar como plantilla" aria-label="Guardar como plantilla">${icon('save', 18)}</button>
+            <button onclick="openCopyTestModal(this)" data-test-id="${test.id}" data-test-name="${test.test_name}" class="icon-btn" style="background:var(--gray2);color:var(--black);border-radius:var(--radius-sm);" title="Copiar a otro cliente" aria-label="Copiar a otro cliente">${icon('copy', 18)}</button>
+            <button onclick="openEditTestModal('${test.id}')" class="icon-btn" style="background:var(--gray2);color:var(--black);border-radius:var(--radius-sm);" aria-label="Editar evaluación">${icon('pencil', 18)}</button>
+            <button onclick="confirmDeleteTest('${test.id}','${test.test_name.replace(/'/g,"\\'")}')" class="icon-btn" style="background:var(--red-light);color:var(--red);border-radius:var(--radius-sm);" aria-label="Borrar evaluación">${icon('trash-2', 18)}</button>
           </div>
         </div>
       </div>
@@ -4635,20 +4649,20 @@ function renderClientTestsList(tests) {
       <div onclick="toggleTestCard('${test.id}')" style="display:flex;justify-content:space-between;align-items:center;padding:13px 14px;cursor:pointer;gap:10px;">
         <div style="flex:1;min-width:0;">
           <div style="font-size:14px;font-weight:700;color:var(--black);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${test.test_name}</div>
-          <div style="font-size:11px;color:var(--gray4);margin-top:2px;">📅 ${new Date(test.test_date).toLocaleDateString('es-CR')}</div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--gray5);margin-top:3px;">${icon('calendar', 14)}${new Date(test.test_date).toLocaleDateString('es-CR')}</div>
         </div>
         <div style="display:flex;align-items:center;gap:7px;flex-shrink:0;">
-          <div style="padding:4px 9px;background:var(--orange-light);color:var(--orange);border-radius:6px;font-size:11px;font-weight:700;">${test.status === 'pending' ? '⏳ Pendiente' : '✅ Completado'}</div>
-          <div id="test-chevron-${test.id}" style="font-size:11px;color:var(--gray4);transition:transform 0.2s;">▼</div>
+          ${test.status === 'pending' ? `<span class="status-pill pending">${icon('clock', 14)}Pendiente</span>` : `<span class="status-pill done">${icon('check-circle', 14)}Completado</span>`}
+          <div id="test-chevron-${test.id}" class="chev">${icon('chevron-down', 20)}</div>
         </div>
       </div>
       <div id="test-body-${test.id}" style="display:none;padding:0 14px 14px;border-top:1px solid var(--gray2);">
-        ${test.context_notes ? `<div style="padding:9px 11px;background:var(--white);border-radius:8px;margin:10px 0 8px;font-size:12px;color:var(--gray5);border-left:3px solid var(--orange);">📝 ${test.context_notes}</div>` : '<div style="height:10px;"></div>'}
+        ${test.context_notes ? `<div style="padding:9px 11px;background:var(--white);border-radius:8px;margin:10px 0 8px;font-size:12px;color:var(--gray5);border-left:3px solid var(--orange);">${test.context_notes}</div>` : '<div style="height:10px;"></div>'}
         <div style="display:flex;gap:8px;">
           <button onclick="viewCoachTestDetails('${test.id}')" style="flex:1;padding:10px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Ver Detalles</button>
-          <button onclick="openCopyTestModal(this)" data-test-id="${test.id}" data-test-name="${test.test_name}" style="padding:10px 13px;background:var(--gray2);color:var(--black);border:none;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;" title="Copiar a otro cliente">📋</button>
-          <button onclick="openEditTestModal('${test.id}')" style="padding:10px 13px;background:var(--gray2);color:var(--black);border:none;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;">✏️</button>
-          <button onclick="confirmDeleteTest('${test.id}','${test.test_name.replace(/'/g,"\\'")}')" style="padding:10px 13px;background:var(--red-light);color:var(--red);border:none;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;">🗑️</button>
+          <button onclick="openCopyTestModal(this)" data-test-id="${test.id}" data-test-name="${test.test_name}" class="icon-btn" style="background:var(--gray2);color:var(--black);border-radius:var(--radius-sm);" title="Copiar a otro cliente" aria-label="Copiar a otro cliente">${icon('copy', 18)}</button>
+          <button onclick="openEditTestModal('${test.id}')" class="icon-btn" style="background:var(--gray2);color:var(--black);border-radius:var(--radius-sm);" aria-label="Editar evaluación">${icon('pencil', 18)}</button>
+          <button onclick="confirmDeleteTest('${test.id}','${test.test_name.replace(/'/g,"\\'")}')" class="icon-btn" style="background:var(--red-light);color:var(--red);border-radius:var(--radius-sm);" aria-label="Borrar evaluación">${icon('trash-2', 18)}</button>
         </div>
       </div>
     </div>
@@ -14216,10 +14230,10 @@ async function loadCoachExtras(clientId) {
         <div style="font-size:13px;font-weight:700;">${s.name}</div>
         <div style="font-size:11px;color:var(--gray4);">${countMap[s.id]||0} ejercicio(s)</div>
       </div>
-      <button onclick="openRenameExtraSession('${s.id}','${s.name.replace(/'/g,"\\'")}')" style="background:var(--gray1);border:none;border-radius:6px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--gray5);">✏️</button>
-      <button onclick="openCopyExtraSessionSheet('${s.id}','${s.name.replace(/'/g,"\\'")}')" style="background:#e8f4fd;color:#2b6cb0;border:none;border-radius:6px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">📋</button>
-      <button onclick="saveExtraAsTemplate('${s.id}','${s.name.replace(/'/g,"\\'")}')" style="background:#fef9e7;color:#d69e2e;border:none;border-radius:6px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">⭐</button>
-      <button onclick="deleteExtraSession('${s.id}')" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>
+      <button onclick="openRenameExtraSession('${s.id}','${s.name.replace(/'/g,"\\'")}')" class="icon-btn" style="background:var(--gray1);color:var(--gray5);" aria-label="Renombrar sesión">${icon('pencil', 18)}</button>
+      <button onclick="openCopyExtraSessionSheet('${s.id}','${s.name.replace(/'/g,"\\'")}')" class="icon-btn" style="background:#e8f4fd;color:#2b6cb0;" aria-label="Copiar sesión a otro cliente">${icon('copy', 18)}</button>
+      <button onclick="saveExtraAsTemplate('${s.id}','${s.name.replace(/'/g,"\\'")}')" class="icon-btn" style="background:#fef9e7;color:#b7791f;" aria-label="Guardar como machote">${icon('star', 18)}</button>
+      <button onclick="deleteExtraSession('${s.id}')" class="icon-btn" style="background:var(--red-light);color:var(--red);" aria-label="Borrar sesión">${icon('x', 18)}</button>
     </div>`).join('');
 }
 
@@ -14422,7 +14436,7 @@ async function loadClientExtras() {
   el.innerHTML = '<div class="spinner"></div>';
   const {data: sessions} = await sb.from('extra_sessions').select('id,name,order_index').eq('client_id', currentClient.id).order('order_index',{ascending:true});
   if (!sessions || !sessions.length) {
-    el.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--gray4);"><div style="font-size:32px;margin-bottom:8px;">⚡</div><div style="font-size:14px;font-weight:600;">Sin sesiones extras aún</div><div style="font-size:12px;margin-top:4px;">Tu coach agregará sesiones especiales aquí</div></div>';
+    el.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--gray5);"><div style="display:flex;justify-content:center;color:var(--icon-empty);margin-bottom:12px;">'+icon('zap', 44)+'</div><div style="font-size:14px;font-weight:600;">Sin sesiones extras aún</div><div style="font-size:12px;margin-top:4px;">Tu coach agregará sesiones especiales aquí</div></div>';
     return;
   }
   const ids = sessions.map(s=>s.id);
@@ -14440,15 +14454,15 @@ async function loadClientExtras() {
         <div style="font-size:11px;color:var(--gray5);">${[e.sets?e.sets+' series':'', e.reps_range||'', e.rest_seconds?e.rest_seconds+'s descanso':''].filter(Boolean).join(' · ')||''}</div>
         ${e.muscle_group?`<div style="font-size:10px;color:var(--orange);margin-top:1px;">${e.muscle_group}</div>`:''}
         ${e.notes?`<div style="font-size:11px;color:var(--gray4);margin-top:3px;font-style:italic;">${e.notes}</div>`:''}
-        ${e.video_url?`<a href="${e.video_url}" target="_blank" style="font-size:11px;color:var(--orange);font-weight:600;display:inline-block;margin-top:3px;">▶ Ver video</a>`:''}
+        ${e.video_url?`<a href="${e.video_url}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:13px;color:var(--orange-text);font-weight:700;text-decoration:none;">${icon('play', 14)}Ver video</a>`:''}
       </div>`).join('');
-    return `<div style="border:1.5px solid var(--gray2);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;">
-      <div onclick="toggleClientExtra('cex-${i}')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;background:var(--white);">
+    return `<div style="background:var(--white);border:1px solid var(--line);border-radius:16px;margin-bottom:10px;overflow:hidden;">
+      <div onclick="toggleClientExtra('cex-${i}')" style="display:flex;align-items:center;justify-content:space-between;min-height:64px;padding:0 16px;cursor:pointer;background:var(--white);">
         <div>
-          <div style="font-size:14px;font-weight:700;">⚡ ${s.name}</div>
+          <div style="font-size:15px;font-weight:700;">${s.name}</div>
           <div style="font-size:11px;color:var(--gray4);margin-top:1px;">${exs.length} ejercicio(s)</div>
         </div>
-        <span id="cex-arr-${i}" style="font-size:16px;color:var(--gray4);transition:transform 0.2s;">▸</span>
+        <span id="cex-arr-${i}" class="chev">${icon('chevron-down', 20)}</span>
       </div>
       <div id="cex-${i}" style="display:none;padding:0 16px 12px;">${exHtml||'<div style="font-size:12px;color:var(--gray4);padding:12px 0;">Sin ejercicios cargados.</div>'}</div>
     </div>`;
@@ -14461,7 +14475,7 @@ function toggleClientExtra(id) {
   const arr = document.getElementById('cex-arr-'+idx);
   const open = body.style.display === 'none';
   body.style.display = open ? 'block' : 'none';
-  if (arr) arr.style.transform = open ? 'rotate(90deg)' : '';
+  if (arr) arr.style.transform = open ? 'rotate(180deg)' : '';
 }
 
 async function openCopyExtraSessionSheet(sessionId, sessionName) {
@@ -15932,7 +15946,7 @@ function renderProgressForm() {
           <div style="flex:1;text-align:center;">
             <div class="upload-area" style="padding:0;height:90px;overflow:hidden;margin-bottom:6px;display:flex;align-items:center;justify-content:center;" onclick="document.getElementById('progress-photo-${key}').click()">
               <div id="progress-photo-${key}-box" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
-                <div style="font-size:22px;">📷</div>
+                <div style="color:var(--icon-rest);display:flex;">${icon('camera', 22)}</div>
               </div>
             </div>
             <div class="upload-text" style="font-size:11px;">${label}</div>
@@ -15968,7 +15982,7 @@ async function renderProgressLockedCard(log) {
   return `
     <div style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;">Registro de esta semana</div>
     <div style="background:var(--green-light);border:1.5px solid var(--green);border-radius:16px;padding:16px;margin-bottom:20px;">
-      <div style="font-size:15px;font-weight:700;color:var(--green);margin-bottom:2px;">✅ Ya registraste tu progreso de esta semana</div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:15px;font-weight:700;color:#15803D;margin-bottom:2px;">${icon('check-circle', 18)}Ya registraste tu progreso de esta semana</div>
       <div style="font-size:12px;color:var(--gray5);margin-bottom:14px;">Próximo registro disponible el ${nextMondayStr}</div>
       <div style="font-size:20px;font-weight:900;margin-bottom:12px;">${log.weight_kg} kg</div>
       <div style="display:flex;gap:10px;margin-bottom:14px;">${thumbsHtml}</div>
