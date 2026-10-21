@@ -580,6 +580,27 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 .exx-auto { position:absolute; top:-8px; right:-4px; background:#E3F4E8; color:#1E7A3C; font-size:9px; font-weight:700; padding:0 5px; border-radius:7px; line-height:14px; pointer-events:none; }
 .exx-auto[hidden] { display:none; }
 .exx-sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+.exx-assist-btn { width:100%; min-height:44px; margin-bottom:8px; border:0; border-radius:var(--radius-sm); background:#F1EEE8; color:var(--black); font:700 13px 'DM Sans',sans-serif; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; }
+.exx-assist-sent { display:flex; align-items:center; justify-content:center; gap:4px; margin-bottom:8px; flex-wrap:wrap; }
+.exx-sent-chip { display:inline-flex; align-items:center; gap:6px; min-height:32px; padding:0 12px; border-radius:16px; background:#E3F4E8; color:#1E7A3C; font-size:13px; font-weight:700; }
+.exx-reasons { display:flex; flex-wrap:wrap; gap:8px; }
+.exx-reason { min-height:44px; padding:0 16px; border-radius:22px; border:2px solid transparent; background:#F1EEE8; color:#3D3832; font:600 14px 'DM Sans',sans-serif; cursor:pointer; }
+.exx-reason[aria-pressed="true"] { border-color:#C24E18; background:#FCEBDD; color:#A8420F; font-weight:700; }
+.exx-wa-bubble { background:#DCF8C6; border-radius:6px 18px 18px 18px; padding:14px 16px; font-size:14px; line-height:1.5; color:#1A1714; display:flex; flex-direction:column; gap:6px; word-break:break-word; }
+.exx-btn-wa { background:#1E7A3C; min-height:56px; }
+.exx-btn-ghost { background:#F1EEE8; color:var(--black); }
+.exx-banner { display:flex; align-items:center; gap:12px; background:#C24E18; color:#fff; border-radius:var(--radius); padding:12px 12px 12px 16px; margin:12px 0 10px; box-shadow:var(--shadow); }
+.exx-banner-ico { flex:none; width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.18); display:flex; align-items:center; justify-content:center; }
+.exx-banner-btn { flex:none; min-height:44px; padding:0 18px; border:0; border-radius:12px; background:#fff; color:#C24E18; font:700 14px 'DM Sans',sans-serif; cursor:pointer; }
+.client-card.exx-assist-card { background:#C24E18; color:#fff; }
+.exx-assist-card .client-name, .exx-assist-card .client-meta, .exx-assist-card .client-meta * { color:#fff !important; }
+.exx-assist-card .client-avatar { background:rgba(255,255,255,0.22) !important; color:#fff !important; opacity:1 !important; }
+.exx-assist-card .client-type-tag, .exx-assist-card .client-name span { background:rgba(255,255,255,0.22) !important; color:#fff !important; border-color:transparent !important; }
+.exx-assist-card .payment-badge, .exx-assist-card > div:last-child { background:#fff !important; color:#C24E18 !important; border-color:#fff !important; }
+.exx-assist-chip { display:inline-flex; align-items:center; gap:5px; margin-top:6px; padding:3px 9px; border-radius:10px; background:#fff; color:#C24E18; font-size:11px; font-weight:700; }
+.exx-req { background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow); border-top:4px solid #C24E18; padding:14px 16px 16px; margin-bottom:14px; display:flex; flex-direction:column; gap:12px; }
+.exx-req-tag { display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700; letter-spacing:0.1em; color:#C24E18; }
+.exx-dot { flex:none; width:8px; height:8px; border-radius:4px; background:#C24E18; }
 .exx-sheet [hidden], .exx-badge[hidden], .exx-coach-notes[hidden] { display:none !important; }
 
 /* SPINNER */
@@ -900,6 +921,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 <symbol id="i-trash-2" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></symbol>
 <symbol id="i-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
 <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+<symbol id="i-life-buoy" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></symbol>
 <symbol id="i-undo-2" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></symbol>
 <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
 <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
@@ -1323,6 +1345,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
       <div class="sort-chip" onclick="setSortClients('start_date',this)">Fecha inicio</div>
       <div class="sort-chip" onclick="setSortClients('last_active',this)">Última sesión</div>
     </div>
+    <div id="exx-assist-banner"></div>
     <div id="coach-clients-list"><div class="spinner"></div></div>
   </div>
   <div class="bottom-nav">
@@ -1340,6 +1363,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
   <div class="topbar"><div class="back-btn" onclick="showScreen('screen-coach-home');loadCoachClients();">‹ Clientes</div><div class="topbar-action" onclick="showPlanBuilder()">+ Plan</div></div>
   <div class="profile-header" id="coach-profile-header"></div>
   <div class="scroll-body" style="padding-top:14px;">
+    <div id="exx-coach-assist"></div>
     <div class="section-header"><div class="section-title">LIFT</div></div>
     <div class="payment-card" id="coach-lift-card"></div>
     <div class="section-header"><div class="section-title">Información de pago</div><div class="section-action" onclick="showModal('modal-edit-payment')">Editar</div></div>
@@ -4158,6 +4182,7 @@ async function loadClientExercises() {
           <tbody>${setRows}</tbody>
         </table>
         <div style="padding-top:8px;">
+          <div id="exx-assist-${ex.id}">${exxAssistBtnHtml(ex)}</div>
           <button onclick="saveSoloToSupabase('${ex.id}','${soloLogsKey}',${ex.sets})" style="width:100%;padding:10px;background:var(--orange);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Guardar ✓</button>
         </div>
         </div>
@@ -6138,11 +6163,13 @@ function renderCoachClients(clients) {
     const liftBadge = isLift ? `<span title="Programa LIFT" style="display:inline-flex;align-items:center;justify-content:center;padding:3px 7px;border-radius:5px;font-size:9px;font-weight:800;background:var(--orange);color:#fff;font-family:'DM Mono',monospace;letter-spacing:0.04em;flex-shrink:0;">LIFT</span>` : '';
     const churnBadge = c.is_churn ? `<div style="background:#f3f4f6;color:var(--gray4);border-radius:8px;padding:6px 10px;text-align:center;font-size:11px;font-weight:700;line-height:1.2;border:1.5px solid var(--gray2);"><div style="font-size:8px;margin-top:1px;">CHURN</div></div>` : `<div class="payment-badge ${badgeClass}"><div style="font-size:8px;opacity:0.7;margin-bottom:1px;">PAGO</div>${badgeText}</div>`;
     const hasOverdueReminder = (window._clientsWithOverdueReminder||new Set()).has(c.id);
-    return `<div class="client-card fade-up" onclick="openCoachClient('${c.id}')" style="${hasOverdueReminder?'background:var(--orange-light);border:1.5px solid var(--orange);':''}">
+    const exxReqs = exxOpenAssistFor(c.id);
+    return `<div class="client-card fade-up${exxReqs.length?' exx-assist-card':''}" onclick="openCoachClient('${c.id}')" style="${!exxReqs.length&&hasOverdueReminder?'background:var(--orange-light);border:1.5px solid var(--orange);':''}">
       <div class="client-avatar" style="${c.is_churn ? 'opacity:0.5;' : ''}">${getInitials(c.name)}</div>
       <div class="client-info">
         <div class="client-name" style="display:flex;align-items:center;gap:6px;${c.is_churn ? 'color:var(--gray4);' : ''}">${c.name}${typeTag}${evolutionBadge}${liftBadge}${(window._clientsWithReminder||new Set()).has(c.id)?'<div style="width:22px;height:22px;border-radius:5px;background:#fff3e0;display:flex;align-items:center;justify-content:center;font-size:12px;"><svg class="ico" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-bell"/></svg></div>':''}</div>
         <div class="client-meta">@${c.username} · ${(c.days_trained||0)+(c.days_trained_adjustment||0)} días${startDateStr?` · Inicio: ${startDateStr}`:''}${endDateStr?` · Fin: ${endDateStr}`:''}${clientSortMode==='last_active'?(()=>{const t=(window._lastTrainedMap||{})[c.id];return t?` · ${new Date(t).toLocaleDateString('es-CR',{weekday:'short',day:'numeric',month:'short'})}`:' · Sin entreno';})():''}</div>
+        ${exxReqs.length?`<div class="exx-assist-chip">${icon('life-buoy',12)}Pidió asistencia · ${exxAgo(exxReqs[0].created_at)}</div>`:''}
       </div>
       ${churnBadge}
     </div>`;
@@ -6193,6 +6220,9 @@ async function loadCoachClients() {
     window._clientsWithReminder = new Set();
     window._clientsWithOverdueReminder = new Set();
   }
+  // Solicitudes de asistencia abiertas (tarjeta naranja + banner); si falla, la lista se ve como antes
+  try { await exxLoadOpenAssist(clientIds); } catch(e) { console.warn('exx assist load failed:', e); }
+  exxStartAssistPolling();
   renderCoachClients(clients||[]);
 }
 
@@ -6211,6 +6241,7 @@ async function fillCoachLatestWeight(clientId) {
 async function openCoachClient(clientId) {
   const {data:c} = await sb.from('clients').select('*').eq('id',clientId).single();
   currentClient=c;
+  exxRenderCoachAssist(c);
   const startDateStr = c.start_date ? formatDate(c.start_date) : null;
   const endDateStr = c.program_end_date ? formatDate(c.program_end_date) : null;
   const typeTag = c.client_type ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:10px;font-weight:800;background:var(--orange-light);color:var(--orange);border:1.5px solid var(--orange-mid);font-family:'DM Mono',monospace;margin-left:6px;">${c.client_type==='Virtual'?'V':'H'}</span>` : '';
@@ -11292,7 +11323,7 @@ async function toggleDayLogs(planDayId, label, btn) {
     sb.from('exercise_logs').select('*').in('exercise_id',exIds).order('logged_at',{ascending:false}),
     currentClient ? exxLoadCoachNotes(currentClient.id, exs.map(e=>e.name)).catch(()=>{}) : null
   ]);
-  const hasNotes = e => (exxCoachNotes[exxKey(e.name)]||[]).length > 0;
+  const hasNotes = e => (exxCoachNotes[exxKey(e.name)]||[]).length > 0 || exxCoachHasOpenAssist(e.name);
   if((!logs||logs.length===0) && !exs.some(hasNotes)){container.innerHTML='<div style="font-size:12px;color:var(--gray4);padding:6px 0;">Sin logs guardados.</div>';return;}
   // Group by exercise
   const byEx = {};
@@ -11314,7 +11345,7 @@ async function toggleDayLogs(planDayId, label, btn) {
       </div>`;
     }).join('');
     return `<div style="padding:6px 0 2px;border-bottom:1px solid var(--gray1);">
-      <div style="font-size:12px;font-weight:700;margin-bottom:3px;">${e.name}</div>
+      <div style="font-size:12px;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:6px;">${exxCoachHasOpenAssist(e.name)?'<span class="exx-dot" role="img" aria-label="Solicitud de asistencia abierta"></span>':''}${e.name}</div>
       ${exxCoachPillsHtml(e.name, `exx-cn-${planDayId}-${e.id}`)}
       ${setRows}
     </div>`;
@@ -13681,7 +13712,7 @@ function setSoloUnit(exId, unit, btn) {
 // assistance_requests (migration_notes_plates_assist.sql). Solo ejercicios sueltos
 // (los circuitos quedan como estaban). Si una tabla falla, la card se ve como antes.
 const EXX_MONTHS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-const exxState = { clientId:null, exById:{}, libIdByKey:{}, notesCount:{}, setups:{} };
+const exxState = { clientId:null, exById:{}, libIdByKey:{}, notesCount:{}, setups:{}, assist:{} };
 const exxSheet = { exId:null, tab:'notes' };
 
 function exxKey(name) {
@@ -13696,19 +13727,24 @@ function exxFmtNum(n) { return n == null || !Number.isFinite(Number(n)) ? '' : S
 async function exxLoadForDay(exs) {
   const cid = currentClient?.id;
   if(!cid) return;
-  if(exxState.clientId !== cid) { exxState.clientId = cid; exxState.exById = {}; exxState.libIdByKey = {}; exxState.notesCount = {}; exxState.setups = {}; }
+  if(exxState.clientId !== cid) { exxState.clientId = cid; exxState.exById = {}; exxState.libIdByKey = {}; exxState.notesCount = {}; exxState.setups = {}; exxState.assist = {}; }
   const solo = (exs || []).filter(e => !e.superset_group);
   solo.forEach(e => { exxState.exById[e.id] = e; });
   const keys = [...new Set(solo.map(e => exxKey(e.name)))];
   if(!keys.length) return;
   const missing = [...new Set(solo.filter(e => !(exxKey(e.name) in exxState.libIdByKey)).map(e => e.name))];
-  const [libRes, notesRes, setupsRes] = await Promise.all([
+  const [libRes, notesRes, setupsRes, assistRes] = await Promise.all([
     missing.length
       ? sb.from('exercise_library').select('id,name').eq('coach_id', currentClient.coach_id).in('name', missing)
       : Promise.resolve({ data: [] }),
     sb.from('exercise_notes').select('exercise_key').eq('client_id', cid).in('exercise_key', keys).is('deleted_at', null),
-    sb.from('exercise_plate_setups').select('*').eq('client_id', cid).in('exercise_key', keys)
+    sb.from('exercise_plate_setups').select('*').eq('client_id', cid).in('exercise_key', keys),
+    sb.from('assistance_requests').select('id,exercise_key,reason,detail,created_at').eq('client_id', cid).eq('status', 'open').in('exercise_key', keys)
   ]);
+  if(!assistRes.error) {
+    keys.forEach(k => { delete exxState.assist[k]; });
+    (assistRes.data || []).forEach(r => { exxState.assist[r.exercise_key] = r; });
+  }
   if(!setupsRes.error) (setupsRes.data || []).forEach(r => { exxState.setups[r.exercise_key] = r; });
   missing.forEach(n => { exxState.libIdByKey[exxKey(n)] = null; });
   (libRes.data || []).forEach(r => { const k = exxKey(r.name); if(!exxState.libIdByKey[k]) exxState.libIdByKey[k] = r.id; });
@@ -14188,6 +14224,279 @@ async function saveExxPlates() {
   exxRefreshLastLoad();
   closeExxSheet();
   showToast(totalKg == null ? 'Placas guardadas' : `Placas guardadas · ${exxTotalText(row, currentWeightUnit)}`, 'success');
+}
+
+// ---- solicitar asistencia (cliente) ----
+// Mismo número que el resto de los botones de WhatsApp de la app (overlay de churn, flotante).
+const EXX_WA_NUMBER = '50672083564';
+const EXX_REASONS = ['Dolor o molestia', 'Muy pesado', 'Muy liviano', 'No tengo el equipo', 'Quiero cambiarlo', 'Otra cosa'];
+const exxAssist = { exId:null, reason:null };
+
+function exxAssistBtnHtml(ex) {
+  const open = exxState.assist[exxKey(ex.name)];
+  if(open) return `<div class="exx-assist-sent">
+      <span class="exx-sent-chip">${icon('check', 14)}Solicitud enviada</span>
+      <button type="button" class="exx-link-btn" style="padding:0 4px 0 10px;" onclick="openExxAssist('${ex.id}')">Reenviar</button>
+    </div>`;
+  return `<button type="button" class="exx-assist-btn" onclick="openExxAssist('${ex.id}')">${icon('life-buoy', 18)}<span>Solicitar asistencia</span></button>`;
+}
+function exxRefreshAssistBtns() {
+  Object.values(exxState.exById).forEach(ex => {
+    const el = document.getElementById('exx-assist-' + ex.id);
+    if(el) el.innerHTML = exxAssistBtnHtml(ex);
+  });
+}
+
+// "10, 5 y 2,5" (con unidad por disco si no coincide con la que se muestra)
+function exxPlatesSpoken(plates, unit) {
+  const sorted = exxSortedPlates(plates);
+  const same = sorted.every(p => p.unit === unit);
+  const parts = sorted.map(p => exxFmtNum(exxPlateValue(p)) + (same ? '' : ' ' + p.unit));
+  return parts.length > 1 ? parts.slice(0, -1).join(', ') + ' y ' + parts[parts.length - 1] : (parts[0] || '');
+}
+function exxLoadLine(st, unit) {
+  if(!st) return '';
+  const total = exxTotalText(st, unit);
+  if(st.mode === 'bar') {
+    const bar = `${exxFmtNum(exxRoundUnit(exxFromKg(Number(st.bar_kg || 0), unit), unit))} ${unit}`;
+    return st.plates?.length
+      ? `Última carga: ${total} (barra ${bar} + ${exxPlatesSpoken(st.plates, unit)} por lado).`
+      : `Última carga: ${total} (solo barra de ${bar}).`;
+  }
+  const pin = `pin en la placa ${st.pin_position} de ${st.pin_stack_size || EXX_PIN_STACK}`;
+  return total ? `Última carga: ${total} (${pin}, ${exxBreakdown(st, unit)}).` : `Última carga: ${pin}.`;
+}
+function exxAssistMessage() {
+  const ex = exxState.exById[exxAssist.exId];
+  const name = (currentClient?.name || '').trim().split(/\s+/)[0] || '';
+  const detail = (document.getElementById('exx-assist-detail')?.value || '').trim();
+  const lines = [
+    `Hola Sau, soy ${name}. Necesito asistencia con *${ex.name}* (Semana ${clientWeek}).`,
+    `Motivo: ${exxAssist.reason || '…'}.`
+  ];
+  if(detail) lines.push(detail);
+  const st = exxPlatesAllowed(ex) ? exxState.setups[exxKey(ex.name)] : null;
+  if(st) lines.push(exxLoadLine(st, currentWeightUnit));
+  return lines.join('\n');
+}
+
+function openExxAssist(exId) {
+  const ex = exxState.exById[exId];
+  if(!ex || !currentClient) return;
+  const prev = exxState.assist[exxKey(ex.name)];
+  exxAssist.exId = exId;
+  exxAssist.reason = prev?.reason || null;
+  document.getElementById('exx-assist-sheet')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'exx-assist-sheet';
+  ov.className = 'modal-overlay open exx-sheet';
+  ov.onclick = (ev) => { if(ev.target === ov) ov.remove(); };
+  ov.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="exx-assist-title">
+      <div class="exx-head">
+        <div><h2 class="exx-h" id="exx-assist-title">Solicitar asistencia</h2><div class="exx-sub">${escHtml(ex.name)}</div></div>
+        <button type="button" class="exx-icon-btn" aria-label="Cerrar" onclick="document.getElementById('exx-assist-sheet')?.remove()">${icon('x', 22)}</button>
+      </div>
+      <div class="exx-stack">
+        <span class="exx-label" id="exx-reason-label">¿Qué necesitás?</span>
+        <div class="exx-reasons" role="group" aria-labelledby="exx-reason-label">
+          ${EXX_REASONS.map((r, i) => `<button type="button" class="exx-reason" data-i="${i}" aria-pressed="${exxAssist.reason === r}" onclick="setExxReason(${i})">${r}</button>`).join('')}
+        </div>
+      </div>
+      <div class="exx-stack">
+        <label for="exx-assist-detail" class="exx-label">Contanos más (opcional)</label>
+        <textarea id="exx-assist-detail" class="form-textarea" rows="3" maxlength="600" placeholder="Ej: la barra está ocupada, ¿qué puedo usar?" oninput="renderExxAssistPreview()">${escHtml(prev?.detail || '')}</textarea>
+      </div>
+      <div class="exx-stack">
+        <span class="exx-label">Así le llega a Sau por WhatsApp</span>
+        <div class="exx-wa-bubble" id="exx-assist-preview" aria-live="polite"></div>
+      </div>
+      <div class="exx-stack" style="gap:10px;">
+        <button type="button" class="exx-btn exx-btn-wa" id="exx-assist-send" onclick="sendExxAssist()">${icon('message-circle', 22)}<span>Enviar por WhatsApp</span></button>
+        <span style="font-size:12px;line-height:1.45;color:var(--gray5);text-align:center;">Se abre WhatsApp con el mensaje listo; solo falta tocar enviar. Sau también ve tu solicitud dentro de la app.</span>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  renderExxAssistPreview();
+}
+function setExxReason(i) {
+  exxAssist.reason = EXX_REASONS[i];
+  document.querySelectorAll('#exx-assist-sheet .exx-reason').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.i) === i)));
+  renderExxAssistPreview();
+}
+// Vista previa: *texto* se ve en negrita como en WhatsApp
+function renderExxAssistPreview() {
+  const el = document.getElementById('exx-assist-preview');
+  if(!el || !exxAssist.exId) return;
+  el.innerHTML = exxAssistMessage().split('\n').map(l => `<span>${escHtml(l).replace(/\*([^*]+)\*/g, '<b>$1</b>')}</span>`).join('');
+}
+
+async function sendExxAssist() {
+  const ex = exxState.exById[exxAssist.exId];
+  if(!ex) return;
+  if(!exxAssist.reason) { showToast('Elegí un motivo', 'error'); return; }
+  const msg = exxAssistMessage();
+  const url = `https://wa.me/${EXX_WA_NUMBER}?text=${encodeURIComponent(msg)}`;
+  // WhatsApp primero, dentro del toque (si se abre después de un await, Android puede bloquearlo).
+  // Mismo patrón que los otros botones de WhatsApp de la app; si el navegador lo bloquea, se navega.
+  const win = window.open(url, '_blank');
+  if(!win) location.href = url;
+  document.getElementById('exx-assist-sheet')?.remove();
+
+  const key = exxKey(ex.name);
+  const detail = (document.getElementById('exx-assist-detail')?.value || '').trim() || null;
+  const st = exxPlatesAllowed(ex) ? exxState.setups[key] : null;
+  const lastLoad = st ? {
+    mode: st.mode, bar_kg: st.bar_kg, plates: st.plates || [], pin_position: st.pin_position,
+    pin_stack_size: st.pin_stack_size, pin_plate_weight: st.pin_plate_weight, weight_unit: st.weight_unit,
+    total_kg: exxTotalKg(st), text: exxLoadLine(st, currentWeightUnit)
+  } : null;
+  const fields = { reason: exxAssist.reason, detail, last_load: lastLoad, exercise_id: ex.id, exercise_name: ex.name, plan_day_id: ex.plan_day_id || null, week_number: clientWeek };
+  try {
+    // Una sola abierta por cliente + ejercicio: si ya hay, se actualiza en vez de duplicar
+    const {data:open, error:findErr} = await sb.from('assistance_requests').select('id')
+      .eq('client_id', currentClient.id).eq('exercise_key', key).eq('status', 'open')
+      .order('created_at', {ascending:false}).limit(1).maybeSingle();
+    if(findErr) throw findErr;
+    const res = open
+      ? await sb.from('assistance_requests').update(fields).eq('id', open.id).select('id,reason,detail,created_at').maybeSingle()
+      : await sb.from('assistance_requests').insert({ client_id: currentClient.id, exercise_library_id: exxState.libIdByKey[key] || null, exercise_key: key, ...fields })
+          .select('id,reason,detail,created_at').maybeSingle();
+    if(res.error) throw res.error;
+    exxState.assist[key] = res.data || { reason: fields.reason, detail };
+    exxRefreshAssistBtns();
+    if(!open) exxNotifyCoach(ex.name);
+  } catch(e) {
+    console.warn('assistance_requests failed:', e);
+    showToast('Se abrió WhatsApp, pero no se pudo registrar en la app', 'error', 4000);
+  }
+}
+
+// Push opcional al coach por OneSignal (api/notify.js ya filtra por tag username)
+async function exxNotifyCoach(exName) {
+  try {
+    if(!currentClient?.coach_id) return;
+    const {data:coach} = await sb.from('users').select('username').eq('id', currentClient.coach_id).maybeSingle();
+    if(!coach?.username) return;
+    const first = (currentClient.name || '').trim().split(/\s+/)[0];
+    await fetch('/api/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: `${first} pidió asistencia`, message: exName, target: { username: coach.username } })
+    });
+  } catch(e) { /* silencioso */ }
+}
+
+// ---- solicitudes de asistencia (coach) ----
+let exxOpenAssistByClient = new Map(); // client_id → abiertas, más nueva primero
+let exxCoachAssist = [];               // abiertas del cliente que el coach tiene abierto
+let exxAssistTimer = null;
+
+function exxAgo(iso) {
+  const min = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
+  if(min < 1) return 'hace un momento';
+  if(min < 60) return `hace ${min} min`;
+  const h = Math.floor(min / 60);
+  if(h < 24) return `hace ${h} h`;
+  const d = Math.floor(h / 24);
+  return `hace ${d} ${d === 1 ? 'día' : 'días'}`;
+}
+function exxOpenAssistFor(clientId) { return exxOpenAssistByClient.get(clientId) || []; }
+
+async function exxLoadOpenAssist(clientIds) {
+  if(!clientIds?.length) { exxOpenAssistByClient = new Map(); exxRenderAssistBanner(); return; }
+  const {data, error} = await sb.from('assistance_requests').select('id,client_id,exercise_name,created_at')
+    .eq('status', 'open').in('client_id', clientIds).order('created_at', {ascending:false});
+  if(error) return;
+  const map = new Map();
+  (data || []).forEach(r => { if(!map.has(r.client_id)) map.set(r.client_id, []); map.get(r.client_id).push(r); });
+  exxOpenAssistByClient = map;
+  exxRenderAssistBanner();
+}
+
+function exxRenderAssistBanner() {
+  const el = document.getElementById('exx-assist-banner');
+  if(!el) return;
+  const all = [...exxOpenAssistByClient.values()].flat().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  if(!all.length) { el.innerHTML = ''; return; }
+  const last = all[0];
+  const client = (window._cachedClientsAll || []).find(c => c.id === last.client_id);
+  const title = all.length > 1 ? `${all.length} solicitudes abiertas` : `${escHtml(client?.name || 'Un cliente')} pidió asistencia`;
+  el.innerHTML = `<section class="exx-banner" aria-label="Solicitud de asistencia abierta">
+      <span class="exx-banner-ico">${icon('life-buoy', 20)}</span>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+        <span style="font-size:15px;font-weight:700;">${title}</span>
+        <span style="font-size:13px;opacity:0.92;">${all.length > 1 ? escHtml(client?.name || '') + ' · ' : ''}${escHtml(last.exercise_name)} · ${exxAgo(last.created_at)}</span>
+      </div>
+      <button type="button" class="exx-banner-btn" onclick="openCoachClient('${last.client_id}')">Ver</button>
+    </section>`;
+}
+
+// Cada 60 s mientras la lista esté visible, y al volver a la pestaña. Se corta al salir del panel.
+function exxStartAssistPolling() {
+  if(exxAssistTimer) return;
+  exxAssistTimer = setInterval(() => {
+    if(currentUser?.role !== 'coach') { clearInterval(exxAssistTimer); exxAssistTimer = null; return; }
+    exxRefreshAssistIfVisible();
+  }, 60000);
+}
+async function exxRefreshAssistIfVisible() {
+  if(document.hidden || currentUser?.role !== 'coach') return;
+  if(!document.getElementById('screen-coach-home')?.classList.contains('active')) return;
+  const clients = window._cachedClientsAll || [];
+  try { await exxLoadOpenAssist(clients.map(c => c.id)); } catch(e) { return; }
+  renderCoachClients(clients);
+}
+document.addEventListener('visibilitychange', () => { if(!document.hidden) exxRefreshAssistIfVisible(); });
+
+async function exxRenderCoachAssist(c) {
+  const box = document.getElementById('exx-coach-assist');
+  if(!box) return;
+  box.innerHTML = '';
+  exxCoachAssist = [];
+  const {data, error} = await sb.from('assistance_requests').select('*')
+    .eq('client_id', c.id).eq('status', 'open').order('created_at', {ascending:false});
+  if(error || currentClient?.id !== c.id) return;
+  exxCoachAssist = data || [];
+  const first = escHtml((c.name || '').trim().split(/\s+/)[0]);
+  const phone = String(c.phone || c.whatsapp || '').replace(/\D/g, '');
+  box.innerHTML = exxCoachAssist.map(r => {
+    const when = new Date(r.created_at);
+    const today = when.toDateString() === new Date().toDateString();
+    const time = when.toLocaleTimeString('es-CR', {hour:'numeric', minute:'2-digit', hour12:true});
+    const ll = r.last_load;
+    const drawing = ll ? (ll.mode === 'bar' ? exxBarSvg(ll.plates || [], {width:120, height:53, labels:false}) : exxPinSvg(ll.pin_position, ll.pin_stack_size, {width:40, height:70, labels:false})) : '';
+    const unit = ll?.weight_unit || 'kg';
+    return `<section class="exx-req" aria-label="Solicitud de asistencia abierta">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <span class="exx-req-tag">${icon('life-buoy', 14)}SOLICITUD ABIERTA</span>
+        <span style="font-size:12px;color:var(--gray5);">${today ? 'hoy' : when.toLocaleDateString('es-CR', {day:'numeric', month:'short'})} · ${time}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <span style="font-size:17px;font-weight:700;">${escHtml(r.exercise_name)}</span>
+        <span style="font-size:14px;color:#A8420F;font-weight:600;">${escHtml(r.reason)}</span>
+      </div>
+      ${r.detail ? `<div class="exx-stack" style="gap:4px;"><span class="exx-label">Mensaje de ${first}</span><span style="font-size:14px;line-height:1.45;white-space:pre-wrap;">${escHtml(r.detail)}</span></div>` : ''}
+      ${ll ? `<div class="exx-last" style="margin:0;padding:10px 14px;">${drawing}<div style="display:flex;flex-direction:column;gap:2px;min-width:0;"><span class="exx-label" style="font-size:10px;">Última carga</span><span style="font-size:15px;font-weight:700;">${exxTotalText(ll, unit) || '—'} <span style="font-weight:400;color:var(--gray5);font-size:12px;">· ${exxBreakdown(ll, unit)}</span></span></div></div>` : ''}
+      ${phone ? `<a class="exx-btn exx-btn-wa" style="text-decoration:none;" href="https://wa.me/${phone}" target="_blank" rel="noopener">${icon('message-circle', 20)}<span>Responder por WhatsApp</span></a>` : ''}
+      <button type="button" class="exx-btn exx-btn-ghost" onclick="resolveExxAssist('${r.id}', this)">${icon('check', 18)}<span>Marcar como resuelta</span></button>
+    </section>`;
+  }).join('');
+}
+function exxCoachHasOpenAssist(name) { const k = exxKey(name); return exxCoachAssist.some(r => r.exercise_key === k); }
+
+// Nunca se borra: status → resolved
+async function resolveExxAssist(id, btn) {
+  if(btn) btn.disabled = true;
+  const {error} = await sb.from('assistance_requests').update({status:'resolved', resolved_at:new Date().toISOString()}).eq('id', id).eq('status', 'open');
+  if(error) { if(btn) btn.disabled = false; showToast('No se pudo marcar como resuelta', 'error'); return; }
+  showToast('Solicitud resuelta', 'success');
+  const cid = currentClient?.id;
+  exxCoachAssist = exxCoachAssist.filter(r => r.id !== id);
+  const rest = exxOpenAssistFor(cid).filter(r => r.id !== id);
+  if(rest.length) exxOpenAssistByClient.set(cid, rest); else exxOpenAssistByClient.delete(cid);
+  exxRenderAssistBanner();
+  if(currentClient) exxRenderCoachAssist(currentClient);
 }
 
 // ---- coach: notas dentro de los logs por ejercicio (solo lectura) ----
