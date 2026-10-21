@@ -3947,7 +3947,7 @@ async function loadClientExercises() {
           const phCR = prevC?.reps || 'reps';
           return `<td style="padding:4px;text-align:center;border-bottom:1px solid var(--gray2);">
             <div style="display:flex;gap:3px;justify-content:center;align-items:center;">
-              <input type="number" inputmode="decimal" placeholder="${phCW}" value="${wVal}"
+              <input type="text" inputmode="decimal" autocomplete="off" placeholder="${phCW}" value="${wVal}"
                 style="width:46px;padding:5px 4px;border:1.5px solid ${isDone?'var(--green)':'var(--gray2)'};border-radius:6px;font-size:12px;text-align:center;font-family:'DM Sans',sans-serif;outline:none;background:${isDone?'var(--green-light)':'var(--white)'};color:var(--black);"
                 id="clog-w-${se.id}-r${r}"
                 onchange="saveCircuitLog('${se.id}',${r},'${circuitLogsKey}')"
@@ -4046,7 +4046,7 @@ async function loadClientExercises() {
           <td style="padding:5px 6px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:var(--gray4);white-space:nowrap;border-bottom:1px solid var(--gray2);">Set ${s}</td>
           <td style="padding:4px;border-bottom:1px solid var(--gray2);">
             <div style="display:flex;gap:3px;align-items:center;flex-wrap:wrap;">
-              <input type="number" inputmode="decimal" placeholder="${phW}" value="${wVal}"
+              <input type="text" inputmode="decimal" autocomplete="off" placeholder="${phW}" value="${wVal}"
                 style="width:52px;padding:5px 4px;border:1.5px solid ${filled?'var(--green)':'var(--gray2)'};border-radius:6px;font-size:12px;text-align:center;font-family:'DM Sans',sans-serif;outline:none;background:${filled?'var(--green-light)':'var(--white)'};color:var(--black);"
                 id="slog-w-${ex.id}-s${s}"
                 onchange="saveSoloLog('${ex.id}',${s},'${soloLogsKey}')"
@@ -5033,7 +5033,7 @@ async function openExDetail(ex) {
 
     c.innerHTML+=`<div class="set-row">
       <div class="set-num">Set ${i}</div>
-      <input class="set-input" type="number" placeholder="${prev?.weight||'kg'}" id="log-w-${i}" min="0" step="0.5">
+      <input class="set-input" type="text" inputmode="decimal" autocomplete="off" placeholder="${prev?.weight||'kg'}" id="log-w-${i}">
       <input class="set-input" type="number" placeholder="${prev?.reps_done||'reps'}" id="log-r-${i}" min="0">
     </div>
     ${prev ? `<div style="font-size:10px;color:var(--gray4);padding:1px 0 5px 48px;">Última vez: <span style="color:var(--orange);font-weight:700;">${prevWStr||'—'} × ${prevRStr||'—'} reps</span></div>` : ''}`;
@@ -5102,7 +5102,7 @@ async function saveLog() {
   const logs=[];
   let totalWeight = 0;
   for(let i=1;i<=currentExercise.sets;i++){
-    const w=parseFloat(document.getElementById('log-w-'+i)?.value)||0;
+    const w=parseDecimal(document.getElementById('log-w-'+i)?.value)||0;
     const r=parseInt(document.getElementById('log-r-'+i)?.value)||0;
     if(w>0&&r>0) totalWeight += w * r;
     logs.push({exercise_id:currentExercise.id,client_id:currentClient.id,week_number:clientWeek,set_number:i,weight:w||null,weight_unit:weightUnit,reps_done:r||null,difficulty:null});
@@ -13506,6 +13506,16 @@ async function setNutritionMode(mode) {
   showToast(mode === 'deficit' ? 'Modo Déficit — Método del Plato MOVE' : mode === 'maintenance' ? 'Modo Mantenimiento' : 'Modo Superávit');
   loadCoachFoodPanel();
 }
+// Peso de ejercicios: acepta coma o punto ("7,5" en iPhone con teclado en español).
+// Devuelve número o null; se sigue guardando con punto (número).
+function parseDecimal(v) {
+  if(v == null) return null;
+  const str = String(v).trim().replace(/,/g, '.');
+  if(str === '') return null;
+  const n = Number(str);
+  return Number.isFinite(n) ? n : null;
+}
+
 // ===== SOLO EXERCISE LOG FUNCTIONS =====
 function saveSoloLog(exId, setNum, logsKey) {
   const w = document.getElementById(`slog-w-${exId}-s${setNum}`)?.value;
@@ -13538,7 +13548,7 @@ async function saveSoloToSupabase(exId, logsKey, sets) {
   const progressions = [];
   for(let s=1; s<=sets; s++){
     const saved = logs[`${exId}_s${s}`]||{};
-    const w = parseFloat(saved.w)||null;
+    const w = parseDecimal(saved.w)||null;
     const r = parseInt(saved.r)||null;
     if(w||r){
       inserts.push({exercise_id:exId, client_id:currentClient.id, week_number:clientWeek, set_number:s, weight:w, weight_unit:currentWeightUnit, reps_done:r, difficulty:null});
@@ -13546,7 +13556,7 @@ async function saveSoloToSupabase(exId, logsKey, sets) {
       // Compare with previous week
       const prev = prevSets[s];
       if(prev) {
-        const prevW = parseFloat(prev.weight)||0;
+        const prevW = parseDecimal(prev.weight)||0;
         const prevR = parseInt(prev.reps)||0;
         if(w && prevW && w > prevW) progressions.push({set:s, type:'peso', from:prevW, to:w, unit:currentWeightUnit});
         else if(r && prevR && r > prevR && !(w > prevW)) progressions.push({set:s, type:'reps', from:prevR, to:r});
@@ -13619,7 +13629,7 @@ async function saveCircuitToSupabase(groupName, logsKey, exIds, rounds) {
   for(const exId of exIds){
     for(let r=1;r<=rounds;r++){
       const saved = logs[`${exId}_r${r}`]||{};
-      const w = parseFloat(saved.w)||null;
+      const w = parseDecimal(saved.w)||null;
       const reps = parseInt(saved.r)||null;
       if(w||reps){
         inserts.push({exercise_id:exId, client_id:currentClient.id, week_number:clientWeek, set_number:r, weight:w, weight_unit:weightUnit, reps_done:reps, difficulty:null});
