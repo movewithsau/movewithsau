@@ -560,6 +560,26 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 .exx-coach-notes .exx-note { padding:8px 0; }
 .exx-coach-notes .exx-note:first-child { border-top:0; }
 .exx-coach-notes .exx-note-text { font-size:13px; }
+.exx-chip { min-height:40px; padding:0 16px; border-radius:20px; border:2px solid transparent; background:#F1EEE8; color:#5A544C; font:600 14px 'DM Sans',sans-serif; cursor:pointer; }
+.exx-chip[aria-pressed="true"] { border-color:#C24E18; background:var(--white); color:#C24E18; font-weight:700; }
+.exx-panel { background:#F7F4EE; border-radius:18px; display:flex; flex-direction:column; }
+.exx-bar-select select { min-height:36px; padding:0 12px; border:0; border-radius:18px; background:var(--white); color:var(--black); font:600 13px 'DM Sans',sans-serif; cursor:pointer; }
+.exx-tiers { display:flex; align-items:flex-start; justify-content:space-between; gap:2px; }
+.exx-tier { display:flex; flex-direction:column; align-items:center; gap:2px; }
+.exx-tier-slot { height:58px; display:flex; align-items:center; position:relative; }
+.exx-disc { border-radius:50%; border:0; padding:0; font-family:'DM Sans',sans-serif; font-weight:700; cursor:pointer; }
+.exx-tier-count { position:absolute; top:0; right:-7px; min-width:20px; height:20px; border-radius:10px; background:#1A1714; color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+.exx-tier-alt { font-size:11px; color:var(--gray5); white-space:nowrap; }
+.exx-total { background:#26221E; border-radius:20px; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; gap:10px; color:#F6F1E8; }
+.exx-step { flex:1; min-height:48px; border:0; border-radius:14px; background:var(--white); color:var(--black); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.exx-step-main { background:#C24E18; color:#fff; }
+.exx-step:disabled { opacity:0.4; cursor:default; }
+.exx-last { display:flex; align-items:center; gap:8px; background:#F7F4EE; border-radius:16px; padding:10px 6px 4px 14px; margin-bottom:8px; }
+.exx-last-total { font-family:'Playfair Display',serif; font-size:28px; font-weight:700; line-height:1.1; }
+.exx-link-btn { min-height:44px; padding:0 10px 0 16px; border:0; background:transparent; color:#C24E18; font:700 14px 'DM Sans',sans-serif; text-decoration:underline; cursor:pointer; }
+.exx-auto { position:absolute; top:-8px; right:-4px; background:#E3F4E8; color:#1E7A3C; font-size:9px; font-weight:700; padding:0 5px; border-radius:7px; line-height:14px; pointer-events:none; }
+.exx-auto[hidden] { display:none; }
+.exx-sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
 .exx-sheet [hidden], .exx-badge[hidden], .exx-coach-notes[hidden] { display:none !important; }
 
 /* SPINNER */
@@ -4084,11 +4104,15 @@ async function loadClientExercises() {
           <td style="padding:5px 6px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:var(--gray4);white-space:nowrap;border-bottom:1px solid var(--gray2);">Set ${s}</td>
           <td style="padding:4px;border-bottom:1px solid var(--gray2);">
             <div style="display:flex;gap:3px;align-items:center;flex-wrap:wrap;">
+              <span style="position:relative;display:inline-flex;">
               <input type="text" inputmode="decimal" autocomplete="off" placeholder="${phW}" value="${wVal}"
                 style="width:52px;padding:5px 4px;border:1.5px solid ${filled?'var(--green)':'var(--gray2)'};border-radius:6px;font-size:12px;text-align:center;font-family:'DM Sans',sans-serif;outline:none;background:${filled?'var(--green-light)':'var(--white)'};color:var(--black);"
                 id="slog-w-${ex.id}-s${s}"
+                oninput="exxManualEdit('${ex.id}',${s})"
                 onchange="saveSoloLog('${ex.id}',${s},'${soloLogsKey}')"
                 onfocus="this.style.borderColor='var(--orange)'">
+              <span class="exx-auto" id="exx-auto-${ex.id}-s${s}" ${exxIsAuto(ex.id, s) ? '' : 'hidden'}>auto</span>
+              </span>
               <input type="number" inputmode="numeric" placeholder="${phR}" value="${rVal}"
                 style="width:52px;padding:5px 4px;border:1.5px solid ${filled?'var(--green)':'var(--gray2)'};border-radius:6px;font-size:12px;text-align:center;font-family:'DM Sans',sans-serif;outline:none;background:${filled?'var(--green-light)':'var(--white)'};color:var(--black);"
                 id="slog-r-${ex.id}-s${s}"
@@ -4121,13 +4145,14 @@ async function loadClientExercises() {
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;">
           <div id="${unitToggleId}" style="display:flex;gap:3px;flex-shrink:0;">
-            <button onclick="setSoloUnit('${ex.id}','kg',this)" class="unit-btn selected" style="padding:4px 9px;font-size:11px;">kg</button>
-            <button onclick="setSoloUnit('${ex.id}','lb',this)" class="unit-btn" style="padding:4px 9px;font-size:11px;">lb</button>
+            <button onclick="setSoloUnit('${ex.id}','kg',this)" class="unit-btn ${currentWeightUnit==='lb'?'':'selected'}" style="padding:4px 9px;font-size:11px;">kg</button>
+            <button onclick="setSoloUnit('${ex.id}','lb',this)" class="unit-btn ${currentWeightUnit==='lb'?'selected':''}" style="padding:4px 9px;font-size:11px;">lb</button>
           </div>
           ${exxNotesLinkHtml(ex)}
           </div>
         </div>
         ${ex.rpe ? renderRPEGauge(ex.rpe) : ''}
+        <div id="exx-load-${ex.id}">${exxLastLoadHtml(ex)}</div>
         <!-- Inline table -->
         <table style="width:100%;border-collapse:collapse;">
           <tbody>${setRows}</tbody>
@@ -13646,6 +13671,7 @@ function setSoloUnit(exId, unit, btn) {
   const container = document.getElementById(`unit-solo-${exId}`);
   if(container){ container.querySelectorAll('.unit-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); }
   document.querySelectorAll(`[id^="slog-w-${exId}-"]`).forEach(inp=>inp.placeholder=unit);
+  exxOnUnitChange();
 }
 
 // ===== EXTRAS POR EJERCICIO: notas · placas · asistencia =====
@@ -13655,7 +13681,7 @@ function setSoloUnit(exId, unit, btn) {
 // assistance_requests (migration_notes_plates_assist.sql). Solo ejercicios sueltos
 // (los circuitos quedan como estaban). Si una tabla falla, la card se ve como antes.
 const EXX_MONTHS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-const exxState = { clientId:null, exById:{}, libIdByKey:{}, notesCount:{} };
+const exxState = { clientId:null, exById:{}, libIdByKey:{}, notesCount:{}, setups:{} };
 const exxSheet = { exId:null, tab:'notes' };
 
 function exxKey(name) {
@@ -13670,18 +13696,20 @@ function exxFmtNum(n) { return n == null || !Number.isFinite(Number(n)) ? '' : S
 async function exxLoadForDay(exs) {
   const cid = currentClient?.id;
   if(!cid) return;
-  if(exxState.clientId !== cid) { exxState.clientId = cid; exxState.exById = {}; exxState.libIdByKey = {}; exxState.notesCount = {}; }
+  if(exxState.clientId !== cid) { exxState.clientId = cid; exxState.exById = {}; exxState.libIdByKey = {}; exxState.notesCount = {}; exxState.setups = {}; }
   const solo = (exs || []).filter(e => !e.superset_group);
   solo.forEach(e => { exxState.exById[e.id] = e; });
   const keys = [...new Set(solo.map(e => exxKey(e.name)))];
   if(!keys.length) return;
   const missing = [...new Set(solo.filter(e => !(exxKey(e.name) in exxState.libIdByKey)).map(e => e.name))];
-  const [libRes, notesRes] = await Promise.all([
+  const [libRes, notesRes, setupsRes] = await Promise.all([
     missing.length
       ? sb.from('exercise_library').select('id,name').eq('coach_id', currentClient.coach_id).in('name', missing)
       : Promise.resolve({ data: [] }),
-    sb.from('exercise_notes').select('exercise_key').eq('client_id', cid).in('exercise_key', keys).is('deleted_at', null)
+    sb.from('exercise_notes').select('exercise_key').eq('client_id', cid).in('exercise_key', keys).is('deleted_at', null),
+    sb.from('exercise_plate_setups').select('*').eq('client_id', cid).in('exercise_key', keys)
   ]);
+  if(!setupsRes.error) (setupsRes.data || []).forEach(r => { exxState.setups[r.exercise_key] = r; });
   missing.forEach(n => { exxState.libIdByKey[exxKey(n)] = null; });
   (libRes.data || []).forEach(r => { const k = exxKey(r.name); if(!exxState.libIdByKey[k]) exxState.libIdByKey[k] = r.id; });
   if(!notesRes.error) {
@@ -13739,8 +13767,19 @@ function openExxSheet(exId, tab) {
 function closeExxSheet() { document.getElementById('exx-sheet')?.remove(); exxSheet.exId = null; }
 
 function renderExxSheet() {
-  renderExxNotes();
+  const ex = exxState.exById[exxSheet.exId];
+  const tabs = document.getElementById('exx-tabs');
+  if(!ex || !tabs) return;
+  const withPlates = exxPlatesAllowed(ex);
+  if(!withPlates) exxSheet.tab = 'notes';
+  tabs.innerHTML = withPlates ? `<div class="exx-seg" role="group" aria-label="Sección">
+      <button type="button" aria-pressed="${exxSheet.tab === 'notes'}" onclick="setExxTab('notes')">Notas</button>
+      <button type="button" aria-pressed="${exxSheet.tab === 'plates'}" onclick="setExxTab('plates')">Placas</button>
+    </div>` : '';
+  if(exxSheet.tab === 'plates') renderExxPlates(true);
+  else renderExxNotes();
 }
+function setExxTab(tab) { exxSheet.tab = tab; renderExxSheet(); }
 
 async function renderExxNotes() {
   const body = document.getElementById('exx-body');
@@ -13802,6 +13841,353 @@ async function deleteExxNote(noteId) {
   if(error) { showToast('No se pudo eliminar la nota', 'error'); return; }
   showToast('Nota eliminada');
   renderExxNotes();
+}
+
+// ---- placas ----
+// Cada disco se guarda como {tier, unit}: unit = la unidad con la que se agregó (un disco de
+// 45 lb sigue siendo de 45 lb aunque después se mire en kg). Nunca se derivan discos de un número.
+const EXX_LB = 0.45359237;
+const EXX_TIERS = [
+  {id:'t25',   kg:25,   lb:55,  color:'#1F4E8C', d:58},
+  {id:'t20',   kg:20,   lb:45,  color:'#26221E', d:54},
+  {id:'t15',   kg:15,   lb:35,  color:'#C24E18', d:50},
+  {id:'t10',   kg:10,   lb:25,  color:'#E8A15C', d:46, dark:true},
+  {id:'t5',    kg:5,    lb:10,  color:'#1E7A3C', d:42},
+  {id:'t2_5',  kg:2.5,  lb:5,   color:'#6B2E92', d:38},
+  {id:'t1_25', kg:1.25, lb:2.5, color:'#BFB8AC', d:34, dark:true},
+];
+const EXX_TIER_BY_ID = Object.fromEntries(EXX_TIERS.map(t => [t.id, t]));
+const EXX_BARS = [{v:20, unit:'kg'}, {v:15, unit:'kg'}, {v:45, unit:'lb'}, {v:35, unit:'lb'}];
+const EXX_PIN_STACK = 12;
+let exxEdit = null; // setup que se está editando en el sheet
+
+// Placas solo en ejercicios sueltos con carga externa (tag de exercises).
+function exxPlatesAllowed(ex) { return !!ex && !ex.superset_group && (ex.tag === 'Peso Libre' || ex.tag === 'Máquina'); }
+function exxToKg(v, unit) { return unit === 'lb' ? v * EXX_LB : v; }
+function exxFromKg(kg, unit) { return unit === 'lb' ? kg / EXX_LB : kg; }
+// Para mostrar: kg con 2 decimales, lb a 0,5
+function exxRoundUnit(v, unit) { return unit === 'lb' ? Math.round(v * 2) / 2 : Math.round(v * 100) / 100; }
+function exxPlateKg(p) { const t = EXX_TIER_BY_ID[p.tier]; return t ? exxToKg(p.unit === 'lb' ? t.lb : t.kg, p.unit) : 0; }
+function exxPlateValue(p) { const t = EXX_TIER_BY_ID[p.tier]; return t ? (p.unit === 'lb' ? t.lb : t.kg) : 0; }
+function exxBarOf(barKg) { return EXX_BARS.find(b => Math.abs(exxToKg(b.v, b.unit) - Number(barKg)) < 0.01) || null; }
+
+function exxTotalKg(st) {
+  if(!st) return null;
+  if(st.mode === 'bar') {
+    const side = (st.plates || []).reduce((s, p) => s + exxPlateKg(p), 0);
+    return Number(st.bar_kg || 0) + 2 * side;
+  }
+  if(st.pin_plate_weight == null || !st.pin_position) return null;
+  return st.pin_position * exxToKg(Number(st.pin_plate_weight), st.weight_unit);
+}
+// "10 + 5 + 2,5 kg" (si se mezclan unidades, cada disco lleva la suya)
+function exxPerSideText(plates) {
+  const sorted = exxSortedPlates(plates);
+  if(!sorted.length) return 'Sin discos';
+  const units = new Set(sorted.map(p => p.unit));
+  if(units.size === 1) return sorted.map(p => exxFmtNum(exxPlateValue(p))).join(' + ') + ' ' + sorted[0].unit;
+  return sorted.map(p => exxFmtNum(exxPlateValue(p)) + ' ' + p.unit).join(' + ');
+}
+// "20 + 2 × 17,5" en la unidad pedida
+function exxBreakdown(st, unit) {
+  if(st.mode === 'bar') {
+    const bar = exxFmtNum(exxRoundUnit(exxFromKg(Number(st.bar_kg || 0), unit), unit));
+    const sideKg = (st.plates || []).reduce((s, p) => s + exxPlateKg(p), 0);
+    return sideKg ? `${bar} + 2 × ${exxFmtNum(exxRoundUnit(exxFromKg(sideKg, unit), unit))}` : `Solo barra · ${bar} ${unit}`;
+  }
+  if(st.pin_plate_weight == null) return `Pin en la placa ${st.pin_position} de ${st.pin_stack_size || EXX_PIN_STACK}`;
+  const w = exxFmtNum(exxRoundUnit(exxFromKg(exxToKg(Number(st.pin_plate_weight), st.weight_unit), unit), unit));
+  return `${st.pin_position} ${st.pin_position === 1 ? 'placa' : 'placas'} × ${w} ${unit}`;
+}
+function exxTotalText(st, unit) {
+  const kg = exxTotalKg(st);
+  return kg == null ? null : `${exxFmtNum(exxRoundUnit(exxFromKg(kg, unit), unit))} ${unit}`;
+}
+// Más pesado pegado al centro; conserva el índice original para poder quitarlo
+function exxSortedPlates(plates) {
+  return (plates || []).map((p, i) => ({...p, i})).filter(p => EXX_TIER_BY_ID[p.tier])
+    .sort((a, b) => exxPlateKg(b) - exxPlateKg(a));
+}
+
+function exxBarSvg(plates, opts = {}) {
+  const dims = exxSortedPlates(plates).map(p => {
+    const t = EXX_TIER_BY_ID[p.tier];
+    return { p, t, w: Math.round(t.d / 4), h: Math.round(t.d * 1.9 - 10) };
+  });
+  const totalW = dims.reduce((s, d) => s + d.w, 0);
+  const k = totalW > 96 ? 96 / totalW : 1;
+  let xl = 110, xr = 232, shapes = '';
+  dims.forEach(d => {
+    const w = d.w * k, y = 75 - d.h / 2, val = exxFmtNum(exxPlateValue(d.p));
+    const fs = Math.max(6, Math.min(11, w * 0.8));
+    const fg = d.t.dark ? '#1A1714' : '#FFFFFF';
+    const act = opts.interactive
+      ? ` role="button" tabindex="0" aria-label="Quitar disco de ${val} ${d.p.unit}" style="cursor:pointer" onclick="exxRemovePlate(${d.p.i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();exxRemovePlate(${d.p.i})}"`
+      : '';
+    const plate = (x) => `<g${act}><rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${d.h}" rx="3" fill="${d.t.color}"/>${opts.labels !== false && w >= 7 ? `<text transform="translate(${(x + w / 2).toFixed(1)} 75) rotate(-90)" text-anchor="middle" dominant-baseline="central" font-family="DM Sans, sans-serif" font-size="${fs.toFixed(1)}" font-weight="700" fill="${fg}">${val}</text>` : ''}</g>`;
+    xl -= w;
+    shapes += plate(xl) + plate(xr);
+    xr += w;
+  });
+  const side = exxPerSideText(plates);
+  return `<svg role="img" aria-label="Barra con ${escHtml(side)} por lado" width="${opts.width || '100%'}" ${opts.height ? `height="${opts.height}"` : ''} viewBox="0 0 342 150" fill="none" style="display:block;">
+    <rect x="12" y="71" width="318" height="8" rx="4" fill="#8A8379"/>
+    <rect x="12" y="67" width="98" height="16" rx="3" fill="#B5AEA3"/>
+    <rect x="232" y="67" width="98" height="16" rx="3" fill="#B5AEA3"/>
+    <rect x="124" y="68" width="94" height="14" rx="2" fill="#A39C91"/>
+    ${shapes}
+  </svg>`;
+}
+
+function exxPinSvg(pos, stack, opts = {}) {
+  const n = stack || EXX_PIN_STACK;
+  let rows = '';
+  for(let i = 1; i <= n; i++) {
+    const y = 4 + (i - 1) * 22, on = i <= pos;
+    rows += `<rect x="8" y="${y}" width="134" height="18" rx="4" fill="${on ? '#26221E' : '#E6E2DA'}"${i === pos ? ' stroke="#C24E18" stroke-width="2"' : ''}/>`;
+    if(opts.labels !== false) rows += `<text x="22" y="${y + 9}" fill="${on ? '#FFFFFF' : '#5A544C'}" font-family="DM Mono, monospace" font-size="11" text-anchor="middle" dominant-baseline="central">${i}</text>`;
+  }
+  const py = 4 + (pos - 1) * 22 + 6;
+  return `<svg role="img" aria-label="Pila de placas con el pin en la placa ${pos} de ${n}" width="${opts.width || 150}" ${opts.height ? `height="${opts.height}"` : ''} viewBox="0 0 170 ${n * 22 + 6}" fill="none" style="display:block;flex:none;">
+    ${rows}
+    ${pos ? `<rect x="64" y="${py}" width="98" height="6" rx="3" fill="#C24E18"/><circle cx="162" cy="${py + 3}" r="6" fill="#C24E18"/>` : ''}
+  </svg>`;
+}
+
+// ---- bloque ÚLTIMA CARGA en la card ----
+function exxLastLoadHtml(ex) {
+  if(!exxPlatesAllowed(ex)) return '';
+  const st = exxState.setups[exxKey(ex.name)];
+  if(!st) return '';
+  const unit = currentWeightUnit;
+  const total = exxTotalText(st, unit);
+  const drawing = st.mode === 'bar'
+    ? exxBarSvg(st.plates, {width:150, height:66, labels:false})
+    : exxPinSvg(st.pin_position, st.pin_stack_size, {width:46, height:80, labels:false});
+  return `<div class="exx-last">
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
+      <span class="exx-label" style="font-size:10px;">Última carga</span>
+      ${drawing}
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;flex:none;">
+      <span class="exx-last-total">${total || '—'}</span>
+      <span style="font-size:12px;color:var(--gray5);">${exxBreakdown(st, unit)}</span>
+      <button type="button" class="exx-link-btn" onclick="openExxSheet('${ex.id}','plates')">Editar</button>
+    </div>
+  </div>`;
+}
+function exxRefreshLastLoad() {
+  Object.values(exxState.exById).forEach(ex => {
+    const el = document.getElementById('exx-load-' + ex.id);
+    if(el) el.innerHTML = exxLastLoadHtml(ex);
+  });
+}
+
+// ---- autocompletar kg de los sets ----
+// Flags "auto" por día en localStorage (misma granularidad que mws_slogs_*). Los valores
+// se escriben en mws_slogs_* para que saveSoloToSupabase los tome igual que si se tipearan.
+function exxDayKey() { return `${currentClient.id}_w${clientWeek}_${clientDay}`; }
+function exxReadLS(key) { try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; } }
+function exxWriteLS(key, obj) { try { localStorage.setItem(key, JSON.stringify(obj)); } catch {} }
+function exxIsAuto(exId, s) { return !!currentClient && !!exxReadLS(`mws_exx_auto_${exxDayKey()}`)[`${exId}_s${s}`]; }
+
+function exxApplyAutofill(exId) {
+  const ex = exxState.exById[exId];
+  if(!ex || isExerciseDone(exId)) return;
+  const st = exxState.setups[exxKey(ex.name)];
+  const kg = exxTotalKg(st);
+  if(kg == null) return;
+  const unit = currentWeightUnit;
+  const val = exxFmtNum(exxRoundUnit(exxFromKg(kg, unit), unit));
+  const autoKey = `mws_exx_auto_${exxDayKey()}`, logsKey = `mws_slogs_${exxDayKey()}`;
+  const auto = exxReadLS(autoKey), logs = exxReadLS(logsKey);
+  for(let s = 1; s <= ex.sets; s++) {
+    const k = `${exId}_s${s}`;
+    const inp = document.getElementById(`slog-w-${exId}-s${s}`);
+    const cur = inp ? inp.value : (logs[k]?.w || '');
+    if(cur && !auto[k]) continue; // escrito a mano: no se pisa
+    logs[k] = {...(logs[k] || {}), w: val};
+    auto[k] = true;
+    if(inp) inp.value = val;
+    document.getElementById(`exx-auto-${exId}-s${s}`)?.removeAttribute('hidden');
+  }
+  exxWriteLS(autoKey, auto);
+  exxWriteLS(logsKey, logs);
+}
+function exxManualEdit(exId, s) {
+  const autoKey = `mws_exx_auto_${exxDayKey()}`;
+  const auto = exxReadLS(autoKey);
+  if(!auto[`${exId}_s${s}`]) return;
+  delete auto[`${exId}_s${s}`];
+  exxWriteLS(autoKey, auto);
+  document.getElementById(`exx-auto-${exId}-s${s}`)?.setAttribute('hidden', '');
+}
+// kg/lb: los números auto se recalculan en la nueva unidad; las placas no cambian
+function exxOnUnitChange() {
+  if(!currentClient) return;
+  document.querySelectorAll('[id^="unit-solo-"]').forEach(box => {
+    box.querySelectorAll('.unit-btn').forEach(b => b.classList.toggle('selected', b.textContent.trim() === currentWeightUnit));
+  });
+  const auto = exxReadLS(`mws_exx_auto_${exxDayKey()}`);
+  const withAuto = new Set(Object.keys(auto).map(k => k.replace(/_s\d+$/, '')));
+  withAuto.forEach(exId => { if(exxState.exById[exId]) exxApplyAutofill(exId); });
+  exxRefreshLastLoad();
+}
+
+// ---- pestaña Placas del sheet ----
+function exxNewSetup(ex) {
+  const unit = currentWeightUnit;
+  return { mode: ex.tag === 'Máquina' ? 'pin' : 'bar', bar_kg: exxToKg(unit === 'lb' ? 45 : 20, unit), plates: [],
+    pin_position: 1, pin_stack_size: EXX_PIN_STACK, pin_plate_weight: null, weight_unit: unit };
+}
+
+function renderExxPlates(reset) {
+  const body = document.getElementById('exx-body');
+  const ex = exxState.exById[exxSheet.exId];
+  if(!body || !ex) return;
+  if(reset || !exxEdit) {
+    const saved = exxState.setups[exxKey(ex.name)];
+    exxEdit = saved
+      ? { mode: saved.mode, bar_kg: Number(saved.bar_kg ?? 20), plates: (saved.plates || []).map(p => ({tier:p.tier, unit:p.unit})),
+          pin_position: saved.pin_position || 1, pin_stack_size: saved.pin_stack_size || EXX_PIN_STACK,
+          pin_plate_weight: saved.pin_plate_weight == null ? null : Number(saved.pin_plate_weight), weight_unit: saved.weight_unit || currentWeightUnit }
+      : exxNewSetup(ex);
+  }
+  const st = exxEdit, unit = st.weight_unit, other = unit === 'kg' ? 'lb' : 'kg';
+  const totalKg = exxTotalKg(st);
+  const seg = (val, cur, label, fn) => `<button type="button" class="exx-chip" aria-pressed="${val === cur}" onclick="${fn}('${val}')">${label}</button>`;
+  let main = '';
+  if(st.mode === 'bar') {
+    const bar = exxBarOf(st.bar_kg) || EXX_BARS[0];
+    const counts = {};
+    st.plates.forEach(p => { counts[p.tier] = (counts[p.tier] || 0) + 1; });
+    main = `
+      <div class="exx-panel" style="padding:10px 10px 12px;gap:2px;">
+        ${exxBarSvg(st.plates, {interactive:true})}
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 4px;flex-wrap:wrap;">
+          <span style="font-size:13px;color:#5A544C;">Por lado: ${exxPerSideText(st.plates)}</span>
+          <label class="exx-bar-select">
+            <span class="exx-sr">Barra</span>
+            <select onchange="setExxBar(this.value)" aria-label="Barra">
+              ${EXX_BARS.map((b, i) => `<option value="${i}" ${b === bar ? 'selected' : ''}>Barra · ${b.v} ${b.unit}</option>`).join('')}
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="exx-stack" style="gap:6px;">
+        <span class="exx-label">Tocá un disco para agregarlo por lado</span>
+        <div class="exx-tiers">
+          ${EXX_TIERS.map(t => {
+            const n = counts[t.id] || 0, big = unit === 'lb' ? t.lb : t.kg, small = unit === 'lb' ? t.kg : t.lb;
+            return `<div class="exx-tier">
+              <div class="exx-tier-slot">
+                <button type="button" class="exx-disc" aria-label="Agregar disco de ${exxFmtNum(big)} ${unit}${n ? ', hay ' + n : ''}" onclick="addExxPlate('${t.id}')"
+                  style="width:${t.d}px;height:${t.d}px;background:${t.color};color:${t.dark ? '#1A1714' : '#FFFFFF'};font-size:${t.d >= 50 ? 16 : t.d >= 42 ? 14 : 11}px;${n ? 'box-shadow:0 0 0 3px #1A1714;' : ''}">${exxFmtNum(big)}</button>
+                ${n ? `<span class="exx-tier-count">${n}</span>` : ''}
+              </div>
+              <span class="exx-tier-alt">${exxFmtNum(small)} ${other}</span>
+            </div>`;
+          }).join('')}
+        </div>
+        <span style="font-size:12px;line-height:1.4;color:var(--gray5);">El mismo disco sirve en kg o lb: 20 kg = 45 lb, 25 kg = 55 lb. Para quitar uno, tocá la placa en la barra.</span>
+      </div>`;
+  } else {
+    const n = st.pin_stack_size || EXX_PIN_STACK;
+    main = `
+      <div class="exx-panel" style="flex-direction:row;align-items:flex-start;gap:16px;padding:14px;">
+        ${exxPinSvg(st.pin_position, n, {width:130})}
+        <div style="flex:1;display:flex;flex-direction:column;gap:10px;min-width:0;">
+          <span class="exx-label">Pin en la placa</span>
+          <span style="font-family:'Playfair Display',serif;font-size:56px;font-weight:700;line-height:1;" aria-live="polite">${st.pin_position}</span>
+          <span style="font-size:13px;color:#5A544C;">de ${n} placas</span>
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="exx-step" aria-label="Bajar una placa" onclick="stepExxPin(-1)" ${st.pin_position <= 1 ? 'disabled' : ''}><svg class="ico" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h14"/></svg></button>
+            <button type="button" class="exx-step exx-step-main" aria-label="Subir una placa" onclick="stepExxPin(1)" ${st.pin_position >= n ? 'disabled' : ''}>${icon('plus', 20)}</button>
+          </div>
+          <div class="exx-stack" style="gap:6px;margin-top:4px;">
+            <label for="exx-pin-w" style="font-size:13px;font-weight:600;color:#5A544C;">Cada placa pesa (${unit})</label>
+            <input id="exx-pin-w" class="form-input" type="text" inputmode="decimal" autocomplete="off" placeholder="Opcional" value="${exxFmtNum(st.pin_plate_weight)}" oninput="setExxPinWeight(this.value)">
+          </div>
+        </div>
+      </div>
+      <span style="font-size:12px;line-height:1.4;color:var(--gray5);margin-top:-4px;">El peso por placa es opcional. Sirve para calcular el total y llenar tus sets.</span>`;
+  }
+  body.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+      <div style="display:flex;gap:6px;" role="group" aria-label="Tipo de carga">${seg('bar', st.mode, 'Barra', 'setExxMode')}${seg('pin', st.mode, 'Pines', 'setExxMode')}</div>
+      <div style="display:flex;gap:6px;" role="group" aria-label="Unidad">${seg('kg', unit, 'kg', 'setExxUnit')}${seg('lb', unit, 'lb', 'setExxUnit')}</div>
+    </div>
+    ${main}
+    <div class="exx-total" aria-live="polite">
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <span class="exx-label" style="color:#E9C9B3;">Total</span>
+        <span id="exx-total-main" style="font-family:'Playfair Display',serif;font-size:36px;font-weight:700;line-height:1.05;">${totalKg == null ? '—' : exxTotalText(st, unit)}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right;">
+        <span id="exx-total-alt" style="font-family:'DM Mono',monospace;font-size:14px;">${totalKg == null ? 'Poné el peso por placa' : '≈ ' + exxFmtNum(Math.round(exxFromKg(totalKg, other))) + ' ' + other}</span>
+        <span id="exx-total-bd" style="font-size:12px;color:#E7E0D4;">${exxBreakdown(st, unit)}</span>
+      </div>
+    </div>
+    <button type="button" class="exx-btn" id="exx-plates-save" onclick="saveExxPlates()">Guardar placas</button>`;
+}
+
+function setExxMode(mode) { exxEdit.mode = mode; renderExxPlates(); }
+function setExxUnit(unit) {
+  if(exxEdit.weight_unit === unit) return;
+  // El peso por placa de la pila se convierte (misma masa); los discos de la barra no cambian
+  if(exxEdit.pin_plate_weight != null) exxEdit.pin_plate_weight = Math.round(exxFromKg(exxToKg(exxEdit.pin_plate_weight, exxEdit.weight_unit), unit) * 100) / 100;
+  exxEdit.weight_unit = unit;
+  renderExxPlates();
+}
+function setExxBar(idx) { const b = EXX_BARS[Number(idx)]; if(b) { exxEdit.bar_kg = exxToKg(b.v, b.unit); renderExxPlates(); } }
+function addExxPlate(tier) { exxEdit.plates.push({tier, unit: exxEdit.weight_unit}); renderExxPlates(); }
+function exxRemovePlate(i) { exxEdit.plates.splice(i, 1); renderExxPlates(); }
+function stepExxPin(d) {
+  const n = exxEdit.pin_stack_size || EXX_PIN_STACK;
+  exxEdit.pin_position = Math.min(n, Math.max(1, exxEdit.pin_position + d));
+  renderExxPlates();
+}
+// Sin re-render (no perder el foco): solo se actualiza la tarjeta TOTAL
+function setExxPinWeight(v) {
+  const n = parseDecimal(v);
+  exxEdit.pin_plate_weight = n != null && n > 0 ? n : null;
+  const st = exxEdit, unit = st.weight_unit, other = unit === 'kg' ? 'lb' : 'kg', kg = exxTotalKg(st);
+  const set = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
+  set('exx-total-main', kg == null ? '—' : exxTotalText(st, unit));
+  set('exx-total-alt', kg == null ? 'Poné el peso por placa' : '≈ ' + exxFmtNum(Math.round(exxFromKg(kg, other))) + ' ' + other);
+  set('exx-total-bd', exxBreakdown(st, unit));
+}
+
+async function saveExxPlates() {
+  const ex = exxState.exById[exxSheet.exId];
+  if(!ex || !exxEdit) return;
+  const key = exxKey(ex.name), st = exxEdit;
+  const totalKg = exxTotalKg(st);
+  const row = {
+    client_id: currentClient.id,
+    exercise_library_id: exxState.libIdByKey[key] || null,
+    exercise_key: key,
+    mode: st.mode,
+    bar_kg: st.mode === 'bar' ? Math.round(st.bar_kg * 10000) / 10000 : null,
+    plates: st.mode === 'bar' ? st.plates.map(p => ({tier:p.tier, unit:p.unit})) : [],
+    pin_position: st.mode === 'pin' ? st.pin_position : null,
+    pin_stack_size: st.pin_stack_size || EXX_PIN_STACK,
+    pin_plate_weight: st.mode === 'pin' ? st.pin_plate_weight : null,
+    weight_unit: st.weight_unit,
+    total_kg: totalKg == null ? null : Math.round(totalKg * 10000) / 10000,
+    updated_at: new Date().toISOString()
+  };
+  const btn = document.getElementById('exx-plates-save');
+  if(btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+  const {data, error} = await sb.from('exercise_plate_setups').upsert(row, {onConflict: 'client_id,exercise_key'}).select().maybeSingle();
+  if(btn) { btn.disabled = false; btn.textContent = 'Guardar placas'; }
+  if(error) { showToast('No se pudieron guardar las placas', 'error'); return; }
+  exxState.setups[key] = data || row;
+  // Todas las cards del día con este ejercicio: última carga + autocompletar
+  Object.values(exxState.exById).forEach(e => { if(exxKey(e.name) === key) exxApplyAutofill(e.id); });
+  exxRefreshLastLoad();
+  closeExxSheet();
+  showToast(totalKg == null ? 'Placas guardadas' : `Placas guardadas · ${exxTotalText(row, currentWeightUnit)}`, 'success');
 }
 
 // ---- coach: notas dentro de los logs por ejercicio (solo lectura) ----
