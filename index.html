@@ -527,6 +527,40 @@ body.lift-mode #strongflow-btn { display:none !important; }
 .modal-content > div:not(.modal-header) { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
 .modal-title { font-family:'Playfair Display',serif; font-size:20px; font-weight:700; margin-bottom:18px; }
 .modal-close { float:right; font-size:24px; color:var(--gray4); cursor:pointer; line-height:1; margin-top:-2px; }
+/* ===== Extras por ejercicio: notas, placas, asistencia ===== */
+.exx-notes-link { display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:0 2px 0 8px; border:0; background:transparent; color:#C24E18; font:700 11px 'DM Sans',sans-serif; letter-spacing:0.12em; cursor:pointer; }
+.exx-count { min-width:20px; height:20px; padding:0 6px; box-sizing:border-box; border-radius:10px; background:#C24E18; color:#fff; font-size:11px; font-weight:700; letter-spacing:0; display:inline-flex; align-items:center; justify-content:center; }
+.exx-sheet .modal { max-height:92vh; padding:14px 20px 32px; display:flex; flex-direction:column; gap:14px; box-sizing:border-box; }
+.exx-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+.exx-h { font-family:'Playfair Display',serif; font-size:28px; font-weight:700; line-height:1.15; margin:0; }
+.exx-sub { font-size:14px; color:var(--gray5); margin-top:2px; }
+.exx-label { font-size:11px; font-weight:700; letter-spacing:0.1em; color:var(--gray5); text-transform:uppercase; }
+.exx-stack { display:flex; flex-direction:column; gap:8px; }
+.exx-stack .form-textarea { font-size:15px; line-height:1.4; background:var(--white); min-height:88px; box-sizing:border-box; }
+.exx-seg { display:flex; gap:4px; padding:4px; border-radius:16px; background:#F1EEE8; }
+.exx-seg button { flex:1; min-height:44px; border:0; border-radius:12px; background:transparent; color:#5A544C; font:600 15px 'DM Sans',sans-serif; cursor:pointer; }
+.exx-seg button[aria-pressed="true"] { background:#C24E18; color:#fff; font-weight:700; }
+.exx-btn { width:100%; min-height:50px; border:0; border-radius:14px; background:#C24E18; color:#fff; font:700 16px 'DM Sans',sans-serif; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; }
+.exx-btn:disabled { opacity:0.6; cursor:default; }
+.exx-list-head { display:flex; align-items:center; gap:8px; margin-top:4px; }
+.exx-badge { min-width:22px; height:22px; padding:0 6px; box-sizing:border-box; border-radius:11px; background:#FCEBDD; color:#A8420F; font-size:12px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; }
+.exx-note-list { list-style:none; margin:0; padding:0; }
+.exx-note { display:flex; align-items:flex-start; gap:12px; padding:10px 0; border-top:1px solid var(--gray2); }
+.exx-note-dot { flex:none; width:8px; height:8px; border-radius:4px; background:#C24E18; margin-top:7px; }
+.exx-note-main { flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
+.exx-note-text { font-size:15px; line-height:1.4; white-space:pre-wrap; word-break:break-word; }
+.exx-date { align-self:flex-start; font-family:'DM Mono',monospace; font-size:12px; color:#5A544C; background:#F1EEE8; padding:3px 8px; border-radius:6px; }
+.exx-icon-btn { flex:none; width:44px; height:44px; border:0; background:transparent; color:var(--gray5); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
+.exx-empty { font-size:14px; color:var(--gray5); padding:10px 0; border-top:1px solid var(--gray2); }
+.exx-pill { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 9px; border-radius:10px; background:#F1EEE8; color:#5A544C; border:0; font-family:'DM Sans',sans-serif; }
+.exx-pill-new { background:#E3F4E8; color:#1E7A3C; }
+.exx-pill-new::before { content:''; width:6px; height:6px; border-radius:3px; background:#1E7A3C; }
+button.exx-pill { cursor:pointer; min-height:28px; }
+.exx-coach-notes { background:var(--white); border-radius:8px; padding:4px 10px; margin:6px 0 4px; }
+.exx-coach-notes .exx-note { padding:8px 0; }
+.exx-coach-notes .exx-note:first-child { border-top:0; }
+.exx-coach-notes .exx-note-text { font-size:13px; }
+.exx-sheet [hidden], .exx-badge[hidden], .exx-coach-notes[hidden] { display:none !important; }
 
 /* SPINNER */
 .spinner { width:22px; height:22px; border:3px solid var(--gray2); border-top-color:var(--orange); border-radius:50%; animation:spin 0.8s linear infinite; margin:36px auto; }
@@ -3834,6 +3868,10 @@ async function loadClientExercises() {
   prevWeekLogsCache = prevByEx;
   if(requestId !== loadClientExercisesRequestId) return;
 
+  // Notas / placas / asistencia del día (tablas nuevas; si fallan, la card se ve como antes)
+  try { await exxLoadForDay(exs); } catch(e) { console.warn('exx load failed:', e); }
+  if(requestId !== loadClientExercisesRequestId) return;
+
   // ===== WORKOUT START BUTTON (before warmup banner) =====
   const workoutStarted = isWorkoutStarted();
   // Con el entreno en curso, la barra sticky "Entrenando" ya cubre esta info para
@@ -4081,9 +4119,12 @@ async function loadClientExercises() {
             <div style="font-size:11px;color:var(--gray4);">${ex.sets} series · ${ex.reps_range} ${/\d+\s*(s|min|seg)/i.test(ex.reps_range)?'tiempo':'reps'} · ${ex.rest_seconds}s descanso</div>
             ${ex.muscle_group?`<span class="muscle-tag" style="margin-top:3px;display:inline-block;">${ex.muscle_group}</span>`:''}
           </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;">
           <div id="${unitToggleId}" style="display:flex;gap:3px;flex-shrink:0;">
             <button onclick="setSoloUnit('${ex.id}','kg',this)" class="unit-btn selected" style="padding:4px 9px;font-size:11px;">kg</button>
             <button onclick="setSoloUnit('${ex.id}','lb',this)" class="unit-btn" style="padding:4px 9px;font-size:11px;">lb</button>
+          </div>
+          ${exxNotesLinkHtml(ex)}
           </div>
         </div>
         ${ex.rpe ? renderRPEGauge(ex.rpe) : ''}
@@ -11222,15 +11263,19 @@ async function toggleDayLogs(planDayId, label, btn) {
   const {data:exs} = await sb.from('exercises').select('id,name').eq('plan_day_id', planDayId).order('order_index');
   if(!exs||exs.length===0){container.innerHTML='';return;}
   const exIds = exs.map(e=>e.id);
-  const {data:logs} = await sb.from('exercise_logs').select('*').in('exercise_id',exIds).order('logged_at',{ascending:false});
-  if(!logs||logs.length===0){container.innerHTML='<div style="font-size:12px;color:var(--gray4);padding:6px 0;">Sin logs guardados.</div>';return;}
+  const [{data:logs}] = await Promise.all([
+    sb.from('exercise_logs').select('*').in('exercise_id',exIds).order('logged_at',{ascending:false}),
+    currentClient ? exxLoadCoachNotes(currentClient.id, exs.map(e=>e.name)).catch(()=>{}) : null
+  ]);
+  const hasNotes = e => (exxCoachNotes[exxKey(e.name)]||[]).length > 0;
+  if((!logs||logs.length===0) && !exs.some(hasNotes)){container.innerHTML='<div style="font-size:12px;color:var(--gray4);padding:6px 0;">Sin logs guardados.</div>';return;}
   // Group by exercise
   const byEx = {};
   exs.forEach(e=>{ byEx[e.id]={name:e.name,sets:[]}; });
-  logs.forEach(l=>{ if(byEx[l.exercise_id]) byEx[l.exercise_id].sets.push(l); });
+  (logs||[]).forEach(l=>{ if(byEx[l.exercise_id]) byEx[l.exercise_id].sets.push(l); });
   const html = exs.map(e=>{
     const sets = byEx[e.id].sets.sort((a,b)=>a.set_number-b.set_number);
-    if(!sets.length) return '';
+    if(!sets.length && !hasNotes(e)) return '';
     const setRows = sets.map(s=>{
       const diffColor = s.difficulty==='facil'?'#22c55e':'#E84C16';
       const diffLabel = s.difficulty==='facil'?'Fácil':'Difícil';
@@ -11245,6 +11290,7 @@ async function toggleDayLogs(planDayId, label, btn) {
     }).join('');
     return `<div style="padding:6px 0 2px;border-bottom:1px solid var(--gray1);">
       <div style="font-size:12px;font-weight:700;margin-bottom:3px;">${e.name}</div>
+      ${exxCoachPillsHtml(e.name, `exx-cn-${planDayId}-${e.id}`)}
       ${setRows}
     </div>`;
   }).filter(Boolean).join('');
@@ -13600,6 +13646,209 @@ function setSoloUnit(exId, unit, btn) {
   const container = document.getElementById(`unit-solo-${exId}`);
   if(container){ container.querySelectorAll('.unit-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); }
   document.querySelectorAll(`[id^="slog-w-${exId}-"]`).forEach(inp=>inp.placeholder=unit);
+}
+
+// ===== EXTRAS POR EJERCICIO: notas · placas · asistencia =====
+// exercises.id cambia en cada semana/mes del plan, así que todo se ata a
+// (client_id, exercise_key) = nombre normalizado, más exercise_library_id resuelto por
+// nombre como referencia. Tablas: exercise_notes, exercise_plate_setups,
+// assistance_requests (migration_notes_plates_assist.sql). Solo ejercicios sueltos
+// (los circuitos quedan como estaban). Si una tabla falla, la card se ve como antes.
+const EXX_MONTHS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const exxState = { clientId:null, exById:{}, libIdByKey:{}, notesCount:{} };
+const exxSheet = { exId:null, tab:'notes' };
+
+function exxKey(name) {
+  return String(name || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+// "oct21": mes de 3 letras + día, sin espacio
+function exxDateChip(iso) { const d = new Date(iso); return EXX_MONTHS[d.getMonth()] + d.getDate(); }
+// Número para mostrar: hasta 2 decimales, con coma (17,5)
+function exxFmtNum(n) { return n == null || !Number.isFinite(Number(n)) ? '' : String(Math.round(Number(n) * 100) / 100).replace('.', ','); }
+
+// Una vez por render de loadClientExercises: nombres → librería y conteo de notas.
+async function exxLoadForDay(exs) {
+  const cid = currentClient?.id;
+  if(!cid) return;
+  if(exxState.clientId !== cid) { exxState.clientId = cid; exxState.exById = {}; exxState.libIdByKey = {}; exxState.notesCount = {}; }
+  const solo = (exs || []).filter(e => !e.superset_group);
+  solo.forEach(e => { exxState.exById[e.id] = e; });
+  const keys = [...new Set(solo.map(e => exxKey(e.name)))];
+  if(!keys.length) return;
+  const missing = [...new Set(solo.filter(e => !(exxKey(e.name) in exxState.libIdByKey)).map(e => e.name))];
+  const [libRes, notesRes] = await Promise.all([
+    missing.length
+      ? sb.from('exercise_library').select('id,name').eq('coach_id', currentClient.coach_id).in('name', missing)
+      : Promise.resolve({ data: [] }),
+    sb.from('exercise_notes').select('exercise_key').eq('client_id', cid).in('exercise_key', keys).is('deleted_at', null)
+  ]);
+  missing.forEach(n => { exxState.libIdByKey[exxKey(n)] = null; });
+  (libRes.data || []).forEach(r => { const k = exxKey(r.name); if(!exxState.libIdByKey[k]) exxState.libIdByKey[k] = r.id; });
+  if(!notesRes.error) {
+    keys.forEach(k => { exxState.notesCount[k] = 0; });
+    (notesRes.data || []).forEach(r => { exxState.notesCount[r.exercise_key] = (exxState.notesCount[r.exercise_key] || 0) + 1; });
+  }
+}
+
+function exxNotesLinkHtml(ex) {
+  const n = exxState.notesCount[exxKey(ex.name)] || 0;
+  return `<button type="button" class="exx-notes-link" data-exx-notes="${ex.id}" onclick="openExxSheet('${ex.id}','notes')" aria-label="Notas del ejercicio${n ? ', ' + n : ''}">${icon('pencil', 15)}<span>NOTAS</span>${n ? `<span class="exx-count">${n}</span>` : ''}</button>`;
+}
+// Re-pinta el link NOTAS de todas las cards del mismo ejercicio (sin re-render del día)
+function exxRefreshNotesLinks(key) {
+  document.querySelectorAll('[data-exx-notes]').forEach(btn => {
+    const ex = exxState.exById[btn.dataset.exxNotes];
+    if(ex && exxKey(ex.name) === key) btn.outerHTML = exxNotesLinkHtml(ex);
+  });
+}
+
+function exxNoteItemHtml(n, opts = {}) {
+  return `<li class="exx-note">
+    <span class="exx-note-dot" aria-hidden="true"></span>
+    <div class="exx-note-main">
+      <span class="exx-note-text">${escHtml(n.note)}</span>
+      <span class="exx-date">${exxDateChip(n.created_at)}</span>
+    </div>
+    ${opts.deletable ? `<button type="button" class="exx-icon-btn" aria-label="Eliminar nota" onclick="deleteExxNote('${n.id}')">${icon('trash-2', 18)}</button>` : ''}
+  </li>`;
+}
+
+// ---- sheet del cliente ----
+function openExxSheet(exId, tab) {
+  const ex = exxState.exById[exId];
+  if(!ex || !currentClient) return;
+  exxSheet.exId = exId;
+  exxSheet.tab = tab || 'notes';
+  document.getElementById('exx-sheet')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'exx-sheet';
+  ov.className = 'modal-overlay open exx-sheet';
+  ov.onclick = (ev) => { if(ev.target === ov) closeExxSheet(); };
+  ov.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="exx-title">
+      <div class="exx-head">
+        <div><h2 class="exx-h" id="exx-title">Notas</h2><div class="exx-sub">${escHtml(ex.name)}</div></div>
+        <button type="button" class="exx-icon-btn" aria-label="Cerrar" onclick="closeExxSheet()">${icon('x', 22)}</button>
+      </div>
+      <div id="exx-tabs"></div>
+      <div id="exx-body" class="exx-stack" style="gap:14px;"></div>
+    </div>`;
+  document.body.appendChild(ov);
+  renderExxSheet();
+}
+function closeExxSheet() { document.getElementById('exx-sheet')?.remove(); exxSheet.exId = null; }
+
+function renderExxSheet() {
+  renderExxNotes();
+}
+
+async function renderExxNotes() {
+  const body = document.getElementById('exx-body');
+  const ex = exxState.exById[exxSheet.exId];
+  if(!body || !ex) return;
+  body.innerHTML = `
+    <div class="exx-stack">
+      <label for="exx-note-input" class="exx-label">Nueva nota</label>
+      <textarea id="exx-note-input" class="form-textarea" rows="3" maxlength="1000" placeholder="Ej: asiento en 4, se pincha el hombro arriba…"></textarea>
+      <button type="button" class="exx-btn" id="exx-note-add" onclick="addExxNote()">${icon('plus', 18)}<span>Agregar nota</span></button>
+    </div>
+    <div>
+      <div class="exx-list-head"><span class="exx-label">Todas las notas</span><span class="exx-badge" id="exx-note-count" hidden></span></div>
+      <ul class="exx-note-list" id="exx-note-list" style="margin-top:6px;"><li class="exx-empty">Cargando…</li></ul>
+    </div>`;
+  const key = exxKey(ex.name);
+  const {data, error} = await sb.from('exercise_notes').select('id,note,created_at')
+    .eq('client_id', currentClient.id).eq('exercise_key', key).is('deleted_at', null)
+    .order('created_at', {ascending:false});
+  const list = document.getElementById('exx-note-list');
+  if(!list || exxSheet.exId !== ex.id) return;
+  if(error) { list.innerHTML = '<li class="exx-empty">No se pudieron cargar las notas.</li>'; return; }
+  const notes = data || [];
+  exxState.notesCount[key] = notes.length;
+  const badge = document.getElementById('exx-note-count');
+  if(badge) { badge.textContent = notes.length; badge.hidden = !notes.length; }
+  list.innerHTML = notes.length
+    ? notes.map(n => exxNoteItemHtml(n, {deletable:true})).join('')
+    : '<li class="exx-empty">Todavía no tenés notas para este ejercicio.</li>';
+  exxRefreshNotesLinks(key);
+}
+
+async function addExxNote() {
+  const ex = exxState.exById[exxSheet.exId];
+  const inp = document.getElementById('exx-note-input');
+  const text = (inp?.value || '').trim();
+  if(!ex) return;
+  if(!text) { showToast('Escribí la nota primero', 'error'); inp?.focus(); return; }
+  const btn = document.getElementById('exx-note-add');
+  if(btn) btn.disabled = true;
+  const key = exxKey(ex.name);
+  const {error} = await sb.from('exercise_notes').insert({
+    client_id: currentClient.id,
+    exercise_library_id: exxState.libIdByKey[key] || null,
+    exercise_key: key,
+    note: text
+  });
+  if(btn) btn.disabled = false;
+  if(error) { showToast('No se pudo guardar la nota', 'error'); return; }
+  if(inp) inp.value = '';
+  showToast('Nota guardada', 'success');
+  renderExxNotes();
+}
+
+// Soft delete: la nota queda en la base con deleted_at
+async function deleteExxNote(noteId) {
+  if(!confirm('¿Eliminar esta nota?')) return;
+  const {error} = await sb.from('exercise_notes').update({deleted_at: new Date().toISOString()}).eq('id', noteId).eq('client_id', currentClient.id);
+  if(error) { showToast('No se pudo eliminar la nota', 'error'); return; }
+  showToast('Nota eliminada');
+  renderExxNotes();
+}
+
+// ---- coach: notas dentro de los logs por ejercicio (solo lectura) ----
+const exxCoachNotes = {}; // exercise_key → notas (más nuevas primero)
+const exxCoachDomKey = {}; // id del <ul> → exercise_key
+
+async function exxLoadCoachNotes(clientId, names) {
+  const keys = [...new Set(names.map(exxKey))];
+  if(!keys.length) return;
+  const {data, error} = await sb.from('exercise_notes').select('id,exercise_key,note,created_at,seen_by_coach_at')
+    .eq('client_id', clientId).in('exercise_key', keys).is('deleted_at', null)
+    .order('created_at', {ascending:false});
+  if(error) return;
+  keys.forEach(k => { exxCoachNotes[k] = []; });
+  (data || []).forEach(n => exxCoachNotes[n.exercise_key].push(n));
+}
+
+function exxCoachPillsHtml(name, domId) {
+  const notes = exxCoachNotes[exxKey(name)] || [];
+  if(!notes.length) return '';
+  const fresh = notes.filter(n => !n.seen_by_coach_at).length;
+  exxCoachDomKey[domId] = exxKey(name);
+  return `<span style="display:inline-flex;gap:6px;flex-wrap:wrap;margin:2px 0 4px;">
+    <button type="button" class="exx-pill" aria-expanded="false" aria-controls="${domId}" onclick="exxToggleCoachNotes('${domId}',this)">${icon('pencil', 12)}${notes.length} ${notes.length === 1 ? 'nota' : 'notas'}</button>
+    ${fresh ? `<span class="exx-pill exx-pill-new" data-exx-new="${domId}">${fresh} ${fresh === 1 ? 'nueva' : 'nuevas'}</span>` : ''}
+  </span>
+  <ul class="exx-note-list exx-coach-notes" id="${domId}" hidden></ul>`;
+}
+
+async function exxToggleCoachNotes(domId, btn) {
+  const key = exxCoachDomKey[domId];
+  const list = document.getElementById(domId);
+  if(!list) return;
+  const open = list.hidden;
+  list.hidden = !open;
+  btn?.setAttribute('aria-expanded', String(open));
+  if(!open) return;
+  const notes = exxCoachNotes[key] || [];
+  list.innerHTML = notes.map(n => exxNoteItemHtml(n)).join('');
+  // Solo las notas que se acaban de mostrar quedan vistas
+  const unseen = notes.filter(n => !n.seen_by_coach_at).map(n => n.id);
+  if(!unseen.length) return;
+  const now = new Date().toISOString();
+  const {error} = await sb.from('exercise_notes').update({seen_by_coach_at: now}).in('id', unseen).is('seen_by_coach_at', null);
+  if(error) return;
+  notes.forEach(n => { if(unseen.includes(n.id)) n.seen_by_coach_at = now; });
+  document.querySelector(`[data-exx-new="${domId}"]`)?.remove();
 }
 
 // ===== CIRCUIT LOG FUNCTIONS =====
