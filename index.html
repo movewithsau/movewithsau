@@ -604,6 +604,8 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 .exx-tier-slot { height:58px; display:flex; align-items:center; position:relative; }
 .exx-disc { border-radius:50%; border:0; padding:0; font-family:'DM Sans',sans-serif; font-weight:700; cursor:pointer; }
 .exx-tier-count { position:absolute; top:0; right:-7px; min-width:20px; height:20px; border-radius:10px; background:#1A1714; color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+.exx-tier-minus { position:absolute; top:-2px; left:-8px; width:24px; height:24px; border-radius:12px; border:2px solid #fff; background:#C24E18; color:#fff; padding:0; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.exx-tier-minus::after { content:''; position:absolute; inset:-10px; }
 .exx-tier-alt { font-size:11px; color:var(--gray5); white-space:nowrap; }
 .exx-total { background:#26221E; border-radius:20px; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; gap:10px; color:#F6F1E8; }
 .exx-step { flex:1; min-height:48px; border:0; border-radius:14px; background:var(--white); color:var(--black); display:flex; align-items:center; justify-content:center; cursor:pointer; }
@@ -14154,13 +14156,13 @@ function renderExxPlates(reset) {
               <div class="exx-tier-slot">
                 <button type="button" class="exx-disc" aria-label="Agregar disco de ${exxFmtNum(big)} ${unit}${n ? ', hay ' + n : ''}" onclick="addExxPlate('${t.id}')"
                   style="width:${t.d}px;height:${t.d}px;background:${t.color};color:${t.dark ? '#1A1714' : '#FFFFFF'};font-size:${t.d >= 50 ? 16 : t.d >= 42 ? 14 : 11}px;${n ? 'box-shadow:0 0 0 3px #1A1714;' : ''}">${exxFmtNum(big)}</button>
-                ${n ? `<span class="exx-tier-count">${n}</span>` : ''}
+                ${n ? `<span class="exx-tier-count">${n}</span><button type="button" class="exx-tier-minus" aria-label="Quitar un disco de ${exxFmtNum(big)} ${unit}" onclick="removeExxTier('${t.id}')"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h14"/></svg></button>` : ''}
               </div>
               <span class="exx-tier-alt">${exxFmtNum(small)} ${other}</span>
             </div>`;
           }).join('')}
         </div>
-        <span style="font-size:12px;line-height:1.4;color:var(--gray5);">El mismo disco sirve en kg o lb: 20 kg = 45 lb, 25 kg = 55 lb. Para quitar uno, tocá la placa en la barra.</span>
+        <span style="font-size:12px;line-height:1.4;color:var(--gray5);">El mismo disco sirve en kg o lb: 20 kg = 45 lb, 25 kg = 55 lb. Para quitar uno, tocá el − del disco o la placa en la barra.</span>
       </div>`;
   } else {
     const n = st.pin_stack_size || EXX_PIN_STACK;
@@ -14213,6 +14215,13 @@ function setExxUnit(unit) {
 function setExxBar(idx) { const b = EXX_BARS[Number(idx)]; if(b) { exxEdit.bar_kg = exxToKg(b.v, b.unit); renderExxPlates(); } }
 function addExxPlate(tier) { exxEdit.plates.push({tier, unit: exxEdit.weight_unit}); renderExxPlates(); }
 function exxRemovePlate(i) { exxEdit.plates.splice(i, 1); renderExxPlates(); }
+// "−" del selector: quita el último disco agregado de ese tamaño (primero los de la unidad actual)
+function removeExxTier(tier) {
+  const pl = exxEdit.plates;
+  let i = pl.map(p => p.tier === tier && p.unit === exxEdit.weight_unit).lastIndexOf(true);
+  if(i < 0) i = pl.map(p => p.tier === tier).lastIndexOf(true);
+  if(i >= 0) exxRemovePlate(i);
+}
 function stepExxPin(d) {
   const n = exxEdit.pin_stack_size || EXX_PIN_STACK;
   exxEdit.pin_position = Math.min(n, Math.max(1, exxEdit.pin_position + d));
