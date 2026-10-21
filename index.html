@@ -796,7 +796,13 @@ body.lift-mode #strongflow-btn { display:none !important; }
 .diary-sep::after { content:""; flex:1; height:1px; background:var(--gray3); }
 .diary-add-btn { width:48px; height:48px; border-radius:50%; border:none; background:var(--orange); color:#fff; display:flex; align-items:center; justify-content:center; flex:none; cursor:pointer; box-shadow:0 4px 12px rgba(247,90,14,0.35); }
 .diary-chip-bar { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
-.diary-chip-bar .diary-chips-scroll { flex:1; min-width:0; margin-bottom:0; }</style>
+.diary-chip-bar .diary-chips-scroll { flex:1; min-width:0; margin-bottom:0; }
+/* Coach: acordeón por hábito */
+.diary-sec-head { display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin:16px 0 8px; }
+.diary-pill { flex:none; padding:5px 10px; border-radius:12px; background:var(--gray1); font-size:12px; font-weight:700; color:var(--gray5); }
+.diary-acc-chev { display:inline-flex; color:var(--gray5); transition:transform 0.2s; }
+.diary-row[aria-expanded="true"] .diary-acc-chev { transform:rotate(180deg); }
+.diary-acc-body > .diary-item { border-top:1px solid var(--gray2); }</style>
 </head>
 <body>
 <!-- Sprite de íconos (estilo Lucide, ISC). Se usan con icon(nombre, tamaño). -->
@@ -17060,6 +17066,48 @@ async function loadCoachDiary(c, ym) {
   const histMonthLbl = diaryMonthChipLabel(ym).split(' ')[0];
   const srcLabel = s => s === 'extras' ? 'Extras' : s === 'coach' ? 'Asignado' : 'Propia';
 
+  // Fila de un registro con día (en el acordeón de hábitos el nombre ya está en la cabecera)
+  const entryRow = (e, withName) => `<div class="diary-item" style="padding:10px 12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="diary-row-date">${diaryFmtDay(e.entry_date)}</div>
+          <div class="diary-row-main">
+            ${withName ? `<div class="diary-row-name">${escHtml(e.activity_name)}</div>` : ''}
+            <div class="diary-row-sub"${withName ? '' : ' style="font-size:13px;margin:0;"'}>${escHtml(diarySubtitle(e, true))} · ${srcLabel(e.source)}</div>
+          </div>
+          ${e.emotion ? `<div style="display:flex;flex-direction:column;align-items:center;">${diaryEmotionSvg(e.emotion, 28, true)}<span style="font-size:10px;color:var(--gray4);">${DIARY_EMOTIONS[e.emotion]?.label || ''}</span></div>` : '<span style="font-size:10px;color:var(--gray4);">Sin emoción</span>'}
+        </div>
+        ${e.notes ? `<div style="font-size:12px;color:var(--black);margin:6px 0 0 56px;white-space:pre-wrap;">${escHtml(e.notes)}</div>` : ''}
+        ${e.next_goal ? `<div style="font-size:12px;color:var(--gray5);margin:4px 0 0 56px;">Próxima meta: ${escHtml(e.next_goal)}</div>` : ''}
+        ${e.goal_entry_id ? `<div style="font-size:12px;margin:4px 0 0 56px;color:${e.goal_met ? 'var(--green)' : 'var(--gray5)'};">${e.goal_met ? diaryIcon('habit', 18) + ' Cumplió' : '✗ No cumplió'} la meta anterior${goalText[e.goal_entry_id] ? ': ' + escHtml(goalText[e.goal_entry_id]) : ''}</div>` : ''}
+      </div>`;
+  const histRow = (g, withName) => `<div class="diary-item" style="padding:10px 12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="diary-row-date is-hist">Sin<br>día</div>
+          <div class="diary-row-main">
+            ${withName ? `<div class="diary-row-name">${escHtml(g.name)}</div>` : ''}
+            <div class="diary-row-sub"${withName ? '' : ' style="font-size:13px;margin:0;"'}>${histMonthLbl} · ${g.rows.length} ${g.rows.length === 1 ? 'registro' : 'registros'}</div>
+          </div>
+          ${diaryHistHex(g.kind, 28, true)}
+        </div>
+      </div>`;
+
+  // Sesiones: las del mes (más reciente primero) y al final las sin día.
+  // Hábitos: un acordeón por hábito con sus registros y la fila "Sin día" al final.
+  const sessDated = entries.filter(e => e.kind === 'session');
+  const sessHist = histGroups.filter(g => g.kind === 'session');
+  const habitMap = new Map();
+  const habitGroup = (name) => {
+    const key = (name || '').toLowerCase();
+    if(!habitMap.has(key)) habitMap.set(key, {name, dated:[], hist:[]});
+    return habitMap.get(key);
+  };
+  entries.filter(e => e.kind === 'habit').forEach(e => habitGroup(e.activity_name).dated.push(e));
+  hist.filter(e => e.kind === 'habit').forEach(e => habitGroup(e.activity_name).hist.push(e));
+  const habitGroups = [...habitMap.values()].sort((a, b) => {
+    const da = a.dated[0]?.entry_date || '', db = b.dated[0]?.entry_date || '';
+    return da === db ? a.name.localeCompare(b.name) : (da < db ? 1 : -1);
+  });
+
   panel.innerHTML = `
     <div class="diary-chip-bar">
       <div class="diary-chips-scroll" role="group" aria-label="Mes del diario">
@@ -17081,30 +17129,28 @@ async function loadCoachDiary(c, ym) {
         <div class="diary-row-main" style="font-size:12px;color:var(--gray5);">${s.bedtime ? s.bedtime.slice(0,5) : '-'} → ${s.wake_time ? s.wake_time.slice(0,5) : '-'}</div>
         <div style="font-size:13px;font-weight:800;color:var(--orange);">${s.hours != null ? Number(s.hours).toFixed(1) + 'h' : '-'}</div>
       </div></div>`).join('')}</div></details>` : ''}
-    ${entries.length ? `<div class="diary-list">${entries.map(e => `<div class="diary-item" style="padding:10px 12px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div class="diary-row-date">${diaryFmtDay(e.entry_date)}</div>
-          <div class="diary-row-main">
-            <div class="diary-row-name">${escHtml(e.activity_name)}</div>
-            <div class="diary-row-sub">${escHtml(diarySubtitle(e, true))} · ${srcLabel(e.source)}</div>
-          </div>
-          ${e.emotion ? `<div style="display:flex;flex-direction:column;align-items:center;">${diaryEmotionSvg(e.emotion, 28, true)}<span style="font-size:10px;color:var(--gray4);">${DIARY_EMOTIONS[e.emotion]?.label || ''}</span></div>` : '<span style="font-size:10px;color:var(--gray4);">Sin emoción</span>'}
-        </div>
-        ${e.notes ? `<div style="font-size:12px;color:var(--black);margin:6px 0 0 56px;white-space:pre-wrap;">${escHtml(e.notes)}</div>` : ''}
-        ${e.next_goal ? `<div style="font-size:12px;color:var(--gray5);margin:4px 0 0 56px;">Próxima meta: ${escHtml(e.next_goal)}</div>` : ''}
-        ${e.goal_entry_id ? `<div style="font-size:12px;margin:4px 0 0 56px;color:${e.goal_met ? 'var(--green)' : 'var(--gray5)'};">${e.goal_met ? diaryIcon('habit', 18) + ' Cumplió' : '✗ No cumplió'} la meta anterior${goalText[e.goal_entry_id] ? ': ' + escHtml(goalText[e.goal_entry_id]) : ''}</div>` : ''}
-      </div>`).join('')}</div>`
-      : histGroups.length ? '' : `<div style="font-size:13px;color:var(--gray4);padding:4px 0 12px;">Sin registros en ${diaryMonthName(ym)}.</div>`}
-    ${histGroups.length ? `<div class="diary-list" style="margin-top:8px;">${histGroups.map(g => `<div class="diary-item" style="padding:10px 12px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div class="diary-row-date is-hist">Sin<br>día</div>
-          <div class="diary-row-main">
-            <div class="diary-row-name">${escHtml(g.name)}</div>
-            <div class="diary-row-sub">${histMonthLbl} · ${g.rows.length} ${g.rows.length === 1 ? 'registro' : 'registros'}</div>
-          </div>
-          ${diaryHistHex(g.kind, 28, true)}
-        </div>
-      </div>`).join('')}</div>` : ''}`;
+    ${(entries.length || hist.length) ? `
+      ${(sessDated.length || sessHist.length) ? `
+        <div class="diary-sec-head"><div class="diary-h" style="font-size:18px;">Sesiones</div><div class="diary-label" style="color:var(--gray5);">${sessions} ${sessions === 1 ? 'registro' : 'registros'}</div></div>
+        <div class="diary-list">${sessDated.map(e => entryRow(e, true)).join('')}${sessHist.map(g => histRow(g, true)).join('')}</div>` : ''}
+      ${habitGroups.length ? `
+        <div class="diary-sec-head"><div class="diary-h" style="font-size:18px;">Hábitos</div><div class="diary-label" style="color:var(--gray5);">${habitGroups.length} ${habitGroups.length === 1 ? 'hábito' : 'hábitos'} · ${habits} ${habits === 1 ? 'registro' : 'registros'}</div></div>
+        ${habitGroups.map((g, gi) => {
+          const n = g.dated.length + g.hist.length;
+          const domId = `cdh-${gi}`;
+          return `<div class="diary-list" style="margin-bottom:8px;">
+            <button type="button" class="diary-row" aria-expanded="false" aria-controls="${domId}" onclick="toggleDiaryHistGroup('${domId}',this)">
+              <div class="diary-row-main"><div class="diary-row-name" style="font-size:15px;">${escHtml(g.name)}</div></div>
+              <span class="diary-pill">${n} ${n === 1 ? 'registro' : 'registros'}</span>
+              <span class="diary-acc-chev">${icon('chevron-down', 18)}</span>
+            </button>
+            <div id="${domId}" class="diary-acc-body" hidden>
+              ${g.dated.map(e => entryRow(e, false)).join('')}
+              ${g.hist.length ? histRow({kind:'habit', name:g.name, rows:g.hist}, false) : ''}
+            </div>
+          </div>`;
+        }).join('')}` : ''}`
+      : `<div style="font-size:13px;color:var(--gray4);padding:4px 0 12px;">Sin registros en ${diaryMonthName(ym)}.</div>`}`;
 }
 
 // ---- COACH: "Agregar a [nombre]" (hábitos / sesiones con día o solo el mes) ----
