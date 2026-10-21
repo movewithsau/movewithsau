@@ -527,6 +527,41 @@ body.lift-mode #strongflow-btn { display:none !important; }
 .modal-content > div:not(.modal-header) { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
 .modal-title { font-family:'Playfair Display',serif; font-size:20px; font-weight:700; margin-bottom:18px; }
 .modal-close { float:right; font-size:24px; color:var(--gray4); cursor:pointer; line-height:1; margin-top:-2px; }
+/* ===== Sueño como eventos ===== */
+.sl-stack { display:flex; flex-direction:column; gap:8px; }
+.sl-q { font-size:14px; font-weight:600; color:var(--gray5); }
+.sl-fields { display:flex; gap:12px; margin-top:16px; }
+.sl-fields > .sl-stack { flex:1; min-width:0; }
+.sl-fields .form-input { min-height:52px; background:var(--white); box-sizing:border-box; font-size:16px; }
+.sl-time-12 { font-size:13px; font-weight:600; color:var(--black); padding-left:4px; }
+.sl-help { margin:8px 0 14px; font-size:13px; line-height:1.45; color:var(--gray5); }
+.exx-seg button .ico { vertical-align:-3px; margin-right:4px; }
+.sl-goal { background:#26221E; border-radius:24px; padding:20px; display:flex; flex-direction:column; gap:12px; color:#F6F1E8; }
+.sl-goal-k { font-size:11px; font-weight:700; letter-spacing:0.12em; color:#E9C9B3; text-transform:uppercase; }
+.sl-goal-time { font-family:'Playfair Display',serif; font-size:44px; font-weight:700; line-height:1; }
+.sl-goal-ico { flex:none; width:32px; height:32px; border-radius:16px; background:#3A342E; display:flex; align-items:center; justify-content:center; color:#E9C9B3; }
+.sl-goal-line { flex:1; height:2px; border-radius:1px; background:#6B6258; }
+.sl-res { border-radius:24px; padding:20px 20px 22px; display:flex; flex-direction:column; gap:12px; }
+.sl-res-ok { background:#E3F4E8; --sl-ink:#1E7A3C; --sl-sub:#2C4A35; }
+.sl-res-bad { background:#FCEBDD; --sl-ink:#C24E18; --sl-sub:#7A3A18; }
+.sl-res-none { background:#F1EEE8; --sl-ink:#5A544C; --sl-sub:#5A544C; }
+.sl-res-badge { display:inline-flex; align-items:center; gap:8px; align-self:flex-start; background:#fff; color:var(--sl-ink); border-radius:20px; padding:8px 14px 8px 10px; font-size:15px; font-weight:700; }
+.sl-res-ok .sl-res-badge, .sl-res-bad .sl-res-badge { color:var(--sl-ink); }
+.sl-res-bad .sl-res-badge { color:#A8420F; }
+.sl-res-big { font-family:'Playfair Display',serif; font-size:46px; font-weight:700; line-height:1.05; color:var(--black); }
+.sl-res-sub { font-size:14px; color:var(--sl-sub); }
+.sl-bar-wrap { display:flex; flex-direction:column; gap:6px; margin-top:4px; }
+.sl-bar { position:relative; height:12px; border-radius:6px; background:#fff; }
+.sl-bar-fill { position:absolute; left:0; top:0; height:12px; border-radius:6px; background:var(--sl-ink); }
+.sl-bar-mark { position:absolute; top:-4px; width:2px; height:20px; background:#1A1714; }
+.sl-bar-lbls { position:relative; height:18px; }
+.sl-bar-lbls span { position:absolute; transform:translateX(-50%); font-family:'DM Mono',monospace; font-size:12px; color:var(--sl-sub); }
+.sl-entries { list-style:none; margin:0; padding:0; }
+.sl-entry { display:flex; align-items:center; gap:12px; padding:8px 0; border-top:1px solid var(--gray2); min-height:60px; }
+.sl-entry:last-child { border-bottom:1px solid var(--gray2); }
+.sl-entry-ico { flex:none; width:40px; height:40px; border-radius:12px; background:#F1EEE8; display:flex; align-items:center; justify-content:center; color:var(--black); }
+.sl-night-chip { font-size:11px; font-weight:700; color:#A8420F; background:#FCEBDD; padding:2px 8px; border-radius:8px; }
+.sl-add-btn { width:100%; min-height:54px; margin-top:18px; border:2px solid #C24E18; border-radius:16px; background:#fff; color:#C24E18; font:700 16px 'DM Sans',sans-serif; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; }
 /* ===== Extras por ejercicio: notas, placas, asistencia ===== */
 .exx-notes-link { display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:0 2px 0 8px; border:0; background:transparent; color:#C24E18; font:700 11px 'DM Sans',sans-serif; letter-spacing:0.12em; cursor:pointer; }
 .exx-count { min-width:20px; height:20px; padding:0 6px; box-sizing:border-box; border-radius:10px; background:#C24E18; color:#fff; font-size:11px; font-weight:700; letter-spacing:0; display:inline-flex; align-items:center; justify-content:center; }
@@ -921,6 +956,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 <symbol id="i-trash-2" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></symbol>
 <symbol id="i-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
 <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+<symbol id="i-alert-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></symbol>
 <symbol id="i-life-buoy" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></symbol>
 <symbol id="i-undo-2" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></symbol>
 <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
@@ -17105,21 +17141,27 @@ async function renderDiaryMonthView() {
   const cid = currentClient.id;
   const ym = diaryMonthKey(diaryLocalDate());
   const [from, to] = diaryMonthRange(ym);
+  let sleepNightsRes = {nights:[]};
   const [entriesRes, sleepRes, hist] = await Promise.all([
     sb.from('diary_entries').select('id,kind,entry_date,activity_name,session_type,duration_minutes,emotion,created_at')
       .eq('client_id', cid).gte('entry_date', from).lte('entry_date', to)
       .order('entry_date', {ascending:false}).order('created_at', {ascending:false}),
-    sb.from('diary_sleep').select('hours').eq('client_id', cid).gte('sleep_date', from).lte('sleep_date', to),
-    diaryLoadHistorical(cid, ym, 'id,kind,entry_month,activity_name,session_type,duration_minutes,is_historical,created_at')
-  ]);
+    sb.from('diary_sleep').select('sleep_date,bedtime,wake_time,hours').eq('client_id', cid).gte('sleep_date', from).lte('sleep_date', to),
+    diaryLoadHistorical(cid, ym, 'id,kind,entry_month,activity_name,session_type,duration_minutes,is_historical,created_at'),
+    sleepLoadNights(cid, from, to).catch(() => ({nights:[]}))
+  ]).then(r => { sleepNightsRes = r[3]; return r.slice(0, 3); });
   if(entriesRes.error) { body.innerHTML = `<div class="empty-state"><div class="empty-text">No se pudo cargar tu diario. ${escHtml(entriesRes.error.message)}</div></div>`; return; }
   if(diaryState.view !== 'month') return;
   const entries = entriesRes.data || [];
   const all = entries.concat(hist);
   const sessions = all.filter(e => e.kind === 'session').length;
   const habits = all.filter(e => e.kind === 'habit').length;
-  const avg = diaryAvgHours(sleepRes.data);
-  const recent = entries.slice(0, 2);
+  const avg = sleepAvgHours(sleepRes.data, sleepNightsRes.nights);
+  // Recientes: registros con día + noches de sueño (eventos y filas viejas), más nuevos primero
+  const recent = entries.map(e => ({date:e.entry_date, html:null, e}))
+    .concat((sleepNightsRes.nights || []).map(n => ({date:n.night, html:sleepNightRowHtml(n)})))
+    .concat((sleepRes.data || []).map(s => ({date:s.sleep_date, html:sleepLegacyRowHtml(s)})))
+    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)).slice(0, 2);
   const histGroups = diaryGroupHistorical(hist);
   const flash = diaryState.flash;
   diaryState.flash = null;
@@ -17146,7 +17188,7 @@ async function renderDiaryMonthView() {
     <div style="text-align:right;margin-bottom:12px;"><button type="button" class="diary-link" onclick="openDiaryNewEntry(true)">¿Falta alguna?</button></div>
 
     <div class="diary-h" style="margin-bottom:10px;">Tus registros</div>
-    ${(recent.length || histGroups.length) ? `<div class="diary-list" style="margin-bottom:12px;">${recent.map(e => `
+    ${(recent.length || histGroups.length) ? `<div class="diary-list" style="margin-bottom:12px;">${recent.map(({html, e}) => html || `
       <div class="diary-item"><div class="diary-row" style="cursor:default;">
         <div class="diary-row-date">${diaryFmtDay(e.entry_date)}</div>
         <div class="diary-row-main"><div class="diary-row-name">${escHtml(e.activity_name)}</div><div class="diary-row-sub">${escHtml(diarySubtitle(e))}</div></div>
@@ -17171,21 +17213,33 @@ async function renderDiaryList(containerId) {
   if(!st.month) st.month = thisMonth;
   el.innerHTML = '<div class="spinner"></div>';
   const [from, to] = diaryMonthRange(st.month);
-  const [datesRes, entriesRes, histMonths, hist] = await Promise.all([
+  const [datesRes, entriesRes, histMonths, hist, legacySleepRes, sleepMonths, sleepNightsRes] = await Promise.all([
     sb.from('diary_entries').select('entry_date').eq('client_id', cid).not('entry_date', 'is', null).order('entry_date', {ascending:false}).limit(5000),
     sb.from('diary_entries').select('*').eq('client_id', cid).gte('entry_date', from).lte('entry_date', to)
       .order('entry_date', {ascending:false}).order('created_at', {ascending:false}),
     diaryLoadHistoricalMonths(cid),
-    diaryLoadHistorical(cid, st.month, '*')
+    diaryLoadHistorical(cid, st.month, '*'),
+    sb.from('diary_sleep').select('sleep_date,bedtime,wake_time,hours').eq('client_id', cid).order('sleep_date', {ascending:false}).limit(5000),
+    sleepLoadMonths(cid).catch(() => []),
+    sleepLoadNights(cid, from, to).catch(() => ({nights:[]}))
   ]);
   if(entriesRes.error) { el.innerHTML = `<div class="empty-state"><div class="empty-text">${escHtml(entriesRes.error.message)}</div></div>`; return; }
-  const months = [...new Set([thisMonth, st.month, ...(datesRes.data||[]).filter(d => d.entry_date).map(d => diaryMonthKey(d.entry_date)), ...histMonths])].sort().reverse();
+  const legacySleep = legacySleepRes.data || [];
+  const months = [...new Set([thisMonth, st.month, ...(datesRes.data||[]).filter(d => d.entry_date).map(d => diaryMonthKey(d.entry_date)), ...histMonths,
+    ...legacySleep.map(r => diaryMonthKey(r.sleep_date)), ...sleepMonths])].sort().reverse();
   const all = entriesRes.data || [];
   all.concat(hist).forEach(e => { diaryState.entriesById[e.id] = e; });
   const shown = st.filter === 'all' ? all : all.filter(e => e.kind === st.filter);
   const histShown = st.filter === 'all' ? hist : hist.filter(e => e.kind === st.filter);
   const histGroups = diaryGroupHistorical(histShown);
-  const filters = [['all','Todos'],['session','Sesiones'],['habit','Hábitos']];
+  const filters = [['all','Todos'],['session','Sesiones'],['habit','Hábitos'],['sleep','Sueño']];
+  // Filas del mes: registros con día + noches de sueño (eventos y filas viejas de diary_sleep)
+  const sleepItems = (st.filter === 'all' || st.filter === 'sleep')
+    ? (sleepNightsRes.nights || []).map(n => ({date:n.night, html:sleepNightRowHtml(n)}))
+        .concat(legacySleep.filter(r => r.sleep_date >= from && r.sleep_date <= to).map(r => ({date:r.sleep_date, html:sleepLegacyRowHtml(r)})))
+    : [];
+  const rows = shown.map(e => ({date:e.entry_date, html:renderDiaryListItem(e, containerId)})).concat(sleepItems)
+    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
 
   el.innerHTML = `
     <div class="diary-chips-scroll" role="group" aria-label="Mes">
@@ -17194,7 +17248,7 @@ async function renderDiaryList(containerId) {
     <div class="diary-seg" role="group" aria-label="Filtro">
       ${filters.map(([k,l]) => `<button type="button" aria-pressed="${st.filter===k}" onclick="setDiaryListFilter('${containerId}','${k}')">${l}</button>`).join('')}
     </div>
-    ${shown.length ? `<div class="diary-list">${shown.map(e => renderDiaryListItem(e, containerId)).join('')}</div>`
+    ${rows.length ? `<div class="diary-list">${rows.map(r => r.html).join('')}</div>`
       : histGroups.length ? '' : `<div class="diary-card" style="text-align:center;color:var(--gray4);font-size:13px;">Sin registros en ${diaryMonthName(st.month)}.</div>`}
     ${histGroups.length ? `<div class="diary-sep">Sin día · ${histShown.length} ${histShown.length === 1 ? 'registro' : 'registros'}</div>
       <div class="diary-list">${histGroups.map(g => renderDiaryHistGroup(g, containerId, st.month)).join('')}</div>` : ''}`;
@@ -17328,58 +17382,342 @@ function openDiaryNewEntry(allowMonth) {
   document.body.appendChild(ov);
 }
 
-// ---- sueño ----
-async function openDiarySleepForm() {
-  const box = document.getElementById('diary-new-content');
-  if(!box) return;
-  box.innerHTML = '<div class="spinner"></div>';
-  const today = diaryLocalDate();
-  const {data:existing} = await sb.from('diary_sleep').select('bedtime,wake_time').eq('client_id', currentClient.id).eq('sleep_date', today).maybeSingle();
-  const bed = existing?.bedtime ? existing.bedtime.slice(0,5) : '';
-  const wake = existing?.wake_time ? existing.wake_time.slice(0,5) : '';
+// ---- sueño (eventos dormir / despertar) ----
+// Cada toque guarda un evento en diary_sleep_events (event_at en UTC). Las noches se
+// calculan con sleepPairEvents, la única fuente para promedio, listas y vista coach.
+// diary_sleep (formato viejo, 1 fila por día) queda intacta y se sigue mostrando al lado.
+const SLEEP_GOAL_HOURS = 7;
+const SLEEP_MIN_OK_HOURS = 6;
+const MAX_SLEEP_HOURS = 16;
+const SLEEP_TZ_OFFSET_MIN = -360; // America/Costa_Rica: UTC-6, sin horario de verano
+const SLEEP_BAR_HOURS = 8;        // escala de la barra de progreso
+const SLEEP_DAYS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const SLEEP_DAYS_SHORT = ['dom','lun','mar','mié','jue','vie','sáb'];
+const SLEEP_MONTHS_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+// Fecha y hora de pared en Costa Rica para un instante UTC
+function sleepCrParts(iso) {
+  const d = new Date(new Date(iso).getTime() + SLEEP_TZ_OFFSET_MIN * 60000);
+  const y = d.getUTCFullYear(), m = d.getUTCMonth() + 1, day = d.getUTCDate();
+  return { y, m, d: day, h: d.getUTCHours(), min: d.getUTCMinutes(), dow: d.getUTCDay(),
+    date: `${y}-${String(m).padStart(2,'0')}-${String(day).padStart(2,'0')}`,
+    time: `${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}` };
+}
+// Fecha + hora de Costa Rica ("2026-10-20", "22:30") → ISO UTC
+function sleepCrToIso(dateStr, timeStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const [h, mi] = timeStr.split(':').map(Number);
+  return new Date(Date.UTC(y, m - 1, d, h, mi) - SLEEP_TZ_OFFSET_MIN * 60000).toISOString();
+}
+function sleepAddDays(dateStr, n) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+}
+function sleepCrToday() { return sleepCrParts(new Date().toISOString()).date; }
+// Noche = fecha del evento; antes de las 12:00 es la noche del día anterior
+function sleepNightOf(iso) { const p = sleepCrParts(iso); return p.h < 12 ? sleepAddDays(p.date, -1) : p.date; }
+
+// Función pura: eventos → parejas, incompletos y resumen por noche.
+// - Ignora deleted_at y ordena por event_at.
+// - Cada 'sleep' se empareja con el siguiente 'wake'; dos 'sleep' seguidos: el primero queda solo.
+// - 'wake' sin 'sleep' antes: incompleto. Duración ≤ 0 o > MAX_SLEEP_HOURS: los dos quedan sin pareja.
+// - Lo incompleto no suma horas ni promedio.
+function sleepPairEvents(events) {
+  const evs = (events || [])
+    .filter(e => e && !e.deleted_at && (e.kind === 'sleep' || e.kind === 'wake') && !isNaN(new Date(e.event_at).getTime()))
+    .slice().sort((a, b) => new Date(a.event_at) - new Date(b.event_at));
+  const pairs = [], incomplete = [];
+  const lone = (e) => incomplete.push({ kind: e.kind, event: e, night: sleepNightOf(e.event_at) });
+  let pending = null;
+  evs.forEach(e => {
+    if(e.kind === 'sleep') { if(pending) lone(pending); pending = e; return; }
+    if(!pending) { lone(e); return; }
+    const minutes = Math.round((new Date(e.event_at) - new Date(pending.event_at)) / 60000);
+    if(minutes <= 0 || minutes > MAX_SLEEP_HOURS * 60) { lone(pending); lone(e); pending = null; return; }
+    pairs.push({ night: sleepNightOf(pending.event_at), sleep: pending, wake: e, minutes });
+    pending = null;
+  });
+  if(pending) lone(pending);
+  const byNight = {};
+  const nightOf = (k) => (byNight[k] = byNight[k] || { night: k, minutes: 0, pairs: [], incomplete: [] });
+  pairs.forEach(p => { const n = nightOf(p.night); n.pairs.push(p); n.minutes += p.minutes; });
+  incomplete.forEach(i => nightOf(i.night).incomplete.push(i));
+  const nights = Object.values(byNight).sort((a, b) => (a.night < b.night ? 1 : -1));
+  return { pairs, incomplete, nights };
+}
+
+// ---- formato ----
+function sleepFmtTime(iso) {
+  const p = sleepCrParts(iso);
+  const h12 = p.h % 12 === 0 ? 12 : p.h % 12;
+  return `${h12}:${String(p.min).padStart(2,'0')} ${p.h < 12 ? 'a. m.' : 'p. m.'}`;
+}
+function sleepFmtHM(timeStr) { return sleepFmtTime(sleepCrToIso('2026-01-01', timeStr)); }
+function sleepFmtDur(min) { const h = Math.floor(min / 60), m = min % 60; return !h ? `${m} min` : m ? `${h} h ${m} min` : `${h} h`; }
+function sleepDayShort(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return `${SLEEP_DAYS_SHORT[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]} ${d} ${SLEEP_MONTHS_SHORT[m - 1]}`;
+}
+function sleepNightLabel(night) {
+  const [y, m, d] = night.split('-').map(Number);
+  return `Noche del ${SLEEP_DAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]} ${d} ${SLEEP_MONTHS_SHORT[m - 1]}`;
+}
+function sleepNightHours(n) { return n.pairs.length ? n.minutes / 60 : null; }
+function sleepNightSub(n) {
+  if(n.pairs.length) {
+    const p = n.pairs[0];
+    return `${sleepFmtDur(n.minutes)} · ${sleepFmtTime(p.sleep.event_at)} → ${sleepFmtTime(n.pairs[n.pairs.length - 1].wake.event_at)}`;
+  }
+  return n.incomplete.some(i => i.kind === 'sleep') ? 'Sin hora de despertar' : 'Sin hora de dormir';
+}
+// Promedio del mes: filas viejas de diary_sleep (hours) + noches completas de eventos
+function sleepAvgHours(legacyRows, nights) {
+  const vals = (legacyRows || []).map(r => Number(r.hours)).filter(v => !isNaN(v) && v > 0)
+    .concat((nights || []).map(sleepNightHours).filter(v => v != null && v > 0));
+  return vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : null;
+}
+
+// Eventos de un rango de noches [fromNight, toNight] (con margen para emparejar en los bordes)
+async function sleepLoadNights(cid, fromNight, toNight) {
+  const {data, error} = await sb.from('diary_sleep_events').select('id,kind,event_at,deleted_at')
+    .eq('client_id', cid).is('deleted_at', null)
+    .gte('event_at', sleepCrToIso(sleepAddDays(fromNight, -1), '12:00'))
+    .lt('event_at', sleepCrToIso(sleepAddDays(toNight, 2), '12:00'))
+    .order('event_at', {ascending:true});
+  if(error) return { nights: [], error };
+  const res = sleepPairEvents(data || []);
+  return { nights: res.nights.filter(n => n.night >= fromNight && n.night <= toNight), events: data || [] };
+}
+// Meses (YYYY-MM) con noches de eventos, para los chips de mes
+async function sleepLoadMonths(cid) {
+  const {data} = await sb.from('diary_sleep_events').select('event_at').eq('client_id', cid).is('deleted_at', null)
+    .order('event_at', {ascending:false}).limit(5000);
+  return [...new Set((data || []).map(r => sleepNightOf(r.event_at).slice(0, 7)))];
+}
+
+// Fila de una noche en las listas del cliente (abre la noche para ver o editar)
+function sleepNightRowHtml(n) {
+  return `<div class="diary-item"><button type="button" class="diary-row" onclick="openSleepNight('${n.night}')">
+      <div class="diary-row-date">${diaryFmtDay(n.night)}</div>
+      <div class="diary-row-main"><div class="diary-row-name">Sueño</div><div class="diary-row-sub">${sleepNightSub(n)}</div></div>
+      <span style="color:${n.pairs.length ? 'var(--orange)' : 'var(--gray4)'};">${diaryIcon('sleep', 26)}</span>
+    </button></div>`;
+}
+// Fila de diary_sleep (formato viejo, solo lectura)
+function sleepLegacyRowHtml(s) {
+  const bed = s.bedtime ? sleepFmtHM(s.bedtime.slice(0,5)) : '-', wake = s.wake_time ? sleepFmtHM(s.wake_time.slice(0,5)) : '-';
+  return `<div class="diary-item"><div class="diary-row" style="cursor:default;">
+      <div class="diary-row-date">${diaryFmtDay(s.sleep_date)}</div>
+      <div class="diary-row-main"><div class="diary-row-name">Sueño</div><div class="diary-row-sub">${s.hours != null ? sleepFmtDur(Math.round(Number(s.hours) * 60)) + ' · ' : ''}${bed} → ${wake}</div></div>
+      <span style="color:var(--orange);">${diaryIcon('sleep', 26)}</span>
+    </div></div>`;
+}
+
+// ---- modal: registrar dormir / despertar ----
+let sleepForm = { kind: 'sleep' };
+
+function sleepEnsureSheet() {
+  let box = document.getElementById('diary-new-content');
+  if(box) return box;
+  const ov = document.createElement('div');
+  ov.id = 'diary-new-sheet';
+  ov.className = 'modal-overlay open diary-sheet';
+  ov.onclick = (ev) => { if(ev.target === ov) ov.remove(); };
+  ov.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-label="Sueño">
+      <button type="button" class="modal-close" aria-label="Cerrar" style="background:none;border:none;min-width:44px;min-height:44px;font-family:inherit;" onclick="document.getElementById('diary-new-sheet')?.remove()">×</button>
+      <div id="diary-new-content"></div>
+    </div>`;
+  document.body.appendChild(ov);
+  return document.getElementById('diary-new-content');
+}
+
+async function openDiarySleepForm(kind) {
+  const box = sleepEnsureSheet();
+  if(!kind) {
+    // Si hay un "me voy a dormir" de las últimas horas sin despertar, arranca en "Me desperté"
+    kind = 'sleep';
+    box.innerHTML = '<div class="spinner"></div>';
+    const {data:last} = await sb.from('diary_sleep_events').select('kind,event_at').eq('client_id', currentClient.id)
+      .is('deleted_at', null).order('event_at', {ascending:false}).limit(1).maybeSingle();
+    if(last?.kind === 'sleep' && Date.now() - new Date(last.event_at).getTime() < MAX_SLEEP_HOURS * 3600000) kind = 'wake';
+  }
+  const now = sleepCrParts(new Date().toISOString());
+  sleepForm = { kind };
   box.innerHTML = `
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:14px;">
       <button type="button" class="diary-back" aria-label="Volver" onclick="openDiaryNewEntry(diaryState.allowMonth)">←</button>
       <div class="modal-title" style="margin:0;">Sueño</div>
     </div>
-    <div class="diary-time-row" style="margin-bottom:12px;">
-      <div class="diary-field" style="margin:0;"><label for="diary-bed">Aprox. a qué hora te dormiste</label><input class="form-input" type="time" id="diary-bed" value="${bed}" oninput="updateDiarySleepPreview()"></div>
-      <div class="diary-field" style="margin:0;"><label for="diary-wake">Aprox. a qué hora despertaste</label><input class="form-input" type="time" id="diary-wake" value="${wake}" oninput="updateDiarySleepPreview()"></div>
+    <div class="sl-stack">
+      <span class="sl-q" id="sl-kind-label">¿Qué querés registrar?</span>
+      <div class="exx-seg" role="group" aria-labelledby="sl-kind-label">
+        <button type="button" id="sl-kind-sleep" aria-pressed="${kind === 'sleep'}" onclick="setSleepKind('sleep')">${icon('moon', 18)} Me voy a dormir</button>
+        <button type="button" id="sl-kind-wake" aria-pressed="${kind === 'wake'}" onclick="setSleepKind('wake')">${icon('sun', 18)} Me desperté</button>
+      </div>
     </div>
-    <div id="diary-sleep-preview" style="font-size:14px;font-weight:700;margin-bottom:6px;" aria-live="polite"></div>
-    ${existing ? '<div class="diary-help" style="margin-bottom:12px;">Ya registraste el sueño de hoy; si guardás, se reemplaza.</div>' : '<div style="height:12px;"></div>'}
-    <button type="button" class="btn-primary" id="diary-sleep-save" onclick="saveDiarySleep()">Guardar</button>`;
-  updateDiarySleepPreview();
+    <div class="sl-fields">
+      <div class="sl-stack"><label for="sl-time" class="sl-q">Hora</label><input id="sl-time" class="form-input" type="time" value="${now.time}" aria-describedby="sl-time-12" oninput="renderSleepGoal()"><span id="sl-time-12" class="sl-time-12"></span></div>
+      <div class="sl-stack"><label for="sl-date" class="sl-q">Día</label><input id="sl-date" class="form-input" type="date" value="${now.date}" max="${now.date}" oninput="renderSleepGoal()"></div>
+    </div>
+    <p class="sl-help">Por defecto es la hora y el día de ahora. Si se te olvidó marcarlo, cambialos. Después de medianoche cuenta como la noche anterior.</p>
+    <div id="sl-goal" aria-live="polite"></div>
+    <button type="button" class="exx-btn" id="sl-save" style="margin-top:16px;min-height:56px;" onclick="saveSleepEvent()">Guardar</button>`;
+  renderSleepGoal();
 }
 
-function updateDiarySleepPreview() {
-  const el = document.getElementById('diary-sleep-preview');
+function setSleepKind(kind) {
+  sleepForm.kind = kind;
+  document.getElementById('sl-kind-sleep')?.setAttribute('aria-pressed', String(kind === 'sleep'));
+  document.getElementById('sl-kind-wake')?.setAttribute('aria-pressed', String(kind === 'wake'));
+  renderSleepGoal();
+}
+
+// Tarjeta "TU META · 7 H": solo con "Me voy a dormir"
+function renderSleepGoal() {
+  const el = document.getElementById('sl-goal');
   if(!el) return;
-  const min = diarySleepMinutes(document.getElementById('diary-bed')?.value, document.getElementById('diary-wake')?.value);
-  el.textContent = min == null ? '' : `Dormiste aprox. ${diaryFmtDuration(min)}`;
+  const time = document.getElementById('sl-time')?.value;
+  const date = document.getElementById('sl-date')?.value;
+  const t12 = document.getElementById('sl-time-12');
+  if(t12) t12.textContent = time ? sleepFmtHM(time) : '';
+  if(sleepForm.kind !== 'sleep' || !time || !date) { el.innerHTML = ''; return; }
+  const bedIso = sleepCrToIso(date, time);
+  const wakeIso = new Date(new Date(bedIso).getTime() + SLEEP_GOAL_HOURS * 3600000).toISOString();
+  el.innerHTML = `<section class="sl-goal">
+      <span class="sl-goal-k">Tu meta · ${SLEEP_GOAL_HOURS} h de sueño</span>
+      <span class="sl-goal-time">${sleepFmtTime(wakeIso)}</span>
+      <span style="font-size:14px;line-height:1.45;color:#E7E0D4;">Si te dormís a las ${sleepFmtTime(bedIso)}, esta es la hora ideal para despertarte.</span>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:2px;" aria-hidden="true">
+        <span class="sl-goal-ico">${icon('moon', 16)}</span>
+        <span class="sl-goal-line"></span><span style="font-family:'DM Mono',monospace;font-size:13px;">${SLEEP_GOAL_HOURS} h</span><span class="sl-goal-line"></span>
+        <span class="sl-goal-ico">${icon('sun', 16)}</span>
+      </div>
+    </section>`;
 }
 
-async function saveDiarySleep() {
-  const bed = document.getElementById('diary-bed')?.value;
-  const wake = document.getElementById('diary-wake')?.value;
-  const min = diarySleepMinutes(bed, wake);
-  if(min == null) { showToast('Poné las dos horas', 'error'); return; }
-  const btn = document.getElementById('diary-sleep-save');
+async function saveSleepEvent() {
+  const time = document.getElementById('sl-time')?.value;
+  const date = document.getElementById('sl-date')?.value;
+  if(!time || !date) { showToast('Poné la hora y el día', 'error'); return; }
+  if(date > sleepCrToday()) { showToast('El día no puede ser después de hoy', 'error'); return; }
+  const eventAt = sleepCrToIso(date, time);
+  if(new Date(eventAt).getTime() > Date.now() + 5 * 60000) { showToast('Esa hora todavía no pasó', 'error'); return; }
+  const btn = document.getElementById('sl-save');
   if(btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
-  const now = new Date().toISOString();
-  const {error} = await sb.from('diary_sleep').upsert({
-    client_id: currentClient.id,
-    sleep_date: diaryLocalDate(),
-    bedtime: bed,
-    wake_time: wake,
-    hours: Math.round(min / 60 * 100) / 100,
-    is_migrated: false,
-    updated_at: now
-  }, {onConflict: 'client_id,sleep_date'});
-  if(error) { if(btn) { btn.disabled = false; btn.textContent = 'Guardar'; } showToast(error.message, 'error'); return; }
-  document.getElementById('diary-new-sheet')?.remove();
-  showToast('Sueño guardado');
+  const {data, error} = await sb.from('diary_sleep_events')
+    .insert({ client_id: currentClient.id, kind: sleepForm.kind, event_at: eventAt })
+    .select('id,kind,event_at').maybeSingle();
+  if(error) { if(btn) { btn.disabled = false; btn.textContent = 'Guardar'; } showToast('No se pudo guardar. ' + error.message, 'error'); return; }
   diaryRefreshAfterChange();
+  if(sleepForm.kind === 'sleep') {
+    document.getElementById('diary-new-sheet')?.remove();
+    showToast('Listo, que descanses', 'success');
+    return;
+  }
+  // Despertar: se muestra la noche (resultado si completó una pareja)
+  openSleepNight(sleepNightOf(eventAt));
+}
+
+// ---- noche: resultado + entradas (editar / eliminar) ----
+async function openSleepNight(night) {
+  const box = sleepEnsureSheet();
+  box.innerHTML = '<div class="spinner"></div>';
+  const {nights, error} = await sleepLoadNights(currentClient.id, night, night);
+  if(error) { box.innerHTML = `<div class="empty-state"><div class="empty-text">No se pudo cargar la noche.</div></div>`; return; }
+  const n = nights[0] || { night, minutes: 0, pairs: [], incomplete: [] };
+  const done = n.pairs.length > 0;
+  const ok = done && n.minutes >= SLEEP_MIN_OK_HOURS * 60;
+  const pct = Math.min(100, n.minutes / (SLEEP_BAR_HOURS * 60) * 100);
+  const mark = (h) => (h / SLEEP_BAR_HOURS * 100).toFixed(1) + '%';
+  const lack6 = SLEEP_MIN_OK_HOURS * 60 - n.minutes, lack7 = SLEEP_GOAL_HOURS * 60 - n.minutes;
+  const msg = !done ? (n.incomplete.some(i => i.kind === 'sleep') ? 'Falta la hora de despertar. Cuando la agregues, se calcula la noche.' : 'Falta la hora de dormir. Agregala para calcular la noche.')
+    : !ok ? `Te faltaron ${sleepFmtDur(lack6)} para llegar a ${SLEEP_MIN_OK_HOURS} h. Probá acostarte más temprano esta noche.`
+    : lack7 > 0 ? `Pasaste la marca de ${SLEEP_MIN_OK_HOURS} h. Te faltaron ${sleepFmtDur(lack7)} para tu meta de ${SLEEP_GOAL_HOURS} h.`
+    : `Pasaste la marca de ${SLEEP_MIN_OK_HOURS} h y llegaste a tu meta de ${SLEEP_GOAL_HOURS} h.`;
+  const entries = n.pairs.flatMap(p => [p.sleep, p.wake]).concat(n.incomplete.map(i => i.event))
+    .sort((a, b) => new Date(a.event_at) - new Date(b.event_at));
+  const tone = !done ? 'sl-res-none' : ok ? 'sl-res-ok' : 'sl-res-bad';
+  box.innerHTML = `
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:14px;">
+      <button type="button" class="diary-back" aria-label="Volver" onclick="openDiarySleepForm()">←</button>
+      <div class="modal-title" style="margin:0;">Sueño</div>
+    </div>
+    <section class="sl-res ${tone}" aria-live="polite">
+      <span class="sl-res-badge">${!done ? icon('clock', 20) + 'Noche incompleta' : ok ? icon('check-circle', 20) + '¡Buen trabajo!' : icon('alert-circle', 20) + 'Hay que mejorar'}</span>
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <span class="sl-res-big">${done ? sleepFmtDur(n.minutes) : '—'}</span>
+        <span class="sl-res-sub">${sleepNightLabel(n.night)}</span>
+      </div>
+      ${done ? `<div class="sl-bar-wrap" aria-hidden="true">
+        <div class="sl-bar"><div class="sl-bar-fill" style="width:${pct.toFixed(1)}%;"></div><div class="sl-bar-mark" style="left:${mark(SLEEP_MIN_OK_HOURS)};"></div><div class="sl-bar-mark" style="left:${mark(SLEEP_GOAL_HOURS)};"></div></div>
+        <div class="sl-bar-lbls"><span style="left:${mark(SLEEP_MIN_OK_HOURS)};">${SLEEP_MIN_OK_HOURS} h</span><span style="left:${mark(SLEEP_GOAL_HOURS)};">${SLEEP_GOAL_HOURS} h</span></div>
+      </div>` : ''}
+      <span class="sl-res-sub" style="font-size:14px;line-height:1.45;">${msg}</span>
+    </section>
+    <div class="sl-stack" style="margin-top:18px;">
+      <span class="exx-label">Entradas de la noche</span>
+      <ul class="sl-entries">${entries.map(e => sleepEntryHtml(e, n.night)).join('') || '<li class="exx-empty">Sin entradas.</li>'}</ul>
+    </div>
+    <button type="button" class="sl-add-btn" onclick="openDiarySleepForm('${done || n.incomplete.some(i => i.kind === 'wake') ? 'sleep' : 'wake'}')">${icon('plus', 18)} Agregar otra entrada</button>`;
+}
+
+function sleepEntryHtml(e, night) {
+  const p = sleepCrParts(e.event_at);
+  const label = e.kind === 'sleep' ? 'Dormir' : 'Despertar';
+  const otherNight = e.kind === 'sleep' && p.date !== night;
+  return `<li class="sl-entry" id="sl-entry-${e.id}">
+      <span class="sl-entry-ico">${icon(e.kind === 'sleep' ? 'moon' : 'sun', 20)}</span>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px;min-width:0;">
+        <span style="font-size:15px;font-weight:700;">${label}</span>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;">
+          <span style="font-size:13px;color:var(--gray5);">${sleepDayShort(p.date)} · ${sleepFmtTime(e.event_at)}</span>
+          ${otherNight ? `<span class="sl-night-chip">cuenta como noche del ${sleepDayShort(night)}</span>` : ''}
+        </div>
+      </div>
+      <button type="button" class="exx-icon-btn" aria-label="Editar entrada de ${label.toLowerCase()}" onclick="editSleepEntry('${e.id}','${e.kind}','${e.event_at}','${night}')">${icon('pencil', 18)}</button>
+    </li>`;
+}
+
+function editSleepEntry(id, kind, eventAt, night) {
+  const li = document.getElementById('sl-entry-' + id);
+  if(!li) return;
+  const p = sleepCrParts(eventAt), today = sleepCrToday();
+  li.innerHTML = `<div style="flex:1;display:flex;flex-direction:column;gap:10px;padding:4px 0;">
+      <span style="font-size:15px;font-weight:700;">Editar ${kind === 'sleep' ? 'dormir' : 'despertar'}</span>
+      <div class="sl-fields">
+        <div class="sl-stack"><label for="sl-e-time-${id}" class="sl-q">Hora</label><input id="sl-e-time-${id}" class="form-input" type="time" value="${p.time}"></div>
+        <div class="sl-stack"><label for="sl-e-date-${id}" class="sl-q">Día</label><input id="sl-e-date-${id}" class="form-input" type="date" value="${p.date}" max="${today}"></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button type="button" class="diary-btn-ghost" style="flex:1;" onclick="saveSleepEntry('${id}')">Guardar</button>
+        <button type="button" class="diary-btn-ghost" style="flex:1;color:var(--red);border-color:var(--red);" onclick="deleteSleepEntry('${id}','${night}')">Eliminar</button>
+        <button type="button" class="diary-btn-ghost" style="flex:1;" onclick="openSleepNight('${night}')">Cancelar</button>
+      </div>
+    </div>`;
+}
+
+async function saveSleepEntry(id) {
+  const time = document.getElementById('sl-e-time-' + id)?.value;
+  const date = document.getElementById('sl-e-date-' + id)?.value;
+  if(!time || !date) { showToast('Poné la hora y el día', 'error'); return; }
+  if(date > sleepCrToday()) { showToast('El día no puede ser después de hoy', 'error'); return; }
+  const eventAt = sleepCrToIso(date, time);
+  if(new Date(eventAt).getTime() > Date.now() + 5 * 60000) { showToast('Esa hora todavía no pasó', 'error'); return; }
+  const {error} = await sb.from('diary_sleep_events').update({ event_at: eventAt }).eq('id', id).eq('client_id', currentClient.id);
+  if(error) { showToast('No se pudo guardar', 'error'); return; }
+  showToast('Entrada actualizada', 'success');
+  diaryRefreshAfterChange();
+  openSleepNight(sleepNightOf(eventAt));
+}
+
+// Soft delete: el evento queda en la base con deleted_at
+async function deleteSleepEntry(id, night) {
+  if(!confirm('¿Eliminar esta entrada?')) return;
+  const {error} = await sb.from('diary_sleep_events').update({ deleted_at: new Date().toISOString() }).eq('id', id).eq('client_id', currentClient.id);
+  if(error) { showToast('No se pudo eliminar', 'error'); return; }
+  showToast('Entrada eliminada');
+  diaryRefreshAfterChange();
+  openSleepNight(night);
 }
 
 // ---- form de sesión / hábito ----
@@ -17981,7 +18319,7 @@ async function loadCoachDiary(c, ym) {
   window._coachDiaryYm = ym;
   const [from, to] = diaryMonthRange(ym);
   panel.innerHTML = '<div class="spinner"></div>';
-  const [datesRes, sleepDatesRes, entriesRes, sleepRes, histMonths, hist] = await Promise.all([
+  const [datesRes, sleepDatesRes, entriesRes, sleepRes, histMonths, hist, sleepEvMonths, sleepNightsRes] = await Promise.all([
     sb.from('diary_entries').select('entry_date').eq('client_id', c.id).not('entry_date', 'is', null).order('entry_date', {ascending:false}).limit(5000),
     sb.from('diary_sleep').select('sleep_date').eq('client_id', c.id).order('sleep_date', {ascending:false}).limit(5000),
     sb.from('diary_entries').select(DIARY_COACH_COLUMNS).eq('client_id', c.id).gte('entry_date', from).lte('entry_date', to)
@@ -17989,14 +18327,16 @@ async function loadCoachDiary(c, ym) {
     sb.from('diary_sleep').select('sleep_date,bedtime,wake_time,hours').eq('client_id', c.id).gte('sleep_date', from).lte('sleep_date', to)
       .order('sleep_date', {ascending:false}),
     diaryLoadHistoricalMonths(c.id),
-    diaryLoadHistorical(c.id, ym, DIARY_COACH_COLUMNS + ',entry_month,is_historical')
+    diaryLoadHistorical(c.id, ym, DIARY_COACH_COLUMNS + ',entry_month,is_historical'),
+    sleepLoadMonths(c.id).catch(() => []),
+    sleepLoadNights(c.id, from, to).catch(() => ({nights:[]}))
   ]);
   if(token !== window._coachDiaryToken) return;
   if(entriesRes.error) { panel.innerHTML = `<div style="font-size:13px;color:var(--red);padding:8px 0;">${escHtml(entriesRes.error.message)}</div>`; return; }
   const months = [...new Set([thisMonth, ym,
     ...(datesRes.data||[]).filter(d => d.entry_date).map(d => diaryMonthKey(d.entry_date)),
     ...(sleepDatesRes.data||[]).filter(d => d.sleep_date).map(d => diaryMonthKey(d.sleep_date)),
-    ...histMonths])].sort().reverse();
+    ...sleepEvMonths, ...histMonths])].sort().reverse();
   const entries = entriesRes.data || [];
   const sleeps = sleepRes.data || [];
 
@@ -18010,7 +18350,20 @@ async function loadCoachDiary(c, ym) {
     if(token !== window._coachDiaryToken) return;
   }
 
-  const avg = diaryAvgHours(sleeps);
+  const sleepNights = sleepNightsRes.nights || [];
+  const avg = sleepAvgHours(sleeps, sleepNights);
+  // Sueño del mes: noches de eventos + filas viejas de diary_sleep, más nuevas primero
+  const sleepRows = sleepNights.map(n => ({date:n.night, html:`<div class="diary-item"><div class="diary-row" style="cursor:default;min-height:40px;">
+        <div class="diary-row-date">${diaryFmtDay(n.night)}</div>
+        <div class="diary-row-main" style="font-size:12px;color:var(--gray5);">${n.pairs.length ? `${sleepFmtTime(n.pairs[0].sleep.event_at)} → ${sleepFmtTime(n.pairs[n.pairs.length - 1].wake.event_at)}` : sleepNightSub(n)}</div>
+        <div style="font-size:13px;font-weight:800;color:${n.pairs.length ? 'var(--orange)' : 'var(--gray4)'};">${n.pairs.length ? sleepFmtDur(n.minutes) : 'Incompleta'}</div>
+      </div></div>`}))
+    .concat(sleeps.map(s => ({date:s.sleep_date, html:`<div class="diary-item"><div class="diary-row" style="cursor:default;min-height:40px;">
+        <div class="diary-row-date">${diaryFmtDay(s.sleep_date)}</div>
+        <div class="diary-row-main" style="font-size:12px;color:var(--gray5);">${s.bedtime ? s.bedtime.slice(0,5) : '-'} → ${s.wake_time ? s.wake_time.slice(0,5) : '-'}</div>
+        <div style="font-size:13px;font-weight:800;color:var(--orange);">${s.hours != null ? Number(s.hours).toFixed(1) + 'h' : '-'}</div>
+      </div></div>`})))
+    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
   const sessions = entries.filter(e => e.kind === 'session').length + hist.filter(e => e.kind === 'session').length;
   const habits = entries.filter(e => e.kind === 'habit').length + hist.filter(e => e.kind === 'habit').length;
   // Solo cuentan las que tienen emoción (los sin día del coach pueden no tenerla)
@@ -18077,12 +18430,8 @@ async function loadCoachDiary(c, ym) {
     <div style="display:flex;gap:8px;margin-bottom:12px;">
       ${Object.keys(emo).map(k => `<div class="diary-tile" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;">${diaryEmotionSvg(k, 24, true)}<span style="font-size:15px;font-weight:800;">${emo[k]}</span></div>`).join('')}
     </div>
-    ${sleeps.length ? `<details style="margin-bottom:12px;"><summary style="font-size:12px;font-weight:700;color:var(--gray5);cursor:pointer;min-height:32px;">${diaryIcon('sleep', 18)} Sueño del mes (${sleeps.length} días)</summary>
-      <div class="diary-list" style="margin-top:6px;">${sleeps.map(s => `<div class="diary-item"><div class="diary-row" style="cursor:default;min-height:40px;">
-        <div class="diary-row-date">${diaryFmtDay(s.sleep_date)}</div>
-        <div class="diary-row-main" style="font-size:12px;color:var(--gray5);">${s.bedtime ? s.bedtime.slice(0,5) : '-'} → ${s.wake_time ? s.wake_time.slice(0,5) : '-'}</div>
-        <div style="font-size:13px;font-weight:800;color:var(--orange);">${s.hours != null ? Number(s.hours).toFixed(1) + 'h' : '-'}</div>
-      </div></div>`).join('')}</div></details>` : ''}
+    ${sleepRows.length ? `<details style="margin-bottom:12px;"><summary style="font-size:12px;font-weight:700;color:var(--gray5);cursor:pointer;min-height:32px;">${diaryIcon('sleep', 18)} Sueño del mes (${sleepRows.length} ${sleepRows.length === 1 ? 'noche' : 'noches'})</summary>
+      <div class="diary-list" style="margin-top:6px;">${sleepRows.map(r => r.html).join('')}</div></details>` : ''}
     ${(entries.length || hist.length) ? `
       ${(sessDated.length || sessHist.length) ? `
         <div class="diary-sec-head"><div class="diary-h" style="font-size:18px;">Sesiones</div><div class="diary-label" style="color:var(--gray5);">${sessions} ${sessions === 1 ? 'registro' : 'registros'}</div></div>
