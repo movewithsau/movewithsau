@@ -783,7 +783,20 @@ body.lift-mode #strongflow-btn { display:none !important; }
 .ico { fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
 .diary-ico { display:inline-flex; vertical-align:middle; }
 .diary-time-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-</style>
+/* Registros "solo el mes" */
+.diary-step-btn { width:48px; height:48px; border-radius:50%; border:1.5px solid var(--gray3); background:var(--white); color:var(--black); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; }
+.diary-step-btn:disabled { color:var(--gray3); cursor:default; }
+.diary-step-num { min-width:44px; text-align:center; font-family:'Playfair Display',serif; font-weight:900; font-size:32px; line-height:1; }
+.diary-month-fixed { display:flex; align-items:center; justify-content:space-between; min-height:48px; padding:0 16px; border-radius:12px; background:var(--gray1); font-size:15px; }
+.diary-hist-note { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:12px; background:#EEF6EB; color:#2F4A2C; font-size:13px; line-height:1.4; }
+.diary-hist-note.is-session { background:#FEF0E7; color:#7C2D12; }
+.diary-hist-note > div:first-child { display:flex; gap:3px; flex:none; }
+.diary-row-date.is-hist { text-transform:uppercase; line-height:1.25; }
+.diary-sep { display:flex; align-items:center; gap:10px; margin:14px 0 8px; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gray5); }
+.diary-sep::after { content:""; flex:1; height:1px; background:var(--gray3); }
+.diary-add-btn { width:48px; height:48px; border-radius:50%; border:none; background:var(--orange); color:#fff; display:flex; align-items:center; justify-content:center; flex:none; cursor:pointer; box-shadow:0 4px 12px rgba(247,90,14,0.35); }
+.diary-chip-bar { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.diary-chip-bar .diary-chips-scroll { flex:1; min-width:0; margin-bottom:0; }</style>
 </head>
 <body>
 <!-- Sprite de íconos (estilo Lucide, ISC). Se usan con icon(nombre, tamaño). -->
@@ -4429,6 +4442,10 @@ async function pgCmpRender() {
 
 // ===== MOVES HIVE =====
 // Lee exercise_logs y workout_sessions del mes. Única escritura: clients.weekly_goal (chips 3/4/5).
+// También lee los registros SIN DÍA del diario (diary_entries.is_historical) del mes: las sesiones
+// suman a Entrenos y Horas, y sesiones + hábitos llenan hexágonos sin número después del último día.
+// No tocan "días entrenados", "Mejor semana" ni la meta semanal.
+// Inconsistencia conocida (decisión de Sau): las sesiones del diario CON día no suman al Hive.
 const HIVE_HEX = 'M0 -24L20.8 -12V12L0 24L-20.8 12V-12Z';
 let hiveMonth = null; // 'YYYY-MM'
 let hiveData = null;
@@ -4457,11 +4474,12 @@ async function loadHive() {
   const from = [monthStart, weekKeys[0]].sort()[0];
   const to = [monthEnd, weekKeys[6]].sort()[1];
   el.innerHTML = '<div class="spinner"></div>';
-  const [lr, sr] = await Promise.all([
+  const [lr, sr, hist] = await Promise.all([
     sb.from('exercise_logs').select('logged_at,weight,weight_unit,exercises(name)').eq('client_id', cid)
       .gte('logged_at', crDayRange(from).start).lt('logged_at', crDayRange(to).end).limit(5000),
     sb.from('workout_sessions').select('session_date,duration_minutes').eq('client_id', cid)
-      .gte('session_date', from).lte('session_date', to)
+      .gte('session_date', from).lte('session_date', to),
+    diaryLoadHistorical(cid, ym, 'kind,duration_minutes')
   ]);
   if (!currentClient || currentClient.id !== cid || hiveMonth !== ym) return;
   const days = new Set();
@@ -4486,19 +4504,34 @@ async function loadHive() {
   const monthDays = [...days].filter(k => k.slice(0, 7) === ym);
   const perWeek = {};
   monthDays.forEach(k => { const w = pgWeekKey(k); perWeek[w] = (perWeek[w] || 0) + 1; });
+  const histSessions = hist.filter(e => e.kind === 'session');
+  const histHabits = hist.filter(e => e.kind === 'habit').length;
+  minutes += histSessions.reduce((a, e) => a + (e.duration_minutes || 0), 0);
   hiveData = {
     ym, last, days, count: monthDays.length, hours: minutes / 60,
+    entrenos: monthDays.length + histSessions.length,
+    histSessions: histSessions.length, histHabits,
     bestWeek: Math.max(0, ...Object.values(perWeek)), best,
     weekDone: weekKeys.filter(k => days.has(k)).length
   };
   renderHive();
+}
+// Hexágonos sin número después del último día: primero sesiones, después hábitos. Máx 21 (3 filas).
+const HIVE_EXTRA_MAX = 21;
+function hiveExtraCells(data) {
+  const list = [...Array(data.histSessions || 0).fill('session'), ...Array(data.histHabits || 0).fill('habit')];
+  if (list.length <= HIVE_EXTRA_MAX) return list.map(kind => ({ kind }));
+  const shown = list.slice(0, HIVE_EXTRA_MAX - 1).map(kind => ({ kind }));
+  shown.push({ kind: list[HIVE_EXTRA_MAX - 1], more: list.length - (HIVE_EXTRA_MAX - 1) });
+  return shown;
 }
 // Panal del mes: 7 por fila (lunes a domingo), filas impares desplazadas.
 function hiveSvg(data, opts) {
   const o = opts || {};
   const [y, m] = data.ym.split('-').map(Number);
   const offset = (new Date(y, m - 1, 1).getDay() + 6) % 7;
-  const rows = Math.ceil((offset + data.last) / 7);
+  const extras = o.colors ? [] : hiveExtraCells(data);
+  const rows = Math.ceil((offset + data.last + extras.length) / 7);
   const today = todayCR();
   let cells = '';
   for (let day = 1; day <= data.last; day++) {
@@ -4514,9 +4547,35 @@ function hiveSvg(data, opts) {
     cells += `<g transform="translate(${x} ${yy})"><path d="${HIVE_HEX}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"/>` +
       (o.numbers === false ? '' : `<text y="5" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="14" font-weight="700" fill="${txt}">${day}</text>`) + '</g>';
   }
+  extras.forEach((cell, i) => {
+    const idx = offset + data.last + i, r = Math.floor(idx / 7), c = idx % 7;
+    const x = 48 + 45 * c + (r % 2 ? 22.5 : 0), yy = 36 + 39 * r;
+    const col = DIARY_HIST_COLORS[cell.kind];
+    const inner = cell.more
+      ? `<text y="5" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="13" font-weight="700" fill="${col.ink}">+${cell.more}</text>`
+      : `<g transform="translate(-12 -12) scale(1.5)">${diaryHistGlyph(cell.kind, col.ink)}</g>`;
+    cells += `<g transform="translate(${x} ${yy})"><path d="${HIVE_HEX}" fill="${col.fill}" stroke="${col.line}" stroke-width="2" stroke-linejoin="round"/>${inner}</g>`;
+  });
   const h = 36 + 39 * (rows - 1) + 30;
-  const label = `${hiveMonthLabel(data.ym)}: ${data.count} ${data.count === 1 ? 'día entrenado' : 'días entrenados'}`;
+  const label = `${hiveMonthLabel(data.ym)}: ${hiveSubText(data)}`;
   return `<svg role="img" aria-label="${label}" width="100%" viewBox="0 0 370 ${h}" style="display:block;">${cells}</svg>`;
+}
+function hiveSubText(dd) {
+  const parts = [`${dd.count} ${dd.count === 1 ? 'día entrenado' : 'días entrenados'}`];
+  if (dd.histSessions) parts.push(`${dd.histSessions} ${dd.histSessions === 1 ? 'sesión' : 'sesiones'} sin día`);
+  if (dd.histHabits) parts.push(`${dd.histHabits} ${dd.histHabits === 1 ? 'hábito' : 'hábitos'} sin día`);
+  return parts.join(' · ');
+}
+function hiveLegend(dd) {
+  if (!dd.histSessions && !dd.histHabits) return '';
+  const hx = (fill, line, glyph) => `<svg aria-hidden="true" focusable="false" width="18" height="20" viewBox="-11 -12 22 24"><path d="M0 -10L8.7 -5V5L0 10L-8.7 5V-5Z" fill="${fill}" stroke="${line}" stroke-width="1.6" stroke-linejoin="round"/>${glyph || ''}</svg>`;
+  const item = (svg, txt) => `<span style="display:inline-flex;align-items:center;gap:6px;">${svg}${txt}</span>`;
+  const S = DIARY_HIST_COLORS.session, H = DIARY_HIST_COLORS.habit;
+  return `<div style="display:flex;flex-wrap:wrap;gap:8px 16px;border-top:1px solid var(--line);margin-top:12px;padding-top:12px;font-size:13px;color:var(--gray5);">
+    ${item(hx('#F75A0E', '#F75A0E'), 'Día entrenado')}
+    ${item(hx(S.fill, S.line, `<g transform="translate(-6 -6) scale(0.75)">${diaryHistGlyph('session', S.ink)}</g>`), 'Sesión sin día')}
+    ${item(hx(H.fill, H.line, `<g transform="translate(-6 -6) scale(0.75)">${diaryHistGlyph('habit', H.ink)}</g>`), 'Hábito sin día')}
+  </div>`;
 }
 function hiveMini(done, total) {
   let out = '';
@@ -4538,13 +4597,13 @@ function renderHive() {
       <span class="pg-mono" style="color:var(--orange-text);">MOVES HIVE</span>
       <div class="hive-month">
         <button type="button" class="hive-month-btn" aria-label="Mes anterior" onclick="hiveShift(-1)">${icon('chevron-left', 20)}</button>
-        <div><div class="hive-month-name">${hiveMonthLabel(dd.ym)}</div><div class="hive-sub">${dd.count} ${dd.count === 1 ? 'día entrenado' : 'días entrenados'}</div></div>
+        <div><div class="hive-month-name">${hiveMonthLabel(dd.ym)}</div><div class="hive-sub">${hiveSubText(dd)}</div></div>
         <button type="button" class="hive-month-btn" aria-label="Mes siguiente" onclick="hiveShift(1)"${isCurrent ? ' disabled' : ''}>${icon('chevron-right', 20)}</button>
       </div>
     </div>
-    <div class="hive-card">${hiveSvg(dd)}</div>
+    <div class="hive-card">${hiveSvg(dd)}${hiveLegend(dd)}</div>
     <div class="hive-card"><div class="hive-stats">
-      <div class="hive-stat"><div class="hive-stat-val">${dd.count}</div><div class="hive-stat-lbl">Entrenos</div></div>
+      <div class="hive-stat"><div class="hive-stat-val">${dd.entrenos}</div><div class="hive-stat-lbl">Entrenos</div></div>
       <div class="hive-stat"><div class="hive-stat-val">${pgNum(hours)}</div><div class="hive-stat-lbl">Horas entrenadas</div></div>
       <div class="hive-stat"><div class="hive-stat-val">${dd.bestWeek}</div><div class="hive-stat-lbl">Mejor semana</div></div>
     </div></div>
@@ -4619,7 +4678,8 @@ async function drawHiveCanvas(format) {
   }
   // Números del mes
   const hours = Math.round(dd.hours * 10) / 10;
-  const stats = [[String(dd.count), dd.count === 1 ? 'entreno' : 'entrenos'], [pgNum(hours), 'horas']];
+  // Los números incluyen los registros sin día; el panal de la imagen no dibuja hexágonos extra
+  const stats = [[String(dd.entrenos), dd.entrenos === 1 ? 'entreno' : 'entrenos'], [pgNum(hours), 'horas']];
   const top = oy + gridH + (story ? 200 : 70);
   stats.forEach(([v, l], i) => {
     const cx = W / 2 + (i === 0 ? -1 : 1) * (story ? 220 : 200);
@@ -4677,7 +4737,7 @@ async function renderHiveShare() {
   const box = document.getElementById('hive-share-preview');
   if (!box) return;
   cv.setAttribute('role', 'img');
-  cv.setAttribute('aria-label', `Vista previa: ${hiveMonthLabel(hiveData.ym)}, ${hiveData.count} entrenos`);
+  cv.setAttribute('aria-label', `Vista previa: ${hiveMonthLabel(hiveData.ym)}, ${hiveData.entrenos} entrenos`);
   box.innerHTML = '';
   box.appendChild(cv);
 }
@@ -15977,6 +16037,74 @@ function diaryAvgHours(rows) {
   return vals.length ? (vals.reduce((a,b) => a+b, 0) / vals.length).toFixed(1) : null;
 }
 
+// ---- registros "solo el mes" (is_historical = true, entry_date null, entry_month = día 1) ----
+// Cuentan en los tiles del mes y en el Hive (Entrenos/Horas/panal), nunca en rachas,
+// "Mejor semana", "días entrenados" ni en el calendario por día.
+const DIARY_HIST_MAX = 31;
+const DIARY_HIST_COLORS = {
+  session: {line:'#C2410C', fill:'#FBB58F', ink:'#7C2D12', label:'Sesión sin día'},
+  habit:   {line:'#8FC48A', fill:'#CFE9C9', ink:'#2E6B2A', label:'Hábito sin día'}
+};
+function diaryHistGlyph(kind, ink) {
+  return kind === 'session'
+    ? `<path d="M2 8h3l2-5 3 10 2-5h2" fill="none" stroke="${ink}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`
+    : `<path d="M3.5 8.5l3 3 6-6.5" fill="none" stroke="${ink}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`;
+}
+function diaryHistHex(kind, size, labelled) {
+  const c = DIARY_HIST_COLORS[kind] || DIARY_HIST_COLORS.habit;
+  const a11y = labelled ? `role="img" aria-label="${c.label}"` : 'aria-hidden="true"';
+  return `<svg width="${size}" height="${Math.round(size * 1.15)}" viewBox="-13 -15 26 30" ${a11y} focusable="false" style="flex:none;">
+    <path d="M0 -13.5L11.7 -6.75V6.75L0 13.5L-11.7 6.75V-6.75Z" fill="${c.fill}" stroke="${c.line}" stroke-width="1.6" stroke-linejoin="round"/>
+    <g transform="translate(-8 -8)">${diaryHistGlyph(kind, c.ink)}</g></svg>`;
+}
+function diaryMonthStart(ym) { return `${ym}-01`; }
+function diaryIsHistorical(e) { return !!e && (e.is_historical === true || !e.entry_date); }
+function diaryWhenLabel(e) {
+  if(e.entry_date) return diaryFmtDay(e.entry_date);
+  return 'sin día de ' + (e.entry_month ? diaryMonthName(diaryMonthKey(e.entry_month)) : 'este mes');
+}
+// Antes de correr migration_habit_fixes.sql las columnas no existen: devolver [] y no romper nada.
+async function diaryLoadHistorical(cid, ym, columns) {
+  const {data, error} = await sb.from('diary_entries').select(columns).eq('client_id', cid)
+    .eq('is_historical', true).eq('entry_month', diaryMonthStart(ym)).order('created_at', {ascending:false});
+  return error ? [] : (data || []);
+}
+async function diaryLoadHistoricalMonths(cid) {
+  const {data, error} = await sb.from('diary_entries').select('entry_month').eq('client_id', cid)
+    .eq('is_historical', true).not('entry_month', 'is', null).limit(5000);
+  return error ? [] : (data || []).map(d => diaryMonthKey(d.entry_month));
+}
+// Agrupa por tipo + nombre: primero sesiones, después hábitos
+function diaryGroupHistorical(rows) {
+  const map = new Map();
+  rows.forEach(e => {
+    const key = `${e.kind}|${(e.activity_name || '').toLowerCase()}`;
+    if(!map.has(key)) map.set(key, {key, kind:e.kind, name:e.activity_name, rows:[]});
+    map.get(key).rows.push(e);
+  });
+  return [...map.values()].sort((a, b) => (a.kind === b.kind ? a.name.localeCompare(b.name) : a.kind === 'session' ? -1 : 1));
+}
+function diaryHistSubtitle(g) {
+  const n = g.rows.length;
+  return `${g.kind === 'session' ? 'Sesión' : 'Hábito'} · ${n} ${n === 1 ? 'registro' : 'registros'}`;
+}
+// Inserta N filas iguales (sin id: lo pone gen_random_uuid)
+async function diaryInsertMany(row, count) {
+  const n = Math.max(1, Math.min(DIARY_HIST_MAX, parseInt(count, 10) || 1));
+  const {error} = await sb.from('diary_entries').insert(Array.from({length:n}, () => ({...row})));
+  return error;
+}
+function diaryStepperHtml(prefix, value, onchange) {
+  return `<div style="display:flex;align-items:center;gap:16px;">
+    <button type="button" class="diary-step-btn" aria-label="Restar uno" onclick="${onchange}(-1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/></svg></button>
+    <div id="${prefix}-count" class="diary-step-num" aria-live="polite">${value}</div>
+    <button type="button" class="diary-step-btn" aria-label="Sumar uno" onclick="${onchange}(1)">${icon('plus', 18)}</button>
+  </div>`;
+}
+function diaryHexPreview(kind, n) {
+  return Array.from({length:Math.min(n, 5)}, () => diaryHistHex(kind, 20, false)).join('');
+}
+
 // ---- estado ----
 const diaryState = {
   view: 'month',                       // 'month' | 'total'
@@ -16017,19 +16145,22 @@ async function renderDiaryMonthView() {
   const cid = currentClient.id;
   const ym = diaryMonthKey(diaryLocalDate());
   const [from, to] = diaryMonthRange(ym);
-  const [entriesRes, sleepRes] = await Promise.all([
+  const [entriesRes, sleepRes, hist] = await Promise.all([
     sb.from('diary_entries').select('id,kind,entry_date,activity_name,session_type,duration_minutes,emotion,created_at')
       .eq('client_id', cid).gte('entry_date', from).lte('entry_date', to)
       .order('entry_date', {ascending:false}).order('created_at', {ascending:false}),
-    sb.from('diary_sleep').select('hours').eq('client_id', cid).gte('sleep_date', from).lte('sleep_date', to)
+    sb.from('diary_sleep').select('hours').eq('client_id', cid).gte('sleep_date', from).lte('sleep_date', to),
+    diaryLoadHistorical(cid, ym, 'id,kind,entry_month,activity_name,session_type,duration_minutes,is_historical,created_at')
   ]);
   if(entriesRes.error) { body.innerHTML = `<div class="empty-state"><div class="empty-text">No se pudo cargar tu diario. ${escHtml(entriesRes.error.message)}</div></div>`; return; }
   if(diaryState.view !== 'month') return;
   const entries = entriesRes.data || [];
-  const sessions = entries.filter(e => e.kind === 'session').length;
-  const habits = entries.filter(e => e.kind === 'habit').length;
+  const all = entries.concat(hist);
+  const sessions = all.filter(e => e.kind === 'session').length;
+  const habits = all.filter(e => e.kind === 'habit').length;
   const avg = diaryAvgHours(sleepRes.data);
   const recent = entries.slice(0, 2);
+  const histGroups = diaryGroupHistorical(hist);
   const flash = diaryState.flash;
   diaryState.flash = null;
 
@@ -16052,14 +16183,19 @@ async function renderDiaryMonthView() {
       <div class="diary-tile"><div style="color:var(--orange);">${diaryIcon('session', 20)}</div><div class="diary-tile-num">${sessions}</div><div class="diary-tile-lbl">Sesiones</div></div>
       <div class="diary-tile"><div style="color:var(--orange);">${diaryIcon('habit', 20)}</div><div class="diary-tile-num">${habits}</div><div class="diary-tile-lbl">Hábitos</div></div>
     </div>
-    <div style="text-align:right;margin-bottom:12px;"><button type="button" class="diary-link" onclick="openDiaryNewEntry()">¿Falta alguna?</button></div>
+    <div style="text-align:right;margin-bottom:12px;"><button type="button" class="diary-link" onclick="openDiaryNewEntry(true)">¿Falta alguna?</button></div>
 
     <div class="diary-h" style="margin-bottom:10px;">Tus registros</div>
-    ${recent.length ? `<div class="diary-list" style="margin-bottom:12px;">${recent.map(e => `
+    ${(recent.length || histGroups.length) ? `<div class="diary-list" style="margin-bottom:12px;">${recent.map(e => `
       <div class="diary-item"><div class="diary-row" style="cursor:default;">
         <div class="diary-row-date">${diaryFmtDay(e.entry_date)}</div>
         <div class="diary-row-main"><div class="diary-row-name">${escHtml(e.activity_name)}</div><div class="diary-row-sub">${escHtml(diarySubtitle(e))}</div></div>
         ${diaryEmotionSvg(e.emotion, 38, true)}
+      </div></div>`).join('')}${histGroups.map(g => `
+      <div class="diary-item"><div class="diary-row" style="cursor:default;">
+        <div class="diary-row-date is-hist">Sin<br>día</div>
+        <div class="diary-row-main"><div class="diary-row-name">${escHtml(g.name)}</div><div class="diary-row-sub">${diaryHistSubtitle(g)}</div></div>
+        ${diaryHistHex(g.kind, 30, true)}
       </div></div>`).join('')}</div>`
     : `<div class="diary-card" style="text-align:center;color:var(--gray4);font-size:13px;">Todavía no hay registros este mes. ¡Arrancá con el primero!</div>`}
     <button type="button" class="diary-btn-ghost" onclick="openDiaryListSheet()">Cargar más</button>`;
@@ -16075,16 +16211,20 @@ async function renderDiaryList(containerId) {
   if(!st.month) st.month = thisMonth;
   el.innerHTML = '<div class="spinner"></div>';
   const [from, to] = diaryMonthRange(st.month);
-  const [datesRes, entriesRes] = await Promise.all([
-    sb.from('diary_entries').select('entry_date').eq('client_id', cid).order('entry_date', {ascending:false}).limit(5000),
+  const [datesRes, entriesRes, histMonths, hist] = await Promise.all([
+    sb.from('diary_entries').select('entry_date').eq('client_id', cid).not('entry_date', 'is', null).order('entry_date', {ascending:false}).limit(5000),
     sb.from('diary_entries').select('*').eq('client_id', cid).gte('entry_date', from).lte('entry_date', to)
-      .order('entry_date', {ascending:false}).order('created_at', {ascending:false})
+      .order('entry_date', {ascending:false}).order('created_at', {ascending:false}),
+    diaryLoadHistoricalMonths(cid),
+    diaryLoadHistorical(cid, st.month, '*')
   ]);
   if(entriesRes.error) { el.innerHTML = `<div class="empty-state"><div class="empty-text">${escHtml(entriesRes.error.message)}</div></div>`; return; }
-  const months = [...new Set([thisMonth, st.month, ...(datesRes.data||[]).map(d => diaryMonthKey(d.entry_date))])].sort().reverse();
+  const months = [...new Set([thisMonth, st.month, ...(datesRes.data||[]).filter(d => d.entry_date).map(d => diaryMonthKey(d.entry_date)), ...histMonths])].sort().reverse();
   const all = entriesRes.data || [];
-  all.forEach(e => { diaryState.entriesById[e.id] = e; });
+  all.concat(hist).forEach(e => { diaryState.entriesById[e.id] = e; });
   const shown = st.filter === 'all' ? all : all.filter(e => e.kind === st.filter);
+  const histShown = st.filter === 'all' ? hist : hist.filter(e => e.kind === st.filter);
+  const histGroups = diaryGroupHistorical(histShown);
   const filters = [['all','Todos'],['session','Sesiones'],['habit','Hábitos']];
 
   el.innerHTML = `
@@ -16095,7 +16235,34 @@ async function renderDiaryList(containerId) {
       ${filters.map(([k,l]) => `<button type="button" aria-pressed="${st.filter===k}" onclick="setDiaryListFilter('${containerId}','${k}')">${l}</button>`).join('')}
     </div>
     ${shown.length ? `<div class="diary-list">${shown.map(e => renderDiaryListItem(e, containerId)).join('')}</div>`
-      : `<div class="diary-card" style="text-align:center;color:var(--gray4);font-size:13px;">Sin registros en ${diaryMonthName(st.month)}.</div>`}`;
+      : histGroups.length ? '' : `<div class="diary-card" style="text-align:center;color:var(--gray4);font-size:13px;">Sin registros en ${diaryMonthName(st.month)}.</div>`}
+    ${histGroups.length ? `<div class="diary-sep">Sin día · ${histShown.length} ${histShown.length === 1 ? 'registro' : 'registros'}</div>
+      <div class="diary-list">${histGroups.map(g => renderDiaryHistGroup(g, containerId, st.month)).join('')}</div>` : ''}`;
+}
+
+// Fila agrupada de registros sin día: el cliente la ve y puede borrar de a uno, no editarla
+function renderDiaryHistGroup(g, containerId, ym) {
+  const domId = `${containerId}-hg-${g.kind}-${g.rows[0].id}`;
+  return `<div class="diary-item">
+    <button type="button" class="diary-row" aria-expanded="false" aria-controls="${domId}" onclick="toggleDiaryHistGroup('${domId}',this)">
+      <div class="diary-row-date is-hist">${DIARY_MONTHS_SHORT[Number(ym.slice(5,7)) - 1] || ''}</div>
+      <div class="diary-row-main"><div class="diary-row-name">${escHtml(g.name)}</div><div class="diary-row-sub">${diaryHistSubtitle(g)}</div></div>
+      ${diaryHistHex(g.kind, 30, true)}
+    </button>
+    <div class="diary-detail" id="${domId}" hidden>
+      <div>Registros sin día de ${diaryMonthName(ym)}. Suman a tus resultados del mes y a tu panal.</div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button type="button" class="diary-btn-ghost" style="color:var(--red);border-color:var(--red);" onclick="deleteDiaryEntry('${g.rows[0].id}')">Borrar un registro</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleDiaryHistGroup(domId, btn) {
+  const panel = document.getElementById(domId);
+  if(!panel) return;
+  panel.hidden = !panel.hidden;
+  btn.setAttribute('aria-expanded', String(!panel.hidden));
 }
 
 function renderDiaryListItem(e, containerId) {
@@ -16103,7 +16270,7 @@ function renderDiaryListItem(e, containerId) {
   const reasons = Array.isArray(e.reasons) ? e.reasons.filter(Boolean) : [];
   return `<div class="diary-item">
     <button type="button" class="diary-row" aria-expanded="false" aria-controls="${domId}" onclick="toggleDiaryItem('${e.id}','${containerId}',this)">
-      <div class="diary-row-date">${diaryFmtDay(e.entry_date)}</div>
+      ${e.entry_date ? `<div class="diary-row-date">${diaryFmtDay(e.entry_date)}</div>` : '<div class="diary-row-date is-hist">Sin<br>día</div>'}
       <div class="diary-row-main"><div class="diary-row-name">${escHtml(e.activity_name)}</div><div class="diary-row-sub">${escHtml(diarySubtitle(e, true))}</div></div>
       ${diaryEmotionSvg(e.emotion, 34, true)}
     </button>
@@ -16115,7 +16282,7 @@ function renderDiaryListItem(e, containerId) {
       ${e.goal_entry_id ? `<div class="diary-detail-k">Meta anterior</div><div>${e.goal_met ? `<span style="color:var(--orange);">${diaryIcon('habit', 18)}</span> Cumplida` : 'No cumplida'}</div>` : ''}
       <div data-photo-slot></div>
       <div style="display:flex;gap:8px;margin-top:12px;">
-        <button type="button" class="diary-btn-ghost" onclick="editDiaryEntry('${e.id}')">Editar</button>
+        ${diaryIsHistorical(e) ? '' : `<button type="button" class="diary-btn-ghost" onclick="editDiaryEntry('${e.id}')">Editar</button>`}
         <button type="button" class="diary-btn-ghost" style="color:var(--red);border-color:var(--red);" onclick="deleteDiaryEntry('${e.id}')">Borrar</button>
       </div>
     </div>
@@ -16177,8 +16344,9 @@ function diaryRefreshAfterChange() {
 }
 
 // ---- modal "Nueva entrada" ----
-function openDiaryNewEntry() {
+function openDiaryNewEntry(allowMonth) {
   if(!diaryIsAllowed()) return;
+  diaryState.allowMonth = allowMonth === true; // solo "¿Falta alguna?" ofrece "Solo el mes"
   document.getElementById('diary-new-sheet')?.remove();
   const firstName = escHtml((currentClient?.name || '').split(' ')[0]);
   const ov = document.createElement('div');
@@ -16211,7 +16379,7 @@ async function openDiarySleepForm() {
   const wake = existing?.wake_time ? existing.wake_time.slice(0,5) : '';
   box.innerHTML = `
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
-      <button type="button" class="diary-back" aria-label="Volver" onclick="openDiaryNewEntry()">←</button>
+      <button type="button" class="diary-back" aria-label="Volver" onclick="openDiaryNewEntry(diaryState.allowMonth)">←</button>
       <div class="modal-title" style="margin:0;">Sueño</div>
     </div>
     <div class="diary-time-row" style="margin-bottom:12px;">
@@ -16257,8 +16425,7 @@ async function saveDiarySleep() {
 // ---- form de sesión / hábito ----
 function diaryOptKey(o) { return o.source === 'own' ? `own:${o.option_id}` : o.synthetic ? 'cur' : `${o.source}:${o.source_ref}`; }
 
-async function loadDiaryOptions(kind) {
-  const cid = currentClient.id;
+async function loadDiaryOptions(kind, cid = currentClient.id) {
   const [refRes, ownRes] = await Promise.all([
     kind === 'session'
       ? sb.from('extra_sessions').select('id,name').eq('client_id', cid).order('order_index', {ascending:true})
@@ -16275,7 +16442,10 @@ async function loadDiaryOptions(kind) {
 async function openDiaryForm(kind, entry = null) {
   if(!diaryIsAllowed()) return;
   const today = diaryLocalDate();
+  const allowMonth = !entry && diaryState.allowMonth === true;
+  const ym = diaryMonthKey(today);
   diaryForm = {
+    when: 'day', count: 1, allowMonth,
     kind, editing: entry, mode: 'pre', options: [], selected: null,
     sessionType: entry?.session_type || null,
     emotion: entry?.emotion || null,
@@ -16291,7 +16461,27 @@ async function openDiaryForm(kind, entry = null) {
         <div class="diary-h">${entry ? 'Editar' : 'Registrar'} ${isSession ? 'sesión' : 'hábito'}</div>
       </div>
 
+      ${allowMonth ? `
       <div class="diary-field">
+        <div class="diary-field-lbl" id="df-when-lbl">¿Cuándo?</div>
+        <div class="diary-seg" role="group" aria-labelledby="df-when-lbl" style="margin-bottom:0;">
+          <button type="button" data-when="day" aria-pressed="true" onclick="setDiaryWhen('day')">Día exacto</button>
+          <button type="button" data-when="month" aria-pressed="false" onclick="setDiaryWhen('month')">Solo el mes</button>
+        </div>
+      </div>
+      <div id="df-month-wrap" hidden>
+        <div class="diary-field">
+          <div class="diary-field-lbl">Mes</div>
+          <div class="diary-month-fixed"><b>${diaryMonthChipLabel(ym)} ${ym.slice(0,4)}</b><span style="font-size:13px;color:var(--gray4);">Mes actual</span></div>
+        </div>
+        <div class="diary-field">
+          <div class="diary-field-lbl">¿Cuántas veces?</div>
+          ${diaryStepperHtml('df', 1, 'stepDiaryCount')}
+        </div>
+        <div class="diary-field"><div class="diary-hist-note${kind === 'session' ? ' is-session' : ''}" id="df-hist-note"></div></div>
+      </div>` : ''}
+
+      <div class="diary-field" id="df-date-wrap">
         <label for="df-date">Fecha</label>
         <input class="form-input" type="date" id="df-date" value="${entry?.entry_date || today}" max="${today}" onchange="diaryRefreshGoal()">
         <div class="diary-help">Hoy por defecto. Si se te pasó una, cambiala al día en que ocurrió.</div>
@@ -16322,7 +16512,7 @@ async function openDiaryForm(kind, entry = null) {
         <textarea class="form-textarea" id="df-notes" rows="3" placeholder="Opcional">${escHtml(entry?.notes || '')}</textarea>
       </div>
 
-      <div class="diary-field">
+      <div class="diary-field" id="df-emo-wrap">
         <div class="diary-field-lbl" id="df-emo-lbl">¿Cómo te sentís? *</div>
         <div class="diary-emo-row" role="group" aria-labelledby="df-emo-lbl">
           ${Object.entries(DIARY_EMOTIONS).map(([k,v]) => `<button type="button" class="diary-emo" data-emo="${k}" aria-pressed="false" onclick="setDiaryEmotion('${k}')">${diaryEmotionSvg(k, 48, false)}<span>${v.label}</span></button>`).join('')}
@@ -16340,7 +16530,7 @@ async function openDiaryForm(kind, entry = null) {
         </div>
       </div>
 
-      <div class="diary-field">
+      <div class="diary-field" id="df-next-goal-wrap">
         <label for="df-next-goal">Próxima meta</label>
         <input class="form-input" type="text" id="df-next-goal" value="${escHtml(entry?.next_goal || '')}" placeholder="Opcional">
       </div>
@@ -16381,6 +16571,42 @@ function closeDiaryForm() {
   if(diaryForm?.photoUrl) URL.revokeObjectURL(diaryForm.photoUrl);
   diaryForm = null;
   diaryCloseFull('diary-form');
+}
+
+// "Día exacto" / "Solo el mes": sin día no hay fecha, meta ni foto; el hábito no lleva emoción y en la sesión es opcional
+function setDiaryWhen(when) {
+  const f = diaryForm;
+  if(!f || !f.allowMonth) return;
+  f.when = when;
+  const month = when === 'month';
+  document.querySelectorAll('#diary-form [data-when]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.when === when)));
+  const show = (id, on) => { const el = document.getElementById(id); if(el) el.hidden = !on; };
+  show('df-month-wrap', month);
+  show('df-date-wrap', !month);
+  show('df-next-goal-wrap', !month);
+  show('df-photo', !month);
+  show('df-emo-wrap', !(month && f.kind === 'habit'));
+  const lbl = document.getElementById('df-emo-lbl');
+  if(lbl) lbl.textContent = month ? '¿Cómo te sentís? (opcional)' : '¿Cómo te sentís? *';
+  renderDiaryHistNote();
+  renderDiaryGoal();
+}
+
+function stepDiaryCount(delta) {
+  const f = diaryForm;
+  if(!f) return;
+  f.count = Math.max(1, Math.min(DIARY_HIST_MAX, f.count + delta));
+  const el = document.getElementById('df-count');
+  if(el) el.textContent = f.count;
+  renderDiaryHistNote();
+}
+
+function renderDiaryHistNote() {
+  const el = document.getElementById('df-hist-note');
+  const f = diaryForm;
+  if(!el || !f) return;
+  const n = f.count;
+  el.innerHTML = `<div>${diaryHexPreview(f.kind, n)}</div><div>Van a llenar ${n} ${n === 1 ? 'hexágono' : 'hexágonos'} sin número en tu panal de ${diaryMonthName(diaryMonthKey(diaryLocalDate()))}.</div>`;
 }
 
 function setDiaryFormMode(mode) {
@@ -16562,7 +16788,7 @@ function renderDiaryGoal() {
   const el = document.getElementById('df-goal');
   const f = diaryForm;
   if(!el || !f) return;
-  if(!f.goal) { el.innerHTML = ''; el.hidden = true; return; }
+  if(!f.goal || f.when === 'month') { el.innerHTML = ''; el.hidden = true; return; }
   el.hidden = false;
   el.innerHTML = `
     <label class="diary-goal" for="df-goal-check">
@@ -16636,8 +16862,9 @@ async function saveDiaryEntry() {
   if(!f || !currentClient) return;
   const cid = currentClient.id;
   const today = diaryLocalDate();
+  const monthOnly = f.when === 'month';
   const date = document.getElementById('df-date')?.value;
-  if(!date || date > today) { showToast('⚠️ Elegí una fecha (no puede ser futura)'); return; }
+  if(!monthOnly && (!date || date > today)) { showToast('⚠️ Elegí una fecha (no puede ser futura)'); return; }
 
   let act = null;
   let newName = '';
@@ -16649,7 +16876,7 @@ async function saveDiaryEntry() {
     if(!newName) { showToast('⚠️ Escribí el nombre'); return; }
   }
   if(f.kind === 'session' && !f.sessionType) { showToast('⚠️ Elegí el tipo de sesión'); return; }
-  if(!f.emotion) { showToast('⚠️ Contanos cómo te sentís'); return; }
+  if(!f.emotion && !monthOnly) { showToast('⚠️ Contanos cómo te sentís'); return; }
 
   const btn = document.getElementById('df-save');
   if(btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
@@ -16698,6 +16925,24 @@ async function saveDiaryEntry() {
     goal_met: f.goal ? !!f.goalChecked : null
   };
 
+  if(monthOnly) {
+    const emotion = isSession ? (f.emotion || null) : null;
+    const error = await diaryInsertMany({
+      client_id: cid, ...payload,
+      entry_date: null, is_historical: true, entry_month: diaryMonthStart(diaryMonthKey(today)),
+      emotion,
+      reasons: emotion ? payload.reasons : [],
+      reason_text: emotion ? payload.reason_text : null,
+      next_goal: null, goal_entry_id: null, goal_met: null
+    }, f.count);
+    if(error) { fail('❌ ' + error.message); return; }
+    const n = f.count;
+    closeDiaryForm();
+    showToast(n === 1 ? 'Registro guardado' : `${n} registros guardados`);
+    diaryRefreshAfterChange();
+    return;
+  }
+
   const editing = f.editing;
   const id = editing ? editing.id : crypto.randomUUID();
   if(editing) {
@@ -16742,13 +16987,15 @@ async function saveDiaryEntry() {
 function editDiaryEntry(id) {
   const e = diaryState.entriesById[id];
   if(!e) return;
+  if(diaryIsHistorical(e)) { showToast('Los registros sin día no se editan'); return; }
   openDiaryForm(e.kind, e);
 }
 
 async function deleteDiaryEntry(id) {
   const e = diaryState.entriesById[id];
   if(!e || !currentClient) return;
-  if(!confirm(`¿Borrar "${e.activity_name}" del ${diaryFmtDay(e.entry_date)}?\n\nEsta acción no se puede deshacer.`)) return;
+  const when = e.entry_date ? `del ${diaryFmtDay(e.entry_date)}` : `(un registro ${diaryWhenLabel(e)})`;
+  if(!confirm(`¿Borrar "${e.activity_name}" ${when}?\n\nEsta acción no se puede deshacer.`)) return;
   const {error} = await sb.from('diary_entries').delete().eq('id', id).eq('client_id', currentClient.id);
   if(error) { showToast('❌ ' + error.message); return; }
   if(e.photo_path) await sb.storage.from('diary-photos').remove([e.photo_path]);
@@ -16771,21 +17018,25 @@ async function loadCoachDiary(c, ym) {
   const token = window._coachDiaryToken = (window._coachDiaryToken || 0) + 1;
   const thisMonth = diaryMonthKey(diaryLocalDate());
   ym = ym || thisMonth;
+  window._coachDiaryYm = ym;
   const [from, to] = diaryMonthRange(ym);
   panel.innerHTML = '<div class="spinner"></div>';
-  const [datesRes, sleepDatesRes, entriesRes, sleepRes] = await Promise.all([
-    sb.from('diary_entries').select('entry_date').eq('client_id', c.id).order('entry_date', {ascending:false}).limit(5000),
+  const [datesRes, sleepDatesRes, entriesRes, sleepRes, histMonths, hist] = await Promise.all([
+    sb.from('diary_entries').select('entry_date').eq('client_id', c.id).not('entry_date', 'is', null).order('entry_date', {ascending:false}).limit(5000),
     sb.from('diary_sleep').select('sleep_date').eq('client_id', c.id).order('sleep_date', {ascending:false}).limit(5000),
     sb.from('diary_entries').select(DIARY_COACH_COLUMNS).eq('client_id', c.id).gte('entry_date', from).lte('entry_date', to)
       .order('entry_date', {ascending:false}).order('created_at', {ascending:false}),
     sb.from('diary_sleep').select('sleep_date,bedtime,wake_time,hours').eq('client_id', c.id).gte('sleep_date', from).lte('sleep_date', to)
-      .order('sleep_date', {ascending:false})
+      .order('sleep_date', {ascending:false}),
+    diaryLoadHistoricalMonths(c.id),
+    diaryLoadHistorical(c.id, ym, DIARY_COACH_COLUMNS + ',entry_month,is_historical')
   ]);
   if(token !== window._coachDiaryToken) return;
   if(entriesRes.error) { panel.innerHTML = `<div style="font-size:13px;color:var(--red);padding:8px 0;">${escHtml(entriesRes.error.message)}</div>`; return; }
   const months = [...new Set([thisMonth, ym,
-    ...(datesRes.data||[]).map(d => diaryMonthKey(d.entry_date)),
-    ...(sleepDatesRes.data||[]).map(d => diaryMonthKey(d.sleep_date))])].sort().reverse();
+    ...(datesRes.data||[]).filter(d => d.entry_date).map(d => diaryMonthKey(d.entry_date)),
+    ...(sleepDatesRes.data||[]).filter(d => d.sleep_date).map(d => diaryMonthKey(d.sleep_date)),
+    ...histMonths])].sort().reverse();
   const entries = entriesRes.data || [];
   const sleeps = sleepRes.data || [];
 
@@ -16800,15 +17051,21 @@ async function loadCoachDiary(c, ym) {
   }
 
   const avg = diaryAvgHours(sleeps);
-  const sessions = entries.filter(e => e.kind === 'session').length;
-  const habits = entries.filter(e => e.kind === 'habit').length;
+  const sessions = entries.filter(e => e.kind === 'session').length + hist.filter(e => e.kind === 'session').length;
+  const habits = entries.filter(e => e.kind === 'habit').length + hist.filter(e => e.kind === 'habit').length;
+  // Solo cuentan las que tienen emoción (los sin día del coach pueden no tenerla)
   const emo = {alegre:0, neutro:0, down:0};
-  entries.forEach(e => { if(emo[e.emotion] != null) emo[e.emotion]++; });
+  entries.concat(hist).forEach(e => { if(emo[e.emotion] != null) emo[e.emotion]++; });
+  const histGroups = diaryGroupHistorical(hist);
+  const histMonthLbl = diaryMonthChipLabel(ym).split(' ')[0];
   const srcLabel = s => s === 'extras' ? 'Extras' : s === 'coach' ? 'Asignado' : 'Propia';
 
   panel.innerHTML = `
-    <div class="diary-chips-scroll" role="group" aria-label="Mes del diario">
-      ${months.map(m => `<button type="button" class="diary-chip" aria-pressed="${m===ym}" onclick="loadCoachDiary(window._coachDiaryClient,'${m}')">${diaryMonthChipLabel(m)}</button>`).join('')}
+    <div class="diary-chip-bar">
+      <div class="diary-chips-scroll" role="group" aria-label="Mes del diario">
+        ${months.map(m => `<button type="button" class="diary-chip" aria-pressed="${m===ym}" onclick="loadCoachDiary(window._coachDiaryClient,'${m}')">${diaryMonthChipLabel(m)}</button>`).join('')}
+      </div>
+      <button type="button" class="diary-add-btn" aria-label="Agregar" onclick="openCoachDiaryAdd()">${icon('plus', 22)}</button>
     </div>
     <div class="diary-tiles" style="margin-bottom:8px;">
       <div class="diary-tile"><div class="diary-tile-num" style="font-size:20px;">${avg ?? '-'}</div><div class="diary-tile-lbl">${avg ? 'h sueño prom.' : 'Sueño'}</div></div>
@@ -16837,7 +17094,190 @@ async function loadCoachDiary(c, ym) {
         ${e.next_goal ? `<div style="font-size:12px;color:var(--gray5);margin:4px 0 0 56px;">Próxima meta: ${escHtml(e.next_goal)}</div>` : ''}
         ${e.goal_entry_id ? `<div style="font-size:12px;margin:4px 0 0 56px;color:${e.goal_met ? 'var(--green)' : 'var(--gray5)'};">${e.goal_met ? diaryIcon('habit', 18) + ' Cumplió' : '✗ No cumplió'} la meta anterior${goalText[e.goal_entry_id] ? ': ' + escHtml(goalText[e.goal_entry_id]) : ''}</div>` : ''}
       </div>`).join('')}</div>`
-      : `<div style="font-size:13px;color:var(--gray4);padding:4px 0 12px;">Sin registros en ${diaryMonthName(ym)}.</div>`}`;
+      : histGroups.length ? '' : `<div style="font-size:13px;color:var(--gray4);padding:4px 0 12px;">Sin registros en ${diaryMonthName(ym)}.</div>`}
+    ${histGroups.length ? `<div class="diary-list" style="margin-top:8px;">${histGroups.map(g => `<div class="diary-item" style="padding:10px 12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="diary-row-date is-hist">Sin<br>día</div>
+          <div class="diary-row-main">
+            <div class="diary-row-name">${escHtml(g.name)}</div>
+            <div class="diary-row-sub">${histMonthLbl} · ${g.rows.length} ${g.rows.length === 1 ? 'registro' : 'registros'}</div>
+          </div>
+          ${diaryHistHex(g.kind, 28, true)}
+        </div>
+      </div>`).join('')}</div>` : ''}`;
+}
+
+// ---- COACH: "Agregar a [nombre]" (hábitos / sesiones con día o solo el mes) ----
+let coachDiaryAdd = null;
+
+async function openCoachDiaryAdd() {
+  const c = window._coachDiaryClient;
+  if(!c) return;
+  document.getElementById('coach-diary-add')?.remove();
+  coachDiaryAdd = {
+    cid: c.id, name: (c.name || '').split(' ')[0] || 'Tu cliente',
+    kind: 'habit', when: 'month', date: diaryLocalDate(), count: 1,
+    options: null, selKey: '', sessionType: null, duration: '', calories: '', emotion: null, busy: false
+  };
+  const ov = document.createElement('div');
+  ov.id = 'coach-diary-add';
+  ov.className = 'modal-overlay open diary-sheet';
+  ov.onclick = (ev) => { if(ev.target === ov) closeCoachDiaryAdd(); };
+  ov.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cda-title">
+      <button type="button" class="modal-close" aria-label="Cerrar" style="background:none;border:none;min-width:44px;min-height:44px;font-family:inherit;" onclick="closeCoachDiaryAdd()">×</button>
+      <div id="cda-content"><div class="spinner"></div></div>
+    </div>`;
+  document.body.appendChild(ov);
+  const st = coachDiaryAdd;
+  const [habit, session] = await Promise.all([loadDiaryOptions('habit', st.cid), loadDiaryOptions('session', st.cid)]);
+  if(coachDiaryAdd !== st) return;
+  st.options = {habit, session};
+  renderCoachDiaryAdd();
+}
+
+function closeCoachDiaryAdd() {
+  coachDiaryAdd = null;
+  document.getElementById('coach-diary-add')?.remove();
+}
+
+function renderCoachDiaryAdd() {
+  const st = coachDiaryAdd;
+  const box = document.getElementById('cda-content');
+  if(!st || !box || !st.options) return;
+  const isSession = st.kind === 'session';
+  const opts = st.options[st.kind] || [];
+  const ym = diaryMonthKey(diaryLocalDate());
+  const tag = o => o.source === 'extras' ? 'Extras' : o.source === 'coach' ? 'Asignado' : 'Propia';
+  const n = st.count;
+  box.innerHTML = `
+    <div class="modal-title" id="cda-title" style="margin-bottom:4px;">Agregar a ${escHtml(st.name)}</div>
+    <div class="diary-help" style="font-size:13px;margin:0 0 16px;">Cargá registros viejos sin necesidad de poner la fecha.</div>
+
+    <div class="diary-seg" role="group" aria-label="Qué querés agregar">
+      <button type="button" aria-pressed="${!isSession}" onclick="setCoachDiaryAddKind('habit')">Hábito</button>
+      <button type="button" aria-pressed="${isSession}" onclick="setCoachDiaryAddKind('session')">Sesión</button>
+    </div>
+
+    <div class="diary-field">
+      <label for="cda-opt">${isSession ? 'Sesión (opcional)' : 'Hábito *'}</label>
+      ${(opts.length || isSession) ? `<select class="form-input" id="cda-opt" onchange="coachDiaryAdd.selKey=this.value;coachDiaryAddPickType()">
+        <option value="">${isSession ? 'Sin nombre (Sesión de [tipo])' : 'Elegí un hábito'}</option>
+        ${opts.map(o => { const k = diaryOptKey(o); return `<option value="${escHtml(k)}"${k === st.selKey ? ' selected' : ''}>${escHtml(o.name)} · ${tag(o)}</option>`; }).join('')}
+      </select>` : `<div class="diary-help" style="font-size:13px;">${escHtml(st.name)} todavía no tiene hábitos. Creale uno en Hábitos o pedile que registre uno en su diario.</div>`}
+    </div>
+
+    ${isSession ? `
+    <div class="diary-field">
+      <div class="diary-field-lbl" id="cda-type-lbl">Tipo *</div>
+      <div class="diary-chips" role="group" aria-labelledby="cda-type-lbl">
+        ${DIARY_SESSION_TYPES.map(([v,l]) => `<button type="button" class="diary-chip" aria-pressed="${st.sessionType === v}" onclick="coachDiaryAdd.sessionType='${v}';renderCoachDiaryAdd()">${l}</button>`).join('')}
+      </div>
+    </div>
+    <div class="diary-field diary-time-row">
+      <div><label for="cda-duration" class="diary-field-lbl">Duración (min) *</label><input class="form-input" type="number" inputmode="numeric" min="1" id="cda-duration" value="${escHtml(st.duration)}" oninput="coachDiaryAdd.duration=this.value"></div>
+      <div><label for="cda-calories" class="diary-field-lbl">Calorías</label><input class="form-input" type="number" inputmode="numeric" min="0" id="cda-calories" value="${escHtml(st.calories)}" placeholder="Opcional" oninput="coachDiaryAdd.calories=this.value"></div>
+    </div>
+    <div class="diary-field">
+      <div class="diary-field-lbl" id="cda-emo-lbl">Emoción (opcional)</div>
+      <div class="diary-chips" role="group" aria-labelledby="cda-emo-lbl">
+        ${Object.entries(DIARY_EMOTIONS).map(([k,v]) => `<button type="button" class="diary-chip" style="display:inline-flex;align-items:center;gap:6px;" aria-pressed="${st.emotion === k}" onclick="coachDiaryAdd.emotion=coachDiaryAdd.emotion==='${k}'?null:'${k}';renderCoachDiaryAdd()">${diaryEmotionSvg(k, 20, false)}${v.label}</button>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <div class="diary-field">
+      <div class="diary-field-lbl" id="cda-when-lbl">¿Cuándo?</div>
+      <div class="diary-seg" role="group" aria-labelledby="cda-when-lbl" style="margin-bottom:8px;">
+        <button type="button" aria-pressed="${st.when === 'day'}" onclick="coachDiaryAdd.when='day';renderCoachDiaryAdd()">Día exacto</button>
+        <button type="button" aria-pressed="${st.when === 'month'}" onclick="coachDiaryAdd.when='month';renderCoachDiaryAdd()">Solo el mes</button>
+      </div>
+      ${st.when === 'month'
+        ? `<div class="diary-month-fixed"><b>${diaryMonthChipLabel(ym)} ${ym.slice(0,4)}</b><span style="font-size:13px;color:var(--gray4);">Mes actual</span></div>`
+        : `<label for="cda-date" class="diary-field-lbl" style="margin-top:4px;">Fecha</label><input class="form-input" type="date" id="cda-date" value="${st.date}" max="${diaryLocalDate()}" onchange="coachDiaryAdd.date=this.value">`}
+    </div>
+
+    <div class="diary-field">
+      <div class="diary-field-lbl">¿Cuántos registros?</div>
+      ${diaryStepperHtml('cda', n, 'stepCoachDiaryAddCount')}
+    </div>
+
+    ${st.when === 'month' ? `<div class="diary-field"><div class="diary-hist-note${isSession ? ' is-session' : ''}"><div>${diaryHexPreview(st.kind, n)}</div><div>${escHtml(st.name)} los va a ver en su panal como ${n} ${n === 1 ? 'hexágono' : 'hexágonos'} sin número.</div></div></div>` : ''}
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button type="button" class="btn-primary" id="cda-save" ${st.busy ? 'disabled' : ''} onclick="saveCoachDiaryAdd(false)">${st.busy ? 'Guardando...' : 'Guardar'}</button>
+      <button type="button" class="diary-btn-ghost" ${st.busy ? 'disabled' : ''} onclick="saveCoachDiaryAdd(true)">Guardar y agregar otro</button>
+    </div>`;
+}
+
+function setCoachDiaryAddKind(kind) {
+  const st = coachDiaryAdd;
+  if(!st || st.kind === kind) return;
+  st.kind = kind;
+  st.selKey = '';
+  renderCoachDiaryAdd();
+}
+
+// Si la sesión elegida ya tiene tipo, se preselecciona
+function coachDiaryAddPickType() {
+  const st = coachDiaryAdd;
+  if(!st) return;
+  const o = (st.options[st.kind] || []).find(x => diaryOptKey(x) === st.selKey);
+  if(st.kind === 'session' && o?.session_type) st.sessionType = o.session_type;
+  renderCoachDiaryAdd();
+}
+
+function stepCoachDiaryAddCount(delta) {
+  const st = coachDiaryAdd;
+  if(!st) return;
+  st.count = Math.max(1, Math.min(DIARY_HIST_MAX, st.count + delta));
+  renderCoachDiaryAdd();
+}
+
+async function saveCoachDiaryAdd(another) {
+  const st = coachDiaryAdd;
+  if(!st || st.busy) return;
+  const isSession = st.kind === 'session';
+  const opt = (st.options[st.kind] || []).find(o => diaryOptKey(o) === st.selKey) || null;
+  if(!isSession && !opt) { showToast('Elegí un hábito', 'error'); return; }
+  const duration = parseInt(st.duration, 10);
+  const calories = st.calories === '' ? null : parseInt(st.calories, 10);
+  if(isSession) {
+    if(!st.sessionType) { showToast('Elegí el tipo de sesión', 'error'); return; }
+    if(!(duration > 0)) { showToast('Poné la duración en minutos', 'error'); return; }
+    if(calories != null && !(calories >= 0)) { showToast('Revisá las calorías', 'error'); return; }
+  }
+  const today = diaryLocalDate();
+  if(st.when === 'day' && (!st.date || st.date > today)) { showToast('Elegí una fecha (no puede ser futura)', 'error'); return; }
+
+  const row = {
+    client_id: st.cid,
+    kind: st.kind,
+    activity_name: opt ? opt.name : `Sesión de ${diaryTypeLabel(st.sessionType)}`,
+    option_id: opt?.option_id || null,
+    source: opt ? opt.source : 'coach',
+    source_ref: opt?.source_ref || null,
+    session_type: isSession ? st.sessionType : null,
+    duration_minutes: isSession ? duration : null,
+    calories: isSession ? calories : null,
+    emotion: isSession ? st.emotion : null,
+    reasons: []
+  };
+  // Con día exacto no se mandan las columnas nuevas: funciona aunque el SQL todavía no se haya corrido
+  if(st.when === 'month') Object.assign(row, {entry_date: null, is_historical: true, entry_month: diaryMonthStart(diaryMonthKey(today))});
+  else row.entry_date = st.date;
+
+  st.busy = true;
+  renderCoachDiaryAdd();
+  const n = st.count;
+  const error = await diaryInsertMany(row, n);
+  if(coachDiaryAdd !== st) return;
+  st.busy = false;
+  if(error) { renderCoachDiaryAdd(); showToast(error.message, 'error', 4000); return; }
+  showToast(n === 1 ? 'Registro agregado' : `${n} registros agregados`, 'success');
+  loadCoachDiary(window._coachDiaryClient, window._coachDiaryYm);
+  if(!another) { closeCoachDiaryAdd(); return; }
+  Object.assign(st, {selKey: '', sessionType: null, duration: '', calories: '', emotion: null, count: 1});
+  renderCoachDiaryAdd();
 }
 
 // ===== CLIENT PROGRESS (peso + fotos semanales) =====
