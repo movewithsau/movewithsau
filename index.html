@@ -527,6 +527,47 @@ body.lift-mode #strongflow-btn { display:none !important; }
 .modal-content > div:not(.modal-header) { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
 .modal-title { font-family:'Playfair Display',serif; font-size:20px; font-weight:700; margin-bottom:18px; }
 .modal-close { float:right; font-size:24px; color:var(--gray4); cursor:pointer; line-height:1; margin-top:-2px; }
+/* ===== Buscador y reemplazo masivo (coach) ===== */
+.bk-wrap { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+.bk-input { position:relative; }
+.bk-input input { width:100%; min-height:48px; box-sizing:border-box; border:1.5px solid var(--gray2); border-radius:14px; background:var(--white); padding:0 46px 0 42px; font:500 15px 'DM Sans',sans-serif; color:var(--black); outline:none; -webkit-appearance:none; appearance:none; }
+.bk-input input:focus { border-color:#C24E18; border-width:2px; }
+.bk-input input::-webkit-search-cancel-button { display:none; }
+.bk-lupa { position:absolute; left:13px; top:0; height:48px; display:flex; align-items:center; color:var(--gray5); pointer-events:none; }
+.bk-clear { position:absolute; right:2px; top:2px; width:44px; height:44px; border:0; background:transparent; color:var(--gray5); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.bk-clear[hidden] { display:none; }
+.bk-help { font-size:12px; color:var(--gray5); line-height:1.4; padding:0 2px; }
+.bk-count { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:14px; font-weight:700; margin:8px 2px 2px; }
+.bk-mono { font-family:'DM Mono',monospace; font-size:12px; font-weight:400; color:var(--gray5); white-space:nowrap; }
+.bk-quick { display:flex; gap:8px; flex-wrap:wrap; margin:6px 0 8px; }
+.bk-chip { min-height:36px; padding:0 14px; border:1.5px solid var(--gray2); border-radius:18px; background:var(--white); color:var(--black); font:600 13px 'DM Sans',sans-serif; cursor:pointer; }
+.bk-chip[aria-pressed="true"] { border-color:#C24E18; background:#FCEBDD; color:#A8420F; font-weight:700; }
+.bk-group { background:var(--white); border-radius:20px; padding:4px 14px; margin-bottom:10px; box-shadow:var(--shadow); }
+.bk-ghead, .bk-row { display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--gray2); }
+.bk-ghead { min-height:46px; }
+.bk-row { min-height:52px; }
+.bk-row:last-child { border-bottom:0; }
+.bk-ghead input, .bk-row input { width:22px; height:22px; accent-color:#C24E18; margin:0; flex:none; cursor:pointer; }
+.bk-gname { font-size:15px; font-weight:700; flex:1; cursor:pointer; }
+.bk-rmain { display:flex; flex-direction:column; flex:1; gap:1px; min-width:0; cursor:pointer; padding:6px 0; }
+.bk-rwhere { font-size:14px; font-weight:600; }
+.bk-rsub { font-size:12px; color:var(--gray5); }
+.bk-tags { display:flex; flex-direction:column; align-items:flex-end; gap:3px; }
+.bk-tag { font-size:10px; font-weight:700; padding:3px 7px; border-radius:7px; white-space:nowrap; }
+.bk-tag-log { background:#EFEBE4; color:#5A544C; }
+.bk-tag-cur { background:#FCEBDD; color:#A8420F; }
+.bk-tag-hid { background:#F1EEE8; color:#5A544C; text-decoration:line-through; }
+.bk-empty { font-size:14px; color:var(--gray5); padding:14px 4px; }
+.bk-bar { position:sticky; bottom:0; z-index:20; background:var(--white); border:1px solid var(--gray2); border-radius:16px; padding:10px 12px; display:flex; align-items:center; gap:12px; box-shadow:0 -4px 16px rgba(26,23,20,0.08); margin-top:6px; }
+.bk-card { background:var(--white); border-radius:20px; padding:14px 18px; display:flex; flex-direction:column; gap:12px; }
+.bk-out { font-size:17px; font-weight:700; color:var(--gray5); text-decoration:line-through; text-decoration-thickness:1.5px; }
+.bk-place { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:42px; border-top:1px solid var(--gray2); }
+.bk-warn { background:#FCEBDD; border-radius:16px; padding:12px 14px; display:flex; gap:10px; align-items:flex-start; color:#7A360C; font-size:13px; line-height:1.45; }
+.bk-last { background:var(--white); border:2px solid #1E7A3C; border-radius:20px; padding:14px 16px; display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+.bk-undo-btn { align-self:flex-start; min-height:44px; padding:0 16px; border:2px solid #C24E18; border-radius:12px; background:var(--white); color:#C24E18; font:700 14px 'DM Sans',sans-serif; display:flex; align-items:center; gap:8px; cursor:pointer; }
+.bk-undo-btn:disabled { opacity:0.5; }
+.bk-toast { position:fixed; left:50%; transform:translateX(-50%); bottom:24px; width:calc(100% - 28px); max-width:452px; z-index:999; background:#1A1714; color:#fff; border-radius:16px; padding:0 8px 0 16px; min-height:56px; display:flex; align-items:center; gap:10px; box-shadow:0 8px 24px rgba(26,23,20,0.25); box-sizing:border-box; }
+.bk-toast button { min-height:44px; padding:0 14px; border:0; border-radius:12px; background:transparent; color:#FFB48A; font:700 14px 'DM Sans',sans-serif; cursor:pointer; }
 /* ===== Sueño como eventos ===== */
 .sl-stack { display:flex; flex-direction:column; gap:8px; }
 .sl-q { font-size:14px; font-weight:600; color:var(--gray5); }
@@ -1428,6 +1469,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
         <div class="section-action" onclick="showPlanBuilder()">+ Manual</div>
       </div>
     </div>
+    <div id="bulk-search"></div>
     <div id="coach-plan-overview"></div>
 
     <div class="section-header" style="margin-top:4px;">
@@ -7021,6 +7063,7 @@ let planOverviewSelectedWeek = null;
 let planOverviewAllPlans = null;
 
 async function loadCoachClientDetail(clientId) {
+  bulkInit(clientId);
   buildRemindersList(clientId);
   buildGuidelinesList(clientId);
   const {data:plans} = await sb.from('monthly_plans').select('*').eq('client_id',clientId).order('week_number');
@@ -7210,7 +7253,7 @@ function _selectSwapLibExercise(idx) {
     isNew: false
   };
   document.getElementById('swap-exercise-sheet')?.remove();
-  openSwapWeekSelector();
+  (window._swapAfterPick || openSwapWeekSelector)();
 }
 
 function _openSwapNewForm() {
@@ -7228,13 +7271,16 @@ function _confirmSwapNew() {
     isNew: true
   };
   document.getElementById('swap-exercise-sheet')?.remove();
-  openSwapWeekSelector();
+  (window._swapAfterPick || openSwapWeekSelector)();
 }
 
-async function openSwapExerciseSheet(ex, planDayId) {
+// opts (reemplazo masivo): { subtitle: html del "Reemplazando…", onPick: qué hacer al elegir }.
+// Sin opts se comporta como siempre: al elegir sigue a openSwapWeekSelector.
+async function openSwapExerciseSheet(ex, planDayId, opts) {
   window._swapEx = ex;
   window._swapPlanDayId = planDayId;
   window._swapNewLibExercise = null;
+  window._swapAfterPick = opts?.onPick || null;
 
   const { data: lib } = await sb.from('exercise_library')
     .select('id,name,muscle_group,tag,video_url')
@@ -7258,7 +7304,7 @@ async function openSwapExerciseSheet(ex, planDayId) {
             width:30px;height:30px;font-size:16px;cursor:pointer;">✕</button>
         </div>
         <div style="font-size:12px;color:var(--gray4);margin-bottom:12px;">
-          Reemplazando: <strong style="color:var(--black);">${ex.name}</strong>
+          ${opts?.subtitle || `Reemplazando: <strong style="color:var(--black);">${ex.name}</strong>`}
         </div>
         <input class="form-input" id="swap-search-input"
           placeholder="Buscar en biblioteca..."
@@ -7389,6 +7435,429 @@ async function openSwapWeekSelector() {
   document.body.appendChild(sheet);
 }
 
+// Escritura del cambio de ejercicio, compartida por el cambio uno por uno (confirmSwap)
+// y el reemplazo masivo: solo name, muscle_group, video_url y tag de esa fila, por su id.
+// Series, reps, descanso, RPE y circuito no se tocan, y el id se conserva.
+async function swapEnsureLibrary(newEx) {
+  if (!newEx.isNew) return;
+  const { data: exists } = await sb.from('exercise_library')
+    .select('id').eq('coach_id', currentUser.id).eq('name', newEx.name).maybeSingle();
+  if (!exists) {
+    await sb.from('exercise_library').insert([{
+      coach_id: currentUser.id,
+      name: newEx.name,
+      muscle_group: newEx.muscle_group,
+      video_url: newEx.video_url,
+      tag: newEx.tag || 'Peso Libre'
+    }]);
+  }
+}
+
+// opts.exact (deshacer): escribe los valores tal cual estaban, sin pasar '' a null
+function swapExerciseRow(exerciseId, newEx, opts) {
+  const v = (x) => opts?.exact ? (x ?? null) : (x || null);
+  return sb.from('exercises').update({
+    name: newEx.name,
+    muscle_group: v(newEx.muscle_group),
+    video_url: v(newEx.video_url),
+    tag: v(newEx.tag)
+  }).eq('id', exerciseId);
+}
+
+// ===== BUSCADOR Y REEMPLAZO MASIVO (vista coach del programa) =====
+// Busca en todos los ejercicios programados del cliente (todas las semanas y días, incluidos
+// los circuitos) por nombre, tag o grupo muscular, sin tildes ni mayúsculas. El cambio usa la
+// misma escritura que el cambio uno por uno (swapEnsureLibrary + swapExerciseRow): solo name,
+// muscle_group, video_url y tag de cada fila elegida, por su id. exercise_logs no se toca.
+// Respaldo para deshacer en program_bulk_edits (migration_bulk_swap_log.sql).
+const bulk = { clientId: null, loaded: false, loading: null, rows: [], dayIds: new Set(), curWeek: null,
+  q: '', selected: new Set(), onlyNoLogs: false };
+const BULK_PAGE = 1000;
+
+function bulkInit(clientId) {
+  const box = document.getElementById('bulk-search');
+  if(!box) return;
+  if(bulk.clientId !== clientId) {
+    Object.assign(bulk, { clientId, loaded: false, loading: null, rows: [], dayIds: new Set(), curWeek: null, q: '', selected: new Set(), onlyNoLogs: false });
+  }
+  box.innerHTML = `
+    <div class="bk-wrap">
+      <label for="bk-q" class="exx-label" style="padding:0 2px;">Buscar en todo el programa</label>
+      <div class="bk-input">
+        <span class="bk-lupa" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
+        <input id="bk-q" type="search" autocomplete="off" placeholder="Buscar ejercicio, tipo o grupo muscular" value="${escHtml(bulk.q)}" oninput="bulkOnInput(this.value)">
+        <button type="button" class="bk-clear" id="bk-clear" aria-label="Borrar búsqueda" onclick="bulkClear()" ${bulk.q ? '' : 'hidden'}>${icon('x', 18)}</button>
+      </div>
+      <span class="bk-help">Busca por nombre, tipo o grupo muscular en todas las semanas y días, incluidos los circuitos.</span>
+      <div id="bk-last"></div>
+      <div id="bk-results" aria-live="polite"></div>
+    </div>`;
+  bulkLoadLastEdit();
+  if(bulk.q.length >= 2) bulkRenderResults();
+}
+
+// Trae todo en páginas de 1000 (límite de Supabase por consulta)
+async function bulkFetchAll(makeQuery) {
+  const out = [];
+  for(let from = 0; ; from += BULK_PAGE) {
+    const {data, error} = await makeQuery().range(from, from + BULK_PAGE - 1);
+    if(error) throw error;
+    out.push(...(data || []));
+    if(!data || data.length < BULK_PAGE) return out;
+  }
+}
+function bulkChunks(arr, n = 50) { const out = []; for(let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n)); return out; }
+
+async function bulkLoadProgram() {
+  const cid = bulk.clientId;
+  if(!cid) return;
+  if(bulk.loading) return bulk.loading;
+  bulk.loading = (async () => {
+    const days = await bulkFetchAll(() => sb.from('monthly_plans').select('id,week_number,day_of_week,day_order').eq('client_id', cid).order('id'));
+    const dayById = new Map(days.map(d => [d.id, d]));
+    let exs = [];
+    for(const ids of bulkChunks([...dayById.keys()])) {
+      exs = exs.concat(await bulkFetchAll(() => sb.from('exercises')
+        .select('id,plan_day_id,name,sets,reps_range,rest_seconds,rpe,tag,muscle_group,video_url,superset_group,order_index')
+        .in('plan_day_id', ids).order('id')));
+    }
+    const logs = await bulkFetchAll(() => sb.from('exercise_logs').select('exercise_id,week_number').eq('client_id', cid).order('id'));
+    if(bulk.clientId !== cid) return;
+    const logged = new Set(logs.map(l => l.exercise_id));
+    const weeksWithLogs = logs.map(l => l.week_number).filter(w => Number.isInteger(w));
+    const hidden = currentClient?.id === cid ? (currentClient.hidden_weeks || []) : [];
+    bulk.dayIds = new Set(dayById.keys());
+    bulk.curWeek = weeksWithLogs.length ? Math.max(...weeksWithLogs) : null;
+    bulk.rows = exs.filter(e => dayById.has(e.plan_day_id)).map(e => {
+      const d = dayById.get(e.plan_day_id);
+      return { ...e, week: d.week_number, dayName: d.day_of_week || '', dayOrder: d.day_order ?? 99,
+        logged: logged.has(e.id), hidden: hidden.includes(d.week_number), key: exxKey(e.name),
+        hay: exxKey([e.name, e.tag, e.muscle_group].filter(Boolean).join(' ')) };
+    });
+    bulk.loaded = true;
+  })();
+  try { await bulk.loading; } finally { bulk.loading = null; }
+}
+
+let bulkInputTimer = null;
+function bulkOnInput(v) {
+  bulk.q = v;
+  document.getElementById('bk-clear')?.toggleAttribute('hidden', !v);
+  clearTimeout(bulkInputTimer);
+  bulkInputTimer = setTimeout(bulkRenderResults, 180);
+}
+function bulkClear() {
+  bulk.q = ''; bulk.selected.clear();
+  const inp = document.getElementById('bk-q');
+  if(inp) { inp.value = ''; inp.focus(); }
+  document.getElementById('bk-clear')?.setAttribute('hidden', '');
+  bulkRenderResults();
+}
+
+function bulkMatches() {
+  const q = exxKey(bulk.q);
+  if(q.length < 2) return [];
+  return bulk.rows.filter(r => r.hay.includes(q))
+    .sort((a, b) => a.week - b.week || a.dayOrder - b.dayOrder || (a.order_index ?? 0) - (b.order_index ?? 0));
+}
+function bulkPresc(r) {
+  const base = [r.sets ? `${r.sets} × ${r.reps_range || '-'}` : (r.reps_range || ''), r.rest_seconds ? `${r.rest_seconds} s` : ''].filter(Boolean).join(' · ');
+  return r.superset_group ? `Circuito ${r.superset_group}${base ? ' · ' + base : ''}` : base;
+}
+function bulkWhere(r) { return `${weekLabelFor(r.week)} · ${r.dayName}`; }
+function bulkWeeksText(weeks) {
+  const ws = [...new Set(weeks)].sort((a, b) => a - b).map(w => isDeloadWeek(w) ? 'Deload' : String(w));
+  const list = ws.length > 1 ? ws.slice(0, -1).join(', ') + ' y ' + ws[ws.length - 1] : (ws[0] || '');
+  return (ws.length === 1 && ws[0] === 'Deload') ? 'Deload' : `${ws.length === 1 ? 'Semana' : 'Semanas'} ${list}`;
+}
+
+async function bulkRenderResults() {
+  const el = document.getElementById('bk-results');
+  if(!el) return;
+  if(exxKey(bulk.q).length < 2) { el.innerHTML = ''; bulkRenderBar(); return; }
+  if(!bulk.loaded) {
+    el.innerHTML = '<div class="spinner" style="width:18px;height:18px;margin:10px auto;"></div>';
+    try { await bulkLoadProgram(); }
+    catch(e) { el.innerHTML = ''; showToast('No se pudo cargar el programa. Revisá la conexión.', 'error'); return; }
+  }
+  const all = bulkMatches();
+  const visible = bulk.onlyNoLogs ? all.filter(r => !r.logged) : all;
+  // Lo elegido que ya no está en los resultados deja de estar elegido
+  const visibleIds = new Set(visible.map(r => r.id));
+  [...bulk.selected].forEach(id => { if(!visibleIds.has(id)) bulk.selected.delete(id); });
+  if(!all.length) { el.innerHTML = '<div class="bk-empty">No hay ejercicios que coincidan.</div>'; bulkRenderBar(); return; }
+
+  const groups = new Map();
+  visible.forEach(r => { if(!groups.has(r.key)) groups.set(r.key, { name: r.name, rows: [] }); groups.get(r.key).rows.push(r); });
+  const weeks = new Set(visible.map(r => r.week));
+  el.innerHTML = `
+    <div class="bk-count"><span>${visible.length} ${visible.length === 1 ? 'ejercicio' : 'ejercicios'} en ${weeks.size} ${weeks.size === 1 ? 'semana' : 'semanas'}</span><span class="bk-mono" id="bk-sel-count">${bulk.selected.size} elegidos</span></div>
+    <div class="bk-quick">
+      <button type="button" class="bk-chip" onclick="bulkSelectAll()">Elegir todos</button>
+      <button type="button" class="bk-chip" aria-pressed="${bulk.onlyNoLogs}" onclick="bulkToggleNoLogs()">Solo semanas sin registros</button>
+    </div>
+    ${visible.length ? [...groups.entries()].map(([key, g], gi) => `
+      <div class="bk-group">
+        <div class="bk-ghead">
+          <input type="checkbox" id="bk-g-${gi}" data-gkey="${escHtml(key)}" onchange="bulkToggleGroup(this)" aria-label="Elegir todo ${escHtml(g.name)}">
+          <label for="bk-g-${gi}" class="bk-gname">${escHtml(g.name)}</label>
+          <span class="bk-mono">${g.rows.length}</span>
+        </div>
+        ${g.rows.map(r => `
+        <div class="bk-row">
+          <input type="checkbox" id="bk-r-${r.id}" ${bulk.selected.has(r.id) ? 'checked' : ''} onchange="bulkToggleRow('${r.id}', this.checked)" aria-label="${escHtml(bulkWhere(r))}">
+          <label for="bk-r-${r.id}" class="bk-rmain"><span class="bk-rwhere">${escHtml(bulkWhere(r))}</span><span class="bk-rsub">${escHtml(bulkPresc(r))}</span></label>
+          <span class="bk-tags">
+            ${r.logged ? '<span class="bk-tag bk-tag-log">con registros</span>' : ''}
+            ${r.week === bulk.curWeek ? '<span class="bk-tag bk-tag-cur">semana actual</span>' : ''}
+            ${r.hidden ? '<span class="bk-tag bk-tag-hid">oculta al cliente</span>' : ''}
+          </span>
+        </div>`).join('')}
+      </div>`).join('') : '<div class="bk-empty">Todos los resultados tienen registros.</div>'}`;
+  bulkSyncChecks();
+  bulkRenderBar();
+}
+
+// Casillas de grupo: marcada si están elegidos todos sus lugares sin registros
+function bulkSyncChecks() {
+  document.querySelectorAll('#bk-results [data-gkey]').forEach(cb => {
+    const rows = bulkMatches().filter(r => r.key === cb.dataset.gkey && (!bulk.onlyNoLogs || !r.logged));
+    const free = rows.filter(r => !r.logged);
+    const sel = rows.filter(r => bulk.selected.has(r.id)).length;
+    cb.checked = free.length > 0 && free.every(r => bulk.selected.has(r.id));
+    cb.indeterminate = !cb.checked && sel > 0;
+  });
+  const c = document.getElementById('bk-sel-count');
+  if(c) c.textContent = `${bulk.selected.size} ${bulk.selected.size === 1 ? 'elegido' : 'elegidos'}`;
+}
+function bulkToggleRow(id, on) { on ? bulk.selected.add(id) : bulk.selected.delete(id); bulkSyncChecks(); bulkRenderBar(); }
+// Elegir un grupo marca sus lugares SIN registros; los con registros se marcan a mano
+function bulkToggleGroup(cb) {
+  const rows = bulkMatches().filter(r => r.key === cb.dataset.gkey && !r.logged);
+  rows.forEach(r => { cb.checked ? bulk.selected.add(r.id) : bulk.selected.delete(r.id); const rc = document.getElementById('bk-r-' + r.id); if(rc) rc.checked = cb.checked; });
+  if(!cb.checked) bulkMatches().filter(r => r.key === cb.dataset.gkey).forEach(r => { bulk.selected.delete(r.id); const rc = document.getElementById('bk-r-' + r.id); if(rc) rc.checked = false; });
+  bulkSyncChecks(); bulkRenderBar();
+}
+function bulkSelectAll() {
+  const free = bulkMatches().filter(r => !r.logged);
+  const allOn = free.length && free.every(r => bulk.selected.has(r.id));
+  free.forEach(r => { allOn ? bulk.selected.delete(r.id) : bulk.selected.add(r.id); const rc = document.getElementById('bk-r-' + r.id); if(rc) rc.checked = !allOn; });
+  bulkSyncChecks(); bulkRenderBar();
+}
+function bulkToggleNoLogs() { bulk.onlyNoLogs = !bulk.onlyNoLogs; bulkRenderResults(); }
+
+// Barra fija de abajo (dentro de los resultados, pegada al borde mientras se ven)
+function bulkRenderBar() {
+  let bar = document.getElementById('bk-bar');
+  const res = document.getElementById('bk-results');
+  if(!bulk.selected.size || !res) { bar?.remove(); return; }
+  const leftOut = bulkMatches().filter(r => r.logged && !bulk.selected.has(r.id)).length;
+  if(!bar) { bar = document.createElement('div'); bar.id = 'bk-bar'; bar.className = 'bk-bar'; res.appendChild(bar); }
+  else if(bar.parentNode !== res) res.appendChild(bar);
+  bar.innerHTML = `
+    <div style="display:flex;flex-direction:column;flex:1;min-width:0;">
+      <span style="font-size:15px;font-weight:700;">${bulk.selected.size} ${bulk.selected.size === 1 ? 'elegido' : 'elegidos'}</span>
+      ${leftOut ? `<span style="font-size:12px;color:var(--gray5);">${leftOut} con registros sin incluir</span>` : ''}
+    </div>
+    <button type="button" class="exx-btn" style="width:auto;min-height:48px;padding:0 18px;" onclick="bulkPickReplacement()">
+      <svg class="ico" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m17 3 4 4-4 4"/><path d="M3 7h18"/><path d="m7 21-4-4 4-4"/><path d="M21 17H3"/></svg>Cambiar por…</button>`;
+}
+
+function bulkSelectedRows() { return bulk.rows.filter(r => bulk.selected.has(r.id)); }
+// Nombres distintos ignorando tildes y mayúsculas (como se agrupan los resultados)
+function bulkDistinctNames(rows) { const m = new Map(); rows.forEach(r => { if(!m.has(r.key)) m.set(r.key, r.name); }); return [...m.values()]; }
+
+// Paso 3: el mismo selector de "Cambiar ejercicio" (biblioteca o crear uno nuevo)
+function bulkPickReplacement() {
+  const rows = bulkSelectedRows();
+  if(!rows.length) return;
+  const names = bulkDistinctNames(rows);
+  const where = `${rows.length} ${rows.length === 1 ? 'lugar' : 'lugares'}`;
+  const subtitle = names.length === 1
+    ? `Reemplaza a <strong style="color:var(--black);">${escHtml(names[0])}</strong> en ${where}`
+    : `Reemplaza a <strong style="color:var(--black);">${names.length} ejercicios</strong> en ${where}`;
+  openSwapExerciseSheet({ name: names[0] }, null, { subtitle, onPick: bulkOpenConfirm });
+}
+
+// Paso 4: confirmar
+function bulkOpenConfirm() {
+  const newEx = window._swapNewLibExercise;
+  const rows = bulkSelectedRows().sort((a, b) => a.week - b.week || a.dayOrder - b.dayOrder);
+  if(!newEx || !rows.length) return;
+  window._bulkNewEx = newEx;
+  const names = bulkDistinctNames(rows);
+  const weeks = new Set(rows.map(r => r.week));
+  const loggedIn = rows.filter(r => r.logged).length;
+  const leftOut = bulkMatches().filter(r => r.logged && !bulk.selected.has(r.id)).length;
+  const first = escHtml((currentClient?.name || 'el cliente').trim().split(/\s+/)[0]);
+  document.getElementById('bk-confirm')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'bk-confirm';
+  ov.className = 'modal-overlay open exx-sheet';
+  ov.style.zIndex = '700';
+  ov.onclick = (ev) => { if(ev.target === ov) ov.remove(); };
+  ov.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="bk-confirm-title" style="background:#F4F1EC;">
+      <div class="exx-head">
+        <h2 class="exx-h" id="bk-confirm-title">Confirmá el cambio</h2>
+        <button type="button" class="exx-icon-btn" aria-label="Cerrar" onclick="document.getElementById('bk-confirm')?.remove()">${icon('x', 22)}</button>
+      </div>
+      <section class="bk-card" aria-label="Resumen">
+        <div class="exx-stack" style="gap:4px;"><span class="exx-label">Sale</span>${names.map(n => `<span class="bk-out">${escHtml(n)}</span>`).join('')}</div>
+        <span style="color:#C24E18;" aria-hidden="true"><svg class="ico" width="20" height="20" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></span>
+        <div class="exx-stack" style="gap:4px;"><span class="exx-label">Entra</span><span style="font-size:20px;font-weight:700;">${escHtml(newEx.name)}</span></div>
+      </section>
+      <section class="bk-card" style="gap:0;" aria-label="Dónde cambia">
+        <span style="font-size:14px;font-weight:700;padding-bottom:6px;">${rows.length} ${rows.length === 1 ? 'ejercicio' : 'ejercicios'} en ${weeks.size} ${weeks.size === 1 ? 'semana' : 'semanas'}</span>
+        ${rows.map(r => `<div class="bk-place"><span style="font-size:14px;font-weight:600;">${escHtml(bulkWhere(r))}${r.superset_group ? ', Circuito ' + escHtml(r.superset_group) : ''}</span><span class="bk-mono">${escHtml([r.sets ? r.sets + ' × ' + (r.reps_range || '-') : r.reps_range, r.rest_seconds ? r.rest_seconds + ' s' : ''].filter(Boolean).join(' · '))}</span></div>`).join('')}
+        <span style="font-size:12px;color:var(--gray5);padding-top:8px;">Cada lugar conserva sus series, reps, descanso, RPE y circuito.</span>
+      </section>
+      <section class="bk-warn" aria-label="Aviso">
+        <svg class="ico" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" style="flex:none;margin-top:1px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        <span>Los registros que ${first} ya hizo no se tocan.${leftOut ? ` ${leftOut} ${leftOut === 1 ? 'ejercicio con registros quedó' : 'ejercicios con registros quedaron'} fuera de este cambio.` : ''}${loggedIn ? ` ${loggedIn} ${loggedIn === 1 ? 'ejercicio elegido tiene' : 'ejercicios elegidos tienen'} registros: sus registros viejos se van a ver con el nombre nuevo.` : ''}</span>
+      </section>
+      <div class="exx-stack" style="gap:10px;">
+        <button type="button" class="exx-btn" id="bk-apply" onclick="bulkApply()">Aplicar a ${rows.length} ${rows.length === 1 ? 'ejercicio' : 'ejercicios'} ${icon('check', 18)}</button>
+        <button type="button" class="exx-btn exx-btn-ghost" onclick="document.getElementById('bk-confirm')?.remove()">Volver a los resultados</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+}
+
+const BULK_FIELDS = ['name', 'muscle_group', 'video_url', 'tag'];
+function bulkSameValues(a, b) { return BULK_FIELDS.every(f => (a?.[f] ?? null) === (b?.[f] ?? null)); }
+
+// Paso 5: aplicar. Primero el respaldo; si no se puede guardar, no se cambia nada.
+async function bulkApply() {
+  const newEx = window._bulkNewEx;
+  const ids = [...bulk.selected];
+  if(!newEx || !ids.length) return;
+  const btn = document.getElementById('bk-apply');
+  if(btn) { btn.disabled = true; btn.textContent = 'Aplicando...'; }
+  const fail = (msg) => { if(btn) { btn.disabled = false; btn.textContent = 'Reintentar'; } showToast(msg, 'error', 5000); };
+  let current = [];
+  try {
+    for(const chunk of bulkChunks(ids)) {
+      const {data, error} = await sb.from('exercises').select('id,plan_day_id,name,muscle_group,video_url,tag').in('id', chunk);
+      if(error) throw error;
+      current = current.concat(data || []);
+    }
+  } catch(e) { fail('No se pudo leer el programa. No se cambió nada.'); return; }
+  // Solo ejercicios del programa de ESTE cliente
+  current = current.filter(c => bulk.dayIds.has(c.plan_day_id));
+  if(!current.length) { fail('No se encontraron los ejercicios elegidos. No se cambió nada.'); return; }
+  const after = { name: newEx.name, muscle_group: newEx.muscle_group || null, video_url: newEx.video_url || null, tag: newEx.tag || null };
+  const oldNames = [...new Map(current.map(c => [exxKey(c.name), c.name])).values()];
+  const rowsById = new Map(bulk.rows.map(r => [r.id, r]));
+  const weeks = [...new Set(current.map(c => rowsById.get(c.id)?.week).filter(Boolean))];
+  const {data:edit, error:editErr} = await sb.from('program_bulk_edits').insert({
+    client_id: bulk.clientId,
+    description: `${oldNames.join(', ')} → ${newEx.name}`,
+    before_data: current.map(c => ({ id: c.id, name: c.name, muscle_group: c.muscle_group, video_url: c.video_url, tag: c.tag })),
+    after_data: { ...after, weeks, applied_ids: [], failed_ids: current.map(c => c.id) }
+  }).select('id').maybeSingle();
+  if(editErr || !edit) { fail('No se pudo guardar el respaldo para deshacer. No se cambió nada.'); return; }
+
+  await swapEnsureLibrary(newEx);
+  const results = await Promise.all(current.map(c => swapExerciseRow(c.id, newEx).select('id')
+    .then(r => ({ id: c.id, ok: !r.error && (r.data || []).length > 0 }))
+    .catch(() => ({ id: c.id, ok: false }))));
+  const applied = results.filter(r => r.ok).map(r => r.id);
+  const failed = results.filter(r => !r.ok).map(r => r.id);
+  await sb.from('program_bulk_edits').update({ after_data: { ...after, weeks, applied_ids: applied, failed_ids: failed } }).eq('id', edit.id);
+
+  document.getElementById('bk-confirm')?.remove();
+  bulk.selected.clear();
+  bulk.loaded = false;
+  await bulkRenderResults();
+  bulkLoadLastEdit();
+  if(failed.length) {
+    const where = failed.map(id => rowsById.get(id)).filter(Boolean).map(bulkWhere).join('; ');
+    showToast(`Se cambiaron ${applied.length} de ${current.length}. No se pudieron cambiar: ${where}`, 'error', 7000);
+  } else {
+    bulkActionToast(`${applied.length} ${applied.length === 1 ? 'ejercicio cambiado' : 'ejercicios cambiados'}`, edit.id);
+  }
+}
+
+// Toast con "Deshacer"
+function bulkActionToast(msg, editId) {
+  document.getElementById('bk-toast')?.remove();
+  const t = document.createElement('div');
+  t.id = 'bk-toast';
+  t.className = 'bk-toast';
+  t.setAttribute('role', 'status');
+  t.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7BD08F" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M20 6 9 17l-5-5"/></svg>
+    <span style="flex:1;font-size:14px;font-weight:600;">${escHtml(msg)}</span>
+    <button type="button" onclick="bulkUndo('${editId}')">Deshacer</button>`;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 8000);
+}
+
+// Tarjeta ÚLTIMO CAMBIO MASIVO (mientras no se haya revertido)
+async function bulkLoadLastEdit() {
+  const el = document.getElementById('bk-last');
+  const cid = bulk.clientId;
+  if(!el || !cid) return;
+  const {data, error} = await sb.from('program_bulk_edits').select('id,created_at,description,after_data,reverted_at')
+    .eq('client_id', cid).order('created_at', {ascending:false}).limit(1).maybeSingle();
+  if(bulk.clientId !== cid) return;
+  if(error || !data || data.reverted_at || !(data.after_data?.applied_ids || []).length) { el.innerHTML = ''; return; }
+  const n = data.after_data.applied_ids.length;
+  const when = new Date(data.created_at);
+  const day = when.toDateString() === new Date().toDateString() ? 'hoy' : when.toLocaleDateString('es-CR', {day:'numeric', month:'short'});
+  el.innerHTML = `<section class="bk-last" aria-label="Último cambio masivo">
+      <div style="display:flex;align-items:center;gap:8px;color:#1E7A3C;">
+        ${icon('check', 18)}<span style="font-size:11px;font-weight:700;letter-spacing:0.1em;">ÚLTIMO CAMBIO MASIVO</span>
+        <span style="margin-left:auto;font-size:12px;color:var(--gray5);">${day} · ${when.toLocaleTimeString('es-CR', {hour:'numeric', minute:'2-digit', hour12:true})}</span>
+      </div>
+      <span style="font-size:16px;font-weight:700;line-height:1.3;">${escHtml(data.description || '')}</span>
+      <span style="font-size:13px;color:var(--gray5);">${n} ${n === 1 ? 'ejercicio' : 'ejercicios'}${data.after_data.weeks?.length ? ' · ' + bulkWeeksText(data.after_data.weeks) : ''}</span>
+      <button type="button" class="bk-undo-btn" onclick="bulkUndo('${data.id}', this)"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg>Deshacer este cambio</button>
+    </section>`;
+}
+
+// Deshacer: restaura before_data solo donde el ejercicio sigue con el valor "after"
+async function bulkUndo(editId, btn) {
+  if(btn) btn.disabled = true;
+  document.getElementById('bk-toast')?.remove();
+  const {data:ed, error} = await sb.from('program_bulk_edits').select('*').eq('id', editId).maybeSingle();
+  if(error || !ed) { if(btn) btn.disabled = false; showToast('No se pudo cargar el cambio para deshacer.', 'error'); return; }
+  if(ed.reverted_at) { showToast('Ese cambio ya se deshizo.'); bulkLoadLastEdit(); return; }
+  const ids = ed.after_data?.applied_ids || [];
+  let current = [];
+  try {
+    for(const chunk of bulkChunks(ids)) {
+      const {data, error:e2} = await sb.from('exercises').select('id,name,muscle_group,video_url,tag').in('id', chunk);
+      if(e2) throw e2;
+      current = current.concat(data || []);
+    }
+  } catch(e) { if(btn) btn.disabled = false; showToast('No se pudo leer el programa. No se deshizo nada.', 'error'); return; }
+  const curById = new Map(current.map(c => [c.id, c]));
+  const restore = [], skipped = [];
+  (ed.before_data || []).filter(b => ids.includes(b.id)).forEach(b => {
+    const c = curById.get(b.id);
+    if(c && bulkSameValues(c, ed.after_data)) restore.push(b); else skipped.push(b);
+  });
+  const results = await Promise.all(restore.map(b => swapExerciseRow(b.id, b, { exact: true }).select('id')
+    .then(r => ({ b, ok: !r.error && (r.data || []).length > 0 })).catch(() => ({ b, ok: false }))));
+  const ok = results.filter(r => r.ok).length;
+  const failedRestore = results.filter(r => !r.ok).map(r => r.b);
+  await sb.from('program_bulk_edits').update({ reverted_at: new Date().toISOString() }).eq('id', editId);
+  bulk.loaded = false;
+  await bulkRenderResults();
+  bulkLoadLastEdit();
+  const rowsById = new Map(bulk.rows.map(r => [r.id, r]));
+  const label = (b) => { const r = rowsById.get(b.id); return r ? bulkWhere(r) : b.name; };
+  if(skipped.length || failedRestore.length) {
+    const parts = [];
+    if(skipped.length) parts.push(`Sin tocar porque se editaron después: ${skipped.map(label).join('; ')}`);
+    if(failedRestore.length) parts.push(`No se pudieron restaurar: ${failedRestore.map(label).join('; ')}`);
+    showToast(`Se restauraron ${ok} de ${ids.length}. ${parts.join('. ')}.`, 'error', 8000);
+  } else {
+    showToast(`${ok} ${ok === 1 ? 'ejercicio restaurado' : 'ejercicios restaurados'}`, 'success');
+  }
+}
+
 async function confirmSwap() {
   const newEx = window._swapNewLibExercise;
   const weekOptions = window._swapWeekOptions || [];
@@ -7398,28 +7867,9 @@ async function confirmSwap() {
 
   if (!selectedWeeks.length) { showToast('Seleccioná al menos una semana', 'error'); return; }
 
-  if (newEx.isNew) {
-    const { data: exists } = await sb.from('exercise_library')
-      .select('id').eq('coach_id', currentUser.id).eq('name', newEx.name).maybeSingle();
-    if (!exists) {
-      await sb.from('exercise_library').insert([{
-        coach_id: currentUser.id,
-        name: newEx.name,
-        muscle_group: newEx.muscle_group,
-        video_url: newEx.video_url,
-        tag: newEx.tag || 'Peso Libre'
-      }]);
-    }
-  }
+  await swapEnsureLibrary(newEx);
 
-  await Promise.all(selectedWeeks.map(wd =>
-    sb.from('exercises').update({
-      name: newEx.name,
-      muscle_group: newEx.muscle_group || null,
-      video_url: newEx.video_url || null,
-      tag: newEx.tag || null
-    }).eq('id', wd.exerciseId)
-  ));
+  await Promise.all(selectedWeeks.map(wd => swapExerciseRow(wd.exerciseId, newEx)));
 
   showToast(`"${newEx.name}" aplicado en ${selectedWeeks.length} semana(s)`, 'success');
   document.getElementById('swap-week-sheet')?.remove();
