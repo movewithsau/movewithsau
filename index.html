@@ -7062,6 +7062,11 @@ async function adjustDaysTrained(delta) {
 let planOverviewSelectedWeek = null;
 let planOverviewAllPlans = null;
 
+// Orden de los chips de semana: numérico (1, 2 … 10, 11, 12) y las de Deload al final
+function sortPlanWeeks(nums) {
+  return nums.sort((a, b) => (isDeloadWeek(a) - isDeloadWeek(b)) || a - b);
+}
+
 async function loadCoachClientDetail(clientId) {
   bulkInit(clientId);
   buildRemindersList(clientId);
@@ -7077,7 +7082,7 @@ async function loadCoachClientDetail(clientId) {
   });
 
   planOverviewAllPlans = weeks;
-  const weekNums = Object.keys(weeks).map(Number).sort();
+  const weekNums = sortPlanWeeks(Object.keys(weeks).map(Number));
   if(!planOverviewSelectedWeek || !weeks[planOverviewSelectedWeek]) planOverviewSelectedWeek = weekNums[0];
 
   renderPlanOverview();
@@ -7087,7 +7092,7 @@ async function loadCoachClientDetail(clientId) {
 function renderPlanOverview() {
   const container = document.getElementById('coach-plan-overview');
   const weeks = planOverviewAllPlans;
-  const weekNums = Object.keys(weeks).map(Number).sort();
+  const weekNums = sortPlanWeeks(Object.keys(weeks).map(Number));
   const selectedDays = weeks[planOverviewSelectedWeek] || [];
   const hiddenWeeks = currentClient?.hidden_weeks || [];
   const isSelectedHidden = hiddenWeeks.includes(planOverviewSelectedWeek);
