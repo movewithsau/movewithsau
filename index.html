@@ -628,6 +628,8 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 .exx-btn-ghost { background:#F1EEE8; color:var(--black); }
 .exx-banner { display:flex; align-items:center; gap:12px; background:#C24E18; color:#fff; border-radius:var(--radius); padding:12px 12px 12px 16px; margin:12px 0 10px; box-shadow:var(--shadow); }
 .exx-banner-ico { flex:none; width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.18); display:flex; align-items:center; justify-content:center; }
+.exx-banner-list { list-style:none; margin:10px 0 0; padding:0; display:flex; flex-direction:column; }
+.exx-banner-list li { display:flex; align-items:center; gap:10px; padding:8px 0; border-top:1px solid rgba(255,255,255,0.25); }
 .exx-banner-btn { flex:none; min-height:44px; padding:0 18px; border:0; border-radius:12px; background:#fff; color:#C24E18; font:700 14px 'DM Sans',sans-serif; cursor:pointer; }
 .client-card.exx-assist-card { background:#C24E18; color:#fff; }
 .exx-assist-card .client-name, .exx-assist-card .client-meta, .exx-assist-card .client-meta * { color:#fff !important; }
@@ -3580,7 +3582,11 @@ function switchWorkoutDay(day) {
 // existing kg/reps inputs or their save flow — purely visual/sonar overlay.
 
 let circuitTimerData = {};   // group -> {exercises:[{id,name,seconds}], rounds, restSecs, allTimeBased}
-let circuitTimerState = {};  // group -> {mode, phase, round, exIndex, remaining, paused, intervalId}
+let circuitTimerState = {};  // group -> {mode, phase, round, exIndex, remaining, paused, intervalId, endAt, dayKey}
+// El conteo usa la hora real de fin (endAt) y el estado se guarda por día en localStorage:
+// si el sistema congela o cierra la app (ej. al abrir WhatsApp), al volver el timer se
+// pone al día con Date.now() en vez de quedar atrasado o perderse.
+let circuitCatchUpBase = null; // durante la puesta al día: fin del intervalo anterior
 
 function repsRangeIsTimeBased(repsRange) {
   return /\d+\s*(s|min|seg)/i.test(repsRange || '');
@@ -3623,6 +3629,7 @@ function playTone(freq, ctx, delay) {
 // marks the end of an interval / start of the next one. Swap the oscillator
 // internals for uploaded audio clips later without touching any call site.
 function playCue(type, double) {
+  if(circuitCatchUpBase != null) return; // sin sonidos al ponerse al día
   const ctx = getCueAudioContext();
   if(!ctx) return;
   const freq = type === 'rest' ? 330 : 880;
@@ -3638,6 +3645,8 @@ function toggleCircuitTimerMode(group) {
   } else {
     const data = circuitTimerData[group];
     state.mode = 'timer';
+    state.dayKey = circuitTimerStoreKey();
+    state.endAt = null;
     state.round = 1;
     state.exIndex = 0;
     state.paused = false;
@@ -3652,13 +3661,15 @@ function toggleCircuitTimerMode(group) {
 function startCircuitTicking(group) {
   const state = circuitTimerState[group];
   clearInterval(state.intervalId);
+  state.endAt = (circuitCatchUpBase ?? Date.now()) + state.remaining * 1000;
   state.intervalId = setInterval(() => tickCircuitTimer(group), 1000);
+  saveCircuitTimers();
 }
 
 function tickCircuitTimer(group) {
   const state = circuitTimerState[group];
   if(!state || state.paused) return;
-  state.remaining--;
+  state.remaining = state.endAt ? Math.max(0, Math.ceil((state.endAt - Date.now()) / 1000)) : state.remaining - 1;
   if(state.remaining <= 0) {
     clearInterval(state.intervalId);
     state.intervalId = null;
@@ -3746,6 +3757,12 @@ function pauseResumeCircuitTimer(group) {
   const state = circuitTimerState[group];
   if(!state) return;
   state.paused = !state.paused;
+  const timed = ['work','buffer','rest'].includes(state.phase);
+  if(state.paused && state.endAt) { state.remaining = Math.max(0, Math.ceil((state.endAt - Date.now()) / 1000)); state.endAt = null; }
+  else if(!state.paused && timed) {
+    state.endAt = Date.now() + state.remaining * 1000;
+    if(!state.intervalId) state.intervalId = setInterval(() => tickCircuitTimer(group), 1000); // restaurado en pausa
+  }
   renderCircuitTimerUI(group);
 }
 
@@ -3768,6 +3785,7 @@ function renderCircuitTimerUI(group) {
   if(!state || state.mode !== 'timer' || !data) {
     container.style.display = 'none';
     container.innerHTML = '';
+    saveCircuitTimers(); // al apagar el Modo Timer se borra lo guardado
     return;
   }
   container.style.display = 'block';
@@ -3817,11 +3835,68 @@ function renderCircuitTimerUI(group) {
   }
 
   container.innerHTML = `<div style="background:var(--gray1);border-radius:12px;">${inner}</div>`;
+  saveCircuitTimers();
 }
 
 function syncCircuitTimerPanels(groups) {
+  restoreCircuitTimers(groups);
   groups.forEach(group => renderCircuitTimerUI(group));
 }
+
+// ---- timer con hora real: guardar, restaurar y ponerse al día ----
+function circuitTimerStoreKey() { return currentClient ? `mws_ctimer_${currentClient.id}_w${clientWeek}_${clientDay}` : null; }
+function saveCircuitTimers() {
+  const key = circuitTimerStoreKey();
+  if(!key) return;
+  const out = {};
+  Object.entries(circuitTimerState).forEach(([g, st]) => {
+    if(st && st.mode === 'timer' && st.dayKey === key && st.phase !== 'done') {
+      out[g] = { phase: st.phase, round: st.round, exIndex: st.exIndex, remaining: st.remaining, paused: !!st.paused,
+        endAt: st.endAt || null, customRest: st.customRest, savedAt: Date.now() };
+    }
+  });
+  try { Object.keys(out).length ? localStorage.setItem(key, JSON.stringify(out)) : localStorage.removeItem(key); } catch {}
+}
+function restoreCircuitTimers(groups) {
+  const key = circuitTimerStoreKey();
+  if(!key) return;
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch {}
+  groups.forEach(g => {
+    const cur = circuitTimerState[g];
+    if(cur && cur.mode === 'timer' && cur.dayKey === key) return; // ya corre en memoria
+    const st = saved[g];
+    if(!st || !circuitTimerData[g] || Date.now() - (st.savedAt || 0) > 6 * 3600000) return;
+    if(cur) clearInterval(cur.intervalId);
+    circuitTimerState[g] = { mode: 'timer', dayKey: key, phase: st.phase, round: st.round, exIndex: st.exIndex,
+      remaining: st.remaining, paused: st.paused, endAt: st.endAt, customRest: st.customRest, intervalId: null };
+    acquireWakeLock();
+    catchUpCircuitTimer(g);
+  });
+}
+// Avanza las fases que vencieron mientras la app no corría (sin sonidos) y retoma el conteo
+function catchUpCircuitTimer(group) {
+  const state = circuitTimerState[group];
+  if(!state || state.mode !== 'timer' || state.paused || !circuitTimerData[group]) return;
+  const timed = () => ['work','buffer','rest'].includes(state.phase);
+  let guard = 0;
+  while(timed() && state.endAt && Date.now() >= state.endAt && guard++ < 500) {
+    clearInterval(state.intervalId);
+    state.intervalId = null;
+    circuitCatchUpBase = state.endAt;
+    try { advanceCircuitPhase(group); } finally { circuitCatchUpBase = null; }
+  }
+  if(timed() && state.endAt) {
+    state.remaining = Math.max(0, Math.ceil((state.endAt - Date.now()) / 1000));
+    if(!state.intervalId) state.intervalId = setInterval(() => tickCircuitTimer(group), 1000);
+  } else {
+    state.endAt = null;
+  }
+  renderCircuitTimerUI(group);
+}
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible') Object.keys(circuitTimerState).forEach(catchUpCircuitTimer);
+});
 
 async function loadClientExercises() {
   // Token de request: loadClientExercises es async con varios await (planDay, exs,
@@ -4122,6 +4197,7 @@ async function loadClientExercises() {
             <button onclick="setCircuitUnit('${ex.superset_group}','lb',this)" class="unit-btn" style="padding:4px 10px;font-size:11px;">lb</button>
           </div>
         </div>
+        <div id="exx-cassist-${ex.plan_day_id}:${ex.superset_group}">${exxCircuitAssistBtnHtml(`${ex.plan_day_id}:${ex.superset_group}`)}</div>
         <label style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--gray5);cursor:pointer;margin-bottom:8px;">
           <input type="checkbox" id="timer-toggle-${ex.superset_group}" onchange="toggleCircuitTimerMode('${ex.superset_group}')" style="width:16px;height:16px;accent-color:var(--orange);cursor:pointer;">
           Modo Timer
@@ -6206,7 +6282,7 @@ function renderCoachClients(clients) {
       <div class="client-info">
         <div class="client-name" style="display:flex;align-items:center;gap:6px;${c.is_churn ? 'color:var(--gray4);' : ''}">${c.name}${typeTag}${evolutionBadge}${liftBadge}${(window._clientsWithReminder||new Set()).has(c.id)?'<div style="width:22px;height:22px;border-radius:5px;background:#fff3e0;display:flex;align-items:center;justify-content:center;font-size:12px;"><svg class="ico" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-bell"/></svg></div>':''}</div>
         <div class="client-meta">@${c.username} · ${(c.days_trained||0)+(c.days_trained_adjustment||0)} días${startDateStr?` · Inicio: ${startDateStr}`:''}${endDateStr?` · Fin: ${endDateStr}`:''}${clientSortMode==='last_active'?(()=>{const t=(window._lastTrainedMap||{})[c.id];return t?` · ${new Date(t).toLocaleDateString('es-CR',{weekday:'short',day:'numeric',month:'short'})}`:' · Sin entreno';})():''}</div>
-        ${exxReqs.length?`<div class="exx-assist-chip">${icon('life-buoy',12)}Pidió asistencia · ${exxAgo(exxReqs[0].created_at)}</div>`:''}
+        ${exxReqs.length?`<div class="exx-assist-chip">${icon('life-buoy',12)}Pidió asistencia${exxReqs.length > 1 ? ` (${exxReqs.length})` : ''} · ${exxAgo(exxReqs[0].created_at)}</div>`:''}
       </div>
       ${churnBadge}
     </div>`;
@@ -13766,6 +13842,19 @@ async function exxLoadForDay(exs, planDay) {
   if(!cid) return;
   exxState.day = exxDayFromPlan(planDay);
   if(exxState.clientId !== cid) { exxState.clientId = cid; exxState.exById = {}; exxState.libIdByKey = {}; exxState.notesCount = {}; exxState.setups = {}; exxState.assist = {}; }
+  // Circuitos del día y sus solicitudes abiertas
+  exxState.circuits = {};
+  (exs || []).filter(e => e.superset_group).forEach(e => {
+    const ref = `${e.plan_day_id}:${e.superset_group}`;
+    (exxState.circuits[ref] = exxState.circuits[ref] || { ref, name: `Circuito ${e.superset_group}`, planDayId: e.plan_day_id, exercises: [] }).exercises.push(e);
+  });
+  exxState.cassist = {};
+  const refs = Object.keys(exxState.circuits);
+  if(refs.length) {
+    const {data:cReqs, error:cErr} = await sb.from('assistance_requests').select('id,circuit_ref,exercise_id,reason,detail,created_at')
+      .eq('client_id', cid).eq('status', 'open').eq('target_type', 'circuit').in('circuit_ref', refs).order('created_at', {ascending:false});
+    if(!cErr) (cReqs || []).forEach(r => { if(!exxState.cassist[r.circuit_ref]) exxState.cassist[r.circuit_ref] = r; });
+  }
   const solo = (exs || []).filter(e => !e.superset_group);
   solo.forEach(e => { exxState.exById[e.id] = e; });
   const keys = [...new Set(solo.map(e => exxKey(e.name)))];
@@ -13777,12 +13866,12 @@ async function exxLoadForDay(exs, planDay) {
       : Promise.resolve({ data: [] }),
     sb.from('exercise_notes').select('exercise_key').eq('client_id', cid).in('exercise_key', keys).is('deleted_at', null),
     sb.from('exercise_plate_setups').select('*').eq('client_id', cid).in('exercise_key', keys),
-    sb.from('assistance_requests').select('id,exercise_key,reason,detail,created_at,week_number,day_label').eq('client_id', cid).eq('status', 'open').in('exercise_key', keys)
+    sb.from('assistance_requests').select('id,exercise_key,reason,detail,created_at,week_number,day_label,target_type').eq('client_id', cid).eq('status', 'open').in('exercise_key', keys)
   ]);
   if(!assistRes.error) {
     // Solo cuenta como enviada la abierta de esta semana y este día
     keys.forEach(k => { delete exxState.assist[k]; });
-    (assistRes.data || []).filter(r => exxSameDay(r)).forEach(r => { exxState.assist[r.exercise_key] = r; });
+    (assistRes.data || []).filter(r => r.target_type !== 'circuit' && exxSameDay(r)).forEach(r => { exxState.assist[r.exercise_key] = r; });
   }
   if(!setupsRes.error) (setupsRes.data || []).forEach(r => { exxState.setups[r.exercise_key] = r; });
   missing.forEach(n => { exxState.libIdByKey[exxKey(n)] = null; });
@@ -14296,7 +14385,7 @@ async function saveExxPlates() {
 // Mismo número que el resto de los botones de WhatsApp de la app (overlay de churn, flotante).
 const EXX_WA_NUMBER = '50672083564';
 const EXX_REASONS = ['Dolor o molestia', 'Muy pesado', 'Muy liviano', 'No tengo el equipo', 'Quiero cambiarlo', 'Otra cosa'];
-const exxAssist = { exId:null, reason:null };
+const exxAssist = { mode:'exercise', exId:null, ref:null, targetExId:null, reason:null };
 
 function exxAssistBtnHtml(ex) {
   const open = exxState.assist[exxKey(ex.name)];
@@ -14350,6 +14439,8 @@ function openExxAssist(exId) {
   const ex = exxState.exById[exId];
   if(!ex || !currentClient) return;
   const prev = exxState.assist[exxKey(ex.name)];
+  exxAssist.mode = 'exercise';
+  exxAssist.ref = null;
   exxAssist.exId = exId;
   exxAssist.reason = prev?.reason || null;
   document.getElementById('exx-assist-sheet')?.remove();
@@ -14387,14 +14478,14 @@ function openExxAssist(exId) {
 }
 function setExxReason(i) {
   exxAssist.reason = EXX_REASONS[i];
-  document.querySelectorAll('#exx-assist-sheet .exx-reason').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.i) === i)));
+  document.querySelectorAll('#exx-assist-sheet .exx-reason:not(.exx-target)').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.i) === i)));
   renderExxAssistPreview();
 }
 // Vista previa: *texto* se ve en negrita como en WhatsApp
 function renderExxAssistPreview() {
   const el = document.getElementById('exx-assist-preview');
-  if(!el || !exxAssist.exId) return;
-  el.innerHTML = exxAssistMessage().split('\n').map(l => `<span>${escHtml(l).replace(/\*([^*]+)\*/g, '<b>$1</b>')}</span>`).join('');
+  if(!el || (!exxAssist.exId && !exxAssist.ref)) return;
+  el.innerHTML = (exxAssist.mode === 'circuit' ? exxCircuitMessage() : exxAssistMessage()).split('\n').map(l => `<span>${escHtml(l).replace(/\*([^*]+)\*/g, '<b>$1</b>')}</span>`).join('');
 }
 
 async function sendExxAssist() {
@@ -14422,11 +14513,12 @@ async function sendExxAssist() {
     day_label: day.label || null, day_index: day.index ?? null };
   try {
     // Una sola abierta por cliente + ejercicio + semana + día: si ya hay, se actualiza en vez de duplicar
-    let findQ = sb.from('assistance_requests').select('id')
+    let findQ = sb.from('assistance_requests').select('id,target_type')
       .eq('client_id', currentClient.id).eq('exercise_key', key).eq('status', 'open').eq('week_number', clientWeek);
     findQ = day.label ? findQ.eq('day_label', day.label) : findQ.is('day_label', null);
-    const {data:open, error:findErr} = await findQ.order('created_at', {ascending:false}).limit(1).maybeSingle();
+    const {data:candidates, error:findErr} = await findQ.order('created_at', {ascending:false}).limit(20);
     if(findErr) throw findErr;
+    const open = (candidates || []).find(r => r.target_type !== 'circuit') || null; // las de circuito van aparte
     const res = open
       ? await sb.from('assistance_requests').update(fields).eq('id', open.id).select('id,reason,detail,created_at,week_number,day_label').maybeSingle()
       : await sb.from('assistance_requests').insert({ client_id: currentClient.id, exercise_library_id: exxState.libIdByKey[key] || null, exercise_key: key, ...fields })
@@ -14439,6 +14531,135 @@ async function sendExxAssist() {
     console.warn('assistance_requests failed:', e);
     showToast('Se abrió WhatsApp, pero no se pudo registrar en la app', 'error', 4000);
   }
+}
+
+// ---- solicitar asistencia en circuitos (cliente) ----
+// Un circuito no tiene id propio: es la letra de exercises.superset_group dentro de un día
+// del plan. circuit_ref = "<plan_day_id>:<letra>" lo identifica de forma única por semana y día.
+function exxCircuitAssistBtnHtml(ref) {
+  if(exxState.cassist?.[ref]) return `<div class="exx-assist-sent">
+      <span class="exx-sent-chip">${icon('check', 14)}Solicitud enviada</span>
+      <button type="button" class="exx-link-btn" style="padding:0 4px 0 10px;" onclick="openExxCircuitAssist('${ref}')">Reenviar</button>
+    </div>`;
+  return `<button type="button" class="exx-assist-btn" onclick="openExxCircuitAssist('${ref}')">${icon('life-buoy', 18)}<span>Solicitar asistencia</span></button>`;
+}
+function exxRefreshCircuitAssistBtns() {
+  Object.keys(exxState.circuits || {}).forEach(ref => {
+    const el = document.getElementById('exx-cassist-' + ref);
+    if(el) el.innerHTML = exxCircuitAssistBtnHtml(ref);
+  });
+}
+function exxCircuitTarget() {
+  const c = exxState.circuits?.[exxAssist.ref];
+  const ex = c && exxAssist.targetExId ? c.exercises.find(e => e.id === exxAssist.targetExId) : null;
+  return { c, ex, what: c ? (ex ? `${c.name} · ${ex.name}` : c.name) : '' };
+}
+function exxCircuitMessage() {
+  const { what } = exxCircuitTarget();
+  const detail = (document.getElementById('exx-assist-detail')?.value || '').trim();
+  const day = exxState.day?.label ? ' · ' + exxDayText(exxState.day.label) : '';
+  const lines = [`Hola Sau, necesito asistencia en *${what}* · Semana ${clientWeek}${day}: ${exxAssist.reason || '…'}.`];
+  if(detail) lines.push(detail);
+  return lines.join('\n');
+}
+
+function openExxCircuitAssist(ref) {
+  const c = exxState.circuits?.[ref];
+  if(!c || !currentClient) return;
+  const prev = exxState.cassist?.[ref];
+  exxAssist.mode = 'circuit';
+  exxAssist.exId = null;
+  exxAssist.ref = ref;
+  exxAssist.targetExId = prev?.exercise_id || null;
+  exxAssist.reason = prev?.reason || null;
+  document.getElementById('exx-assist-sheet')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'exx-assist-sheet';
+  ov.className = 'modal-overlay open exx-sheet';
+  ov.onclick = (ev) => { if(ev.target === ov) ov.remove(); };
+  const targets = [{id:'', label:'Todo el circuito'}].concat(c.exercises.map(e => ({id:e.id, label:e.name})));
+  ov.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="exx-assist-title">
+      <div class="exx-head">
+        <div><h2 class="exx-h" id="exx-assist-title">Solicitar asistencia</h2><div class="exx-sub">${escHtml(c.name)}</div></div>
+        <button type="button" class="exx-icon-btn" aria-label="Cerrar" onclick="document.getElementById('exx-assist-sheet')?.remove()">${icon('x', 22)}</button>
+      </div>
+      <div class="exx-stack">
+        <span class="exx-label" id="exx-target-label">¿Con qué?</span>
+        <div class="exx-reasons" role="group" aria-labelledby="exx-target-label">
+          ${targets.map(t => `<button type="button" class="exx-reason exx-target" data-ex="${t.id}" aria-pressed="${(exxAssist.targetExId || '') === t.id}" onclick="setExxCircuitTarget('${t.id}')">${escHtml(t.label)}</button>`).join('')}
+        </div>
+      </div>
+      <div class="exx-stack">
+        <span class="exx-label" id="exx-reason-label">¿Qué necesitás?</span>
+        <div class="exx-reasons" role="group" aria-labelledby="exx-reason-label">
+          ${EXX_REASONS.map((r, i) => `<button type="button" class="exx-reason exx-motive" data-i="${i}" aria-pressed="${exxAssist.reason === r}" onclick="setExxReason(${i})">${r}</button>`).join('')}
+        </div>
+      </div>
+      <div class="exx-stack">
+        <label for="exx-assist-detail" class="exx-label">Contanos más (opcional)</label>
+        <textarea id="exx-assist-detail" class="form-textarea" rows="3" maxlength="600" placeholder="Ej: no tengo cuerda para saltar, ¿qué hago?" oninput="renderExxAssistPreview()">${escHtml(prev?.detail || '')}</textarea>
+      </div>
+      <div class="exx-stack">
+        <span class="exx-label">Así le llega a Sau por WhatsApp</span>
+        <div class="exx-wa-bubble" id="exx-assist-preview" aria-live="polite"></div>
+      </div>
+      <div class="exx-stack" style="gap:10px;">
+        <button type="button" class="exx-btn exx-btn-wa" id="exx-assist-send" onclick="sendExxCircuitAssist()">${icon('message-circle', 22)}<span>Enviar por WhatsApp</span></button>
+        <span style="font-size:12px;line-height:1.45;color:var(--gray5);text-align:center;">Se abre WhatsApp con el mensaje listo; solo falta tocar enviar. El timer del circuito sigue corriendo.</span>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  renderExxAssistPreview();
+}
+function setExxCircuitTarget(exId) {
+  exxAssist.targetExId = exId || null;
+  document.querySelectorAll('#exx-assist-sheet .exx-target').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.ex === (exId || ''))));
+  renderExxAssistPreview();
+}
+
+async function sendExxCircuitAssist() {
+  const { c, ex, what } = exxCircuitTarget();
+  if(!c) return;
+  if(!exxAssist.reason) { showToast('Elegí un motivo', 'error'); return; }
+  const url = `https://wa.me/${EXX_WA_NUMBER}?text=${encodeURIComponent(exxCircuitMessage())}`;
+  // Igual que en ejercicios: WhatsApp dentro del toque. No se toca el timer del circuito.
+  const win = window.open(url, '_blank');
+  if(!win) location.href = url;
+  document.getElementById('exx-assist-sheet')?.remove();
+
+  const ref = c.ref;
+  const detail = (document.getElementById('exx-assist-detail')?.value || '').trim() || null;
+  const day = exxState.day || {};
+  const fields = { reason: exxAssist.reason, detail, last_load: null, plan_day_id: c.planDayId, week_number: clientWeek,
+    day_label: day.label || null, day_index: day.index ?? null,
+    target_type: 'circuit', circuit_ref: ref, circuit_name: c.name,
+    exercise_id: ex ? ex.id : null, exercise_name: ex ? ex.name : c.name, exercise_key: exxKey(ex ? ex.name : c.name) };
+  try {
+    // Una sola abierta por cliente + circuito + ejercicio elegido (o todo el circuito)
+    let findQ = sb.from('assistance_requests').select('id')
+      .eq('client_id', currentClient.id).eq('target_type', 'circuit').eq('circuit_ref', ref).eq('status', 'open');
+    findQ = ex ? findQ.eq('exercise_id', ex.id) : findQ.is('exercise_id', null);
+    const {data:open, error:findErr} = await findQ.order('created_at', {ascending:false}).limit(1).maybeSingle();
+    if(findErr) throw findErr;
+    const res = open
+      ? await sb.from('assistance_requests').update(fields).eq('id', open.id).select('id,circuit_ref,exercise_id,reason,detail,created_at').maybeSingle()
+      : await sb.from('assistance_requests').insert({ client_id: currentClient.id, exercise_library_id: null, ...fields })
+          .select('id,circuit_ref,exercise_id,reason,detail,created_at').maybeSingle();
+    if(res.error) throw res.error;
+    exxState.cassist[ref] = res.data || { reason: fields.reason, detail, exercise_id: fields.exercise_id };
+    exxRefreshCircuitAssistBtns();
+    if(!open) exxNotifyCoach(what);
+  } catch(e) {
+    console.warn('assistance_requests (circuito) failed:', e);
+    showToast('Se abrió WhatsApp, pero no se pudo registrar en la app', 'error', 4000);
+  }
+}
+
+// Título de una solicitud: "Circuito B · Burpees", "Circuito B" o el ejercicio
+function exxReqTitle(r) {
+  if(r?.target_type === 'circuit') return [r.circuit_name || 'Circuito', r.exercise_id ? r.exercise_name : null].filter(Boolean).join(' · ');
+  return r?.exercise_name || '';
 }
 
 // Push opcional al coach por OneSignal (api/notify.js ya filtra por tag username)
@@ -14474,7 +14695,7 @@ function exxOpenAssistFor(clientId) { return exxOpenAssistByClient.get(clientId)
 
 async function exxLoadOpenAssist(clientIds) {
   if(!clientIds?.length) { exxOpenAssistByClient = new Map(); exxRenderAssistBanner(); return; }
-  const {data, error} = await sb.from('assistance_requests').select('id,client_id,exercise_name,created_at,week_number,day_label')
+  const {data, error} = await sb.from('assistance_requests').select('id,client_id,exercise_name,exercise_id,created_at,week_number,day_label,target_type,circuit_name')
     .eq('status', 'open').in('client_id', clientIds).order('created_at', {ascending:false});
   if(error) return;
   const map = new Map();
@@ -14488,16 +14709,35 @@ function exxRenderAssistBanner() {
   if(!el) return;
   const all = [...exxOpenAssistByClient.values()].flat().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   if(!all.length) { el.innerHTML = ''; return; }
-  const last = all[0];
-  const client = (window._cachedClientsAll || []).find(c => c.id === last.client_id);
-  const title = all.length > 1 ? `${all.length} solicitudes abiertas` : `${escHtml(client?.name || 'Un cliente')} pidió asistencia`;
-  el.innerHTML = `<section class="exx-banner" aria-label="Solicitud de asistencia abierta">
+  const nameOf = (r) => (window._cachedClientsAll || []).find(c => c.id === r.client_id)?.name || 'Un cliente';
+  const line = (r) => [exxReqTitle(r), exxWhenText(r), exxAgo(r.created_at)].filter(Boolean).map(escHtml).join(' · ');
+  if(all.length === 1) {
+    const last = all[0];
+    el.innerHTML = `<section class="exx-banner" aria-label="Solicitud de asistencia abierta">
       <span class="exx-banner-ico">${icon('life-buoy', 20)}</span>
       <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
-        <span style="font-size:15px;font-weight:700;">${title}</span>
-        <span style="font-size:13px;opacity:0.92;">${all.length > 1 ? escHtml(client?.name || '') + ' · ' : ''}${escHtml(last.exercise_name)}${exxWhenText(last) ? ' · ' + escHtml(exxWhenText(last)) : ''} · ${exxAgo(last.created_at)}</span>
+        <span style="font-size:15px;font-weight:700;">${escHtml(nameOf(last))} pidió asistencia</span>
+        <span style="font-size:13px;opacity:0.92;">${line(last)}</span>
       </div>
       <button type="button" class="exx-banner-btn" onclick="openCoachClient('${last.client_id}')">Ver</button>
+    </section>`;
+    return;
+  }
+  // Varias: se listan todas (más nuevas primero), cada una con su Ver
+  const MAX = 6;
+  el.innerHTML = `<section class="exx-banner" style="flex-direction:column;align-items:stretch;" aria-label="Solicitudes de asistencia abiertas">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="exx-banner-ico">${icon('life-buoy', 20)}</span>
+        <span style="font-size:15px;font-weight:700;">${all.length} solicitudes abiertas</span>
+      </div>
+      <ul class="exx-banner-list">${all.slice(0, MAX).map(r => `<li>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;">
+          <span style="font-size:14px;font-weight:700;">${escHtml(nameOf(r))}</span>
+          <span style="font-size:12px;opacity:0.92;">${line(r)}</span>
+        </div>
+        <button type="button" class="exx-banner-btn" style="min-height:40px;padding:0 14px;" onclick="openCoachClient('${r.client_id}')">Ver</button>
+      </li>`).join('')}</ul>
+      ${all.length > MAX ? `<span style="font-size:12px;opacity:0.92;">y ${all.length - MAX} más</span>` : ''}
     </section>`;
 }
 
@@ -14538,11 +14778,11 @@ async function exxRenderCoachAssist(c) {
     const unit = ll?.weight_unit || 'kg';
     return `<section class="exx-req" aria-label="Solicitud de asistencia abierta">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-        <span class="exx-req-tag">${icon('life-buoy', 14)}SOLICITUD ABIERTA</span>
+        <span class="exx-req-tag">${icon('life-buoy', 14)}SOLICITUD ABIERTA${r.target_type === 'circuit' ? ' · CIRCUITO' : ''}</span>
         <span style="font-size:12px;color:var(--gray5);">${today ? 'hoy' : when.toLocaleDateString('es-CR', {day:'numeric', month:'short'})} · ${time}</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:2px;">
-        <span style="font-size:17px;font-weight:700;">${escHtml(r.exercise_name)}</span>
+        <span style="font-size:17px;font-weight:700;">${escHtml(exxReqTitle(r))}</span>
         ${exxWhenText(r) ? `<span style="font-size:13px;color:var(--gray5);">${escHtml(exxWhenText(r))}</span>` : ''}
         <span style="font-size:14px;color:#A8420F;font-weight:600;">${escHtml(r.reason)}</span>
       </div>
