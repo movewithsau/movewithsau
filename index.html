@@ -3950,7 +3950,7 @@ async function loadClientExercises() {
   if(requestId !== loadClientExercisesRequestId) return;
 
   // Notas / placas / asistencia del día (tablas nuevas; si fallan, la card se ve como antes)
-  try { await exxLoadForDay(exs); } catch(e) { console.warn('exx load failed:', e); }
+  try { await exxLoadForDay(exs, planDay); } catch(e) { console.warn('exx load failed:', e); }
   if(requestId !== loadClientExercisesRequestId) return;
 
   // ===== WORKOUT START BUTTON (before warmup banner) =====
@@ -13761,9 +13761,10 @@ function exxDateChip(iso) { const d = new Date(iso); return EXX_MONTHS[d.getMont
 function exxFmtNum(n) { return n == null || !Number.isFinite(Number(n)) ? '' : String(Math.round(Number(n) * 100) / 100).replace('.', ','); }
 
 // Una vez por render de loadClientExercises: nombres → librería y conteo de notas.
-async function exxLoadForDay(exs) {
+async function exxLoadForDay(exs, planDay) {
   const cid = currentClient?.id;
   if(!cid) return;
+  exxState.day = exxDayFromPlan(planDay);
   if(exxState.clientId !== cid) { exxState.clientId = cid; exxState.exById = {}; exxState.libIdByKey = {}; exxState.notesCount = {}; exxState.setups = {}; exxState.assist = {}; }
   const solo = (exs || []).filter(e => !e.superset_group);
   solo.forEach(e => { exxState.exById[e.id] = e; });
@@ -13776,11 +13777,12 @@ async function exxLoadForDay(exs) {
       : Promise.resolve({ data: [] }),
     sb.from('exercise_notes').select('exercise_key').eq('client_id', cid).in('exercise_key', keys).is('deleted_at', null),
     sb.from('exercise_plate_setups').select('*').eq('client_id', cid).in('exercise_key', keys),
-    sb.from('assistance_requests').select('id,exercise_key,reason,detail,created_at').eq('client_id', cid).eq('status', 'open').in('exercise_key', keys)
+    sb.from('assistance_requests').select('id,exercise_key,reason,detail,created_at,week_number,day_label').eq('client_id', cid).eq('status', 'open').in('exercise_key', keys)
   ]);
   if(!assistRes.error) {
+    // Solo cuenta como enviada la abierta de esta semana y este día
     keys.forEach(k => { delete exxState.assist[k]; });
-    (assistRes.data || []).forEach(r => { exxState.assist[r.exercise_key] = r; });
+    (assistRes.data || []).filter(r => exxSameDay(r)).forEach(r => { exxState.assist[r.exercise_key] = r; });
   }
   if(!setupsRes.error) (setupsRes.data || []).forEach(r => { exxState.setups[r.exercise_key] = r; });
   missing.forEach(n => { exxState.libIdByKey[exxKey(n)] = null; });
@@ -13790,6 +13792,26 @@ async function exxLoadForDay(exs) {
     (notesRes.data || []).forEach(r => { exxState.notesCount[r.exercise_key] = (exxState.notesCount[r.exercise_key] || 0) + 1; });
   }
 }
+
+// Día del plan tal como se muestra en el selector de días (monthly_plans.day_of_week
+// abreviado con getDayShortLabel). Sin nombre: "D" + day_order.
+function exxDayFromPlan(pd) {
+  if(!pd) return { label: null, index: null };
+  const index = Number.isInteger(pd.day_order) ? pd.day_order : null;
+  const label = (pd.day_of_week ? getDayShortLabel(String(pd.day_of_week)) : '').trim() || (index != null ? 'D' + index : null);
+  return { label, index };
+}
+// "Día Empuje"; si el nombre ya arranca con "Día" o "D4" se deja tal cual
+function exxDayText(label) {
+  if(!label) return '';
+  return /^(d[ií]a\b|d\d)/i.test(label) ? label : 'Día ' + label;
+}
+// "Semana 3 · Día Empuje" (vacío en solicitudes viejas sin día)
+function exxWhenText(r) {
+  if(!r?.day_label) return '';
+  return (r.week_number != null ? `Semana ${r.week_number} · ` : '') + exxDayText(r.day_label);
+}
+function exxSameDay(r) { return r.week_number === clientWeek && (r.day_label || null) === (exxState.day?.label || null); }
 
 function exxNotesLinkHtml(ex) {
   const n = exxState.notesCount[exxKey(ex.name)] || 0;
@@ -14315,7 +14337,7 @@ function exxAssistMessage() {
   const name = (currentClient?.name || '').trim().split(/\s+/)[0] || '';
   const detail = (document.getElementById('exx-assist-detail')?.value || '').trim();
   const lines = [
-    `Hola Sau, soy ${name}. Necesito asistencia con *${ex.name}* (Semana ${clientWeek}).`,
+    `Hola Sau, soy ${name}. Necesito asistencia con *${ex.name}* · Semana ${clientWeek}${exxState.day?.label ? ' · ' + exxDayText(exxState.day.label) : ''}.`,
     `Motivo: ${exxAssist.reason || '…'}.`
   ];
   if(detail) lines.push(detail);
@@ -14395,17 +14417,20 @@ async function sendExxAssist() {
     pin_stack_size: st.pin_stack_size, pin_plate_weight: st.pin_plate_weight, weight_unit: st.weight_unit,
     total_kg: exxTotalKg(st), text: exxLoadLine(st, currentWeightUnit)
   } : null;
-  const fields = { reason: exxAssist.reason, detail, last_load: lastLoad, exercise_id: ex.id, exercise_name: ex.name, plan_day_id: ex.plan_day_id || null, week_number: clientWeek };
+  const day = exxState.day || {};
+  const fields = { reason: exxAssist.reason, detail, last_load: lastLoad, exercise_id: ex.id, exercise_name: ex.name, plan_day_id: ex.plan_day_id || null, week_number: clientWeek,
+    day_label: day.label || null, day_index: day.index ?? null };
   try {
-    // Una sola abierta por cliente + ejercicio: si ya hay, se actualiza en vez de duplicar
-    const {data:open, error:findErr} = await sb.from('assistance_requests').select('id')
-      .eq('client_id', currentClient.id).eq('exercise_key', key).eq('status', 'open')
-      .order('created_at', {ascending:false}).limit(1).maybeSingle();
+    // Una sola abierta por cliente + ejercicio + semana + día: si ya hay, se actualiza en vez de duplicar
+    let findQ = sb.from('assistance_requests').select('id')
+      .eq('client_id', currentClient.id).eq('exercise_key', key).eq('status', 'open').eq('week_number', clientWeek);
+    findQ = day.label ? findQ.eq('day_label', day.label) : findQ.is('day_label', null);
+    const {data:open, error:findErr} = await findQ.order('created_at', {ascending:false}).limit(1).maybeSingle();
     if(findErr) throw findErr;
     const res = open
-      ? await sb.from('assistance_requests').update(fields).eq('id', open.id).select('id,reason,detail,created_at').maybeSingle()
+      ? await sb.from('assistance_requests').update(fields).eq('id', open.id).select('id,reason,detail,created_at,week_number,day_label').maybeSingle()
       : await sb.from('assistance_requests').insert({ client_id: currentClient.id, exercise_library_id: exxState.libIdByKey[key] || null, exercise_key: key, ...fields })
-          .select('id,reason,detail,created_at').maybeSingle();
+          .select('id,reason,detail,created_at,week_number,day_label').maybeSingle();
     if(res.error) throw res.error;
     exxState.assist[key] = res.data || { reason: fields.reason, detail };
     exxRefreshAssistBtns();
@@ -14449,7 +14474,7 @@ function exxOpenAssistFor(clientId) { return exxOpenAssistByClient.get(clientId)
 
 async function exxLoadOpenAssist(clientIds) {
   if(!clientIds?.length) { exxOpenAssistByClient = new Map(); exxRenderAssistBanner(); return; }
-  const {data, error} = await sb.from('assistance_requests').select('id,client_id,exercise_name,created_at')
+  const {data, error} = await sb.from('assistance_requests').select('id,client_id,exercise_name,created_at,week_number,day_label')
     .eq('status', 'open').in('client_id', clientIds).order('created_at', {ascending:false});
   if(error) return;
   const map = new Map();
@@ -14470,7 +14495,7 @@ function exxRenderAssistBanner() {
       <span class="exx-banner-ico">${icon('life-buoy', 20)}</span>
       <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
         <span style="font-size:15px;font-weight:700;">${title}</span>
-        <span style="font-size:13px;opacity:0.92;">${all.length > 1 ? escHtml(client?.name || '') + ' · ' : ''}${escHtml(last.exercise_name)} · ${exxAgo(last.created_at)}</span>
+        <span style="font-size:13px;opacity:0.92;">${all.length > 1 ? escHtml(client?.name || '') + ' · ' : ''}${escHtml(last.exercise_name)}${exxWhenText(last) ? ' · ' + escHtml(exxWhenText(last)) : ''} · ${exxAgo(last.created_at)}</span>
       </div>
       <button type="button" class="exx-banner-btn" onclick="openCoachClient('${last.client_id}')">Ver</button>
     </section>`;
@@ -14518,6 +14543,7 @@ async function exxRenderCoachAssist(c) {
       </div>
       <div style="display:flex;flex-direction:column;gap:2px;">
         <span style="font-size:17px;font-weight:700;">${escHtml(r.exercise_name)}</span>
+        ${exxWhenText(r) ? `<span style="font-size:13px;color:var(--gray5);">${escHtml(exxWhenText(r))}</span>` : ''}
         <span style="font-size:14px;color:#A8420F;font-weight:600;">${escHtml(r.reason)}</span>
       </div>
       ${r.detail ? `<div class="exx-stack" style="gap:4px;"><span class="exx-label">Mensaje de ${first}</span><span style="font-size:14px;line-height:1.45;white-space:pre-wrap;">${escHtml(r.detail)}</span></div>` : ''}
