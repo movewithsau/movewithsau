@@ -626,6 +626,35 @@ body.lift-mode #strongflow-btn { display:none !important; }
 .tb-bar i { display:block; height:100%; }
 .tb-row-pct { width:52px; flex:none; text-align:right; color:#E3C9B3; }
 .tb-row-pct.is-up { color:#9BE8A9; }
+/* ===== MODO TIMER: circuitos mixtos ===== */
+.mix-panel { border-radius:14px; background:#F0EEEA; padding:14px; display:flex; flex-direction:column; gap:12px; }
+.mix-round { text-align:center; font-family:'DM Mono',monospace; font-size:12px; letter-spacing:.12em; font-weight:600; color:#6A6359; }
+.mix-card { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; background:#fff; }
+.mix-card.is-dim, .mix-rest.is-dim { opacity:.45; pointer-events:none; }
+.mix-card.is-running { flex-direction:column; gap:8px; padding:14px; border:1.5px solid #C24E18; }
+.mix-info { flex:1; min-width:0; display:flex; flex-direction:column; }
+.mix-name { font-size:14px; font-weight:700; line-height:1.2; color:var(--black); }
+.mix-presc { font-size:12px; color:#7C746A; margin-top:2px; }
+.mix-saved { font-size:11.5px; color:#1E7A3C; font-weight:700; margin-top:3px; }
+.mix-tag { flex:none; padding:3px 9px; border-radius:999px; background:#EFEDE8; color:#7C746A; font-family:'DM Mono',monospace; font-size:10.5px; letter-spacing:.08em; font-weight:600; }
+.mix-ctrl { display:flex; flex-direction:column; align-items:flex-end; gap:7px; }
+.mix-secs { display:flex; align-items:center; gap:6px; font-size:13px; color:#7C746A; }
+.mix-secs input { width:56px; height:36px; box-sizing:border-box; border-radius:10px; border:1.5px solid #E5672F; background:#fff; text-align:center; font-size:16px; font-weight:700; font-family:'DM Sans',sans-serif; outline:none; }
+.mix-btn { height:36px; padding:0 16px; border:0; border-radius:12px; background:#C24E18; color:#fff; display:flex; align-items:center; justify-content:center; gap:7px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:700; cursor:pointer; }
+.mix-btn:disabled { opacity:.45; cursor:default; }
+.mix-btn--wide { width:100%; max-width:240px; height:44px; font-size:14px; }
+.mix-btn-2 { height:40px; padding:0 16px; border-radius:12px; background:transparent; border:1.5px solid #C24E18; color:#C24E18; display:flex; align-items:center; gap:7px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:700; cursor:pointer; }
+.mix-ring { position:relative; width:96px; height:96px; display:flex; align-items:center; justify-content:center; }
+.mix-num { position:absolute; font-family:'DM Mono',monospace; font-size:28px; font-weight:500; color:var(--black); }
+.mix-side { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:.08em; color:#C24E18; min-height:14px; }
+.mix-meta { font-size:12px; color:#7C746A; text-align:center; }
+.mix-sep { height:1px; background:#E1DDD5; }
+.mix-rest { display:flex; align-items:center; justify-content:center; gap:10px; font-size:13.5px; color:#4A433B; font-weight:600; }
+.mix-done { min-height:46px; border:0; border-radius:12px; background:var(--orange); color:#fff; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:700; cursor:pointer; }
+.mix-done:disabled { background:#E8B79E; cursor:default; }
+.mix-rest-time { display:flex; flex-direction:column; align-items:center; gap:4px; }
+.mix-big { font-family:'DM Mono',monospace; font-size:40px; font-weight:500; line-height:1.1; color:var(--black); }
+.mix-ok { display:flex; align-items:center; justify-content:center; gap:8px; padding:8px 10px; border-radius:10px; background:#E8F5EC; color:#1E7A3C; font-size:12.5px; font-weight:600; text-align:center; }
 /* ===== SEMANA COMPLETA (pop-up) ===== */
 .wd-modal { position:fixed; inset:0; z-index:400; background:rgba(20,12,8,0.66); display:flex; align-items:center; justify-content:center; padding:24px; box-sizing:border-box; }
 .wd-modal[hidden] { display:none; }
@@ -3983,6 +4012,31 @@ function parseTimerSeconds(repsRange) {
   return val;
 }
 
+// ---- Circuitos mixtos (tiempo + reps) ----
+// "De tiempo" = la prescripción ARRANCA con segundos o minutos: "20s", "45 s", "20-30 seg",
+// "30-45 seg/lado", "1 min". Intervalos ("20 s / 10 s × 8", "20 seg on / 10 seg off") no llevan
+// timer individual. "10 (30s entre rondas)" es de reps. Los circuitos solo de tiempo y solo de
+// reps siguen como siempre (allTimeBased / repsRangeIsTimeBased no cambian).
+const TIMED_PRESC_RE = /^\s*(\d+)(?:\s*[-–]\s*(\d+))?\s*(s|seg|segs|segundos|min|mins|minutos)\b/i;
+function prescriptionIsTime(text) { return TIMED_PRESC_RE.test(text || ''); }
+function isIntervalPrescription(text) { return /\b(on|off)\b|×|\/\s*\d+\s*(s|seg)|x\s*\d+\s*$/i.test(text || ''); }
+function isTimedPrescription(text) { return prescriptionIsTime(text) && !isIntervalPrescription(text); }
+function isPerSidePrescription(text) { return /lado/i.test(text || ''); }
+// Valor inicial del campo de segundos: rango → el máximo; un número → ese número; min → × 60
+function timedInitSeconds(text) {
+  const m = String(text || '').match(TIMED_PRESC_RE);
+  if (!m) return 30;
+  const v = parseInt(m[2] || m[1], 10);
+  return /^min/i.test(m[3]) ? v * 60 : v;
+}
+function isMixedTimerCircuit(g) {
+  if (!g || !g.length || g.every(se => repsRangeIsTimeBased(se.reps_range))) return false;
+  return g.some(se => isTimedPrescription(se.reps_range)) && g.some(se => !isTimedPrescription(se.reps_range));
+}
+const mixTimerSecs = {}; // exerciseId → segundos que eligió el cliente (solo durante la sesión)
+function fmtMinSec(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+const MIX_SWITCH_SECS = 5; // pausa para cambiar de lado en ejercicios "por lado"
+
 let _cueAudioCtx = null;
 function getCueAudioContext() {
   const AC = window.AudioContext || window.webkitAudioContext;
@@ -4022,6 +4076,7 @@ function toggleCircuitTimerMode(group) {
   const state = circuitTimerState[group] || (circuitTimerState[group] = {mode:'manual'});
   if(state.mode === 'timer') {
     clearInterval(state.intervalId);
+    stopMixRun(group);
     state.mode = 'manual';
   } else {
     const data = circuitTimerData[group];
@@ -4155,6 +4210,146 @@ function skipCircuitInterval(group) {
   advanceCircuitPhase(group);
 }
 
+// ===== MODO TIMER EN CIRCUITOS MIXTOS =====
+// Cada ejercicio de tiempo tiene su cuenta regresiva (Date.now(), no un contador). "Detener y
+// guardar" o llegar a 0 escribe los segundos en el casillero de la ronda (el de reps, el mismo que
+// los clientes ya usan para el tiempo) y lo deja en el borrador local: la base se toca recién con
+// "Guardar Circuito". "Por lado": lado 1 → 5 s para cambiar → lado 2; se guardan segundos por lado.
+function mixSecsFor(ex) { return mixTimerSecs[ex.id] != null ? mixTimerSecs[ex.id] : ex.initSecs; }
+function setMixSecs(group, exId, value) {
+  const n = parseInt(value, 10);
+  mixTimerSecs[exId] = n > 0 ? n : 0;
+  const btn = document.getElementById(`mix-start-${exId}`);
+  if (btn) btn.disabled = !(n > 0);
+}
+function stopMixRun(group) {
+  const st = circuitTimerState[group];
+  if (st && st.mixRun) { clearInterval(st.mixRun.intervalId); st.mixRun = null; }
+}
+function startMixTimer(group, exId) {
+  const state = circuitTimerState[group], data = circuitTimerData[group];
+  if (!state || !data || state.phase !== 'reps' || state.mixRun) return;
+  const ex = data.exercises.find(e => String(e.id) === String(exId));
+  const input = document.getElementById(`mix-secs-${exId}`);
+  if (input) setMixSecs(group, exId, input.value);
+  const target = ex ? mixSecsFor(ex) : 0;
+  if (!ex || !(target > 0)) return;
+  getCueAudioContext(); // desbloquea el audio con el toque (iPhone)
+  playCue('work');
+  state.mixRun = { exId: ex.id, target, side: 1, perSide: ex.perSide, startAt: Date.now(), switchUntil: null, intervalId: null };
+  state.mixRun.intervalId = setInterval(() => tickMixTimer(group), 250);
+  acquireWakeLock();
+  renderCircuitTimerUI(group);
+}
+function tickMixTimer(group) {
+  const state = circuitTimerState[group];
+  const run = state && state.mixRun;
+  if (!run) return;
+  const now = Date.now();
+  if (run.switchUntil) {
+    if (now >= run.switchUntil) { run.switchUntil = null; run.side = 2; run.startAt = run.switchUntil0; playCue('work'); }
+  } else if ((now - run.startAt) / 1000 >= run.target) {
+    if (run.perSide && run.side === 1) {
+      playCue('work', true);
+      run.switchUntil0 = run.startAt + run.target * 1000 + MIX_SWITCH_SECS * 1000;
+      run.switchUntil = run.switchUntil0;
+    } else {
+      finishMixTimer(group, run.target);
+      return;
+    }
+  }
+  updateMixRunDom(group);
+}
+// Repinta solo el anillo y el número (no toda la tarjeta) para no parpadear
+function updateMixRunDom(group) {
+  const run = circuitTimerState[group] && circuitTimerState[group].mixRun;
+  const num = document.getElementById(`mix-num-${group}`);
+  const ring = document.getElementById(`mix-ring-${group}`);
+  const side = document.getElementById(`mix-side-${group}`);
+  if (!run || !num) return;
+  const now = Date.now();
+  let left, frac;
+  if (run.switchUntil) { left = (run.switchUntil - now) / 1000; frac = 0; if (side) side.textContent = 'Cambiá de lado'; }
+  else { left = run.target - (now - run.startAt) / 1000; frac = Math.min(1, Math.max(0, (run.target - left) / run.target)); if (side) side.textContent = run.perSide ? `Lado ${run.side} de 2` : ''; }
+  num.textContent = fmtMinSec(Math.ceil(Math.max(0, left)));
+  if (ring) ring.setAttribute('stroke-dashoffset', String(Math.round(264 * frac)));
+}
+function stopMixTimerSave(group) {
+  const run = circuitTimerState[group] && circuitTimerState[group].mixRun;
+  if (!run) return;
+  // En el cambio de lado ya se completó el lado 1 entero
+  const secs = run.switchUntil ? run.target : Math.min(run.target, Math.round((Date.now() - run.startAt) / 1000));
+  finishMixTimer(group, secs);
+}
+function finishMixTimer(group, secs) {
+  const state = circuitTimerState[group], data = circuitTimerData[group];
+  const run = state && state.mixRun;
+  if (!run || !data) return;
+  clearInterval(run.intervalId);
+  state.mixRun = null;
+  playCue('rest', true);
+  const round = state.round;
+  const input = document.getElementById(`clog-r-${run.exId}-r${round}`);
+  if (input) {
+    input.value = String(secs);
+    saveCircuitLog(run.exId, round, data.logsKey); // borrador local, igual que si lo escribiera a mano
+    input.style.borderColor = 'var(--green)'; input.style.background = 'var(--green-light)'; input.style.color = '#1E7A3C'; input.style.fontWeight = '700';
+  }
+  (state.mixSaved = state.mixSaved || {})[`${round}:${run.exId}`] = secs;
+  renderCircuitTimerUI(group);
+}
+const MIX_PLAY_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
+const MIX_STOP_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>';
+function mixRepsHtml(group, state, data, roundLabel) {
+  const run = state.mixRun;
+  const cards = data.exercises.map(ex => {
+    const presc = `${escHtml(ex.presc)} ${prescriptionIsTime(ex.presc) ? 'tiempo' : 'reps'}`;
+    if (run && String(run.exId) === String(ex.id)) {
+      return `<div class="mix-card is-running">
+        <span class="mix-name">${escHtml(ex.name)}</span>
+        <div class="mix-ring"><svg width="96" height="96" viewBox="0 0 96 96" aria-hidden="true" focusable="false"><circle cx="48" cy="48" r="42" fill="none" stroke="#E1DDD5" stroke-width="7"/><circle id="mix-ring-${group}" cx="48" cy="48" r="42" fill="none" stroke="#C24E18" stroke-width="7" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="0" transform="rotate(-90 48 48)"/></svg><span class="mix-num" id="mix-num-${group}" aria-live="off">${fmtMinSec(run.target)}</span></div>
+        <span class="mix-side" id="mix-side-${group}">${run.perSide ? 'Lado 1 de 2' : ''}</span>
+        <span class="mix-meta">de ${fmtMinSec(run.target)} · meta ${escHtml(ex.presc)}</span>
+        <button type="button" class="mix-btn mix-btn--wide" onclick="stopMixTimerSave('${group}')">${MIX_STOP_SVG}Detener y guardar</button>
+      </div>`;
+    }
+    const dim = run ? ' is-dim' : '';
+    if (!ex.timed) {
+      return `<div class="mix-card${dim}"><div class="mix-info"><span class="mix-name">${escHtml(ex.name)}</span><span class="mix-presc">${presc}</span></div><span class="mix-tag">${prescriptionIsTime(ex.presc) ? 'A MANO' : 'REPS · A MANO'}</span></div>`;
+    }
+    const secs = mixSecsFor(ex);
+    const saved = state.mixSaved && state.mixSaved[`${state.round}:${ex.id}`];
+    return `<div class="mix-card${dim}"><div class="mix-info"><span class="mix-name">${escHtml(ex.name)}</span><span class="mix-presc">${presc}</span>${saved != null ? `<span class="mix-saved">Guardado: ${saved} s</span>` : ''}</div>
+      <div class="mix-ctrl"><span class="mix-secs"><input type="number" inputmode="numeric" min="1" id="mix-secs-${ex.id}" value="${secs || ''}" aria-label="Segundos para ${escHtml(ex.name)}" oninput="setMixSecs('${group}','${ex.id}',this.value)"${run ? ' disabled' : ''}><span>seg</span></span>
+      <button type="button" class="mix-btn" id="mix-start-${ex.id}" onclick="startMixTimer('${group}','${ex.id}')"${run || !(secs > 0) ? ' disabled' : ''}>${MIX_PLAY_SVG}${saved != null ? 'Repetir' : 'Iniciar'}</button></div>
+    </div>`;
+  }).join('');
+  setTimeout(() => updateMixRunDom(group), 0);
+  return `<div class="mix-panel">
+    <div class="mix-round">${roundLabel.toUpperCase()}</div>
+    ${cards}
+    <div class="mix-sep"></div>
+    <div class="mix-rest${run ? ' is-dim' : ''}"><label for="rest-input-${group}">Descanso entre rondas</label><span class="mix-secs"><input type="number" id="rest-input-${group}" value="${state.customRest}" min="1" onchange="setCircuitCustomRest('${group}', this.value)"${run ? ' disabled' : ''}><span>seg</span></span></div>
+    <button type="button" class="mix-done" onclick="finishCircuitRoundManual('${group}')"${run ? ' disabled' : ''}>Terminé la ronda</button>
+  </div>`;
+}
+function mixRestHtml(group, state, data) {
+  const next = state.round + 1 <= data.rounds;
+  const nextTimed = data.exercises.find(e => e.timed);
+  const followLine = next ? `Ronda ${state.round + 1}/${data.rounds} sigue${nextTimed ? ` · ${escHtml(nextTimed.name)} ${escHtml(nextTimed.presc)}` : ''}` : 'Última ronda terminada';
+  // Lo que quedó en los casilleros de esta ronda: segundos del timer y lo escrito a mano, tal cual
+  const parts = data.exercises.map(ex => {
+    const v = (document.getElementById(`clog-r-${ex.id}-r${state.round}`) || {}).value;
+    return v ? `${escHtml(ex.name)} ${escHtml(v)}${ex.timed ? ' s' : ''}` : null;
+  }).filter(Boolean);
+  return `<div class="mix-panel">
+    <div class="mix-round">DESCANSO</div>
+    <div class="mix-rest-time"><span class="mix-big" aria-live="off">${fmtMinSec(state.remaining)}</span><span class="mix-meta">${followLine}</span></div>
+    <div style="display:flex;justify-content:center;"><button type="button" class="mix-btn-2" onclick="skipCircuitInterval('${group}')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg>Saltar descanso</button></div>
+    ${parts.length ? `<div class="mix-ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1E7A3C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 6 9 17l-5-5"/></svg>Ronda ${state.round} guardada · ${parts.join(' · ')}</div>` : ''}
+  </div>`;
+}
+
 function renderCircuitTimerUI(group) {
   const container = document.getElementById('timer-panel-' + group);
   if(!container) return;
@@ -4174,7 +4369,11 @@ function renderCircuitTimerUI(group) {
   const roundLabel = `Ronda ${state.round}/${data.rounds}`;
   let inner = '';
 
-  if(state.phase === 'idle') {
+  if(data.mixed && state.phase === 'reps') {
+    inner = mixRepsHtml(group, state, data, roundLabel);
+  } else if(data.mixed && state.phase === 'rest') {
+    inner = mixRestHtml(group, state, data);
+  } else if(state.phase === 'idle') {
     inner = `
       <div style="text-align:center;padding:14px 0;">
         <div style="font-size:12px;color:var(--gray4);margin-bottom:10px;">${roundLabel} · Listo para arrancar</div>
@@ -4486,6 +4685,8 @@ async function loadClientExercises() {
       const restSecs = g[0].rest_seconds || 60;
       const restText = restSecs >= 60 ? `${Math.floor(restSecs/60)}min${restSecs%60>0?' '+restSecs%60+'s':''}` : `${restSecs}s`;
       const colW = Math.floor(100 / g.length);
+      // Circuito mixto (tiempo + reps): los ejercicios de tiempo muestran "s" en el casillero
+      const mixedTimed = isMixedTimerCircuit(g) ? new Set(g.filter(se => isTimedPrescription(se.reps_range)).map(se => se.id)) : null;
 
       // Build column headers (exercise names as links)
       const rpeColors = {6:'#22c55e',7:'#84cc16',8:'#f59e0b',9:'#f97316',10:'#ef4444'};
@@ -4519,7 +4720,7 @@ async function loadClientExercises() {
           const isDone = saved.w && saved.r;
           const prevC = prevByEx[se.id]?.[r];
           const phCW = prevC?.weight || 'kg';
-          const phCR = prevC?.reps || 'reps';
+          const phCR = prevC?.reps || (mixedTimed && mixedTimed.has(se.id) ? 's' : 'reps');
           return `<td style="padding:4px;text-align:center;border-bottom:1px solid var(--gray2);">
             <div style="display:flex;gap:3px;justify-content:center;align-items:center;">
               <input type="text" inputmode="decimal" autocomplete="off" placeholder="${phCW}" value="${wVal}"
@@ -4552,10 +4753,14 @@ async function loadClientExercises() {
       }
 
       circuitTimerData[ex.superset_group] = {
-        exercises: g.map(se => ({id: se.id, name: se.name, seconds: parseTimerSeconds(se.reps_range)})),
+        exercises: g.map(se => ({id: se.id, name: se.name, seconds: parseTimerSeconds(se.reps_range),
+          presc: se.reps_range || '', timed: !!mixedTimed && mixedTimed.has(se.id),
+          initSecs: timedInitSeconds(se.reps_range), perSide: isPerSidePrescription(se.reps_range)})),
         rounds,
         restSecs,
-        allTimeBased: g.every(se => repsRangeIsTimeBased(se.reps_range))
+        allTimeBased: g.every(se => repsRangeIsTimeBased(se.reps_range)),
+        mixed: !!mixedTimed,
+        logsKey: circuitLogsKey
       };
 
       const circuitItemKey = `circuit-${ex.superset_group}`;
@@ -5646,7 +5851,7 @@ async function loadConstanciaProgress(st) {
   const all = [];
   for (let from = 0; from < 20000; from += 1000) {
     const { data, error } = await sb.from('exercise_logs')
-      .select('week_number,set_number,weight,weight_unit,reps_done,logged_at,exercises(name,superset_group,plan_day_id,muscle_group)')
+      .select('week_number,set_number,weight,weight_unit,reps_done,logged_at,exercises(name,superset_group,plan_day_id,muscle_group,reps_range)')
       .eq('client_id', cid).order('logged_at', { ascending: true }).range(from, from + 999);
     if (error || !data) break;
     all.push(...data);
@@ -5655,7 +5860,9 @@ async function loadConstanciaProgress(st) {
   const { data: pds } = await sb.from('monthly_plans').select('id,day_of_week').eq('client_id', cid).limit(5000);
   if (tcStates[st.mountId] !== st || st.client.id !== cid) return;
   const dayOf = new Map((pds || []).map(p => [String(p.id), p.day_of_week]));
-  st.progressLogs = all.filter(l => l.exercises && l.exercises.name).map(l => ({
+  // Ejercicios de tiempo fuera: su casillero mezcla "1", segundos y reps según el cliente,
+  // así que compararlos daría porcentajes falsos (Progreso y En tu cuerpo).
+  st.progressLogs = all.filter(l => l.exercises && l.exercises.name && !prescriptionIsTime(l.exercises.reps_range)).map(l => ({
     week: l.week_number, name: l.exercises.name, group: l.exercises.superset_group || null, muscle: l.exercises.muscle_group || null,
     day: dayOf.get(String(l.exercises.plan_day_id)) || String(l.exercises.plan_day_id || ''),
     set: l.set_number, weight: l.weight, unit: l.weight_unit, reps: l.reps_done
