@@ -562,6 +562,8 @@ body.lift-mode #strongflow-btn { display:none !important; }
 .tc-month-btn { width:36px; height:36px; border:0; border-radius:50%; background:rgba(255,255,255,0.1); color:#FBEFE3; display:flex; align-items:center; justify-content:center; cursor:pointer; }
 .tc-month-btn:disabled { opacity:0.35; cursor:default; }
 /* Pestaña Progreso */
+.tcp-card { padding-bottom:16px; }
+.tcp-card .tcp { margin-top:10px; }
 .tcp { display:flex; flex-direction:column; gap:12px; }
 .tcp-head { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; }
 .tcp-big { font-family:'Playfair Display',serif; font-weight:800; font-size:46px; line-height:1; color:#FFA066; }
@@ -4823,33 +4825,8 @@ function pgTrainedChart(logs, sessions, planDays) {
   </div>`;
 }
 
-// 2) ¿Estoy progresando? El ejercicio con más semanas con peso registrado; mayor peso de cada semana (kg).
-function pgLiftChart(logs) {
-  const byName = new Map();
-  logs.forEach(l => {
-    const name = l.exercises && l.exercises.name;
-    const w = parseFloat(l.weight);
-    const day = pgCRDate(l.logged_at);
-    if (!name || !(w > 0) || !day) return;
-    const kg = l.weight_unit === 'lb' ? w * 0.45359237 : w;
-    const wk = pgWeekKey(day);
-    if (!byName.has(name)) byName.set(name, new Map());
-    const m = byName.get(name);
-    m.set(wk, Math.max(m.get(wk) || 0, kg));
-  });
-  let best = null;
-  byName.forEach((m, name) => { if (!best || m.size > best.m.size) best = { name, m }; });
-  const head = '<span class="pg-mono">¿Estoy progresando?</span>';
-  if (!best || best.m.size < 2) return `<div class="pg-card pg-chart">${head}${pgEmpty('Cuando registres peso en un mismo ejercicio durante dos semanas, acá vas a ver tu avance.')}</div>`;
-  const vals = [...best.m.entries()].sort((a, b) => a[0] < b[0] ? -1 : 1).slice(-6).map(e => Math.round(e[1] * 10) / 10);
-  const last = vals[vals.length - 1];
-  const name = escHtml(best.name);
-  return `<div class="pg-card pg-chart">${head}
-    <div class="pg-big-row"><span class="pg-big">${pgNum(last)} kg</span><span class="pg-sub">${name}</span></div>
-    <div class="pg-note">${pgSigned(last - vals[0])} kg desde la semana 1</div>
-    ${pgLine(vals, vals.map((_, i) => 'S' + (i + 1)), `${name}: ${vals.map(pgNum).join(', ')} kilos por semana`)}
-  </div>`;
-}
+// 2) ¿Estoy progresando? Mismo cálculo y componente que la pestaña Progreso de "Tu constancia"
+// (computeProgress): mejor serie por ejercicio entre semanas del programa. Se monta en #tc-progress.
 
 // 3) Mi peso: peso registrado cada semana en Tu progreso (client_progress_logs).
 function pgWeightChart(rows) {
@@ -4881,7 +4858,8 @@ async function loadProgressCharts() {
   if (!currentClient || currentClient.id !== cid) return;
   const logs = (logsRes.data || []).slice().reverse();
   const defs = `<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><path id="pg-hx" d="M0 -11L9.5 -5.5V5.5L0 11L-9.5 5.5V-5.5Z"/><path id="pg-hxs" d="M0 -8L6.9 -4V4L0 8L-6.9 4V-4Z"/></defs></svg>`;
-  el.innerHTML = defs + pgTrainedChart(logs, sessRes.data || [], planRes.data || []) + pgLiftChart(logs) + pgWeightChart(weightsRes.data || []);
+  el.innerHTML = defs + pgTrainedChart(logs, sessRes.data || [], planRes.data || []) + '<div id="tc-progress"></div>' + pgWeightChart(weightsRes.data || []);
+  mountConstancia('tc-progress', currentClient, todayCR().slice(0, 7), { progressOnly: true });
 }
 
 // ---- Comparar fotos (solo lectura). La foto de la galería solo vive en pantalla: no se sube ni se guarda. ----
@@ -5337,11 +5315,12 @@ function mountConstancia(mountId, client, ym, opts) {
   const el = document.getElementById(mountId);
   if (!el || !client || client.program_type === 'lift') { if (el) el.innerHTML = ''; return; }
   let st = tcStates[mountId];
-  if (!st || st.client.id !== client.id || o.resetOpen) st = tcStates[mountId] = { mountId, client, ym, open: false, tab: 'constancia', cmp: 'first', data: null, dataKey: null, progress: null, progressKey: null, coach: !!o.coach };
+  if (!st || st.client.id !== client.id || o.resetOpen) st = tcStates[mountId] = { mountId, client, ym, open: !!o.progressOnly, tab: o.progressOnly ? 'progreso' : 'constancia', cmp: 'first', data: null, dataKey: null, progress: null, progressKey: null, coach: !!o.coach, progressOnly: !!o.progressOnly };
   if (st.ym !== ym) { st.data = null; st.dataKey = null; }
   st.client = client; st.ym = ym;
   renderConstancia(st);
-  loadConstanciaData(st);
+  // En Tu progreso solo va la parte de Progreso (sin calendario)
+  if (st.progressOnly) loadConstanciaProgress(st); else loadConstanciaData(st);
 }
 async function loadConstanciaData(st) {
   const cid = st.client.id, ym = st.ym;
@@ -5445,6 +5424,10 @@ function tcCalendarHtml(st) {
 function renderConstancia(st) {
   const el = document.getElementById(st.mountId);
   if (!el) return;
+  if (st.progressOnly) {
+    el.innerHTML = `<div class="pg-card pg-chart tcp-card"><span class="pg-mono">¿Estoy progresando?</span>${tcProgressHtml(st)}</div>`;
+    return;
+  }
   const d = st.data;
   const activeMonth = d ? Object.keys(d.days).filter(k => k >= d.monthStart && k <= d.monthEnd).length : null;
   const isCurMonth = st.ym === todayCR().slice(0, 7);
