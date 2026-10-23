@@ -591,6 +591,41 @@ body.lift-mode #strongflow-btn { display:none !important; }
 .tcp-empty-title { font-family:'Playfair Display',serif; font-weight:800; font-size:22px; line-height:1.2; }
 .tcp-empty-text { font-size:13.5px; line-height:1.45; color:#F1DFCE; }
 .tcp-empty-chip { padding:5px 12px; border-radius:999px; background:rgba(255,255,255,0.1); font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.1em; color:#FFD2B2; }
+/* En tu cuerpo: maniquí interactivo */
+.tb-dd { width:100%; min-height:52px; display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:12px; border:1px solid rgba(251,239,227,0.22); background:rgba(255,255,255,0.04); color:#FBEFE3; font-family:'DM Sans',sans-serif; text-align:left; cursor:pointer; }
+.tb-dd-txt { flex:1; min-width:0; display:flex; flex-direction:column; }
+.tb-dd-title { font-size:14px; font-weight:700; }
+.tb-dd-sub { font-size:12px; color:#E3C9B3; }
+.tb-dd .ico { color:#E3C9B3; flex:none; }
+.tb-body[hidden] { display:none; }
+.tb-tools { display:flex; align-items:center; justify-content:space-between; margin:10px 0 2px; }
+.tb-range { font-family:'DM Mono',monospace; font-size:11px; color:#E3C9B3; }
+.tb-snd { min-height:32px; padding:0 12px; border:0; border-radius:999px; background:rgba(255,255,255,0.08); color:#E3C9B3; font-family:'DM Sans',sans-serif; font-size:12px; cursor:pointer; }
+.tb-svg { display:block; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+.tb-z { cursor:pointer; transform-box:fill-box; transform-origin:center; }
+.tb-z.poke { animation:tbPoke .55s cubic-bezier(.3,.7,.4,1.4); }
+@keyframes tbPoke { 0%{transform:none} 25%{transform:translate(var(--px),var(--py)) scale(.92)} 60%{transform:translate(calc(var(--px)*-.35),calc(var(--py)*-.35)) scale(1.03)} 100%{transform:none} }
+.tb-fig, .tb-arm, .tb-fore { transform-box:view-box; }
+.tb-arm, .tb-fore { transition:transform .45s cubic-bezier(.3,.7,.3,1.3); }
+.tb-fig.wob { animation:tbWob .9s ease-out; }
+@keyframes tbWob { 0%{transform:rotate(0)} 18%{transform:rotate(var(--r))} 42%{transform:rotate(calc(var(--r)*-.6))} 66%{transform:rotate(calc(var(--r)*.3))} 100%{transform:rotate(0)} }
+.tb-fig.flex .tb-arm.l, .tb-fig.flex .tb-fore.l { transform:rotate(90deg); }
+.tb-fig.flex .tb-arm.r, .tb-fig.flex .tb-fore.r { transform:rotate(-90deg); }
+.tb-fig.flex .tb-bi { animation:tbPump .5s ease-in-out .4s 3 alternate; }
+@keyframes tbPump { to { transform:scale(1.18,1.25); } }
+.tb-face, .tb-bub { opacity:0; transition:opacity .15s; }
+.tb-face.on, .tb-bub.on { opacity:1; }
+@media (prefers-reduced-motion: reduce) { .tb-z, .tb-fig, .tb-arm, .tb-fore { animation:none !important; transition:none !important; } }
+.tb-detail { margin:4px 0 12px; padding:10px 12px; border-radius:12px; background:rgba(255,255,255,0.07); }
+.tb-detail-head { display:flex; align-items:center; justify-content:space-between; font-size:14px; font-weight:700; }
+.tb-detail-ex { margin-top:4px; font-family:'DM Mono',monospace; font-size:11.5px; color:#E3C9B3; }
+.tb-lbl { display:block; font-size:10.5px; color:#E3C9B3; margin-bottom:2px; }
+.tb-row { width:100%; min-height:36px; display:flex; align-items:center; gap:10px; padding:0; border:0; background:none; color:#FBEFE3; font-family:'DM Sans',sans-serif; font-size:13px; text-align:left; cursor:pointer; }
+.tb-row-name { width:100px; flex:none; }
+.tb-bar { flex:1; height:6px; border-radius:3px; background:rgba(251,239,227,0.12); overflow:hidden; }
+.tb-bar i { display:block; height:100%; }
+.tb-row-pct { width:52px; flex:none; text-align:right; color:#E3C9B3; }
+.tb-row-pct.is-up { color:#9BE8A9; }
 /* ===== SEMANA COMPLETA (pop-up) ===== */
 .wd-modal { position:fixed; inset:0; z-index:400; background:rgba(20,12,8,0.66); display:flex; align-items:center; justify-content:center; padding:24px; box-sizing:border-box; }
 .wd-modal[hidden] { display:none; }
@@ -3299,6 +3334,7 @@ async function loadClientDayStrip(opts) {
   if(!currentClient)return;
   // Semana automática: la semana sale de la fecha (si está entrenando no lo movemos).
   await loadAutoWeek();
+  if(!currentClient) return; // la sesión pudo cambiar mientras esperábamos
   const _auto = clientAutoWeekInfo();
   if(_auto && _auto.state === 'active' && _auto.mapped && clientWeek !== _auto.mapped.week && !isWorkoutStarted()) {
     clientWeek = _auto.mapped.week; clientDay = null; updateClientWeekUI();
@@ -5450,10 +5486,10 @@ function renderConstancia(st) {
       <span class="tc-chev">${icon(st.open ? 'chevron-up' : 'chevron-down', 18)}</span>
     </button>
     <div class="tc-body" id="${bodyId}"${st.open ? '' : ' hidden'}>
-      <div class="tc-tabs" role="tablist" aria-label="Tu constancia">
+      ${st.coach ? `<div class="tc-tabs" role="tablist" aria-label="Constancia">
         <button type="button" role="tab" aria-selected="${st.tab === 'constancia'}" onclick="tcSetTab('${st.mountId}','constancia')">Constancia</button>
         <button type="button" role="tab" aria-selected="${st.tab === 'progreso'}" onclick="tcSetTab('${st.mountId}','progreso')">Progreso</button>
-      </div>
+      </div>` : '<div style="height:10px;"></div>'}
       ${st.tab === 'constancia' ? coachNav + (d ? tcCalendarHtml(st) : '<div class="spinner" style="margin:16px auto;"></div>') : progress}
     </div>
   </div>`;
@@ -5479,7 +5515,8 @@ function progressWeekItems(logs) {
     const reps = Number(l.reps) > 0 ? Number(l.reps) : 0;
     if (!w && !reps) return;
     let it = ex.get(k);
-    if (!it) { it = { key: k, name: l.name, circuit: !!l.group, best: null, bestReps: null }; ex.set(k, it); }
+    if (!it) { it = { key: k, name: l.name, circuit: !!l.group, muscle: l.muscle || null, best: null, bestReps: null }; ex.set(k, it); }
+    if (!it.muscle && l.muscle) it.muscle = l.muscle;
     if (w) {
       const kg = l.unit === 'lb' ? w * LB_TO_KG : w;
       const score = kg * (1 + reps / 30);
@@ -5502,8 +5539,8 @@ function progressWeekItems(logs) {
   const items = new Map();
   ex.forEach(it => {
     // Con peso manda la fuerza estimada; si nunca hubo peso, las reps
-    if (it.best) items.set(it.key, { key: it.key, name: it.name, circuit: it.circuit, type: 'weight', score: it.best.score, show: it.best });
-    else if (it.bestReps) items.set(it.key, { key: it.key, name: it.name, circuit: it.circuit, type: 'reps', score: it.bestReps.score, show: it.bestReps });
+    if (it.best) items.set(it.key, { key: it.key, name: it.name, circuit: it.circuit, muscle: it.muscle, type: 'weight', score: it.best.score, show: it.best });
+    else if (it.bestReps) items.set(it.key, { key: it.key, name: it.name, circuit: it.circuit, muscle: it.muscle, type: 'reps', score: it.bestReps.score, show: it.bestReps });
   });
   circ.forEach(c => items.set(c.key, { key: c.key, name: c.name, circuit: true, type: 'rounds', score: c.rounds.size, show: { rounds: c.rounds.size }, exKeys: c.exKeys }));
   return items;
@@ -5558,6 +5595,50 @@ function computeProgress(logs, opts) {
   return { empty: false, weeksLogged: weeks.length, before, after, pct, compared: changes.length, top, bars };
 }
 
+// ---- En tu cuerpo: el mismo cálculo agrupado por zona (exercises.muscle_group) ----
+// Cada ejercicio por su mejor serie (en circuitos no se usan las rondas: son de todo el circuito).
+// % de la zona = promedio de los cambios de sus ejercicios. Movilidad, Performance y Cardio no son
+// una zona del cuerpo: siguen contando en el % general pero no pintan nada.
+const BODY_ZONES = {
+  hombros: { label: 'Hombros', groups: ['hombros', 'hombro'] },
+  pecho: { label: 'Pecho', groups: ['pecho'] },
+  espalda: { label: 'Espalda', groups: ['espalda'] },
+  biceps: { label: 'Bíceps', groups: ['biceps'] },
+  triceps: { label: 'Tríceps', groups: ['triceps'] },
+  core: { label: 'Core', groups: ['core', 'abdomen', 'abdominales'] },
+  gluteos: { label: 'Glúteos', groups: ['gluteos', 'gluteo'] },
+  cuads: { label: 'Cuádriceps', groups: ['cuadriceps'] },
+  isquios: { label: 'Isquiotibiales', groups: ['isquiotibiales', 'isquios'] },
+  pantorrillas: { label: 'Pantorrillas', groups: ['pantorrillas', 'pantorrilla'] },
+  aductor: { label: 'Aductores', groups: ['aductor', 'aductores'] },
+  tibia: { label: 'Tibia', groups: ['tibia', 'tibias'] }
+};
+function bodyZoneOf(muscle) {
+  const k = progressKey(muscle);
+  return Object.keys(BODY_ZONES).find(z => BODY_ZONES[z].groups.includes(k)) || null;
+}
+function computeBodyProgress(logs, opts) {
+  const p = computeProgress(logs, opts);
+  if (p.empty) return { empty: true, zones: {} };
+  const deload = new Set((opts && opts.deloadWeeks || []).map(Number));
+  const ofWeek = w => (logs || []).filter(l => Number(l.week) === w && !deload.has(w) && l.name);
+  const a = progressWeekItems(ofWeek(p.before)), b = progressWeekItems(ofWeek(p.after));
+  const zones = {};
+  a.forEach((ia, k) => {
+    const ib = b.get(k);
+    if (!ib || ia.type === 'rounds' || ia.type !== ib.type || !(ia.score > 0)) return;
+    const zone = bodyZoneOf(ib.muscle || ia.muscle);
+    if (!zone) return;
+    (zones[zone] = zones[zone] || []).push({ name: ib.name, circuit: ia.circuit, type: ia.type, before: ia.show, after: ib.show, change: (ib.score - ia.score) / ia.score });
+  });
+  const out = {};
+  Object.keys(zones).forEach(z => {
+    const list = zones[z].sort((x, y) => y.change - x.change);
+    out[z] = { pct: Math.round(list.reduce((s, c) => s + c.change, 0) / list.length * 100), exercises: list };
+  });
+  return { empty: Object.keys(out).length === 0, before: p.before, after: p.after, zones: out };
+}
+
 // Carga los registros del cliente (paginado de a 1000) y los pasa al formato de computeProgress
 async function loadConstanciaProgress(st) {
   const cid = st.client.id;
@@ -5565,7 +5646,7 @@ async function loadConstanciaProgress(st) {
   const all = [];
   for (let from = 0; from < 20000; from += 1000) {
     const { data, error } = await sb.from('exercise_logs')
-      .select('week_number,set_number,weight,weight_unit,reps_done,logged_at,exercises(name,superset_group,plan_day_id)')
+      .select('week_number,set_number,weight,weight_unit,reps_done,logged_at,exercises(name,superset_group,plan_day_id,muscle_group)')
       .eq('client_id', cid).order('logged_at', { ascending: true }).range(from, from + 999);
     if (error || !data) break;
     all.push(...data);
@@ -5575,18 +5656,211 @@ async function loadConstanciaProgress(st) {
   if (tcStates[st.mountId] !== st || st.client.id !== cid) return;
   const dayOf = new Map((pds || []).map(p => [String(p.id), p.day_of_week]));
   st.progressLogs = all.filter(l => l.exercises && l.exercises.name).map(l => ({
-    week: l.week_number, name: l.exercises.name, group: l.exercises.superset_group || null,
+    week: l.week_number, name: l.exercises.name, group: l.exercises.superset_group || null, muscle: l.exercises.muscle_group || null,
     day: dayOf.get(String(l.exercises.plan_day_id)) || String(l.exercises.plan_day_id || ''),
     set: l.set_number, weight: l.weight, unit: l.weight_unit, reps: l.reps_done
   }));
   st.progressKey = cid;
   renderConstancia(st);
 }
-function tcProgressOf(st) {
-  if (!st.progressLogs) return null;
+function tcProgressOpts(st) {
   const auto = isAutoWeekClient(st.client) ? getAutoWeekInfo(st.client, []) : null;
   const currentWeek = auto && auto.state === 'active' && auto.mapped ? auto.mapped.week : null;
-  return computeProgress(st.progressLogs, { deloadWeeks: st.client.deload_weeks || [5], currentWeek, mode: st.cmp });
+  return { deloadWeeks: st.client.deload_weeks || [5], currentWeek, mode: st.cmp };
+}
+function tcProgressOf(st) {
+  if (!st.progressLogs) return null;
+  return computeProgress(st.progressLogs, tcProgressOpts(st));
+}
+
+// ===== EN TU CUERPO: maniquí de madera interactivo =====
+// Desplegable dentro de "¿Estoy progresando?". Dos figuras neutras (frente y espaldas) sobre base y
+// tubo; cada zona con datos se pinta según cuánto subió y se puede tocar: se mueve como empujada, el
+// muñeco se tambalea, el de frente pone cara y aparece un globo. Al abrir hace doble bíceps.
+// Zonas sin datos quedan como madera (sin color, sin toque, fuera de la lista). Sonido con WebAudio
+// (sin archivos), encendido por defecto; la preferencia queda en este teléfono.
+const BODY_PHRASES = {
+  hombros: '¡Ey! Estos hombros cargan {p}.', pecho: '¡Uf! Pecho de acero en proceso.',
+  espalda: '¡Por la espalda no se vale!', biceps: '¿Viste este bíceps? {p}.',
+  triceps: 'Tríceps: {p}, poquito a poco.', core: '¡Auch! Este core ya no es de gelatina.',
+  gluteos: '¡Oye! Respetá esos glúteos.', cuads: '¡Estas piernas no se doblan fácil!',
+  isquios: 'Isquios firmes, {p}.', pantorrillas: 'Pantorrillas de acero: {p}.',
+  aductor: '¡Cuidado, que aprieto! {p}.', tibia: '¡Auch, la tibia! {p}.'
+};
+const BODY_HELLO = 'Te estaba esperando, baby… oh yeah';
+const BODY_WOOD = 'rgba(251,239,227,0.10)', BODY_LINE = '#E3C9B3';
+function bodyColor(v) { return v <= 0 ? '#6B5446' : v < 10 ? '#A8582C' : v < 20 ? '#E06A2C' : '#FF8A4C'; }
+function bodyPhrase(zone, v) {
+  if (v <= 0) return `${BODY_ZONES[zone].label}: ${progressPctText(v)}. ¡A subirle!`;
+  return (BODY_PHRASES[zone] || '{p}').replace('{p}', progressPctText(v));
+}
+function bodySoundOn() { try { return localStorage.getItem('move_body_sound') !== '0'; } catch (e) { return true; } }
+function bodyReducedMotion() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+// Una figura. ox = corrimiento horizontal; back = vista de espaldas (sin cara).
+function bodyFigSvg(mid, ox, back, zones) {
+  const id = `${mid}-${back ? 'b' : 'f'}`;
+  const t = str => str.replace(/X(-?\d+(\.\d+)?)/g, (_, n) => String(+n + ox));
+  const part = (shape, zone, extra) => {
+    const z = zone && zones[zone];
+    return shape.replace('/>', ` fill="${z ? bodyColor(z.pct) : BODY_WOOD}" stroke="${BODY_LINE}" stroke-width="1.3"${z ? ` class="tb-z${extra || ''}" data-z="${zone}"` : ''}/>`);
+  };
+  const P = [];
+  P.push(t(`<rect x="X27" y="300" width="96" height="12" rx="6" fill="#4F2A17" stroke="${BODY_LINE}" stroke-width="1.3"/>`));
+  P.push(t(`<ellipse cx="X75" cy="300" rx="48" ry="8" fill="#6B3A22" stroke="${BODY_LINE}" stroke-width="1.3"/>`));
+  P.push(`<g class="tb-fig" id="${id}" style="transform-origin:${ox + 75}px 300px">`);
+  P.push(t(`<line x1="X75" y1="160" x2="X75" y2="300" stroke="#C9C0B3" stroke-width="2.5"/>`));
+  P.push(part(t(`<ellipse cx="X75" cy="24" rx="13" ry="17"/>`)));
+  if (!back) {
+    P.push(t(`<g class="tb-face" id="${id}-pain" stroke="#2A2420" stroke-width="1.8" stroke-linecap="round" fill="none"><path d="MX67 20l4 2.5-4 2.5"/><path d="MX83 20l-4 2.5 4 2.5"/><ellipse cx="X75" cy="32" rx="3" ry="3.6" fill="#2A2420"/></g>`));
+    P.push(t(`<g class="tb-face" id="${id}-happy" stroke="#2A2420" stroke-width="1.8" stroke-linecap="round" fill="none"><path d="MX66 22q3 -4 6 0"/><path d="MX78 22q3 -4 6 0"/><path d="MX69 29q6 6 12 0"/></g>`));
+  }
+  P.push(part(t(`<rect x="X70.5" y="40" width="9" height="9" rx="3"/>`)));
+  P.push(part(t(`<rect x="X53" y="52" width="44" height="48" rx="12"/>`), back ? 'espalda' : 'pecho'));
+  P.push(part(t(`<rect x="X57" y="103" width="36" height="32" rx="9"/>`), back ? 'espalda' : 'core'));
+  P.push(part(t(`<rect x="X55" y="138" width="40" height="26" rx="10"/>`), back ? 'gluteos' : null));
+  [[64, 1], [86, -1]].forEach(([a, s]) => {
+    P.push(part(t(`<rect x="X${a - 9}" y="167" width="18" height="56" rx="9"/>`), back ? 'isquios' : 'cuads'));
+    if (!back) P.push(part(t(`<rect x="X${s > 0 ? a + 3 : a - 8}" y="172" width="5" height="34" rx="2.5"/>`), 'aductor'));
+    P.push(part(t(`<circle cx="X${a}" cy="228" r="6.5"/>`)));
+    P.push(part(t(`<rect x="X${a - 7}" y="236" width="14" height="50" rx="7"/>`), back ? 'pantorrillas' : 'tibia'));
+    P.push(part(t(`<ellipse cx="X${a - 2 * s}" cy="292" rx="10" ry="5"/>`)));
+  });
+  [[46, 'l'], [104, 'r']].forEach(([a, side]) => {
+    const X = ox + a;
+    P.push(`<g class="tb-arm ${side}" style="transform-origin:${X}px 61px">`);
+    P.push(part(t(`<rect x="X${a - 7}" y="71" width="14" height="42" rx="7"/>`), back ? 'triceps' : 'biceps', back ? '' : ' tb-bi'));
+    P.push(part(t(`<circle cx="X${a}" cy="117" r="5.5"/>`)));
+    P.push(`<g class="tb-fore ${side}" style="transform-origin:${X}px 117px">`);
+    P.push(part(t(`<rect x="X${a - 6}" y="123" width="12" height="38" rx="6"/>`)));
+    P.push(part(t(`<ellipse cx="X${a}" cy="168" rx="6" ry="8"/>`)));
+    P.push('</g></g>');
+    P.push(part(t(`<circle cx="X${a}" cy="61" r="8.5"/>`), 'hombros'));
+  });
+  P.push(t(`<g class="tb-bub" id="${id}-bub"><rect x="X-3" y="-50" width="156" height="40" rx="12" fill="#FBEFE3"/><path d="MX68 -11l7 9 7-9z" fill="#FBEFE3"/><text id="${id}-t1" x="X75" y="-33" text-anchor="middle" font-size="11.5" fill="#4F2A17" font-family="DM Sans, sans-serif" font-weight="600"></text><text id="${id}-t2" x="X75" y="-18" text-anchor="middle" font-size="11.5" fill="#4F2A17" font-family="DM Sans, sans-serif" font-weight="600"></text></g>`));
+  P.push('</g>');
+  P.push(t(`<text x="X75" y="334" text-anchor="middle" font-size="11" fill="#E3C9B3" font-family="DM Mono, monospace" letter-spacing="1.5">${back ? 'ESPALDA' : 'FRENTE'}</text>`));
+  return P.join('');
+}
+function tcBodyHtml(st) {
+  const b = computeBodyProgress(st.progressLogs, tcProgressOpts(st));
+  if (b.empty) return '';
+  st.bodyZones = b.zones;
+  const mid = st.mountId;
+  const keys = Object.keys(b.zones).sort((x, y) => b.zones[y].pct - b.zones[x].pct);
+  if (!st.bodyZone || !b.zones[st.bodyZone]) st.bodyZone = keys[0];
+  const sound = bodySoundOn();
+  const list = keys.map(k => {
+    const v = b.zones[k].pct;
+    return `<button type="button" class="tb-row" onclick="tcBodySelect('${mid}','${k}')"><span class="tb-row-name">${BODY_ZONES[k].label}</span><span class="tb-bar"><i style="width:${Math.min(100, Math.max(3, v * 3))}%;background:${bodyColor(v)}"></i></span><span class="tb-row-pct${v > 0 ? ' is-up' : ''}">${progressPctText(v)}</span></button>`;
+  }).join('');
+  return `<button type="button" class="tb-dd" aria-expanded="${!!st.bodyOpen}" aria-controls="${mid}-tb" onclick="tcBodyToggle('${mid}')">
+      <svg width="22" height="26" viewBox="0 0 22 26" aria-hidden="true" focusable="false"><ellipse cx="11" cy="4" rx="3" ry="3.6" fill="none" stroke="#FFB27A" stroke-width="1.4"/><rect x="7.5" y="8.5" width="7" height="8" rx="2.5" fill="none" stroke="#FFB27A" stroke-width="1.4"/><path d="M9 17v5M13 17v5M11 17v7M6 24.5h10" stroke="#FFB27A" stroke-width="1.4" stroke-linecap="round"/></svg>
+      <span class="tb-dd-txt"><span class="tb-dd-title">En tu cuerpo</span><span class="tb-dd-sub">Tocá cada zona para ver cuánto subió</span></span>
+      ${icon(st.bodyOpen ? 'chevron-up' : 'chevron-down', 18)}
+    </button>
+    <div class="tb-body" id="${mid}-tb"${st.bodyOpen ? '' : ' hidden'}>
+      <div class="tb-tools"><span class="tb-range">Semana ${b.before} → ${b.after}</span><button type="button" class="tb-snd" aria-label="${sound ? 'Silenciar sonido' : 'Activar sonido'}" onclick="tcBodySound('${mid}')">${sound ? 'Sonido' : 'Sin sonido'}</button></div>
+      <svg class="tb-svg" id="${mid}-tbsvg" viewBox="-20 -54 390 399" width="100%" role="img" aria-label="Maniquí de frente y de espaldas con cada zona coloreada según cuánto subió. Tocá una zona para ver el detalle." onclick="tcBodyPoke(event,'${mid}')">${bodyFigSvg(mid, 0, false, b.zones)}${bodyFigSvg(mid, 195, true, b.zones)}</svg>
+      <div class="tb-detail" id="${mid}-tbdet">${tcBodyDetailHtml(st)}</div>
+      <span class="pg-mono tb-lbl">Por zona</span>
+      ${list}
+    </div>`;
+}
+function tcBodyDetailHtml(st) {
+  const z = st.bodyZones && st.bodyZones[st.bodyZone];
+  if (!z) return '';
+  return `<div class="tb-detail-head"><span>${BODY_ZONES[st.bodyZone].label}</span><span class="tcp-pill${z.pct <= 0 ? ' is-neg' : ''}">${progressPctText(z.pct)}</span></div>` +
+    z.exercises.slice(0, 4).map(c => `<div class="tb-detail-ex">${escHtml(c.name)} · ${progressFromTo(c)}</div>`).join('');
+}
+function tcBodySelect(mid, zone) {
+  const st = tcStates[mid]; if (!st) return;
+  st.bodyZone = zone;
+  const el = document.getElementById(mid + '-tbdet');
+  if (el) el.innerHTML = tcBodyDetailHtml(st);
+}
+function tcBodySound(mid) {
+  try { localStorage.setItem('move_body_sound', bodySoundOn() ? '0' : '1'); } catch (e) {}
+  const st = tcStates[mid]; if (st) renderConstancia(st);
+}
+function tcBodyToggle(mid) {
+  const st = tcStates[mid]; if (!st) return;
+  st.bodyOpen = !st.bodyOpen;
+  renderConstancia(st);
+  if (st.bodyOpen) setTimeout(() => bodyDoubleBiceps(mid), 120);
+}
+let bodyAudio = null;
+function bodyTone(fn) {
+  if (!bodySoundOn()) return;
+  try { bodyAudio = bodyAudio || new (window.AudioContext || window.webkitAudioContext)(); if (bodyAudio.state === 'suspended') bodyAudio.resume(); fn(bodyAudio, bodyAudio.currentTime); } catch (e) {}
+}
+// "Toc" de madera + "boing" corto
+function bodyKnock() {
+  bodyTone((ac, t) => {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'triangle'; o.frequency.setValueAtTime(820, t); o.frequency.exponentialRampToValueAtTime(380, t + 0.07);
+    g.gain.setValueAtTime(0.35, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t + 0.13);
+    const b = ac.createOscillator(), bg = ac.createGain(), lfo = ac.createOscillator(), lg = ac.createGain();
+    b.type = 'sine'; b.frequency.setValueAtTime(420, t + 0.05); b.frequency.exponentialRampToValueAtTime(150, t + 0.45);
+    lfo.frequency.value = 22; lg.gain.value = 28; lfo.connect(lg).connect(b.frequency);
+    bg.gain.setValueAtTime(0, t); bg.gain.linearRampToValueAtTime(0.18, t + 0.07); bg.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    b.connect(bg).connect(ac.destination); b.start(t + 0.05); lfo.start(t + 0.05); b.stop(t + 0.52); lfo.stop(t + 0.52);
+  });
+}
+// Fanfarria corta del doble bíceps
+function bodyFlexSound() {
+  bodyTone((ac, t) => {
+    [0, 0.14].forEach((d, i) => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(i ? 330 : 220, t + d); o.frequency.exponentialRampToValueAtTime(i ? 520 : 300, t + d + 0.25);
+      g.gain.setValueAtTime(0, t + d); g.gain.linearRampToValueAtTime(0.07, t + d + 0.04); g.gain.exponentialRampToValueAtTime(0.001, t + d + 0.35);
+      o.connect(g).connect(ac.destination); o.start(t + d); o.stop(t + d + 0.36);
+    });
+  });
+}
+const bodyTimers = {};
+function bodySay(figId, text, face, ms) {
+  const words = String(text).split(' ');
+  let l1 = '', l2 = '';
+  words.forEach(w => { if (!l2 && (l1 + ' ' + w).trim().length <= 26) l1 = (l1 + ' ' + w).trim(); else l2 = (l2 + ' ' + w).trim(); });
+  const t1 = document.getElementById(figId + '-t1'), t2 = document.getElementById(figId + '-t2'), bub = document.getElementById(figId + '-bub');
+  if (!t1 || !bub) return;
+  t1.textContent = l1; t2.textContent = l2;
+  document.querySelectorAll(`#${figId} .tb-face`).forEach(f => f.classList.remove('on'));
+  const faceEl = face ? document.getElementById(figId + '-' + face) : null;
+  bub.classList.add('on'); if (faceEl) faceEl.classList.add('on');
+  clearTimeout(bodyTimers[figId]);
+  bodyTimers[figId] = setTimeout(() => { bub.classList.remove('on'); if (faceEl) faceEl.classList.remove('on'); }, ms);
+}
+function bodyDoubleBiceps(mid) {
+  const figs = [document.getElementById(mid + '-f'), document.getElementById(mid + '-b')].filter(Boolean);
+  if (!figs.length) return;
+  bodySay(mid + '-f', BODY_HELLO, 'happy', 2600);
+  bodyFlexSound();
+  if (bodyReducedMotion()) return;
+  figs.forEach(f => f.classList.add('flex'));
+  setTimeout(() => figs.forEach(f => f.classList.remove('flex')), 2600);
+}
+function tcBodyPoke(e, mid) {
+  const el = e.target.closest && e.target.closest('.tb-z');
+  if (!el) return;
+  const st = tcStates[mid]; if (!st) return;
+  const zone = el.dataset.z, fig = el.closest('.tb-fig'), svg = document.getElementById(mid + '-tbsvg');
+  if (!st.bodyZones || !st.bodyZones[zone] || !fig || !svg) return;
+  if (!bodyReducedMotion()) {
+    // viewBox = -20 -54 390 399 (ancho extra para el doble bíceps)
+    const bb = el.getBBox(), r = svg.getBoundingClientRect(), sx = 390 / r.width;
+    const cx = (e.clientX - r.left) * sx - 20, cy = (e.clientY - r.top) * sx - 54;
+    const dx = bb.x + bb.width / 2 - cx, dy = bb.y + bb.height / 2 - cy, len = Math.hypot(dx, dy) || 1;
+    el.style.setProperty('--px', (dx / len * 7).toFixed(1) + 'px');
+    el.style.setProperty('--py', (dy / len * 5).toFixed(1) + 'px');
+    el.classList.remove('poke'); void el.getBBox(); el.classList.add('poke');
+    fig.style.setProperty('--r', (dx >= 0 ? 5 : -5) + 'deg');
+    fig.classList.remove('wob'); void fig.getBBox(); fig.classList.add('wob');
+  }
+  bodySay(fig.id, bodyPhrase(zone, st.bodyZones[zone].pct), fig.id.endsWith('-f') ? 'pain' : null, 1800);
+  bodyKnock();
+  tcBodySelect(mid, zone);
 }
 function tcSetCmp(mountId, mode) { const st = tcStates[mountId]; if (!st) return; st.cmp = mode; renderConstancia(st); }
 function progressPctText(p) { return (p > 0 ? '+' : p < 0 ? '−' : '') + Math.abs(p) + '%'; }
@@ -5636,6 +5910,7 @@ function tcProgressHtml(st) {
     </div>
     ${p.top.length ? `<div class="pg-mono tcp-lbl">${p.top.some(c => c.change > 0) ? 'Lo que más subiste' : 'Tus ejercicios'}</div>${list}` : ''}
     <div class="tcp-note">Comparamos tu mejor serie de cada ejercicio entre semanas. El Deload no cuenta.</div>
+    ${p.compared ? tcBodyHtml(st) : ''}
     ${p.compared ? `<button type="button" class="tcp-share" onclick="openProgressShare('${st.mountId}')">${icon('share', 16)}Compartir mi progreso</button>` : ''}
   </div>`;
 }
