@@ -298,6 +298,28 @@ body.lift-mode #strongflow-btn { display:none !important; }
 .hoy-cover-title { margin:12px 0 28px; font-family:'Playfair Display',serif; font-weight:900; font-size:32px; line-height:1.15; color:#FFFFFF; }
 .hoy-cover-btn { width:100%; min-height:56px; border:0; border-radius:16px; background:#FFFFFF; color:var(--orange-text); display:flex; align-items:center; justify-content:center; gap:10px; font-family:'DM Sans',sans-serif; font-size:17px; font-weight:700; cursor:pointer; box-shadow:0 6px 18px rgba(120,40,0,0.28); }
 .hoy-cover-btn .ico { color:var(--orange); }
+.hoy-cover-btn[hidden], .hoy-cover-badge[hidden], .hoy-cover-pill[hidden], .hoy-cover-title[hidden] { display:none; }
+/* Fecha de hoy (hora de Costa Rica) arriba del pill de la semana */
+.hoy-cover-date { display:inline-flex; align-items:center; gap:7px; margin-bottom:8px; padding:6px 14px; border-radius:999px; background:rgba(40,16,4,0.34); color:#FFFFFF; font-family:'DM Mono',monospace; font-size:11px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; }
+.hoy-cover-date:empty { display:none; }
+/* Estados que reemplazan a "Entrenar": en construcción y programa terminado */
+.hoy-cover-text { margin:-14px 0 22px; font-size:16px; line-height:1.45; font-weight:500; color:#FFFFFF; }
+.hoy-cover-text[hidden] { display:none; }
+.hoy-cover-note { width:100%; box-sizing:border-box; display:flex; align-items:center; gap:12px; padding:14px 16px; border-radius:20px; background:rgba(40,16,4,0.3); border:1px solid rgba(255,255,255,0.3); text-align:left; font-size:14px; line-height:1.4; font-weight:600; color:#FFFFFF; }
+.hoy-cover-note[hidden] { display:none; }
+.hoy-cover-note-ico { flex:none; width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; }
+.hoy-cover.is-finished { justify-content:flex-start; padding-top:52px; overflow-y:auto; }
+.hoy-cover.is-finished .hoy-cover-note { margin-top:18px; padding:0 16px; background:none; border:0; justify-content:center; text-align:center; }
+.hoy-cover.is-finished .hoy-cover-note-ico { display:none; }
+.hoy-evo { width:100%; box-sizing:border-box; margin-top:12px; padding:30px 24px 26px; border-radius:28px; background:#141110; box-shadow:0 18px 40px rgba(40,12,0,0.45); display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center; }
+.hoy-evo[hidden] { display:none; }
+.hoy-evo-logo { width:104px; height:auto; }
+.hoy-evo-logo[hidden] { display:none; }
+.hoy-evo-word { font-size:15px; font-weight:700; letter-spacing:0.42em; margin-right:-0.42em; color:#FF8A3D; }
+.hoy-evo-chip { display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:999px; border:1px solid rgba(255,138,61,0.5); color:#FFB27A; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.14em; }
+.hoy-evo-title { margin:4px 0 0; font-family:'Playfair Display',serif; font-weight:800; font-size:28px; line-height:1.15; color:#FFFFFF; }
+.hoy-evo-text { margin:0; font-size:16px; line-height:1.45; color:#DCD4C8; }
+.hoy-evo-btn { align-self:stretch; min-height:54px; margin-top:10px; border-radius:18px; background:#1E7A3C; color:#FFFFFF; display:flex; align-items:center; justify-content:center; gap:10px; font-size:17px; font-weight:700; text-decoration:none; }
 /* Nav sobre la portada: blanco (activo 100% y negrita, el resto 88%) */
 #screen-client-home.cover-on .bottom-nav::before { display:none; }
 #screen-client-home.cover-on .bottom-nav .nav-item .nav-icon, #screen-client-home.cover-on .bottom-nav .nav-item .nav-label { color:rgba(255,255,255,0.88); }
@@ -718,6 +740,15 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 .exx-assist-card .client-avatar { background:rgba(255,255,255,0.22) !important; color:#fff !important; opacity:1 !important; }
 .exx-assist-card .client-type-tag, .exx-assist-card .client-name span { background:rgba(255,255,255,0.22) !important; color:#fff !important; border-color:transparent !important; }
 .exx-assist-card .payment-badge, .exx-assist-card > div:last-child { background:#fff !important; color:#C24E18 !important; border-color:#fff !important; }
+/* Programa terminado (semana automática): tarjeta negra. La de asistencia (naranja) gana. */
+.client-card.prog-done-card { background:#171311; color:#fff; box-shadow:0 2px 6px rgba(0,0,0,0.25); }
+.prog-done-card .client-name { color:#fff !important; }
+.prog-done-card .client-meta { color:rgba(255,255,255,0.72) !important; }
+.prog-done-card .client-avatar { background:rgba(255,255,255,0.1) !important; color:#FF7A2B !important; }
+.prog-done-card .client-type-tag, .prog-done-card .client-name span { background:rgba(255,255,255,0.1) !important; color:rgba(255,255,255,0.85) !important; border-color:rgba(255,255,255,0.25) !important; }
+.prog-done-card .payment-badge { background:#F1F6F1 !important; color:#1E7A3C !important; }
+.prog-done-line { display:flex; align-items:center; gap:6px; margin-top:4px; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.06em; color:#FF8A3D; }
+.prog-done-line img { width:13px; height:13px; object-fit:contain; }
 .exx-assist-chip { display:inline-flex; align-items:center; gap:5px; margin-top:6px; padding:3px 9px; border-radius:10px; background:#fff; color:#C24E18; font-size:11px; font-weight:700; }
 .exx-req { background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow); border-top:4px solid #C24E18; padding:14px 16px 16px; margin-bottom:14px; display:flex; flex-direction:column; gap:12px; }
 .exx-req-tag { display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700; letter-spacing:0.1em; color:#C24E18; }
@@ -1186,10 +1217,22 @@ button.exx-pill { cursor:pointer; min-height:28px; }
     <svg class="hoy-cover-honey" aria-hidden="true" focusable="false" viewBox="0 0 390 844" preserveAspectRatio="xMidYMin slice"><defs><linearGradient id="hoy-honey-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E08A0B"/><stop offset="0.5" stop-color="#D97706"/><stop offset="1" stop-color="#CC6A04"/></linearGradient></defs>
       <path fill="url(#hoy-honey-grad)" d="M0 0H390V170L377 170Q365 170 365 190V249A13 13 0 0 1 339 249V190Q339 170 327 170L319 170Q307 170 307 190V413A17 17 0 0 1 273 413V190Q273 170 261 170L248 170Q236 170 236 190V299A11 11 0 0 1 214 299V190Q214 170 202 170L182 170Q170 170 170 190V560A20 20 0 0 1 130 560V190Q130 170 118 170L99 170Q87 170 87 190V358A12 12 0 0 1 63 358V190Q63 170 51 170L48 170Q36 170 36 190V236A14 14 0 0 1 8 236V190Q8 170 0 170Z"/>
     </svg>
-    <div class="hoy-cover-badge"><svg class="ico" width="56" height="56" aria-hidden="true" focusable="false"><use href="#i-dumbbell"/></svg></div>
+    <div class="hoy-cover-badge" id="hoy-cover-badge"><svg class="ico" width="56" height="56" aria-hidden="true" focusable="false"><use href="#i-dumbbell"/></svg></div>
+    <div class="hoy-cover-date" id="hoy-cover-date"></div>
     <div class="hoy-cover-pill" id="hoy-cover-pill">Semana 1</div>
-    <h1 class="hoy-cover-title">¡Vamos Con TODA Hoy CHAMP!</h1>
+    <h1 class="hoy-cover-title" id="hoy-cover-title">¡Vamos Con TODA Hoy CHAMP!</h1>
+    <p class="hoy-cover-text" id="hoy-cover-text" hidden>Sau está preparando tu entrenamiento. Apenas esté lista, la ves acá.</p>
     <button type="button" class="hoy-cover-btn" id="hoy-cover-btn" onclick="enterTraining()"><svg class="ico" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-play"/></svg>Entrenar</button>
+    <!-- Programa terminado (semana automática): reemplaza a "Entrenar" -->
+    <div class="hoy-evo" id="hoy-evo" hidden>
+      <img class="hoy-evo-logo" id="hoy-evo-logo" data-src="assets/evolution-logo.png" alt="Logo de Evolution" hidden onload="this.hidden=false" onerror="this.remove()">
+      <span class="hoy-evo-word">EVOLUTION</span>
+      <span class="hoy-evo-chip"><svg class="ico" width="12" height="12" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>ETAPA 1 · COMPLETADA</span>
+      <h1 class="hoy-evo-title">¡Felicidades por lograr tu primera etapa!</h1>
+      <p class="hoy-evo-text">Hablá con Sau para tu evolución.</p>
+      <a class="hoy-evo-btn" id="hoy-evo-btn" href="#" target="_blank" rel="noopener"><svg class="ico" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-message-circle"/></svg>Escribirle a Sau</a>
+    </div>
+    <div class="hoy-cover-note" id="hoy-cover-note" hidden><span class="hoy-cover-note-ico"><svg class="ico" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-check"/></svg></span><span>Tu diario, tus hábitos y tus registros siguen disponibles.</span></div>
     <div class="bee-flight" id="bee-flight" aria-hidden="true">
       <svg width="390" height="844" viewBox="0 0 390 844" style="position:absolute;left:0;top:0" focusable="false"><path class="trail" pathLength="1" d="M40 610C120 520 140 650 205 545S300 380 450 300" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/></svg>
       <div class="bee"><svg width="72" height="54" viewBox="0 0 72 54" fill="none" stroke="#FFFFFF" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" focusable="false">
@@ -5252,6 +5295,7 @@ function setHoyCover(on) {
 function updateHoyCoverPill() {
   const pill = document.getElementById('hoy-cover-pill');
   if (pill) pill.textContent = 'Semana ' + clientWeek + (clientDay ? ' · ' + getDayShortLabel(clientDay, 0) : '');
+  applyHoyCoverMode();
 }
 function showHoyCover() {
   if (!hoyCoverAllowed()) return;
@@ -5259,9 +5303,46 @@ function showHoyCover() {
   setHoyCover(true);
 }
 // Tras cada carga de la tira de días: semana/día al día, y fuera si el día quedó "En curso".
+// "En construcción" y "Programa terminado" no tienen botón: la portada queda puesta.
 function updateHoyCover() {
   updateHoyCoverPill();
   if (!hoyCoverAllowed()) setHoyCover(false);
+  else if (getClientHoyMode() !== 'train') setHoyCover(true);
+}
+// Fecha de hoy (Costa Rica) y el estado que reemplaza a "Entrenar". Churn ya cortó antes
+// (overlay en initClient) y training_access=false no deja mostrar la portada.
+const HOY_BADGE_TRAIN = '<svg class="ico" width="56" height="56" aria-hidden="true" focusable="false"><use href="#i-dumbbell"/></svg>';
+const HOY_BADGE_BUILD = '<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 22h14M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>';
+const EVOLUTION_WA_TEXT = 'Hola Sau, terminé mi primera etapa y quiero saber de Evolution.';
+function applyHoyCoverMode() {
+  const cover = document.getElementById('hoy-cover');
+  if (!cover) return;
+  const $ = id => document.getElementById(id);
+  const mode = getClientHoyMode();
+  const date = $('hoy-cover-date');
+  if (date) date.innerHTML = `<svg class="ico" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-calendar"/></svg>${fmtCRDay(Date.now(), true).toUpperCase()}`;
+  cover.classList.toggle('is-finished', mode === 'finished');
+  cover.dataset.mode = mode;
+  const badge = $('hoy-cover-badge'), title = $('hoy-cover-title'), pill = $('hoy-cover-pill');
+  const wantBadge = mode === 'construction' ? 'build' : 'train';
+  if (badge && badge.dataset.icon !== wantBadge) { badge.innerHTML = wantBadge === 'build' ? HOY_BADGE_BUILD : HOY_BADGE_TRAIN; badge.dataset.icon = wantBadge; }
+  if (badge) badge.hidden = mode === 'finished';
+  if (pill) pill.hidden = mode === 'finished';
+  if (title) { title.hidden = mode === 'finished'; title.textContent = mode === 'construction' ? 'Estamos armando tu próxima semana' : '¡Vamos Con TODA Hoy CHAMP!'; }
+  if (pill && mode === 'construction') {
+    const auto = clientAutoWeekInfo();
+    pill.textContent = (auto && auto.mapped ? auto.mapped.label + ' · ' : '') + 'En construcción';
+  }
+  $('hoy-cover-btn').hidden = mode !== 'train';
+  $('hoy-cover-text').hidden = mode !== 'construction';
+  $('hoy-cover-note').hidden = mode === 'train';
+  $('hoy-evo').hidden = mode !== 'finished';
+  if (mode === 'finished') {
+    $('hoy-evo-btn').href = `https://wa.me/${EXX_WA_NUMBER}?text=${encodeURIComponent(EVOLUTION_WA_TEXT)}`;
+    // El PNG se pide recién acá (si falta, queda solo el texto EVOLUTION)
+    const logo = $('hoy-evo-logo');
+    if (logo && !logo.getAttribute('src')) logo.src = logo.dataset.src;
+  }
 }
 let hoyCoverFlying = false;
 function enterTraining() {
@@ -6500,12 +6581,15 @@ function renderCoachClients(clients) {
     const churnBadge = c.is_churn ? `<div style="background:#f3f4f6;color:var(--gray4);border-radius:8px;padding:6px 10px;text-align:center;font-size:11px;font-weight:700;line-height:1.2;border:1.5px solid var(--gray2);"><div style="font-size:8px;margin-top:1px;">CHURN</div></div>` : `<div class="payment-badge ${badgeClass}"><div style="font-size:8px;opacity:0.7;margin-bottom:1px;">PAGO</div>${badgeText}</div>`;
     const hasOverdueReminder = (window._clientsWithOverdueReminder||new Set()).has(c.id);
     const exxReqs = exxOpenAssistFor(c.id);
-    return `<div class="client-card fade-up${exxReqs.length?' exx-assist-card':''}" onclick="openCoachClient('${c.id}')" style="${!exxReqs.length&&hasOverdueReminder?'background:var(--orange-light);border:1.5px solid var(--orange);':''}">
+    // Programa terminado (semana automática): tarjeta negra. Se calcula acá, no se guarda nada.
+    const progEnd = !exxReqs.length ? clientProgramEndMs(c) : null;
+    return `<div class="client-card fade-up${exxReqs.length?' exx-assist-card':''}${progEnd?' prog-done-card':''}" onclick="openCoachClient('${c.id}')" style="${!exxReqs.length&&!progEnd&&hasOverdueReminder?'background:var(--orange-light);border:1.5px solid var(--orange);':''}">
       <div class="client-avatar" style="${c.is_churn ? 'opacity:0.5;' : ''}">${getInitials(c.name)}</div>
       <div class="client-info">
         <div class="client-name" style="display:flex;align-items:center;gap:6px;${c.is_churn ? 'color:var(--gray4);' : ''}">${c.name}${typeTag}${evolutionBadge}${liftBadge}${(window._clientsWithReminder||new Set()).has(c.id)?'<div style="width:22px;height:22px;border-radius:5px;background:#fff3e0;display:flex;align-items:center;justify-content:center;font-size:12px;"><svg class="ico" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-bell"/></svg></div>':''}</div>
         <div class="client-meta">@${c.username} · ${(c.days_trained||0)+(c.days_trained_adjustment||0)} días${startDateStr?` · Inicio: ${startDateStr}`:''}${endDateStr?` · Fin: ${endDateStr}`:''}${clientSortMode==='last_active'?(()=>{const t=(window._lastTrainedMap||{})[c.id];return t?` · ${new Date(t).toLocaleDateString('es-CR',{weekday:'short',day:'numeric',month:'short'})}`:' · Sin entreno';})():''}</div>
         ${exxReqs.length?`<div class="exx-assist-chip">${icon('life-buoy',12)}Pidió asistencia${exxReqs.length > 1 ? ` (${exxReqs.length})` : ''} · ${exxAgo(exxReqs[0].created_at)}</div>`:''}
+        ${progEnd?`<div class="prog-done-line"><img src="assets/evolution-logo.png" alt="" onerror="this.remove()">PROGRAMA TERMINADO · ${fmtCRDay(progEnd).toUpperCase()}</div>`:''}
       </div>
       ${churnBadge}
     </div>`;
@@ -6513,6 +6597,14 @@ function renderCoachClients(clients) {
 }
 
 let clientTab = 'active'; // 'active' | 'churn' | 'hidden'
+// Fin del programa (ms) si el cliente está en semana automática y ya terminó; si no, null.
+// Churn y Ocultos nunca van en negro.
+function clientProgramEndMs(c) {
+  if (!c || c.is_churn || c.hidden || !isAutoWeekClient(c)) return null;
+  const len = getProgramSequence(c).length;
+  const pos = getProgramPosition(c.program_week1_start, Date.now(), len);
+  return pos && pos.state === 'finished' ? Date.parse(c.program_week1_start) + len * WEEK_MS : null;
+}
 
 function setClientTab(tab) {
   clientTab = tab;
