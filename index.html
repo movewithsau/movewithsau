@@ -662,6 +662,11 @@ body.lift-mode #strongflow-btn { display:none !important; }
 .sw-bubble.is-pill.is-paused { background:#FFFFFF; color:#4A433B; border:1.5px solid #D5D0C8; }
 .sw-bubble.is-pill svg { width:16px; height:16px; }
 .sw-pill-time:empty { display:none; }
+.sw-bubble.sw-ping { animation:swPing .7s cubic-bezier(.3,.7,.4,1.5); }
+.sw-big.sw-ping { animation:swPingBig .7s ease-out; }
+@keyframes swPing { 0%{transform:none} 15%{transform:scale(1.18) rotate(-6deg)} 35%{transform:scale(1.1) rotate(5deg)} 55%{transform:scale(1.05) rotate(-3deg)} 75%{transform:rotate(2deg)} 100%{transform:none} }
+@keyframes swPingBig { 0%{transform:none;color:var(--black)} 25%{transform:scale(1.08);color:#C24E18} 100%{transform:none;color:var(--black)} }
+@media (prefers-reduced-motion: reduce) { .sw-bubble.sw-ping, .sw-big.sw-ping { animation:none; } }
 .sw-bubble:focus-visible, .sw-panel button:focus-visible { outline:2px solid #1A1714; outline-offset:2px; }
 .sw-panel { position:absolute; right:0; bottom:calc(100% + 10px); width:248px; box-sizing:border-box; border-radius:18px; background:#FFFFFF; box-shadow:0 8px 28px rgba(40,25,10,.28); padding:14px 16px 16px; display:flex; flex-direction:column; gap:12px; }
 .sw-panel[hidden] { display:none; }
@@ -4242,7 +4247,20 @@ function skipCircuitInterval(group) {
 // ===== CRONÓMETRO LIBRE (burbuja arriba de la "?") =====
 // Independiente del Modo Timer. Vive en memoria: sobrevive a los repintados de Hoy y a los cambios
 // de pantalla; al recargar o cerrar el app se pierde. No guarda nada (ni base ni localStorage).
-const swState = { running: false, startAt: 0, acc: 0, open: false, iv: null };
+const swState = { running: false, startAt: 0, acc: 0, open: false, iv: null, mark: 0 };
+const SW_CHIME_MS = 30000; // cada 30 s corriendo: sonido + la burbuja se mueve
+// Si la app estuvo en segundo plano y pasaron varias marcas, suena una sola vez al volver.
+function swCheckChime() {
+  if (!swState.running) return;
+  const m = Math.floor(swElapsed() / SW_CHIME_MS);
+  if (m <= swState.mark) return;
+  swState.mark = m;
+  const ctx = getCueAudioContext();
+  if (ctx) { playTone(660, ctx, 0); playTone(990, ctx, 0.16); }
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const el = document.getElementById(swState.open ? 'sw-big' : 'sw-bubble');
+  if (el) { el.classList.remove('sw-ping'); void el.offsetWidth; el.classList.add('sw-ping'); }
+}
 function swElapsed() { return swState.acc + (swState.running ? Date.now() - swState.startAt : 0); }
 function swFmt(ms) {
   const t = Math.floor(ms / 1000), h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, s = t % 60;
@@ -4266,19 +4284,19 @@ function swRender() {
     ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>Pausar'
     : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polygon points="6 3 20 12 6 21 6 3"/></svg>' + (ms >= 1000 ? 'Seguir' : 'Iniciar');
 }
-function swTick() { clearInterval(swState.iv); swState.iv = swState.running ? setInterval(swRender, 250) : null; swRender(); }
+function swTick() { clearInterval(swState.iv); swState.iv = swState.running ? setInterval(() => { swRender(); swCheckChime(); }, 250) : null; swRender(); }
 function swToggle() { swState.open = !swState.open; swRender(); if (swState.open) document.getElementById('sw-go')?.focus(); }
 function swClose() { if (!swState.open) return; swState.open = false; swRender(); }
 function swStartPause() {
   if (swState.running) { swState.acc += Date.now() - swState.startAt; swState.running = false; }
-  else { swState.startAt = Date.now(); swState.running = true; }
+  else { swState.startAt = Date.now(); swState.running = true; swState.mark = Math.floor(swElapsed() / SW_CHIME_MS); getCueAudioContext(); /* desbloquea el audio con el toque (iPhone) */ }
   swTick();
 }
-function swReset() { swState.acc = 0; swState.startAt = Date.now(); swTick(); }
+function swReset() { swState.acc = 0; swState.startAt = Date.now(); swState.mark = 0; swTick(); }
 // Tocar fuera cierra el panel sin frenar el toque (el botón de atrás igual recibe el click)
 document.addEventListener('pointerdown', e => { if (swState.open && !(e.target.closest && e.target.closest('#sw-wrap'))) swClose(); }, true);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && swState.open) { swClose(); document.getElementById('sw-bubble')?.focus(); } });
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') swRender(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { swRender(); swCheckChime(); } });
 swRender();
 
 // ===== MODO TIMER EN CIRCUITOS MIXTOS =====
