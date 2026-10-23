@@ -528,6 +528,19 @@ body.lift-mode #strongflow-btn { display:none !important; }
 .aw-prev-date { font-family:'DM Mono',monospace; font-size:12px; }
 .aw-tag { padding:2px 7px; border-radius:999px; background:#C24E18; color:#FFFFFF; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.08em; }
 .aw-tag--end { background:#1C1815; }
+/* ===== SEMANA COMPLETA (pop-up) ===== */
+.wd-modal { position:fixed; inset:0; z-index:400; background:rgba(20,12,8,0.66); display:flex; align-items:center; justify-content:center; padding:24px; box-sizing:border-box; }
+.wd-modal[hidden] { display:none; }
+.wd-card { width:100%; max-width:360px; max-height:92vh; overflow-y:auto; box-sizing:border-box; padding:28px 22px 16px; border-radius:28px; background:#FFFBF5; box-shadow:0 24px 50px rgba(0,0,0,0.35); display:flex; flex-direction:column; align-items:center; text-align:center; color:var(--ink); }
+.wd-badge { width:84px; height:84px; border-radius:50%; background:#E5672F; box-shadow:0 8px 18px rgba(194,78,24,0.35); display:flex; align-items:center; justify-content:center; }
+.wd-chip { margin-top:14px; font-family:'DM Mono',monospace; font-size:12px; letter-spacing:0.16em; color:#B5441A; font-weight:500; }
+.wd-title { margin:10px 0 0; font-family:'Playfair Display',serif; font-weight:800; font-size:26px; line-height:1.15; }
+.wd-text { margin:10px 0 0; font-size:15px; line-height:1.45; color:var(--gray5); }
+.wd-hexes { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:20px; }
+.wd-hex { display:flex; flex-direction:column; align-items:center; gap:2px; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.08em; color:var(--gray5); }
+.wd-btn { align-self:stretch; min-height:54px; margin-top:20px; border:0; border-radius:18px; background:#C24E18; color:#FFFFFF; display:flex; align-items:center; justify-content:center; gap:10px; font-family:'DM Sans',sans-serif; font-size:17px; font-weight:700; cursor:pointer; }
+.wd-hint { margin-top:6px; font-size:12.5px; color:var(--gray4); }
+.wd-close { min-height:44px; margin-top:4px; border:0; background:none; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:700; color:var(--gray5); cursor:pointer; }
 .aw-sheet-note { margin:10px 0; font-family:'DM Mono',monospace; font-size:11px; line-height:1.5; color:var(--gray4); }
 .week-tab { flex-shrink:0; padding:7px 14px; border-radius:20px; font-size:12px; font-weight:600; background:var(--white); color:var(--gray4); cursor:pointer; border:1.5px solid var(--gray2); }
 .week-tab.active { background:var(--orange); color:white; border-color:var(--orange); }
@@ -3350,6 +3363,8 @@ async function loadClientDayStrip(opts) {
   // ── Progress summary ──
   const doneCount = (planDays||[]).filter(p=>completedDayIds.has(p.id)).length;
   const totalCount = (planDays||[]).length;
+  // Semana automática: todos los días de la semana entrenados → pop-up (una vez por semana)
+  if(totalCount > 0 && doneCount === totalCount) maybeShowWeekComplete(planDays).catch(e => console.warn('weekComplete:', e));
   if(totalCount > 0) {
     const pct = Math.round((doneCount/totalCount)*100);
     const progressEl = document.createElement('div');
@@ -5242,6 +5257,208 @@ async function shareHiveImage() {
     downloadHiveImage();
     showToast('Tu navegador no comparte imágenes: la guardamos para que la subas vos.', 3500);
   }
+}
+
+// ---- Imagen para compartir (genérica): mismo camino que "Compartir mi mes" ----
+// Hoja con vista previa, "Compartir" (Web Share con archivo) y "Guardar imagen" (descarga).
+let moveShare = null; // { title, filename, draw }
+function openMoveShare(title, filename, draw) {
+  moveShare = { title, filename, draw };
+  let sh = document.getElementById('move-share-sheet');
+  if (!sh) {
+    sh = document.createElement('div');
+    sh.id = 'move-share-sheet';
+    sh.className = 'hive-sheet';
+    sh.setAttribute('role', 'dialog');
+    sh.setAttribute('aria-modal', 'true');
+    sh.onclick = e => { if (e.target === sh) closeMoveShare(); };
+    document.body.appendChild(sh);
+  }
+  sh.setAttribute('aria-label', title);
+  sh.hidden = false;
+  sh.innerHTML = `<div class="hive-sheet-inner">
+    <div class="hive-sheet-head"><div class="hive-sheet-title">${title}</div>
+      <button type="button" class="icon-btn" style="background:#F1ECE4;color:var(--ink);border-radius:50%;" aria-label="Cerrar" onclick="closeMoveShare()">${icon('x', 18)}</button></div>
+    <div class="hive-sheet-preview" id="move-share-preview"><div class="spinner"></div></div>
+    <div class="hive-sheet-actions">
+      <button type="button" class="hive-share" style="margin:0;background:#C24E18;" onclick="shareMoveImage()">${icon('share', 20)}Compartir</button>
+      <button type="button" class="hive-btn-2" onclick="downloadMoveImage()">${icon('download', 20)}Guardar imagen</button>
+    </div>
+  </div>`;
+  Promise.resolve(draw()).then(cv => {
+    const box = document.getElementById('move-share-preview');
+    if (!box || !moveShare) return;
+    cv.setAttribute('role', 'img');
+    cv.setAttribute('aria-label', 'Vista previa de la imagen para compartir');
+    box.innerHTML = '';
+    box.appendChild(cv);
+  });
+}
+function closeMoveShare() { const sh = document.getElementById('move-share-sheet'); if (sh) { sh.hidden = true; sh.innerHTML = ''; } moveShare = null; }
+function moveCanvasBlob() {
+  const cv = document.querySelector('#move-share-preview canvas');
+  return new Promise(res => cv ? cv.toBlob(res, 'image/png') : res(null));
+}
+async function downloadMoveImage() {
+  const blob = await moveCanvasBlob();
+  if (!blob || !moveShare) return;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = moveShare.filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+async function shareMoveImage() {
+  const blob = await moveCanvasBlob();
+  if (!blob || !moveShare) return;
+  const file = new File([blob], moveShare.filename, { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'Move With Sau' }); }
+    catch (e) { if (e && e.name !== 'AbortError') showToast('No se pudo compartir. Probá con Guardar imagen.', 'error', 4000); }
+  } else {
+    downloadMoveImage();
+    showToast('Tu navegador no comparte imágenes: la guardamos para que la subas vos.', 3500);
+  }
+}
+// Base de las historias (9:16): naranja oscuro, miel arriba, marca MOVE WITH SAU y abajo la
+// caja café "Empieza HOY / Instagram: @movewithsau" (sin link web). Devuelve { cv, ctx, W, H }.
+async function drawMoveStoryBase() {
+  const W = 1080, H = 1920;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  try { await Promise.all([document.fonts.load('800 64px "Playfair Display"'), document.fonts.load('italic 700 64px "Playfair Display"'), document.fonts.load('500 32px "DM Mono"'), document.fonts.load('700 32px "DM Sans"')]); } catch (e) {}
+  ctx.fillStyle = '#C24E18'; ctx.fillRect(0, 0, W, H);
+  // Miel: franja arriba con gotas
+  ctx.fillStyle = '#D4912F'; ctx.fillRect(0, 0, W, 415);
+  [[94, 332, 83, 266, '#C27A25'], [415, 332, 105, 388, '#C98428'], [803, 332, 78, 210, '#C27A25']].forEach(([x, y, w, h, c]) => {
+    ctx.fillStyle = c; ctx.beginPath();
+    ctx.moveTo(x, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + h - w / 2);
+    ctx.arc(x + w / 2, y + h - w / 2, w / 2, 0, Math.PI); ctx.closePath(); ctx.fill();
+  });
+  // Marca: hexágono oscuro con el panal + MOVE WITH SAU
+  ctx.font = '500 39px "DM Mono", monospace';
+  const brand = 'M O V E   W I T H   S A U';
+  const bw = ctx.measureText(brand).width, bx = (W - bw) / 2 + 30, by = 110;
+  hiveHexPath(ctx, bx - 62, by - 13, 48); ctx.fillStyle = '#1C1815'; ctx.fill();
+  ctx.strokeStyle = '#D4912F'; ctx.lineWidth = 6;
+  [[0, -18], [-14, 8], [14, 8]].forEach(([dx, dy]) => { hiveHexPath(ctx, bx - 62 + dx, by - 13 + dy, 13); ctx.stroke(); });
+  ctx.fillStyle = '#1C1815'; ctx.textAlign = 'left'; ctx.fillText(brand, bx, by);
+  // Caja café
+  const boxX = 100, boxW = W - 200, boxH = 190, boxY = H - 60 - boxH;
+  ctx.save(); ctx.shadowColor = 'rgba(40,16,4,0.3)'; ctx.shadowBlur = 30; ctx.shadowOffsetY = 10;
+  ctx.fillStyle = '#4F2A17'; moveRoundRect(ctx, boxX, boxY, boxW, boxH, 50); ctx.fill(); ctx.restore();
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#FBEFE3'; ctx.font = '700 61px "DM Sans", sans-serif'; ctx.fillText('Empieza HOY', W / 2, boxY + 88);
+  ctx.fillStyle = '#E3C9B3'; ctx.font = '500 33px "DM Mono", monospace'; ctx.fillText('Instagram: @movewithsau', W / 2, boxY + 145);
+  return { cv, ctx, W, H };
+}
+// roundRect con respaldo para Safari viejo (iOS < 16 no lo tiene)
+function moveRoundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  if (ctx.roundRect) { ctx.roundRect(x, y, w, h, r); return; }
+  ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function moveSpaced(t) { return t.split('').join(String.fromCharCode(8202)); }
+// Hexágono blanco con check (días de la semana en la imagen)
+function drawCheckHex(ctx, cx, cy, r, fill, ink) {
+  hiveHexPath(ctx, cx, cy, r); ctx.fillStyle = fill; ctx.fill();
+  ctx.strokeStyle = ink; ctx.lineWidth = r * 0.16; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(cx - r * 0.36, cy + r * 0.04); ctx.lineTo(cx - r * 0.1, cy + r * 0.3); ctx.lineTo(cx + r * 0.36, cy - r * 0.2); ctx.stroke();
+}
+
+// ===== SEMANA COMPLETA (pop-up + imagen) =====
+// Solo semana automática. Se evalúa al cargar la tira de días (abrir la app, terminar un día).
+// Una vez por semana por cliente: fila en week_completions (UNIQUE client_id + week_start).
+// Sin la tabla (SQL sin correr) no sale nada y no hay errores visibles.
+let weekCompleteBusy = false;
+function weekDayHexLabel(dayValue, i) {
+  const m = String(dayValue || '').match(/^D[ií]a\s*(\d+)/i);
+  const base = m ? 'D' + m[1] : 'D' + (i + 1);
+  return /flexi/i.test(dayValue || '') ? base + ' FLEXI' : base;
+}
+async function maybeShowWeekComplete(planDays) {
+  const auto = clientAutoWeekInfo();
+  if (!auto || auto.state !== 'active' || !auto.mapped || clientWeek !== auto.mapped.week) return;
+  if (isWorkoutStarted() || workoutLock || weekCompleteBusy || !currentClient) return;
+  const cid = currentClient.id;
+  const weekStart = auto.windowStart.toISOString();
+  const lsKey = `move_wc_${cid}_${weekStart}`;
+  try { if (localStorage.getItem(lsKey) === '1') return; } catch (e) {}
+  weekCompleteBusy = true;
+  try {
+    const { data: row, error } = await sb.from('week_completions').select('id').eq('client_id', cid).eq('week_start', weekStart).maybeSingle();
+    if (error) return; // tabla sin crear o sin red: no mostramos nada
+    const markSeen = () => { try { localStorage.setItem(lsKey, '1'); } catch (e) {} };
+    if (row) { markSeen(); return; }
+    const days = (planDays || []).map((p, i) => weekDayHexLabel(p.day_of_week, i));
+    const { error: insErr } = await sb.from('week_completions').insert([{ client_id: cid, week_start: weekStart, week_label: auto.mapped.label, days_completed: days.length }]);
+    if (insErr && insErr.code === '23505') { markSeen(); return; } // ya salió en otro dispositivo
+    markSeen();
+    showWeekCompleteModal({ label: auto.mapped.label, days, windowStart: auto.windowStart.getTime(), windowEnd: auto.windowEnd.getTime(), name: currentClient.name || '' });
+    if (insErr) showToast('No se pudo guardar el aviso de semana completa. Tus entrenos sí están guardados.', 3500);
+  } finally { weekCompleteBusy = false; }
+}
+let weekDoneData = null;
+function weekDoneOf(label) { return label === 'Deload' ? 'del Deload' : 'de la ' + label; }
+function showWeekCompleteModal(data) {
+  weekDoneData = data;
+  let m = document.getElementById('week-done-modal');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'week-done-modal';
+    m.className = 'wd-modal';
+    m.setAttribute('role', 'dialog');
+    m.setAttribute('aria-modal', 'true');
+    m.setAttribute('aria-labelledby', 'wd-title');
+    document.body.appendChild(m);
+  }
+  const hex = `<svg width="54" height="62" viewBox="0 0 56 64" aria-hidden="true" focusable="false"><polygon points="28,2 54,17 54,47 28,62 2,47 2,17" fill="#E5672F"/><path d="M18 33l7 7 13-14" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const n = data.days.length;
+  m.hidden = false;
+  m.innerHTML = `<div class="wd-card">
+    <div class="wd-badge"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg></div>
+    <span class="wd-chip">${escHtml(data.label.toUpperCase())} · COMPLETADA</span>
+    <h2 class="wd-title" id="wd-title">¡Completaste todos tus días ${escHtml(weekDoneOf(data.label))}!</h2>
+    <p class="wd-text">${n} de ${n} entrenos. Eso es constancia.</p>
+    <div class="wd-hexes" role="img" aria-label="${n} días completados">${data.days.map(d => `<div class="wd-hex">${hex}<span>${escHtml(d)}</span></div>`).join('')}</div>
+    <button type="button" class="wd-btn" onclick="openWeekShare()">${icon('share', 20)}Compartir</button>
+    <span class="wd-hint">Generá una imagen para Instagram o WhatsApp</span>
+    <button type="button" class="wd-close" onclick="closeWeekCompleteModal()">Cerrar</button>
+  </div>`;
+}
+function closeWeekCompleteModal() { const m = document.getElementById('week-done-modal'); if (m) { m.hidden = true; m.innerHTML = ''; } }
+function weekRangeText(startMs, endMs) {
+  const a = crWall(startMs), b = crWall(endMs);
+  const sameMonth = a.getUTCMonth() === b.getUTCMonth();
+  return (sameMonth ? a.getUTCDate() : fmtCRDay(startMs)) + ' – ' + fmtCRDay(endMs);
+}
+function openWeekShare() {
+  const d = weekDoneData;
+  if (!d) return;
+  closeWeekCompleteModal();
+  openMoveShare('Compartir mi semana', `move-${d.label.toLowerCase().replace(/\s+/g, '-')}.png`, () => drawWeekCanvas(d));
+}
+async function drawWeekCanvas(d) {
+  const { cv, ctx, W } = await drawMoveStoryBase();
+  ctx.textAlign = 'center'; ctx.fillStyle = '#FFFFFF';
+  ctx.font = '500 36px "DM Mono", monospace'; ctx.fillText(moveSpaced('LO LOGRASTE'), W / 2, 715);
+  ctx.font = '800 188px "Playfair Display", serif'; ctx.fillText(hiveFit(ctx, d.label, W - 120), W / 2, 905);
+  ctx.font = 'italic 700 111px "Playfair Display", serif'; ctx.fillText('completada', W / 2, 1060);
+  const n = d.days.length, r = 88, gap = 33, step = r * 1.732 + gap;
+  const scale = n > 5 ? 5 / n : 1;
+  const sStep = step * scale, x0 = W / 2 - sStep * (n - 1) / 2;
+  d.days.forEach((label, i) => {
+    const cx = x0 + sStep * i;
+    drawCheckHex(ctx, cx, 1270, r * scale, '#FFFFFF', '#C24E18');
+    ctx.fillStyle = '#FFFFFF'; ctx.font = `500 ${Math.round(30 * Math.max(scale, 0.8))}px "DM Mono", monospace`; ctx.fillText(label, cx, 1270 + r * scale + 50);
+  });
+  ctx.font = '700 61px "DM Sans", sans-serif'; ctx.fillText(hiveFit(ctx, moveSpaced((d.name || '').toUpperCase()), W - 120), W / 2, 1540);
+  ctx.font = '500 33px "DM Mono", monospace';
+  ctx.fillText(moveSpaced(`${n}/${n} ENTRENOS · ${weekRangeText(d.windowStart, d.windowEnd).toUpperCase()}`), W / 2, 1610);
+  return cv;
 }
 
 // ===== PERFIL: HITOS =====

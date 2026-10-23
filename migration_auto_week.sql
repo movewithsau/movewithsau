@@ -16,3 +16,24 @@ SELECT week_mode, count(*) AS clientes FROM clients GROUP BY week_mode ORDER BY 
 -- Rollback (solo las 2 columnas nuevas, no toca ningún otro dato):
 -- ALTER TABLE clients DROP COLUMN IF EXISTS program_week1_start;
 -- ALTER TABLE clients DROP COLUMN IF EXISTS week_mode;
+
+-- ============================================================
+-- F3. Semana completa: el pop-up sale una sola vez por semana
+-- ============================================================
+-- week_start = inicio de la ventana de esa semana (domingo 8 p. m. CR). UNIQUE evita que se
+-- repita en otro dispositivo o después de volver a sincronizar la fecha. Sin RLS.
+CREATE TABLE IF NOT EXISTS week_completions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id uuid NOT NULL REFERENCES clients(id) ON DELETE CASCADE, -- el app borra clientes: que esta tabla no lo trabe
+  week_start timestamptz NOT NULL,
+  week_label text,
+  days_completed int,
+  created_at timestamptz DEFAULT now(),
+  UNIQUE (client_id, week_start)
+);
+
+-- Verificación: la tabla existe y arranca vacía.
+SELECT count(*) AS semanas_completas FROM week_completions;
+
+-- Rollback (solo esta tabla nueva):
+-- DROP TABLE IF EXISTS week_completions;
