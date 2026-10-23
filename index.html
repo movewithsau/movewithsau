@@ -466,6 +466,47 @@ body.lift-mode #strongflow-btn { display:none !important; }
 .hive-sheet-actions { display:flex; flex-direction:column; gap:10px; }
 .hive-btn-2 { width:100%; min-height:52px; border-radius:14px; border:1.5px solid var(--line); background:#FFFFFF; color:var(--ink); display:flex; align-items:center; justify-content:center; gap:10px; font-family:'DM Sans',sans-serif; font-size:16px; font-weight:700; cursor:pointer; }
 #screen-client-plan .scroll-body { overflow-x:hidden; }
+/* ===== SEMANA AUTOMÁTICA (coach) ===== */
+.aw-manual-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; font-size:11px; color:var(--gray4); }
+.aw-manual-row .aw-btn-2 { min-height:36px; padding:0 12px; font-size:12px; }
+.aw-card { background:#FFFFFF; border:1px solid var(--line); border-radius:16px; padding:12px 14px; margin-bottom:10px; }
+.aw-card-row { display:flex; align-items:center; gap:12px; }
+.aw-card-ico { width:40px; height:40px; flex:none; border-radius:12px; background:#FBE4D8; color:#C24E18; display:flex; align-items:center; justify-content:center; }
+.aw-card-title { font-size:15px; font-weight:700; color:var(--ink); }
+.aw-card-sub { font-size:12px; color:var(--gray5); margin-top:1px; }
+.aw-pill { flex:none; padding:4px 9px; border-radius:999px; background:#E6F2E8; color:#1E7A3C; font-family:'DM Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.08em; }
+.aw-card-foot { border-top:1px solid var(--line); margin-top:10px; padding-top:8px; font-family:'DM Mono',monospace; font-size:10.5px; line-height:1.5; color:var(--gray4); }
+.aw-actions { display:flex; gap:8px; margin-bottom:10px; }
+.aw-btn { flex:1; min-height:44px; border:0; border-radius:14px; background:#C24E18; color:#FFFFFF; display:flex; align-items:center; justify-content:center; gap:8px; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; cursor:pointer; }
+.aw-btn--lg { flex:none; width:100%; min-height:52px; font-size:16px; }
+.aw-btn-2 { min-height:44px; padding:0 14px; border-radius:14px; border:1.5px solid var(--gray3); background:#FFFFFF; color:var(--gray5); display:inline-flex; align-items:center; justify-content:center; gap:6px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:700; cursor:pointer; }
+.aw-btn-link { min-height:44px; border:0; background:none; color:var(--gray5); font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; cursor:pointer; }
+.aw-warn { display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border-radius:14px; background:#FFF3DD; border:1px solid #F2D49B; color:#9A5F06; margin-bottom:10px; }
+.aw-warn .ico { flex:none; margin-top:1px; }
+.aw-warn-title { font-size:13px; font-weight:700; color:#5C3D04; }
+.aw-warn-text { font-size:12.5px; line-height:1.4; color:#6B4A0C; }
+.aw-sheet { background:#F6F2EA; }
+.aw-sheet-lead { margin:6px 0 4px; font-size:14px; line-height:1.45; color:var(--gray5); }
+.aw-sheet-lbl { display:block; margin:14px 0 8px; color:var(--gray4); }
+.aw-pos-chips { display:flex; flex-wrap:wrap; gap:8px; }
+.aw-pos-chip { min-width:44px; min-height:44px; padding:0 10px; border-radius:12px; border:1.5px solid var(--gray3); background:#FFFFFF; color:var(--gray5); font-family:'DM Sans',sans-serif; font-size:14px; font-weight:600; cursor:pointer; }
+.aw-pos-chip[aria-pressed="true"] { background:#C24E18; border-color:#C24E18; color:#FFFFFF; font-weight:700; }
+.aw-seg { display:flex; gap:4px; padding:4px; border-radius:16px; background:#E8E2D6; }
+.aw-seg-btn { flex:1; min-height:48px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; border:0; border-radius:12px; background:transparent; cursor:pointer; font-family:'DM Sans',sans-serif; }
+.aw-seg-btn[aria-pressed="true"] { background:#FFFFFF; box-shadow:0 1px 3px rgba(60,40,20,0.12); }
+.aw-seg-label { font-size:14px; font-weight:600; color:var(--gray5); }
+.aw-seg-btn[aria-pressed="true"] .aw-seg-label { color:#C24E18; font-weight:700; }
+.aw-seg-date { font-family:'DM Mono',monospace; font-size:11px; color:var(--gray4); }
+.aw-prev { margin-top:14px; padding:12px 14px; border-radius:18px; background:#FFFFFF; }
+.aw-prev-row { display:flex; justify-content:space-between; align-items:center; min-height:30px; gap:8px; }
+.aw-prev-row.is-past { color:#A39C91; }
+.aw-prev-row.is-now { margin:0 -8px; padding:0 8px; border-radius:10px; background:#FBE4D8; color:#8F3A0F; }
+.aw-prev-name { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; }
+.aw-prev-row.is-now .aw-prev-name { font-weight:700; }
+.aw-prev-date { font-family:'DM Mono',monospace; font-size:12px; }
+.aw-tag { padding:2px 7px; border-radius:999px; background:#C24E18; color:#FFFFFF; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.08em; }
+.aw-tag--end { background:#1C1815; }
+.aw-sheet-note { margin:10px 0; font-family:'DM Mono',monospace; font-size:11px; line-height:1.5; color:var(--gray4); }
 .week-tab { flex-shrink:0; padding:7px 14px; border-radius:20px; font-size:12px; font-weight:600; background:var(--white); color:var(--gray4); cursor:pointer; border:1.5px solid var(--gray2); }
 .week-tab.active { background:var(--orange); color:white; border-color:var(--orange); }
 .week-tab.has-data { border-color:var(--orange); color:var(--orange); }
@@ -2231,6 +2272,84 @@ const sb = createClient(
 let currentUser = null, currentClient = null, currentExercise = null;
 let clientWeek = 1, clientDay = null, currentPlanDayId = null;
 let weeklyTrackerWeek = 1;
+
+// ===== SEMANA AUTOMÁTICA (constantes y helpers puros) =====
+// Cada semana del programa corre de domingo 8 p. m. a domingo 8 p. m., hora de Costa Rica,
+// igual para todos. Solo aplica a clientes con week_mode = 'auto' y program_week1_start;
+// en 'manual' (el default) todo sigue como siempre y manda hidden_weeks.
+const CR_OFFSET_HOURS = -6;            // Costa Rica no tiene horario de verano
+const WEEK_CHANGE_DOW = 0;             // domingo
+const WEEK_CHANGE_HOUR = 20;           // 8 p. m. hora de Costa Rica
+const PROGRAM_SEQUENCE = [1,2,3,4,5,6,7,'deload',9,10,11,12]; // posiciones 1..12; cambiar acá si cambia la duración
+const WEEK_MS = 7 * 24 * 3600 * 1000;
+const CR_OFFSET_MS = CR_OFFSET_HOURS * 3600 * 1000;
+const AW_DOW = ['dom','lun','mar','mié','jue','vie','sáb'];
+const AW_MON = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+// Secuencia del cliente: PROGRAM_SEQUENCE si su plan tiene ese largo (o no lo dice); si no
+// (ej. programas de 5 semanas con el Deload en la 5) se arma con total_weeks y deload_weeks.
+function getProgramSequence(client) {
+  const total = Number(client && client.total_weeks) || 0;
+  if (!total || total === PROGRAM_SEQUENCE.length) return PROGRAM_SEQUENCE;
+  const dl = Array.isArray(client.deload_weeks) ? client.deload_weeks : [];
+  return Array.from({ length: total }, (_, i) => dl.includes(i + 1) ? 'deload' : i + 1);
+}
+// Posición del programa para un instante. Pura: no usa la zona horaria del teléfono.
+// position = floor((now − week1Start) / 7 días) + 1; antes del inicio 'before', pasada la
+// última posición 'finished'.
+function getProgramPosition(week1StartISO, nowMs, seqLength) {
+  const start = Date.parse(week1StartISO);
+  if (isNaN(start)) return null;
+  const now = nowMs == null ? Date.now() : nowMs;
+  const len = seqLength || PROGRAM_SEQUENCE.length;
+  const position = Math.floor((now - start) / WEEK_MS) + 1;
+  const state = now < start ? 'before' : position > len ? 'finished' : 'active';
+  return { state, position, windowStart: new Date(start + (position - 1) * WEEK_MS), windowEnd: new Date(start + position * WEEK_MS) };
+}
+// Último cambio de semana (domingo 8 p. m. CR) que ya pasó (≤ ahora), en ms.
+function lastWeekChangeMs(nowMs) {
+  const now = nowMs == null ? Date.now() : nowMs;
+  const wall = new Date(now + CR_OFFSET_MS); // hora de pared de Costa Rica en los campos UTC
+  const back = (wall.getUTCDay() - WEEK_CHANGE_DOW + 7) % 7;
+  let t = Date.UTC(wall.getUTCFullYear(), wall.getUTCMonth(), wall.getUTCDate() - back, WEEK_CHANGE_HOUR) - CR_OFFSET_MS;
+  if (t > now) t -= WEEK_MS;
+  return t;
+}
+// Semana real del plan (week_number) para una posición. Los 'deload' se emparejan en orden
+// con deload_weeks del cliente. hasContent: esa semana tiene días cargados en monthly_plans.
+function mapPositionToWeek(position, clientWeeks, seq, deloadWeeks) {
+  const s = seq || PROGRAM_SEQUENCE;
+  const entry = s[position - 1];
+  if (entry == null) return null;
+  let week = entry;
+  if (entry === 'deload') {
+    const nth = s.slice(0, position).filter(e => e === 'deload').length - 1;
+    const dl = [...(deloadWeeks || [])].sort((a, b) => a - b);
+    week = dl[nth] != null ? dl[nth] : position;
+  }
+  return {
+    week, isDeload: entry === 'deload',
+    label: entry === 'deload' ? 'Deload' : 'Semana ' + entry,
+    short: entry === 'deload' ? 'DL' : 'S' + entry,
+    hasContent: (clientWeeks || []).map(Number).includes(Number(week))
+  };
+}
+// Fechas en hora de Costa Rica con offset fijo: "jue 22 oct", "22 oct", "8:00 p. m."
+function crWall(ms) { return new Date(ms + CR_OFFSET_MS); }
+function fmtCRDay(ms, withDow) {
+  const d = crWall(ms);
+  return (withDow ? AW_DOW[d.getUTCDay()] + ' ' : '') + d.getUTCDate() + ' ' + AW_MON[d.getUTCMonth()];
+}
+function fmtCRHour(h) { return `${h % 12 || 12}:00 ${h < 12 ? 'a. m.' : 'p. m.'}`; }
+function crDateKey(ms) { return crWall(ms).toISOString().slice(0, 10); }
+function isAutoWeekClient(c) { return !!c && c.week_mode === 'auto' && !!c.program_week1_start && c.program_type !== 'lift'; }
+function getAutoWeekInfo(client, clientWeeks, nowMs) {
+  if (!isAutoWeekClient(client)) return null;
+  const seq = getProgramSequence(client);
+  const pos = getProgramPosition(client.program_week1_start, nowMs, seq.length);
+  if (!pos) return null;
+  return { ...pos, seq, mapped: pos.state === 'active' ? mapPositionToWeek(pos.position, clientWeeks, seq, client.deload_weeks) : null };
+}
 let prevWeekLogsCache = {}; // { exerciseId (semana actual): { setNum: {weight, reps, unit} } }
 // Estado de abierto/cerrado del acordeón de ejercicios, elegido a mano por el cliente
 // (independiente de cuál sea "el primero pendiente"). Se resetea al cambiar de día.
@@ -2984,9 +3103,65 @@ function updateClientWeekUI() {
 }
 
 function getVisibleWeeks() {
+  // Semana automática: el cliente ve solo la semana de la fecha (Mostrar/Ocultar no cuenta)
+  const auto = clientAutoWeekInfo();
+  if (auto) return auto.state === 'active' && auto.mapped && auto.mapped.hasContent ? [auto.mapped.week] : [];
   const hidden = currentClient?.hidden_weeks || [];
   return Array.from({length:getClientTotalWeeks()}, (_,i)=>i+1).filter(w => !hidden.includes(w));
 }
+
+// ===== SEMANA AUTOMÁTICA (cliente) =====
+// Se calcula al abrir la app, al cargar la tira de días y al volver a la app (visibilitychange).
+// No escribe nada: hidden_weeks queda intacto, así volver a manual deja todo como estaba.
+let autoWeekCache = null; // { clientId, weeks: [week_number con días cargados], info }
+async function loadAutoWeek(force) {
+  if (!currentClient || currentUser?.role === 'coach' || !isAutoWeekClient(currentClient)) { autoWeekCache = null; return null; }
+  if (force || !autoWeekCache || autoWeekCache.clientId !== currentClient.id) {
+    const { data, error } = await sb.from('monthly_plans').select('week_number').eq('client_id', currentClient.id).limit(5000);
+    if (error && autoWeekCache && autoWeekCache.clientId === currentClient.id) { /* sin red: seguimos con lo que había */ }
+    else autoWeekCache = { clientId: currentClient.id, weeks: [...new Set((data || []).map(r => r.week_number))] };
+  }
+  autoWeekCache.info = getAutoWeekInfo(currentClient, autoWeekCache.weeks);
+  return autoWeekCache.info;
+}
+// Info de la semana automática del cliente logueado; null si está en manual o si su
+// programa todavía no arrancó ('before': mientras tanto sigue como en manual).
+function clientAutoWeekInfo() {
+  if (!currentClient || currentUser?.role === 'coach' || !isAutoWeekClient(currentClient)) return null;
+  if (!autoWeekCache || autoWeekCache.clientId !== currentClient.id || !autoWeekCache.info) return null;
+  return autoWeekCache.info.state === 'before' ? null : autoWeekCache.info;
+}
+// Qué muestra la portada de Hoy en vez de "Entrenar". Churn y el bloqueo de training_access
+// se resuelven antes (no llegan acá). Prioridad: terminado > en construcción > entrenar.
+function getClientHoyMode() {
+  if (!currentClient || currentUser?.role === 'coach' || currentClient.program_type === 'lift') return 'train';
+  const auto = clientAutoWeekInfo();
+  if (auto && auto.state === 'finished') return 'finished';
+  return getVisibleWeeks().length ? 'train' : 'construction';
+}
+// Al volver a la app: relee modo/fecha del cliente y las semanas con contenido; si cambió la
+// semana, re-pinta Hoy. Si está entrenando no lo sacamos: se aplica la próxima vez.
+async function autoWeekOnResume() {
+  if (!currentClient || currentUser?.role === 'coach' || currentClient.program_type === 'lift' || currentClient.is_churn) return;
+  const { data } = await sb.from('clients').select('week_mode,program_week1_start').eq('id', currentClient.id).maybeSingle();
+  if (data) { currentClient.week_mode = data.week_mode; currentClient.program_week1_start = data.program_week1_start; }
+  if (!isAutoWeekClient(currentClient)) {
+    if (!autoWeekCache) return; // ya estaba en manual: nada cambió
+    autoWeekCache = null;       // Sau lo volvió a manual mientras la app estaba abierta
+  } else {
+    const key = i => i ? `${i.state}:${i.position}:${i.mapped ? i.mapped.hasContent : ''}` : '';
+    const before = key(autoWeekCache && autoWeekCache.info);
+    const info = await loadAutoWeek(true);
+    if (key(info) === before) return;
+  }
+  if (isWorkoutStarted() || workoutLock) return;
+  if (!document.getElementById('screen-client-home')?.classList.contains('active')) return;
+  clientDay = null;
+  if (applyTrainingAccessGate()) { loadClientDayStrip(); showHoyCover(); }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') autoWeekOnResume().catch(e => console.warn('autoWeekOnResume:', e));
+});
 function getNextVisibleWeek(current, dir) {
   const visible = getVisibleWeeks();
   if(dir > 0) return visible.find(w => w > current) || current;
@@ -3002,9 +3177,15 @@ function changeClientWeek(dir) {
 
 async function loadClientDayStrip(opts) {
   if(!currentClient)return;
+  // Semana automática: la semana sale de la fecha (si está entrenando no lo movemos).
+  await loadAutoWeek();
+  const _auto = clientAutoWeekInfo();
+  if(_auto && _auto.state === 'active' && _auto.mapped && clientWeek !== _auto.mapped.week && !isWorkoutStarted()) {
+    clientWeek = _auto.mapped.week; clientDay = null; updateClientWeekUI();
+  }
   // Auto-skip hidden weeks
   const _hw = currentClient?.hidden_weeks || [];
-  if(_hw.length > 0 && _hw.includes(clientWeek)) {
+  if(!_auto && _hw.length > 0 && _hw.includes(clientWeek)) {
     const _vw = getVisibleWeeks();
     if(_vw.length > 0) { clientWeek = _vw[0]; updateClientWeekUI(); }
   }
@@ -7098,26 +7279,30 @@ function renderPlanOverview() {
   const isSelectedHidden = hiddenWeeks.includes(planOverviewSelectedWeek);
 
   const selectedWeekLabel = weekLabelFor(planOverviewSelectedWeek);
+  // Semana automática: los chips tachan las semanas que ya pasaron (no las ocultas) y marcan la de hoy
+  const aw = getAutoWeekInfo(currentClient, weekNums);
+  const awPos = aw ? planAutoPositionsByWeek(aw) : null;
   container.innerHTML = `
     <!-- Week selector chips -->
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
       ${weekNums.map(w=>{
-        const isHid = hiddenWeeks.includes(w);
+        const isHid = aw ? (awPos[w] != null && (aw.state === 'finished' || (aw.state === 'active' && awPos[w] < aw.position))) : hiddenWeeks.includes(w);
         const isSel = w === planOverviewSelectedWeek;
         const bg = isSel ? (isHid ? '#9e9e9e' : 'var(--orange)') : (isHid ? '#f5f5f5' : 'var(--gray1)');
         const border = isSel ? (isHid ? '#9e9e9e' : 'var(--orange)') : (isHid ? '#bdbdbd' : 'var(--gray2)');
         const color = isSel ? 'white' : (isHid ? '#9e9e9e' : 'var(--gray5)');
-        const baseLabel = weekLabelFor(w);
+        const baseLabel = weekLabelFor(w) + (aw && aw.state === 'active' && awPos[w] === aw.position ? ' · hoy' : '');
         const label = isHid ? `<span style="text-decoration:line-through;opacity:0.7;">${baseLabel}</span>` : baseLabel;
         return `<button onclick="selectPlanOverviewWeek(${w})" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid ${border};background:${bg};color:${color};cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;">${label}</button>`;
       }).join('')}
       <button onclick="openBuilderForWeek(${planOverviewSelectedWeek})" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid var(--orange);background:var(--orange-light);color:var(--orange);cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:auto;">Editar</button>
     </div>
+    ${planAutoPanelHtml(aw, weekNums)}
     <!-- Delete + visibility actions row -->
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
       <button onclick="deleteWeek(${planOverviewSelectedWeek})" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid #e53935;background:#fff0f0;color:#e53935;cursor:pointer;font-family:'DM Sans',sans-serif;">Borrar ${selectedWeekLabel}</button>
       <button onclick="deleteEntireProgram()" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid #b71c1c;background:#fff0f0;color:#b71c1c;cursor:pointer;font-family:'DM Sans',sans-serif;">Borrar programa completo</button>
-      <button onclick="toggleHiddenWeek(${planOverviewSelectedWeek})" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${isSelectedHidden?'#43a047':'#757575'};background:${isSelectedHidden?'#f1f8e9':'#f5f5f5'};color:${isSelectedHidden?'#43a047':'#757575'};cursor:pointer;font-family:'DM Sans',sans-serif;">${isSelectedHidden?'Mostrar al cliente':'Ocultar al cliente'}</button>
+      ${aw ? `<span title="En modo automático el cliente ve la semana según la fecha" style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px dashed #bdbdbd;background:#f5f5f5;color:#757575;font-family:'DM Sans',sans-serif;">${icon('lock', 12)}Mostrar al cliente · auto</span>` : `<button onclick="toggleHiddenWeek(${planOverviewSelectedWeek})" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${isSelectedHidden?'#43a047':'#757575'};background:${isSelectedHidden?'#f1f8e9':'#f5f5f5'};color:${isSelectedHidden?'#43a047':'#757575'};cursor:pointer;font-family:'DM Sans',sans-serif;">${isSelectedHidden?'Mostrar al cliente':'Ocultar al cliente'}</button>`}
       <button onclick="restartClientProgress()" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid #e65100;background:#fff3e0;color:#e65100;cursor:pointer;font-family:'DM Sans',sans-serif;">Reiniciar progreso</button>
     </div>
     <!-- Days of selected week -->
@@ -7138,6 +7323,184 @@ function selectPlanOverviewWeek(w) {
   weeklyTrackerWeek = w;
   renderPlanOverview();
   if(currentClient) renderWeeklyTracker(currentClient.id);
+}
+
+// ===== SEMANA AUTOMÁTICA (coach): badge, avisos y "Sincronizar fecha" =====
+// Lo único que escribe es clients.week_mode y clients.program_week1_start de este cliente.
+const AW_REFRESH_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>';
+// { week_number: posición } según la secuencia del cliente
+function planAutoPositionsByWeek(aw) {
+  const map = {};
+  aw.seq.forEach((_, i) => { const m = mapPositionToWeek(i + 1, [], aw.seq, currentClient?.deload_weeks); if (m && map[m.week] == null) map[m.week] = i + 1; });
+  return map;
+}
+function awWarnHtml(title, text) {
+  return `<div class="aw-warn">${icon('alert-triangle', 18)}<div><div class="aw-warn-title">${title}</div><div class="aw-warn-text">${text}</div></div></div>`;
+}
+function planAutoPanelHtml(aw, weekNums) {
+  if (!currentClient || currentClient.program_type === 'lift') return '';
+  if (!aw) return `<div class="aw-manual-row">
+      <button type="button" class="aw-btn-2" onclick="openWeekSync()">${AW_REFRESH_SVG}Sincronizar fecha</button>
+      <span>Semana manual: el cliente ve lo que mostrás.</span>
+    </div>`;
+  const start = Date.parse(currentClient.program_week1_start);
+  const when = ms => `${fmtCRDay(ms, true)} · ${fmtCRHour(WEEK_CHANGE_HOUR)}`;
+  let title, sub, warn = '';
+  if (aw.state === 'finished') {
+    title = 'Programa terminado (auto)';
+    sub = 'Terminó el ' + when(start + aw.seq.length * WEEK_MS);
+  } else if (aw.state === 'before') {
+    title = 'Semana automática: todavía no arranca';
+    sub = 'La Semana 1 empieza el ' + when(start) + '. Hasta entonces ve lo que mostrás.';
+  } else {
+    title = `Semana actual: ${aw.mapped ? aw.mapped.label.replace('Semana ', '') : aw.position} (auto)`;
+    if (aw.mapped && aw.mapped.isDeload) title = 'Semana actual: Deload (auto)';
+    sub = 'Cambia el ' + when(aw.windowEnd.getTime());
+    if (aw.mapped && !aw.mapped.hasContent) {
+      warn = awWarnHtml(`La ${aw.mapped.label} todavía no tiene ejercicios`, 'Tu cliente está viendo “En construcción” hasta que la cargues.');
+    } else {
+      for (let p = aw.position + 1; p <= aw.seq.length; p++) {
+        const m = mapPositionToWeek(p, weekNums, aw.seq, currentClient.deload_weeks);
+        if (m && !m.hasContent) {
+          warn = awWarnHtml(`La ${m.label} todavía no tiene ejercicios`, `Empieza el ${fmtCRDay(start + (p - 1) * WEEK_MS, true)}. Si sigue vacía, tu cliente va a ver “En construcción”.`);
+          break;
+        }
+      }
+    }
+  }
+  return `<div class="aw-card">
+      <div class="aw-card-row">
+        <div class="aw-card-ico">${icon('calendar', 20)}</div>
+        <div style="flex:1;min-width:0;"><div class="aw-card-title">${title}</div><div class="aw-card-sub">${sub}</div></div>
+        <span class="aw-pill">AUTO</span>
+      </div>
+      <div class="aw-card-foot">La Semana 1 ${start > Date.now() ? 'empieza' : 'empezó'} el ${fmtCRDay(start, true)}, ${fmtCRHour(WEEK_CHANGE_HOUR)} (hora de Costa Rica)</div>
+    </div>
+    <div class="aw-actions">
+      <button type="button" class="aw-btn" onclick="openWeekSync()">${AW_REFRESH_SVG}Sincronizar fecha</button>
+      <button type="button" class="aw-btn-2" onclick="setWeekModeManual()">Volver a manual</button>
+    </div>
+    ${warn}`;
+}
+
+let weekSync = null; // { pos, mode: 'today' | 'next' }
+let weekSyncBusy = false;
+function weekSyncStartMs(pos, mode, nowMs) {
+  // week1Start = (último domingo 8 p. m. CR ≤ ahora [+ 7 días si empieza el próximo domingo]) − (posición − 1) × 7 días
+  return lastWeekChangeMs(nowMs) + (mode === 'next' ? WEEK_MS : 0) - (pos - 1) * WEEK_MS;
+}
+function weekModeErrorText(error) {
+  return /week_mode|program_week1_start/.test(error && error.message || '')
+    ? 'Falta correr migration_auto_week.sql en Supabase.'
+    : 'No se pudo guardar: ' + (error && error.message || 'error');
+}
+function openWeekSync() {
+  if (!currentClient) return;
+  const seq = getProgramSequence(currentClient);
+  const weeks = Object.keys(planOverviewAllPlans || {}).map(Number);
+  const aw = getAutoWeekInfo(currentClient, weeks);
+  let pos = 1;
+  if (aw && aw.state === 'active') pos = aw.position;
+  else {
+    // En manual: si el cliente ve una sola semana, arrancamos en esa
+    const hidden = currentClient.hidden_weeks || [];
+    const visible = weeks.filter(w => !hidden.includes(w));
+    if (visible.length === 1) {
+      const i = seq.findIndex((_, k) => (mapPositionToWeek(k + 1, weeks, seq, currentClient.deload_weeks) || {}).week === visible[0]);
+      if (i >= 0) pos = i + 1;
+    }
+  }
+  weekSync = { pos, mode: 'today' };
+  let sh = document.getElementById('week-sync-sheet');
+  if (!sh) {
+    sh = document.createElement('div');
+    sh.id = 'week-sync-sheet';
+    sh.className = 'hive-sheet';
+    sh.setAttribute('role', 'dialog');
+    sh.setAttribute('aria-modal', 'true');
+    sh.setAttribute('aria-label', 'Sincronizar fecha');
+    sh.onclick = e => { if (e.target === sh) closeWeekSync(); };
+    document.body.appendChild(sh);
+  }
+  sh.hidden = false;
+  renderWeekSync();
+}
+function closeWeekSync() { const sh = document.getElementById('week-sync-sheet'); if (sh) { sh.hidden = true; sh.innerHTML = ''; } weekSync = null; }
+function pickWeekSyncPos(p) { if (!weekSync) return; weekSync.pos = p; renderWeekSync(); }
+function pickWeekSyncMode(m) { if (!weekSync) return; weekSync.mode = m; renderWeekSync(); }
+function renderWeekSync() {
+  const sh = document.getElementById('week-sync-sheet');
+  if (!sh || !weekSync || !currentClient) return;
+  const seq = getProgramSequence(currentClient);
+  const weeks = Object.keys(planOverviewAllPlans || {}).map(Number);
+  const now = Date.now();
+  const start = weekSyncStartMs(weekSync.pos, weekSync.mode, now);
+  const cur = getProgramPosition(new Date(start).toISOString(), now, seq.length);
+  const nextChange = lastWeekChangeMs(now) + WEEK_MS;
+  const chips = seq.map((e, i) => `<button type="button" class="aw-pos-chip" aria-pressed="${weekSync.pos === i + 1}" onclick="pickWeekSyncPos(${i + 1})">${e === 'deload' ? 'Deload' : e}</button>`).join('');
+  const seg = (m, label, ms) => `<button type="button" class="aw-seg-btn" aria-pressed="${weekSync.mode === m}" onclick="pickWeekSyncMode('${m}')"><span class="aw-seg-label">${label}</span><span class="aw-seg-date">${fmtCRDay(ms, true)}</span></button>`;
+  const empties = [];
+  const rows = seq.map((_, i) => {
+    const p = i + 1;
+    const m = mapPositionToWeek(p, weeks, seq, currentClient.deload_weeks);
+    const ws = start + i * WEEK_MS, we = ws + WEEK_MS;
+    const isNow = cur && cur.state === 'active' && cur.position === p;
+    const isPast = we <= now;
+    if (!isPast && m && !m.hasContent) empties.push(`La ${m.label} no tiene ejercicios todavía. Empieza el ${fmtCRDay(ws)}.`);
+    const tag = isNow ? '<span class="aw-tag">AHORA</span>' : p === seq.length ? '<span class="aw-tag aw-tag--end">FIN</span>' : '';
+    return `<div class="aw-prev-row${isNow ? ' is-now' : ''}${isPast ? ' is-past' : ''}"><span class="aw-prev-name">${m ? m.label : 'Semana ' + p}${tag}</span><span class="aw-prev-date">${fmtCRDay(ws)} → ${fmtCRDay(we)}</span></div>`;
+  }).join('');
+  const isAuto = isAutoWeekClient(currentClient);
+  sh.innerHTML = `<div class="hive-sheet-inner aw-sheet">
+    <div class="hive-sheet-head"><div class="hive-sheet-title">Sincronizar fecha</div>
+      <button type="button" class="icon-btn" style="background:#F1ECE4;color:var(--ink);border-radius:50%;" aria-label="Cerrar" onclick="closeWeekSync()">${icon('x', 18)}</button></div>
+    <p class="aw-sheet-lead">Elegí la semana que tu cliente está haciendo y desde cuándo corre. De ahí en adelante avanza sola.</p>
+    <div class="pg-mono aw-sheet-lbl">Semana que corre</div>
+    <div class="aw-pos-chips" role="group" aria-label="Semana que corre">${chips}</div>
+    <div class="pg-mono aw-sheet-lbl">¿Desde cuándo?</div>
+    <div class="aw-seg" role="group" aria-label="Desde cuándo">${seg('today', 'Es la de hoy', now)}${seg('next', 'Empieza el domingo', nextChange)}</div>
+    <div class="aw-prev"><div class="pg-mono aw-sheet-lbl" style="margin:0 0 4px;">Vista previa</div>${rows}</div>
+    <div class="aw-sheet-note">Todas cambian los domingos a las ${fmtCRHour(WEEK_CHANGE_HOUR)} · hora de Costa Rica</div>
+    ${empties.length ? `<div class="aw-warn">${icon('alert-triangle', 18)}<div class="aw-warn-text">${empties.join('<br>')}</div></div>` : ''}
+    <div class="hive-sheet-actions" style="margin-top:14px;">
+      <button type="button" class="aw-btn aw-btn--lg" onclick="saveWeekSync()">Guardar y activar automático</button>
+      ${isAuto ? '<button type="button" class="aw-btn-link" onclick="setWeekModeManual()">Volver a manual</button>' : '<button type="button" class="aw-btn-link" onclick="closeWeekSync()">Cancelar</button>'}
+    </div>
+  </div>`;
+}
+function syncCachedClient(fields) {
+  [window._cachedClients, window._cachedClientsAll].forEach(list => {
+    const c = (list || []).find(x => currentClient && x.id === currentClient.id);
+    if (c) Object.assign(c, fields);
+  });
+}
+async function saveWeekSync() {
+  if (!weekSync || !currentClient || weekSyncBusy) return;
+  weekSyncBusy = true;
+  try {
+    const start = new Date(weekSyncStartMs(weekSync.pos, weekSync.mode)).toISOString();
+    const { error } = await sb.from('clients').update({ week_mode: 'auto', program_week1_start: start }).eq('id', currentClient.id);
+    if (error) { showToast(weekModeErrorText(error), 'error', 5000); return; }
+    currentClient.week_mode = 'auto';
+    currentClient.program_week1_start = start;
+    syncCachedClient({ week_mode: 'auto', program_week1_start: start });
+    closeWeekSync();
+    renderPlanOverview();
+    showToast('Semana automática activada', 'success');
+  } finally { weekSyncBusy = false; }
+}
+async function setWeekModeManual() {
+  if (!currentClient || weekSyncBusy) return;
+  weekSyncBusy = true;
+  try {
+    const { error } = await sb.from('clients').update({ week_mode: 'manual' }).eq('id', currentClient.id);
+    if (error) { showToast(weekModeErrorText(error), 'error', 5000); return; }
+    currentClient.week_mode = 'manual';
+    syncCachedClient({ week_mode: 'manual' });
+    closeWeekSync();
+    renderPlanOverview();
+    showToast('Volvió a manual: el cliente ve lo que mostrás', 'success');
+  } finally { weekSyncBusy = false; }
 }
 
 async function toggleHiddenWeek(w) {
