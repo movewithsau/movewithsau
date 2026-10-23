@@ -561,6 +561,34 @@ body.lift-mode #strongflow-btn { display:none !important; }
 .tc-month { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; font-size:13px; font-weight:700; }
 .tc-month-btn { width:36px; height:36px; border:0; border-radius:50%; background:rgba(255,255,255,0.1); color:#FBEFE3; display:flex; align-items:center; justify-content:center; cursor:pointer; }
 .tc-month-btn:disabled { opacity:0.35; cursor:default; }
+/* Pestaña Progreso */
+.tcp { display:flex; flex-direction:column; gap:12px; }
+.tcp-head { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; }
+.tcp-big { font-family:'Playfair Display',serif; font-weight:800; font-size:46px; line-height:1; color:#FFA066; }
+.tcp-sub { margin-top:6px; font-size:13px; line-height:1.35; color:#F1DFCE; }
+.tcp-bars { display:flex; align-items:flex-end; gap:10px; height:62px; flex:none; }
+.tcp-bar { display:flex; flex-direction:column; align-items:center; gap:4px; }
+.tcp-bar span { width:16px; border-radius:4px; background:rgba(251,239,227,0.3); }
+.tcp-bar i { font-style:normal; font-family:'DM Mono',monospace; font-size:9.5px; color:#E3C9B3; }
+.tcp-bar.is-cur span { background:#FF8A4C; }
+.tcp-bar.is-cur i { color:#FFB27A; font-weight:600; }
+.tcp-chips { display:flex; flex-wrap:wrap; gap:8px; }
+.tcp-chips button { min-height:36px; padding:0 12px; border-radius:999px; border:1px solid rgba(251,239,227,0.3); background:transparent; color:#E3C9B3; font-family:'DM Sans',sans-serif; font-size:12.5px; font-weight:600; cursor:pointer; }
+.tcp-chips button[aria-pressed="true"] { background:rgba(255,138,76,0.2); border-color:#FF8A4C; color:#FFD2B2; font-weight:700; }
+.tcp-lbl { display:block; font-size:10.5px; color:#E3C9B3; margin-bottom:-6px; }
+.tcp-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-top:1px solid rgba(255,255,255,0.12); }
+.tcp-row-main { display:flex; flex-direction:column; flex:1; min-width:0; }
+.tcp-row-name { display:flex; align-items:center; gap:6px; font-size:14px; font-weight:600; }
+.tcp-row-ft { font-family:'DM Mono',monospace; font-size:12px; color:#E3C9B3; }
+.tcp-pill { flex:none; padding:4px 10px; border-radius:999px; background:rgba(123,211,137,0.16); color:#9BE8A9; font-size:13px; font-weight:700; }
+.tcp-pill.is-neg { background:rgba(251,239,227,0.12); color:#E3C9B3; }
+.tcp-note { font-size:11.5px; line-height:1.4; color:#E3C9B3; }
+.tcp-share { min-height:44px; border-radius:14px; border:1.5px solid rgba(251,239,227,0.55); background:transparent; color:#FBEFE3; display:flex; align-items:center; justify-content:center; gap:8px; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; cursor:pointer; }
+.tcp-empty { display:flex; flex-direction:column; align-items:center; gap:10px; padding:14px 8px 4px; text-align:center; }
+.tcp-empty-hex { display:flex; gap:6px; }
+.tcp-empty-title { font-family:'Playfair Display',serif; font-weight:800; font-size:22px; line-height:1.2; }
+.tcp-empty-text { font-size:13.5px; line-height:1.45; color:#F1DFCE; }
+.tcp-empty-chip { padding:5px 12px; border-radius:999px; background:rgba(255,255,255,0.1); font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.1em; color:#FFD2B2; }
 /* ===== SEMANA COMPLETA (pop-up) ===== */
 .wd-modal { position:fixed; inset:0; z-index:400; background:rgba(20,12,8,0.66); display:flex; align-items:center; justify-content:center; padding:24px; box-sizing:border-box; }
 .wd-modal[hidden] { display:none; }
@@ -5446,6 +5474,214 @@ function renderConstancia(st) {
       ${st.tab === 'constancia' ? coachNav + (d ? tcCalendarHtml(st) : '<div class="spinner" style="margin:16px auto;"></div>') : progress}
     </div>
   </div>`;
+}
+
+// ===== TU CONSTANCIA: PESTAÑA PROGRESO =====
+// computeProgress: función pura, único lugar del cálculo. Solo lectura, no guarda nada.
+// logs: [{ week, name, group, day, set, weight, unit, reps }] (group = letra del circuito o null)
+// opts: { deloadWeeks: [..], currentWeek, mode: 'first' | 'prev' }
+// 1) Por semana del programa y por ejercicio (nombre normalizado: no hay id estable entre semanas).
+// 2) Mejor serie: con peso, fuerza estimada kg × (1 + reps/30) (lb → kg); sin peso, reps.
+//    Circuitos: si cambió la cantidad de rondas registradas se compara eso ("3 → 4 rondas");
+//    si no, cada ejercicio del circuito por su mejor serie.
+// 3) Cambio = (después − antes) / antes, solo ejercicios presentes en las dos semanas.
+// 4) Número grande = promedio simple de los cambios, redondeado. El Deload no cuenta.
+const LB_TO_KG = 0.45359237;
+function progressKey(name) { return String(name || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' '); }
+function progressWeekItems(logs) {
+  const ex = new Map(), circ = new Map();
+  logs.forEach(l => {
+    const k = 'ex:' + progressKey(l.name);
+    const w = Number(l.weight) > 0 ? Number(l.weight) : 0;
+    const reps = Number(l.reps) > 0 ? Number(l.reps) : 0;
+    if (!w && !reps) return;
+    let it = ex.get(k);
+    if (!it) { it = { key: k, name: l.name, circuit: !!l.group, best: null, bestReps: null }; ex.set(k, it); }
+    if (w) {
+      const kg = l.unit === 'lb' ? w * LB_TO_KG : w;
+      const score = kg * (1 + reps / 30);
+      if (!it.best || score > it.best.score) it.best = { score, weight: w, unit: l.unit === 'lb' ? 'lb' : 'kg', kg, reps };
+    } else if (!it.bestReps || reps > it.bestReps.reps) it.bestReps = { score: reps, reps };
+    if (l.group) {
+      const ck = `circ:${progressKey(l.day)}:${String(l.group).toUpperCase()}`;
+      let c = circ.get(ck);
+      if (!c) {
+        // El mismo circuito puede estar en varios días: "Circuito B · D2"
+        const dm = String(l.day || '').match(/^D[ií]a\s*(\d+)/i);
+        const dayShort = dm ? 'D' + dm[1] : String(l.day || '').split(/\s+/)[0];
+        c = { key: ck, name: 'Circuito ' + String(l.group).toUpperCase() + (dayShort ? ' · ' + dayShort : ''), circuit: true, rounds: new Set(), exKeys: new Set() };
+        circ.set(ck, c);
+      }
+      c.rounds.add(Number(l.set) || 0);
+      c.exKeys.add(k);
+    }
+  });
+  const items = new Map();
+  ex.forEach(it => {
+    // Con peso manda la fuerza estimada; si nunca hubo peso, las reps
+    if (it.best) items.set(it.key, { key: it.key, name: it.name, circuit: it.circuit, type: 'weight', score: it.best.score, show: it.best });
+    else if (it.bestReps) items.set(it.key, { key: it.key, name: it.name, circuit: it.circuit, type: 'reps', score: it.bestReps.score, show: it.bestReps });
+  });
+  circ.forEach(c => items.set(c.key, { key: c.key, name: c.name, circuit: true, type: 'rounds', score: c.rounds.size, show: { rounds: c.rounds.size }, exKeys: c.exKeys }));
+  return items;
+}
+function progressCompare(a, b) {
+  const out = [];
+  // Circuitos: rondas si cambiaron (y entonces sus ejercicios no cuentan aparte);
+  // si no cambiaron, sus ejercicios por mejor serie
+  const sameRounds = new Set(), byRounds = new Set();
+  a.forEach((ia, k) => {
+    if (ia.type !== 'rounds') return;
+    const ib = b.get(k);
+    if (!ib) return;
+    if (ia.score === ib.score) sameRounds.add(k);
+    else ib.exKeys.forEach(x => byRounds.add(x));
+  });
+  a.forEach((ia, k) => {
+    const ib = b.get(k);
+    if (!ib || ia.type !== ib.type || !(ia.score > 0)) return;
+    if (ia.type === 'rounds' && sameRounds.has(k)) return;
+    if (ia.type !== 'rounds' && byRounds.has(k)) return;
+    out.push({ key: k, name: ib.name, circuit: ia.circuit, type: ia.type, before: ia.show, after: ib.show, change: (ib.score - ia.score) / ia.score });
+  });
+  return out;
+}
+function computeProgress(logs, opts) {
+  const o = opts || {};
+  const deload = new Set((o.deloadWeeks || []).map(Number));
+  const byWeek = new Map();
+  (logs || []).forEach(l => {
+    const w = Number(l.week);
+    if (!(w > 0) || deload.has(w) || !l.name) return;
+    if (!byWeek.has(w)) byWeek.set(w, []);
+    byWeek.get(w).push(l);
+  });
+  const weeks = [...byWeek.keys()].sort((x, y) => x - y);
+  if (weeks.length < 2) return { empty: true, weeksLogged: weeks.length };
+  const upTo = o.currentWeek ? weeks.filter(w => w <= o.currentWeek) : weeks;
+  const after = upTo.length >= 2 ? upTo[upTo.length - 1] : weeks[weeks.length - 1];
+  const prior = weeks.filter(w => w < after);
+  const before = o.mode === 'prev' ? prior[prior.length - 1] : weeks[0];
+  const items = new Map(weeks.map(w => [w, progressWeekItems(byWeek.get(w))]));
+  const changes = progressCompare(items.get(before), items.get(after));
+  const avg = list => list.length ? list.reduce((s, c) => s + c.change, 0) / list.length : 0;
+  const pct = Math.round(avg(changes) * 100);
+  const sorted = changes.slice().sort((x, y) => y.change - x.change);
+  const positives = sorted.filter(c => c.change > 0);
+  const top = positives.length ? positives.slice(0, 4) : sorted.slice(0, 2);
+  // Barras: fuerza de cada semana relativa a la primera (100 = primera semana)
+  const first = items.get(weeks[0]);
+  const bars = weeks.filter(w => w <= after).map(w => ({ week: w, value: w === weeks[0] ? 100 : 100 + avg(progressCompare(first, items.get(w))) * 100, current: w === after }));
+  return { empty: false, weeksLogged: weeks.length, before, after, pct, compared: changes.length, top, bars };
+}
+
+// Carga los registros del cliente (paginado de a 1000) y los pasa al formato de computeProgress
+async function loadConstanciaProgress(st) {
+  const cid = st.client.id;
+  if (st.progressKey === cid && st.progressLogs) { renderConstancia(st); return; }
+  const all = [];
+  for (let from = 0; from < 20000; from += 1000) {
+    const { data, error } = await sb.from('exercise_logs')
+      .select('week_number,set_number,weight,weight_unit,reps_done,logged_at,exercises(name,superset_group,plan_day_id)')
+      .eq('client_id', cid).order('logged_at', { ascending: true }).range(from, from + 999);
+    if (error || !data) break;
+    all.push(...data);
+    if (data.length < 1000) break;
+  }
+  const { data: pds } = await sb.from('monthly_plans').select('id,day_of_week').eq('client_id', cid).limit(5000);
+  if (tcStates[st.mountId] !== st || st.client.id !== cid) return;
+  const dayOf = new Map((pds || []).map(p => [String(p.id), p.day_of_week]));
+  st.progressLogs = all.filter(l => l.exercises && l.exercises.name).map(l => ({
+    week: l.week_number, name: l.exercises.name, group: l.exercises.superset_group || null,
+    day: dayOf.get(String(l.exercises.plan_day_id)) || String(l.exercises.plan_day_id || ''),
+    set: l.set_number, weight: l.weight, unit: l.weight_unit, reps: l.reps_done
+  }));
+  st.progressKey = cid;
+  renderConstancia(st);
+}
+function tcProgressOf(st) {
+  if (!st.progressLogs) return null;
+  const auto = isAutoWeekClient(st.client) ? getAutoWeekInfo(st.client, []) : null;
+  const currentWeek = auto && auto.state === 'active' && auto.mapped ? auto.mapped.week : null;
+  return computeProgress(st.progressLogs, { deloadWeeks: st.client.deload_weeks || [5], currentWeek, mode: st.cmp });
+}
+function tcSetCmp(mountId, mode) { const st = tcStates[mountId]; if (!st) return; st.cmp = mode; renderConstancia(st); }
+function progressPctText(p) { return (p > 0 ? '+' : p < 0 ? '−' : '') + Math.abs(p) + '%'; }
+function progressFromTo(c) {
+  if (c.type === 'rounds') return `${c.before.rounds} → ${c.after.rounds} rondas`;
+  if (c.type === 'reps') return `${c.before.reps} → ${c.after.reps} reps`;
+  const same = c.before.unit === c.after.unit;
+  const w = s => pgNum(Math.round((same ? s.weight : s.kg) * 10) / 10);
+  if (same && c.before.weight === c.after.weight && c.before.reps !== c.after.reps) return `${w(c.before)} ${c.after.unit} · ${c.before.reps} → ${c.after.reps} reps`;
+  return `${w(c.before)} → ${w(c.after)} ${same ? c.after.unit : 'kg'}`;
+}
+const TC_REPEAT_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFB27A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Circuito" role="img" focusable="false"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>';
+function tcProgressHtml(st) {
+  if (!st.progressLogs) return '<div class="spinner" style="margin:16px auto;"></div>';
+  const p = tcProgressOf(st);
+  const hexOn = '<svg width="34" height="38" viewBox="0 0 56 64" aria-hidden="true" focusable="false"><polygon points="28,2 54,17 54,47 28,62 2,47 2,17" fill="#FF8A4C"/><path d="M18 33l7 7 13-14" fill="none" stroke="#3B1C0D" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const hexOff = '<svg width="34" height="38" viewBox="0 0 56 64" aria-hidden="true" focusable="false"><polygon points="28,2 54,17 54,47 28,62 2,47 2,17" fill="none" stroke="rgba(251,239,227,0.45)" stroke-width="3" stroke-dasharray="6 5" stroke-linejoin="round"/></svg>';
+  if (p.empty) {
+    const n = Math.min(p.weeksLogged, 2);
+    return `<div class="tcp-empty">
+      <div class="tcp-empty-hex" role="img" aria-label="${n} de 2 semanas registradas">${hexOn.repeat(n)}${hexOff.repeat(2 - n)}</div>
+      <div class="tcp-empty-title">Todavía no hay con qué comparar</div>
+      <div class="tcp-empty-text">Cuando completes 2 semanas de entreno vas a ver acá cuánto subiste en peso, repeticiones y circuitos.</div>
+      <span class="tcp-empty-chip">${n} DE 2 SEMANAS REGISTRADAS</span>
+    </div>`;
+  }
+  const wl = w => isDeloadWeekOf(st.client, w) ? 'Deload' : 'Semana ' + w;
+  const vals = p.bars.map(b => b.value), min = Math.min(...vals), max = Math.max(...vals);
+  const bars = p.bars.slice(-6).map(b => {
+    const h = max === min ? 30 : Math.round(16 + 30 * (b.value - min) / (max - min));
+    return `<div class="tcp-bar${b.current ? ' is-cur' : ''}"><span style="height:${h}px"></span><i>S${b.week}</i></div>`;
+  }).join('');
+  const sub = p.compared === 0 ? 'todavía sin ejercicios repetidos para comparar'
+    : st.cmp === 'prev' ? `de fuerza vs. tu ${wl(p.before)}` : `de fuerza desde tu ${wl(p.before)}`;
+  const list = p.top.map(c => `<div class="tcp-row">
+      <div class="tcp-row-main"><span class="tcp-row-name">${c.circuit ? TC_REPEAT_SVG : ''}${escHtml(c.name)}</span><span class="tcp-row-ft">${progressFromTo(c)}</span></div>
+      <span class="tcp-pill${c.change < 0 ? ' is-neg' : ''}">${progressPctText(Math.round(c.change * 100))}</span>
+    </div>`).join('');
+  return `<div class="tcp">
+    <div class="tcp-head">
+      <div><div class="tcp-big">${progressPctText(p.pct)}</div><div class="tcp-sub">${sub}</div></div>
+      <div class="tcp-bars" role="img" aria-label="Fuerza por semana: ${p.bars.map(b => 'S' + b.week + ' ' + Math.round(b.value)).join(', ')}">${bars}</div>
+    </div>
+    <div class="tcp-chips" role="group" aria-label="Comparar contra">
+      <button type="button" aria-pressed="${st.cmp === 'first'}" onclick="tcSetCmp('${st.mountId}','first')">Semana ${p.bars[0].week} → ${p.after}</button>
+      <button type="button" aria-pressed="${st.cmp === 'prev'}" onclick="tcSetCmp('${st.mountId}','prev')">Vs. semana pasada</button>
+    </div>
+    ${p.top.length ? `<div class="pg-mono tcp-lbl">${p.top.some(c => c.change > 0) ? 'Lo que más subiste' : 'Tus ejercicios'}</div>${list}` : ''}
+    <div class="tcp-note">Comparamos tu mejor serie de cada ejercicio entre semanas. El Deload no cuenta.</div>
+    ${p.compared ? `<button type="button" class="tcp-share" onclick="openProgressShare('${st.mountId}')">${icon('share', 16)}Compartir mi progreso</button>` : ''}
+  </div>`;
+}
+function isDeloadWeekOf(client, w) { const d = client && Array.isArray(client.deload_weeks) && client.deload_weeks.length ? client.deload_weeks : [5]; return d.includes(w); }
+function openProgressShare(mountId) {
+  const st = tcStates[mountId]; if (!st) return;
+  const p = tcProgressOf(st); if (!p || p.empty) return;
+  const data = { p, name: st.client.name || '', since: isDeloadWeekOf(st.client, p.before) ? 'Deload' : 'Semana ' + p.before, prev: st.cmp === 'prev' };
+  openMoveShare('Compartir mi progreso', 'move-mi-progreso.png', () => drawProgressCanvas(data));
+}
+async function drawProgressCanvas(d) {
+  const { cv, ctx, W } = await drawMoveStoryBase();
+  ctx.textAlign = 'center'; ctx.fillStyle = '#FFFFFF';
+  ctx.font = '500 36px "DM Mono", monospace'; ctx.fillText(moveSpaced('MI PROGRESO'), W / 2, 640);
+  ctx.font = '800 230px "Playfair Display", serif'; ctx.fillText(progressPctText(d.p.pct), W / 2, 870);
+  ctx.font = 'italic 700 64px "Playfair Display", serif'; ctx.fillText(d.prev ? `de fuerza vs. mi ${d.since}` : `de fuerza desde mi ${d.since}`, W / 2, 960);
+  const rows = d.p.top.slice(0, 3);
+  rows.forEach((c, i) => {
+    const y = 1080 + i * 130;
+    ctx.fillStyle = 'rgba(255,255,255,0.14)'; moveRoundRect(ctx, 110, y, W - 220, 108, 30); ctx.fill();
+    ctx.textAlign = 'left'; ctx.fillStyle = '#FFFFFF'; ctx.font = '700 40px "DM Sans", sans-serif';
+    ctx.fillText(hiveFit(ctx, c.name, W - 520), 150, y + 50);
+    ctx.font = '500 29px "DM Mono", monospace'; ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.fillText(progressFromTo(c), 150, y + 88);
+    ctx.textAlign = 'right'; ctx.fillStyle = '#FFFFFF'; ctx.font = '800 54px "Playfair Display", serif';
+    ctx.fillText(progressPctText(Math.round(c.change * 100)), W - 150, y + 72);
+  });
+  ctx.textAlign = 'center'; ctx.fillStyle = '#FFFFFF';
+  ctx.font = '700 52px "DM Sans", sans-serif'; ctx.fillText(hiveFit(ctx, moveSpaced((d.name || '').toUpperCase()), W - 120), W / 2, 1560);
+  return cv;
 }
 
 // ---- Imagen para compartir (genérica): mismo camino que "Compartir mi mes" ----
