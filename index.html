@@ -655,6 +655,25 @@ body.lift-mode #strongflow-btn { display:none !important; }
 .mix-rest-time { display:flex; flex-direction:column; align-items:center; gap:4px; }
 .mix-big { font-family:'DM Mono',monospace; font-size:40px; font-weight:500; line-height:1.1; color:var(--black); }
 .mix-ok { display:flex; align-items:center; justify-content:center; gap:8px; padding:8px 10px; border-radius:10px; background:#E8F5EC; color:#1E7A3C; font-size:12.5px; font-weight:600; text-align:center; }
+/* ===== CRONÓMETRO LIBRE (burbuja de Hoy) ===== */
+.sw-wrap { position:relative; width:50px; height:50px; } /* ancho fijo: la píldora crece hacia la izquierda sin mover las otras burbujas */
+.sw-bubble { width:50px; height:50px; border-radius:50%; border:2px solid #F75A0E; background:#111111; color:#F75A0E; display:flex; align-items:center; justify-content:center; gap:7px; padding:0; box-shadow:0 4px 16px rgba(0,0,0,0.35); cursor:pointer; font-family:'DM Mono',monospace; }
+.sw-bubble.is-pill { position:absolute; right:0; top:5px; width:auto; height:40px; padding:0 14px 0 12px; border-radius:999px; border:0; background:#C24E18; color:#FFFFFF; font-size:15px; font-weight:500; white-space:nowrap; }
+.sw-bubble.is-pill.is-paused { background:#FFFFFF; color:#4A433B; border:1.5px solid #D5D0C8; }
+.sw-bubble.is-pill svg { width:16px; height:16px; }
+.sw-pill-time:empty { display:none; }
+.sw-bubble:focus-visible, .sw-panel button:focus-visible { outline:2px solid #1A1714; outline-offset:2px; }
+.sw-panel { position:absolute; right:0; bottom:calc(100% + 10px); width:248px; box-sizing:border-box; border-radius:18px; background:#FFFFFF; box-shadow:0 8px 28px rgba(40,25,10,.28); padding:14px 16px 16px; display:flex; flex-direction:column; gap:12px; }
+.sw-panel[hidden] { display:none; }
+.sw-head { display:flex; align-items:center; justify-content:space-between; }
+.sw-title { display:flex; align-items:center; gap:8px; font-size:15px; font-weight:700; color:var(--black); }
+.sw-title svg { color:#E5672F; }
+.sw-x { width:32px; height:32px; border:0; border-radius:50%; background:#EFEDE8; color:#5B544B; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.sw-big { text-align:center; font-family:'DM Mono',monospace; font-size:46px; font-weight:500; line-height:1.1; letter-spacing:.02em; color:var(--black); }
+.sw-actions { display:flex; gap:8px; }
+.sw-go { flex:1; height:44px; border:0; border-radius:12px; background:#C24E18; color:#FFFFFF; display:flex; align-items:center; justify-content:center; gap:7px; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; cursor:pointer; }
+.sw-reset { height:44px; padding:0 14px; border-radius:12px; background:transparent; border:1.5px solid #D5D0C8; color:#4A433B; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; cursor:pointer; }
+.sw-note { font-size:11.5px; line-height:1.4; color:#7C746A; text-align:center; }
 /* ===== SEMANA COMPLETA (pop-up) ===== */
 .wd-modal { position:fixed; inset:0; z-index:400; background:rgba(20,12,8,0.66); display:flex; align-items:center; justify-content:center; padding:24px; box-sizing:border-box; }
 .wd-modal[hidden] { display:none; }
@@ -1347,6 +1366,16 @@ button.exx-pill { cursor:pointer; min-height:28px; }
   </div>
   <!-- Floating action buttons — shared column so StrongFlow (grows when workout running) and WhatsApp never overlap -->
   <div style="position:fixed;bottom:80px;right:16px;display:flex;flex-direction:column;align-items:center;gap:14px;z-index:99;">
+    <!-- Cronómetro libre: no guarda nada; el estado vive en memoria (swState) -->
+    <div class="sw-wrap" id="sw-wrap">
+      <div class="sw-panel" id="sw-panel" role="dialog" aria-label="Cronómetro" hidden>
+        <div class="sw-head"><span class="sw-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg>Cronómetro</span><button type="button" class="sw-x" aria-label="Cerrar cronómetro" onclick="swClose()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+        <div class="sw-big" id="sw-big" aria-live="off">00:00</div>
+        <div class="sw-actions"><button type="button" class="sw-go" id="sw-go" onclick="swStartPause()"></button><button type="button" class="sw-reset" onclick="swReset()">Reiniciar</button></div>
+        <span class="sw-note">Se queda corriendo aunque te muevas por el app. No guarda nada.</span>
+      </div>
+      <button type="button" class="sw-bubble" id="sw-bubble" aria-label="Abrir cronómetro" aria-expanded="false" aria-controls="sw-panel" onclick="swToggle()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg><span class="sw-pill-time" id="sw-pill-time" aria-live="off"></span></button>
+    </div>
     <div id="strongflow-btn" onclick="openStrongFlow()" style="width:50px;height:50px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,0.35);border-radius:50%;cursor:pointer;transition:all 0.3s;">
       <svg viewBox="0 0 240 240" width="50" height="50" xmlns="http://www.w3.org/2000/svg"><circle cx="120" cy="120" r="112" fill="#111111" stroke="#F75A0E" stroke-width="10"/><text x="120" y="122" text-anchor="middle" dominant-baseline="central" font-family="DM Sans, Arial, sans-serif" font-size="110" font-weight="700" fill="#F75A0E">?</text></svg>
     </div>
@@ -4209,6 +4238,48 @@ function skipCircuitInterval(group) {
   state.intervalId = null;
   advanceCircuitPhase(group);
 }
+
+// ===== CRONÓMETRO LIBRE (burbuja arriba de la "?") =====
+// Independiente del Modo Timer. Vive en memoria: sobrevive a los repintados de Hoy y a los cambios
+// de pantalla; al recargar o cerrar el app se pierde. No guarda nada (ni base ni localStorage).
+const swState = { running: false, startAt: 0, acc: 0, open: false, iv: null };
+function swElapsed() { return swState.acc + (swState.running ? Date.now() - swState.startAt : 0); }
+function swFmt(ms) {
+  const t = Math.floor(ms / 1000), h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, s = t % 60;
+  return (h ? h + ':' : '') + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+function swRender() {
+  const bubble = document.getElementById('sw-bubble');
+  if (!bubble) return;
+  const ms = swElapsed(), txt = swFmt(ms);
+  const pill = !swState.open && (swState.running || ms >= 1000);
+  bubble.classList.toggle('is-pill', pill);
+  bubble.classList.toggle('is-paused', pill && !swState.running);
+  bubble.setAttribute('aria-expanded', String(swState.open));
+  bubble.setAttribute('aria-label', pill ? `Cronómetro ${swState.running ? 'corriendo' : 'en pausa'}: ${txt}. Abrir` : (swState.open ? 'Cerrar cronómetro' : 'Abrir cronómetro'));
+  document.getElementById('sw-pill-time').textContent = pill ? txt : '';
+  const panel = document.getElementById('sw-panel');
+  panel.hidden = !swState.open;
+  document.getElementById('sw-big').textContent = txt;
+  const go = document.getElementById('sw-go');
+  go.innerHTML = swState.running
+    ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>Pausar'
+    : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polygon points="6 3 20 12 6 21 6 3"/></svg>' + (ms >= 1000 ? 'Seguir' : 'Iniciar');
+}
+function swTick() { clearInterval(swState.iv); swState.iv = swState.running ? setInterval(swRender, 250) : null; swRender(); }
+function swToggle() { swState.open = !swState.open; swRender(); if (swState.open) document.getElementById('sw-go')?.focus(); }
+function swClose() { if (!swState.open) return; swState.open = false; swRender(); }
+function swStartPause() {
+  if (swState.running) { swState.acc += Date.now() - swState.startAt; swState.running = false; }
+  else { swState.startAt = Date.now(); swState.running = true; }
+  swTick();
+}
+function swReset() { swState.acc = 0; swState.startAt = Date.now(); swTick(); }
+// Tocar fuera cierra el panel sin frenar el toque (el botón de atrás igual recibe el click)
+document.addEventListener('pointerdown', e => { if (swState.open && !(e.target.closest && e.target.closest('#sw-wrap'))) swClose(); }, true);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && swState.open) { swClose(); document.getElementById('sw-bubble')?.focus(); } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') swRender(); });
+swRender();
 
 // ===== MODO TIMER EN CIRCUITOS MIXTOS =====
 // Cada ejercicio de tiempo tiene su cuenta regresiva (Date.now(), no un contador). "Detener y
