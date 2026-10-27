@@ -1211,7 +1211,86 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 .diary-acc-body > .diary-item { border-top:1px solid var(--gray2); }
 /* Coach: fotos de progreso, un dropdown por fecha */
 .cph-body { display:flex; gap:8px; padding:4px 12px 12px; }
-.cph-body[hidden] { display:none; }</style>
+.cph-body[hidden] { display:none; }
+/* Check-in de entreno ("Entreno completado") */
+.ck-bar { position:fixed; left:50%; transform:translateX(-50%); bottom:80px; width:100%; max-width:480px; padding:0 16px; box-sizing:border-box; z-index:101; }
+.ck-bar[hidden] { display:none; }
+.ck-bar::before { content:''; position:absolute; left:0; right:0; bottom:0; height:110px; background:linear-gradient(to top,#FBF8F4 55%,rgba(251,248,244,0)); z-index:-1; pointer-events:none; }
+.ck-bar-btn { width:100%; height:56px; border:0; border-radius:14px; background:#1E7A3C; color:#fff; font-family:'DM Sans',sans-serif; font-size:16px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:10px; box-shadow:0 6px 16px rgba(30,122,60,.35); cursor:pointer; }
+.ck-bar-done { min-height:64px; border-radius:16px; background:#E4F2E8; border:2px solid #1E7A3C; display:flex; align-items:center; gap:12px; padding:0 8px 0 14px; box-sizing:border-box; }
+.ck-bar-done-ico { width:36px; height:36px; border-radius:50%; background:#1E7A3C; color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.ck-bar-done-txt { flex:1; min-width:0; }
+.ck-bar-done-title { font-size:16px; font-weight:700; color:#16602E; }
+.ck-bar-done-sub { font-size:12px; color:#3F6B4D; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ck-bar-edit { border:0; background:none; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; color:#C24E18; min-width:44px; min-height:44px; padding:0 8px; cursor:pointer; }
+#screen-client-home.ck-on .scroll-body { padding-bottom:180px; }
+#screen-client-home.ck-on .hoy-fab { bottom:150px !important; }
+.ck-ov { position:fixed; inset:0; z-index:400; background:rgba(31,27,22,.58); display:flex; align-items:center; justify-content:center; padding:28px; box-sizing:border-box; font-family:'DM Sans',sans-serif; color:#1F1B16; }
+.ck-ov.is-sheet { align-items:flex-end; padding:0; }
+.ck-dialog { width:100%; max-width:340px; background:#fff; border-radius:26px; padding:28px 24px 24px; text-align:center; box-shadow:0 20px 50px rgba(31,27,22,.3); }
+.ck-dialog-ico { width:64px; height:64px; margin:0 auto 16px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+.ck-dialog-ico.is-green { background:#E4F2E8; color:#1E7A3C; }
+.ck-dialog-ico.is-orange { background:#FCEEE4; color:#C24E18; }
+.ck-dialog-title { margin:0; font-family:'Playfair Display',serif; font-size:25px; font-weight:700; line-height:1.2; }
+.ck-dialog-text { margin:10px 0 22px; font-size:15px; line-height:1.45; color:#6B6258; }
+.ck-dialog-time { margin:4px 0 12px; font-family:'DM Mono',monospace; font-size:26px; font-weight:500; }
+.ck-dialog-q { margin:0 0 22px; font-size:15px; line-height:1.45; font-weight:600; }
+.ck-btn { width:100%; height:52px; border-radius:14px; font-family:'DM Sans',sans-serif; font-size:16px; font-weight:700; cursor:pointer; }
+.ck-btn + .ck-btn { margin-top:10px; }
+.ck-btn-green { border:0; background:#1E7A3C; color:#fff; }
+.ck-btn-green:disabled { opacity:.6; cursor:default; }
+.ck-btn-orange { border:0; background:#C24E18; color:#fff; }
+.ck-btn-line { border:1.5px solid #D9CDBF; background:#fff; color:#1F1B16; }
+.ck-sheet { width:100%; max-width:480px; max-height:92vh; overflow-y:auto; background:#FBF8F3; border-radius:28px 28px 0 0; padding:10px 20px 24px; box-sizing:border-box; display:flex; flex-direction:column; gap:16px; }
+.ck-grab { width:44px; height:5px; border-radius:3px; background:#D9CDBF; margin:0 auto; flex-shrink:0; }
+.ck-sheet-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.ck-sheet-title { margin:0; font-family:'Playfair Display',serif; font-size:25px; font-weight:700; }
+.ck-close { width:44px; height:44px; border:0; border-radius:50%; background:#EFE8DC; color:#1F1B16; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+.ck-lbl { display:block; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#6B6258; margin-bottom:8px; }
+.ck-days { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.ck-chip { height:44px; padding:0 20px; border:1.5px solid #D9CDBF; border-radius:22px; background:#fff; color:#1F1B16; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600; cursor:pointer; }
+.ck-chip.is-on { border-color:#1F1B16; background:#1F1B16; color:#fff; font-weight:700; }
+.ck-days-date { margin-left:4px; font-size:14px; color:#6B6258; }
+.ck-nums { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
+.ck-num { height:48px; border:1.5px solid #E7DFD2; border-radius:14px; background:#fff; color:#1F1B16; font-family:'DM Mono',monospace; font-size:18px; font-weight:500; cursor:pointer; }
+.ck-num.is-on { border-color:#C24E18; background:#C24E18; color:#fff; font-size:20px; }
+.ck-ends { display:flex; justify-content:space-between; margin-top:6px; font-size:12px; color:#6B6258; }
+.ck-all { display:flex; gap:10px; }
+.ck-all-btn { flex:1; height:52px; border:1.5px solid #D9CDBF; border-radius:14px; background:#fff; color:#1F1B16; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; }
+.ck-all-btn.is-all { border:2px solid #1E7A3C; background:#E4F2E8; color:#16602E; font-weight:700; }
+.ck-all-btn.is-skip { border:2px solid #C24E18; background:#FCEEE4; color:#9A3C0F; font-weight:700; }
+.ck-skip-list { display:flex; flex-direction:column; gap:6px; }
+.ck-skip { min-height:44px; border-radius:12px; background:#fff; border:1.5px solid #E7DFD2; display:flex; align-items:center; gap:12px; padding:8px 12px; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600; color:#1F1B16; text-align:left; cursor:pointer; }
+.ck-skip.is-on { background:#FCEEE4; border-color:#C24E18; font-weight:700; }
+.ck-box { width:22px; height:22px; border-radius:7px; border:2px solid #C9BCAB; box-sizing:border-box; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.ck-skip.is-on .ck-box { border:0; background:#C24E18; color:#fff; }
+.ck-skip.is-on .ck-box svg { width:14px; height:14px; }
+.ck-empty { font-size:13px; color:#6B6258; }
+.ck-comment { width:100%; box-sizing:border-box; min-height:46px; border:1.5px solid #E7DFD2; border-radius:14px; background:#fff; padding:12px 14px; font-family:'DM Sans',sans-serif; font-size:15px; color:#1F1B16; resize:vertical; }
+.ck-cc-state { font-size:12px; font-weight:700; color:#16602E; background:#E4F2E8; border-radius:10px; padding:4px 10px; }
+.ck-cc-state.is-off { color:var(--gray5); background:var(--gray1); }
+.ck-cc-sum { background:#1F1B16; color:#fff; border-radius:22px; padding:18px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+.ck-cc-sum-lbl { font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:#C9BCAB; }
+.ck-cc-sum-num { margin-top:4px; font-family:'Playfair Display',serif; font-size:26px; font-weight:700; }
+.ck-cc-sum-avg { margin-top:4px; font-family:'DM Mono',monospace; font-size:26px; font-weight:500; }
+.ck-cc-sum-avg span { font-size:15px; color:#C9BCAB; }
+.ck-cc-list { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
+.ck-cc { background:#fff; border-radius:20px; padding:16px; box-shadow:var(--shadow); }
+.ck-cc.is-skip { border:1.5px solid #F3D9C6; }
+.ck-cc-head { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.ck-cc-when { display:flex; align-items:center; gap:10px; }
+.ck-cc-date { font-family:'DM Mono',monospace; font-size:13px; font-weight:500; background:#F3EEE5; border-radius:8px; padding:4px 8px; }
+.ck-cc-time { font-size:13px; color:#6B6258; }
+.ck-cc-rate { font-family:'DM Mono',monospace; font-size:15px; font-weight:500; color:#fff; background:#1E7A3C; border-radius:10px; padding:4px 10px; }
+.ck-cc-rate.is-low { background:#C24E18; }
+.ck-cc-plan { margin-top:8px; font-size:12px; color:#6B6258; }
+.ck-cc-all { margin-top:10px; display:flex; align-items:center; gap:6px; font-size:14px; font-weight:600; color:#16602E; }
+.ck-cc-skip { margin-top:10px; font-size:14px; font-weight:700; color:#9A3C0F; }
+.ck-cc-chips { margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; }
+.ck-cc-chips span { font-size:13px; font-weight:600; background:#FCEEE4; border-radius:8px; padding:4px 10px; }
+.ck-cc-comment { margin:10px 0 0; font-size:14px; line-height:1.4; }
+.ck-cc-upd { margin-top:8px; font-size:12px; color:#6B6258; }
+.ck-cc-empty { font-size:13px; color:var(--gray4); padding:4px 0 12px; }</style>
 </head>
 <body>
 <!-- Sprite de íconos (estilo Lucide, ISC). Se usan con icon(nombre, tamaño). -->
@@ -1388,7 +1467,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
     </div>
   </div>
   <!-- Floating action buttons — shared column so StrongFlow (grows when workout running) and WhatsApp never overlap -->
-  <div style="position:fixed;bottom:80px;right:16px;display:flex;flex-direction:column;align-items:center;gap:14px;z-index:99;">
+  <div class="hoy-fab" style="position:fixed;bottom:80px;right:16px;display:flex;flex-direction:column;align-items:center;gap:14px;z-index:99;">
     <!-- Cronómetro libre: no guarda nada; el estado vive en memoria (swState) -->
     <div class="sw-wrap" id="sw-wrap">
       <div class="sw-panel" id="sw-panel" role="dialog" aria-label="Cronómetro" hidden>
@@ -1404,6 +1483,8 @@ button.exx-pill { cursor:pointer; min-height:28px; }
     </div>
     <a href="https://wa.me/50672083564" target="_blank" style="width:50px;height:50px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,211,102,0.4);text-decoration:none;font-size:26px;" aria-label="WhatsApp"><svg class="ico" width="26" height="26" aria-hidden="true" focusable="false" style="color:#fff"><use href="#i-message-circle"/></svg></a>
   </div>
+  <!-- Check-in de entreno: botón fijo "Entreno completado" (solo clientes con quick_checkin_enabled) -->
+  <div class="ck-bar" id="ck-bar" hidden></div>
   <!-- Portada de Hoy: tapa el Hoy de siempre hasta tocar "Entrenar" (solo visual) -->
   <div id="hoy-cover" class="hoy-cover" hidden>
     <svg class="hoy-cover-honey" aria-hidden="true" focusable="false" viewBox="0 0 390 844" preserveAspectRatio="xMidYMin slice"><defs><linearGradient id="hoy-honey-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E08A0B"/><stop offset="0.5" stop-color="#D97706"/><stop offset="1" stop-color="#CC6A04"/></linearGradient></defs>
@@ -1754,6 +1835,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
       <button onclick="adjustDaysTrained(1)" style="width:24px;height:24px;border-radius:6px;border:1.5px solid var(--gray2);background:white;font-size:14px;font-weight:700;line-height:1;cursor:pointer;font-family:'DM Sans',sans-serif;">+</button>
       <span id="coach-c-days-adj-saved" style="font-size:11px;color:var(--green);opacity:0;transition:opacity .3s;">✓ Guardado</span>
     </div>
+    <div id="coach-checkins"></div>
 
     <div class="section-header">
       <div class="section-title">Plan mensual</div>
@@ -4620,11 +4702,14 @@ async function loadClientExercises() {
   if(!currentClient){list.innerHTML='<div class="empty-state"><div class="empty-icon">'+icon('dumbbell', 44)+'</div><div class="empty-text">Sin rutina asignada.</div></div>';return;}
   const {data:planDay} = await sb.from('monthly_plans').select('*').eq('client_id',currentClient.id).eq('week_number',clientWeek).eq('day_of_week',clientDay).single();
   if(requestId !== loadClientExercisesRequestId) return;
-  if(!planDay){list.innerHTML='<div class="empty-state"><div class="empty-icon">'+icon('moon', 44)+'</div><div class="empty-text">Sin ejercicios para este día.</div></div>';return;}
+  window._ckDay = null; // check-in de entreno: solo con un día del plan con ejercicios
+  if(!planDay){list.innerHTML='<div class="empty-state"><div class="empty-icon">'+icon('moon', 44)+'</div><div class="empty-text">Sin ejercicios para este día.</div></div>';ckRefresh();return;}
   currentPlanDayId = planDay.id;
   const {data:exs} = await sb.from('exercises').select('*').eq('plan_day_id',planDay.id).order('order_index');
   if(requestId !== loadClientExercisesRequestId) return;
-  if(!exs||exs.length===0){list.innerHTML='<div class="empty-state"><div class="empty-icon">'+icon('moon', 44)+'</div><div class="empty-text">Sin ejercicios para este día.</div></div>';return;}
+  if(!exs||exs.length===0){list.innerHTML='<div class="empty-state"><div class="empty-icon">'+icon('moon', 44)+'</div><div class="empty-text">Sin ejercicios para este día.</div></div>';ckRefresh();return;}
+  window._ckDay = { clientId: currentClient.id, planDayId: planDay.id, week: clientWeek, dayLabel: clientDay, exercises: exs.map(e => ({ id: String(e.id), name: e.name })) };
+  ckRefresh();
 
   // El acordeón (abierto/cerrado a mano) se resetea solo al cambiar de día real,
   // no en cada re-render disparado por un "Guardar ✓" dentro del mismo día.
@@ -5375,12 +5460,15 @@ async function loadHive() {
   const from = [monthStart, weekKeys[0]].sort()[0];
   const to = [monthEnd, weekKeys[6]].sort()[1];
   el.innerHTML = '<div class="spinner"></div>';
-  const [lr, sr, hist] = await Promise.all([
+  const [lr, sr, hist, ckr] = await Promise.all([
     sb.from('exercise_logs').select('logged_at,weight,weight_unit,exercises(name)').eq('client_id', cid)
       .gte('logged_at', crDayRange(from).start).lt('logged_at', crDayRange(to).end).limit(5000),
     sb.from('workout_sessions').select('session_date,duration_minutes').eq('client_id', cid)
       .gte('session_date', from).lte('session_date', to),
-    diaryLoadHistorical(cid, ym, 'kind,duration_minutes')
+    diaryLoadHistorical(cid, ym, 'kind,duration_minutes'),
+    // Check-in de entreno: mismo conjunto de días (un día = un conteo). Sin la tabla, [].
+    sb.from('workout_completions').select('completed_date').eq('client_id', cid)
+      .gte('completed_date', from).lte('completed_date', to).then(r => (r && !r.error && r.data) || [], () => [])
   ]);
   if (!currentClient || currentClient.id !== cid || hiveMonth !== ym) return;
   const days = new Set();
@@ -5402,6 +5490,7 @@ async function loadHive() {
     days.add(k);
     if (k.slice(0, 7) === ym) minutes += s.duration_minutes || 0;
   });
+  ckr.forEach(c => { const k = String(c.completed_date || '').slice(0, 10); if (k) days.add(k); });
   const monthDays = [...days].filter(k => k.slice(0, 7) === ym);
   const perWeek = {};
   monthDays.forEach(k => { const w = pgWeekKey(k); perWeek[w] = (perWeek[w] || 0) + 1; });
@@ -5702,20 +5791,22 @@ async function loadConstanciaData(st) {
   const last7 = tcAddDays(today, -6);
   const from = [monthStart, last7].sort()[0], to = [monthEnd, today].sort()[1];
   const safe = p => Promise.resolve(p).then(r => (r && !r.error && r.data) || [], () => []);
-  const [logs, sess, habits, diary, sleepOld, nights, sleepLogs] = await Promise.all([
+  const [logs, sess, habits, diary, sleepOld, nights, sleepLogs, ckDays] = await Promise.all([
     safe(sb.from('exercise_logs').select('logged_at').eq('client_id', cid).gte('logged_at', crDayRange(from).start).lt('logged_at', crDayRange(to).end).limit(5000)),
     safe(sb.from('workout_sessions').select('session_date').eq('client_id', cid).gte('session_date', from).lte('session_date', to)),
     safe(sb.from('habit_logs').select('completed_date').eq('client_id', cid).gte('completed_date', from).lte('completed_date', to).limit(5000)),
     safe(sb.from('diary_entries').select('entry_date,kind').eq('client_id', cid).not('entry_date', 'is', null).gte('entry_date', from).lte('entry_date', to).limit(5000)),
     safe(sb.from('diary_sleep').select('sleep_date').eq('client_id', cid).gte('sleep_date', from).lte('sleep_date', to)),
     sleepLoadNights(cid, from, to).then(r => (r && r.nights) || [], () => []),
-    safe(sb.from('sleep_logs').select('sleep_start').eq('client_id', cid).gte('sleep_start', crDayRange(from).start).lt('sleep_start', crDayRange(to).end).limit(2000))
+    safe(sb.from('sleep_logs').select('sleep_start').eq('client_id', cid).gte('sleep_start', crDayRange(from).start).lt('sleep_start', crDayRange(to).end).limit(2000)),
+    safe(sb.from('workout_completions').select('completed_date').eq('client_id', cid).gte('completed_date', from).lte('completed_date', to))
   ]);
   if (tcStates[st.mountId] !== st || st.client.id !== cid || st.ym !== ym) return;
   const days = {};
   const add = (k, type) => { if (!k || k < from || k > to) return; (days[k] = days[k] || new Set()).add(type); };
   logs.forEach(l => add(pgCRDate(l.logged_at), 'train'));
   sess.forEach(s => add(String(s.session_date || '').slice(0, 10), 'train'));
+  ckDays.forEach(c => add(String(c.completed_date || '').slice(0, 10), 'train'));
   habits.forEach(h => add(String(h.completed_date || '').slice(0, 10), 'habit'));
   diary.forEach(d => add(String(d.entry_date || '').slice(0, 10), d.kind === 'habit' ? 'habit' : 'diary'));
   sleepOld.forEach(s => add(String(s.sleep_date || '').slice(0, 10), 'sleep'));
@@ -6527,6 +6618,7 @@ function setHoyCover(on) {
   if (!cover || !screen) return;
   cover.hidden = !on;
   screen.classList.toggle('cover-on', on);
+  ckRefresh();
 }
 function updateHoyCoverPill() {
   const pill = document.getElementById('hoy-cover-pill');
@@ -6687,7 +6779,8 @@ async function handleFinishWorkout() {
   refreshWorkoutLock();
   updateStrongFlowBtn();
   // Show rating modal after a short delay for toast to show
-  setTimeout(openRatingModal, 800);
+  // (los clientes con check-in de entreno no ven este rating: califican con "Entreno completado")
+  if(!ckEnabled()) setTimeout(openRatingModal, 800);
 }
 
 function openRatingModal() {
@@ -6741,6 +6834,371 @@ function applyRatingModalUI(emoji, showSaved) {
   if(savedEl) savedEl.textContent = showSaved ? '¡Guardado! Podés cambiarlo si querés.' : '';
   const closeBtn = document.getElementById('rating-close-btn');
   if(closeBtn) closeBtn.style.display = 'block';
+}
+
+// ===== CHECK-IN DE ENTRENO ("Entreno completado") =====
+// Para clientes con clients.quick_checkin_enabled (interruptor del coach en "Información de pago").
+// Un check-in por cliente y día (workout_completions, unique client_id+completed_date): tocar de
+// nuevo actualiza esa fila. Fecha de Costa Rica, solo hoy o ayer.
+// Conteo: un día = un conteo. El check-in suma a "Días entrenados" solo si ese día no tiene
+// exercise_logs ni workout_sessions; actualizarlo nunca suma. El recálculo del coach, el Hive y
+// "Tu constancia" suman la fecha del check-in al mismo conjunto de días, así que no hay doble conteo.
+// Para estos clientes no se abre el rating de emojis al finalizar.
+const CK_ICON_CHECK_CIRCLE = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+const CK_ICON_CHECK = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="20 6 9 17 4 12"/></svg>';
+const CK_ICON_CLOCK = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+const CK_ICON_X = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+let ckToday = null;      // check-in de hoy del cliente (o null)
+let ckTodayKey = null;   // client_id|fecha del último fetch
+let ckForm = null;       // estado del sheet abierto
+
+function ckEnabled() {
+  return !!currentClient && currentClient.quick_checkin_enabled === true && currentUser?.role !== 'coach';
+}
+function ckYesterday() { return tcAddDays(todayCR(), -1); }
+function ckTime(ts) {
+  return new Date(ts).toLocaleTimeString('es-CR', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Costa_Rica' });
+}
+function ckDateLabel(dateStr, weekday) {
+  return new Date(dateStr + 'T12:00:00Z').toLocaleDateString('es-CR', { weekday, day: 'numeric', month: 'short', timeZone: 'UTC' }).replace(/[,.]/g, '');
+}
+function ckDayWord(dateStr) {
+  return dateStr === todayCR() ? 'hoy' : dateStr === ckYesterday() ? 'ayer' : 'el ' + ckDateLabel(dateStr, 'short');
+}
+function ckStamp(row) { return row.updated_at || row.created_at; }
+function ckSkippedText(row, short) {
+  const n = (row.skipped_exercises || []).length;
+  if (row.did_all || !n) return short ? 'hiciste todos los ejercicios' : 'Hizo todos los ejercicios';
+  return short ? `saltaste ${n} ${n === 1 ? 'ejercicio' : 'ejercicios'}` : `Saltó ${n} ${n === 1 ? 'ejercicio' : 'ejercicios'}`;
+}
+
+// Botón fijo: solo en Hoy, sin portada, con un día del plan cargado
+async function ckRefresh() {
+  const screen = document.getElementById('screen-client-home');
+  const bar = document.getElementById('ck-bar');
+  if (!screen || !bar) return;
+  const show = ckEnabled() && currentClient.program_type !== 'lift' && !!window._ckDay
+    && window._ckDay.clientId === currentClient.id && !screen.classList.contains('cover-on');
+  bar.hidden = !show;
+  screen.classList.toggle('ck-on', show);
+  if (!show) return;
+  const key = currentClient.id + '|' + todayCR();
+  if (ckTodayKey !== key) {
+    ckTodayKey = key;
+    ckToday = null;
+    ckRenderBar();
+    const { data, error } = await sb.from('workout_completions').select('*')
+      .eq('client_id', currentClient.id).eq('completed_date', todayCR()).maybeSingle();
+    if (ckTodayKey !== key) return;
+    if (error) ckTodayKey = null; // se reintenta en el próximo refresh
+    ckToday = data || null;
+  }
+  ckRenderBar();
+}
+function ckRenderBar() {
+  const bar = document.getElementById('ck-bar');
+  if (!bar) return;
+  if (!ckToday) {
+    bar.innerHTML = `<button type="button" class="ck-bar-btn" onclick="ckOpenConfirm()">${CK_ICON_CHECK_CIRCLE}Entreno completado</button>`;
+    return;
+  }
+  bar.innerHTML = `<div class="ck-bar-done">
+    <span class="ck-bar-done-ico">${CK_ICON_CHECK}</span>
+    <div class="ck-bar-done-txt"><div class="ck-bar-done-title">Completado · ${ckToday.rating}/10</div>
+    <div class="ck-bar-done-sub">Hoy, ${ckTime(ckStamp(ckToday))} · ${ckSkippedText(ckToday, true)}</div></div>
+    <button type="button" class="ck-bar-edit" onclick="ckAskUpdate(ckToday, 'bar')">Editar</button>
+  </div>`;
+}
+
+function ckCloseOverlay(id) { document.getElementById(id)?.remove(); }
+function ckOverlay(id, html, sheet) {
+  ckCloseOverlay(id);
+  const ov = document.createElement('div');
+  ov.id = id;
+  ov.className = 'ck-ov' + (sheet ? ' is-sheet' : '');
+  ov.onclick = (ev) => { if (ev.target === ov) ov.remove(); };
+  ov.innerHTML = html;
+  document.body.appendChild(ov);
+  return ov;
+}
+
+// 1) "¿Ya terminaste tu entreno?" — No cierra y no guarda nada
+function ckOpenConfirm() {
+  ckOverlay('ck-confirm', `<div class="ck-dialog" role="dialog" aria-modal="true" aria-labelledby="ck-confirm-title">
+    <div class="ck-dialog-ico is-green">${CK_ICON_CHECK_CIRCLE.replace('width="22" height="22"', 'width="32" height="32"')}</div>
+    <h2 class="ck-dialog-title" id="ck-confirm-title">¿Ya terminaste tu entreno?</h2>
+    <p class="ck-dialog-text">Vamos a registrar tu entrenamiento de hoy para que lo veamos juntos.</p>
+    <button type="button" class="ck-btn ck-btn-green" onclick="ckCloseOverlay('ck-confirm');ckStartForm(todayCR())">Sí, ya terminé</button>
+    <button type="button" class="ck-btn ck-btn-line" onclick="ckCloseOverlay('ck-confirm')">No, todavía no</button>
+  </div>`);
+  document.querySelector('#ck-confirm .ck-btn-green')?.focus();
+}
+
+// 2) Aviso de segundo toque. Sí abre el calificador con lo anterior; No no hace nada.
+function ckAskUpdate(row, from) {
+  if (!row) return;
+  const forYesterday = row.completed_date === ckYesterday();
+  ckOverlay('ck-update', `<div class="ck-dialog" role="dialog" aria-modal="true" aria-labelledby="ck-update-title">
+    <div class="ck-dialog-ico is-orange">${CK_ICON_CLOCK}</div>
+    <h2 class="ck-dialog-title" id="ck-update-title" style="font-size:24px;">Ya registraste un entreno completado${forYesterday ? ' para ayer' : ''}</h2>
+    <p class="ck-dialog-text" style="margin:12px 0 0;">Lo registraste ${ckDayWord(pgCRDate(ckStamp(row)))} a las</p>
+    <div class="ck-dialog-time">${ckTime(ckStamp(row))}</div>
+    <p class="ck-dialog-q">¿Seguro que querés actualizarlo?</p>
+    <button type="button" class="ck-btn ck-btn-orange" id="ck-update-yes">Sí, actualizar</button>
+    <button type="button" class="ck-btn ck-btn-line" id="ck-update-no">No, dejarlo así</button>
+  </div>`);
+  // Tocar afuera es igual que "No, dejarlo así"
+  document.getElementById('ck-update').onclick = (ev) => { if (ev.target.id === 'ck-update') document.getElementById('ck-update-no').click(); };
+  document.getElementById('ck-update-yes').onclick = () => {
+    ckCloseOverlay('ck-update');
+    if (from === 'sheet' && ckForm) ckLoadIntoForm(row); else ckOpenSheet(row.completed_date, row);
+  };
+  document.getElementById('ck-update-no').onclick = () => {
+    ckCloseOverlay('ck-update');
+    if (from === 'sheet' && ckForm) { ckForm.date = ckForm.prevDate; ckRenderSheet(); }
+  };
+  document.getElementById('ck-update-yes').focus();
+}
+
+async function ckFetchDay(dateStr) {
+  const { data, error } = await sb.from('workout_completions').select('*')
+    .eq('client_id', currentClient.id).eq('completed_date', dateStr).maybeSingle();
+  if (error) { showToast('No pudimos revisar tus entrenos. Revisá tu conexión e intentá de nuevo.', 'error', 3500); return undefined; }
+  return data || null;
+}
+// Abre el calificador para ese día; si ya hay check-in, primero el aviso
+async function ckStartForm(dateStr) {
+  const row = await ckFetchDay(dateStr);
+  if (row === undefined) return;
+  if (row) { ckAskUpdate(row, 'start'); return; }
+  ckOpenSheet(dateStr, null);
+}
+
+// 3) Calificador (bottom sheet)
+function ckOpenSheet(dateStr, row) {
+  const day = window._ckDay || {};
+  ckForm = {
+    date: dateStr, prevDate: dateStr, existing: null, rating: null, didAll: null, skipped: new Set(), comment: '',
+    snapshot: { plan_day_id: day.planDayId || null, week_number: day.week || null, day_label: day.dayLabel || null },
+    exercises: day.exercises || [], saving: false
+  };
+  ckOverlay('ck-sheet', '<div class="ck-sheet" role="dialog" aria-modal="true" aria-labelledby="ck-sheet-title" id="ck-sheet-body"></div>', true);
+  if (row) ckLoadIntoForm(row); else ckRenderSheet();
+}
+async function ckLoadIntoForm(row) {
+  ckForm.date = ckForm.prevDate = row.completed_date;
+  ckForm.existing = row;
+  ckForm.rating = row.rating;
+  ckForm.didAll = row.did_all !== false;
+  ckForm.skipped = new Set((row.skipped_exercises || []).map(s => String(s.id)));
+  ckForm.comment = row.comment || '';
+  if (row.plan_day_id) {
+    ckForm.snapshot = { plan_day_id: row.plan_day_id, week_number: row.week_number, day_label: row.day_label };
+    // La lista de saltados es la del día del plan que se registró, aunque hoy veas otro
+    if (row.plan_day_id !== window._ckDay?.planDayId) {
+      const { data } = await sb.from('exercises').select('id,name').eq('plan_day_id', row.plan_day_id).order('order_index');
+      ckForm.exercises = (data || []).map(e => ({ id: String(e.id), name: e.name }));
+    }
+  }
+  // Ejercicios que ya no están en el plan pero quedaron marcados como saltados
+  (row.skipped_exercises || []).forEach(s => {
+    if (!ckForm.exercises.some(e => e.id === String(s.id))) ckForm.exercises.push({ id: String(s.id), name: s.name });
+  });
+  ckRenderSheet();
+}
+function ckRenderSheet() {
+  const body = document.getElementById('ck-sheet-body');
+  if (!body || !ckForm) return;
+  const f = ckForm;
+  const today = todayCR(), yest = ckYesterday();
+  const chip = (d, label) => `<button type="button" class="ck-chip${f.date === d ? ' is-on' : ''}" aria-pressed="${f.date === d}" onclick="ckPickDay('${d}')">${label}</button>`;
+  const nums = Array.from({ length: 10 }, (_, i) => i + 1).map(n =>
+    `<button type="button" class="ck-num${f.rating === n ? ' is-on' : ''}" aria-pressed="${f.rating === n}" aria-label="Nota ${n} de 10" onclick="ckPickRating(${n})">${n}</button>`).join('');
+  const list = f.didAll === false ? `<div>
+      <div class="ck-lbl">¿Cuáles saltaste?</div>
+      ${f.exercises.length ? `<div class="ck-skip-list">${f.exercises.map(e => {
+        const on = f.skipped.has(e.id);
+        return `<button type="button" class="ck-skip${on ? ' is-on' : ''}" role="checkbox" aria-checked="${on}" onclick="ckToggleSkip('${escHtml(e.id)}')"><span class="ck-box">${on ? CK_ICON_CHECK : ''}</span>${escHtml(e.name)}</button>`;
+      }).join('')}</div>` : '<div class="ck-empty">No encontramos los ejercicios de este día. Contalo en el comentario.</div>'}
+    </div>` : '';
+  body.innerHTML = `
+    <div class="ck-grab" aria-hidden="true"></div>
+    <div class="ck-sheet-head"><h2 class="ck-sheet-title" id="ck-sheet-title">Entreno completado</h2>
+      <button type="button" class="ck-close" aria-label="Cerrar" onclick="ckCloseSheet()">${CK_ICON_X}</button></div>
+    <div>
+      <div class="ck-lbl">¿Para qué día?</div>
+      <div class="ck-days">${chip(today, 'Hoy')}${chip(yest, 'Ayer')}<span class="ck-days-date">${ckDateLabel(f.date, 'long')}</span></div>
+    </div>
+    <div>
+      <div class="ck-lbl">¿Cómo calificás este entreno?</div>
+      <div class="ck-nums" role="group" aria-label="Nota del 1 al 10">${nums}</div>
+      <div class="ck-ends"><span>1 · Muy mal</span><span>10 · Excelente</span></div>
+    </div>
+    <div>
+      <div class="ck-lbl">¿Hiciste todos los ejercicios o saltaste alguno?</div>
+      <div class="ck-all">
+        <button type="button" class="ck-all-btn${f.didAll === true ? ' is-all' : ''}" aria-pressed="${f.didAll === true}" onclick="ckPickAll(true)">${f.didAll === true ? CK_ICON_CHECK : ''}Hice todos</button>
+        <button type="button" class="ck-all-btn${f.didAll === false ? ' is-skip' : ''}" aria-pressed="${f.didAll === false}" onclick="ckPickAll(false)">${f.didAll === false ? CK_ICON_CHECK : ''}Salté algunos</button>
+      </div>
+    </div>
+    ${list}
+    <div><label class="ck-lbl" for="ck-comment">Comentario (opcional)</label>
+      <textarea id="ck-comment" class="ck-comment" rows="2" maxlength="500" placeholder="Contanos cómo te fue" oninput="ckForm && (ckForm.comment = this.value)">${escHtml(f.comment)}</textarea></div>
+    <button type="button" class="ck-btn ck-btn-green" id="ck-save" onclick="ckSave()"${f.saving ? ' disabled' : ''}>${f.saving ? 'Guardando…' : (f.existing ? 'Actualizar entreno' : 'Guardar entreno')}</button>`;
+}
+function ckCloseSheet() { ckForm = null; ckCloseOverlay('ck-sheet'); }
+async function ckPickDay(dateStr) {
+  if (!ckForm || ckForm.date === dateStr) return;
+  if (dateStr !== todayCR() && dateStr !== ckYesterday()) return; // nunca más atrás ni futuro
+  ckForm.prevDate = ckForm.date;
+  ckForm.date = dateStr;
+  ckRenderSheet();
+  const row = await ckFetchDay(dateStr);
+  if (!ckForm || ckForm.date !== dateStr) return;
+  if (row === undefined) { ckForm.date = ckForm.prevDate; ckRenderSheet(); return; }
+  if (row && row.id !== ckForm.existing?.id) { ckAskUpdate(row, 'sheet'); return; }
+  if (!row && ckForm.existing) { // cambió a un día sin check-in: es uno nuevo
+    ckForm.existing = null;
+    const day = window._ckDay || {};
+    ckForm.snapshot = { plan_day_id: day.planDayId || null, week_number: day.week || null, day_label: day.dayLabel || null };
+    ckRenderSheet();
+  }
+}
+function ckPickRating(n) { if (ckForm) { ckForm.rating = n; ckRenderSheet(); } }
+function ckPickAll(v) { if (ckForm) { ckForm.didAll = v; if (v) ckForm.skipped.clear(); ckRenderSheet(); } }
+function ckToggleSkip(id) {
+  if (!ckForm) return;
+  if (ckForm.skipped.has(id)) ckForm.skipped.delete(id); else ckForm.skipped.add(id);
+  ckRenderSheet();
+}
+
+async function ckSave() {
+  const f = ckForm;
+  if (!f || f.saving) return;
+  if (f.date !== todayCR() && f.date !== ckYesterday()) { showToast('Solo podés registrar hoy o ayer', 'error'); return; }
+  if (!f.rating) { showToast('Elegí una nota del 1 al 10', 'error'); return; }
+  if (f.didAll === null) { showToast('Contanos si hiciste todos los ejercicios', 'error'); return; }
+  if (f.didAll === false && f.exercises.length && !f.skipped.size) { showToast('Marcá al menos un ejercicio que saltaste', 'error'); return; }
+  const skipped = f.didAll ? [] : f.exercises.filter(e => f.skipped.has(e.id)).map(e => ({ id: e.id, name: e.name }));
+  const payload = {
+    client_id: currentClient.id, completed_date: f.date, ...f.snapshot,
+    rating: f.rating, did_all: !!f.didAll, skipped_exercises: skipped,
+    comment: f.comment.trim() || null
+  };
+  f.saving = true; ckRenderSheet();
+  // Si alguien guardó ese día entre medio (otra pestaña), esto es update igual: el upsert no duplica
+  const before = f.existing || await ckFetchDay(f.date);
+  // updated_at solo al actualizar: en el alta queda igual a created_at (los dos del servidor)
+  if (before) payload.updated_at = new Date().toISOString();
+  const { data, error } = await sb.from('workout_completions').upsert([payload], { onConflict: 'client_id,completed_date' }).select().maybeSingle();
+  if (error || !data) {
+    f.saving = false; ckRenderSheet();
+    showToast('No se pudo guardar tu entreno. Revisá tu conexión e intentá de nuevo.', 'error', 3500);
+    return;
+  }
+  if (!before) await ckCountDay(f.date);
+  ckCloseSheet();
+  if (data.completed_date === todayCR()) { ckToday = data; ckTodayKey = currentClient.id + '|' + todayCR(); }
+  ckRenderBar();
+  showToast('Entreno guardado', 'success');
+}
+
+// Un día = un conteo: suma a days_trained solo si ese día no tiene registros ni sesión.
+// Rango amplio a propósito: cubre la fecha UTC (la que usa el recálculo del coach) y la de CR.
+async function ckCountDay(dateStr) {
+  const c = currentClient;
+  if (!c || String(c.last_trained_date || '') === dateStr) return;
+  const [logs, sess] = await Promise.all([
+    sb.from('exercise_logs').select('id').eq('client_id', c.id).gte('logged_at', dateStr + 'T00:00:00Z').lt('logged_at', crDayRange(dateStr).end).limit(1),
+    sb.from('workout_sessions').select('id').eq('client_id', c.id).eq('session_date', dateStr).limit(1)
+  ]);
+  if (logs.error || sess.error) return; // ante la duda no se suma: el recálculo del coach lo corrige
+  if ((logs.data || []).length || (sess.data || []).length) return;
+  const newDays = (c.days_trained || 0) + 1;
+  const updates = { days_trained: newDays };
+  if (!c.last_trained_date || dateStr > String(c.last_trained_date)) updates.last_trained_date = dateStr;
+  const { error } = await sb.from('clients').update(updates).eq('id', c.id);
+  if (error) return;
+  Object.assign(c, updates);
+  const total = newDays + (c.days_trained_adjustment || 0);
+  ['c-days-trained', 'c-profile-days'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = total; });
+}
+
+// Días con check-in que no tienen ningún log (ni por fecha UTC ni CR). Para el recálculo del coach.
+async function ckExtraTrainedDays(clientId, logs, utcDays, sinceDate) {
+  let q = sb.from('workout_completions').select('completed_date').eq('client_id', clientId);
+  if (sinceDate) q = q.gte('completed_date', sinceDate);
+  const { data, error } = await q;
+  if (error || !data) return 0; // sin la tabla (antes de la migración) todo queda como antes
+  const crDays = new Set((logs || []).map(l => pgCRDate(l.logged_at)));
+  return new Set(data.map(r => String(r.completed_date).slice(0, 10)).filter(d => !utcDays.has(d) && !crDays.has(d))).size;
+}
+
+// ---- COACH: interruptor y sección "Check-ins de entreno" ----
+function ckCoachToggleHtml(c) {
+  const on = c.quick_checkin_enabled === true;
+  return `<div class="payment-row" style="align-items:center;flex-wrap:wrap;">
+      <span class="payment-key">Check-in de entreno</span>
+      <span class="payment-val">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <div onclick="toggleClientQuickCheckin()" id="ck-toggle-btn" role="switch" aria-checked="${on}" aria-label="Check-in de entreno" style="width:44px;height:24px;border-radius:12px;background:${on ? 'var(--orange)' : 'var(--gray3)'};position:relative;transition:background 0.2s;cursor:pointer;flex-shrink:0;">
+            <div style="width:20px;height:20px;border-radius:50%;background:white;position:absolute;top:2px;${on ? 'left:22px' : 'left:2px'};transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
+          </div>
+          <span style="font-size:12px;color:${on ? 'var(--green)' : 'var(--gray4)'};">${on ? 'Activo' : 'Apagado'}</span>
+        </label>
+      </span>
+      <div style="flex-basis:100%;font-size:11px;line-height:1.4;color:var(--gray4);margin-top:4px;">El cliente ve el botón fijo “Entreno completado” en su pantalla de entreno y deja de ver el rating de siempre.</div>
+    </div>`;
+}
+async function toggleClientQuickCheckin() {
+  if (!currentClient) return;
+  const c = currentClient;
+  const newVal = c.quick_checkin_enabled !== true;
+  const { error } = await sb.from('clients').update({ quick_checkin_enabled: newVal }).eq('id', c.id);
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  c.quick_checkin_enabled = newVal;
+  const row = document.getElementById('ck-toggle-btn')?.closest('.payment-row');
+  if (row) row.outerHTML = ckCoachToggleHtml(c);
+  showToast(newVal ? 'Check-in de entreno activado' : 'Check-in de entreno apagado');
+  loadCoachCheckins(c);
+}
+async function loadCoachCheckins(c) {
+  const box = document.getElementById('coach-checkins');
+  if (!box || !c) return;
+  const cid = c.id;
+  const { data, error } = await sb.from('workout_completions').select('*').eq('client_id', cid)
+    .order('completed_date', { ascending: false }).limit(60);
+  if (currentClient?.id !== cid) return;
+  const rows = error ? [] : (data || []);
+  const on = c.quick_checkin_enabled === true;
+  if (!on && !rows.length) { box.innerHTML = ''; return; }
+  const since = tcAddDays(todayCR(), -6);
+  const last7 = rows.filter(r => String(r.completed_date) >= since);
+  const avg = last7.length ? (last7.reduce((a, r) => a + (r.rating || 0), 0) / last7.length).toLocaleString('es-CR', { maximumFractionDigits: 1 }) : '–';
+  const card = r => {
+    const skipped = r.skipped_exercises || [];
+    const updated = r.updated_at && r.created_at && (new Date(r.updated_at) - new Date(r.created_at)) > 1000;
+    const plan = [r.week_number ? 'Semana ' + r.week_number : '', r.day_label ? getDayShortLabel(r.day_label, 0) : ''].filter(Boolean).join(' · ');
+    return `<div class="ck-cc${r.did_all ? '' : ' is-skip'}">
+      <div class="ck-cc-head">
+        <div class="ck-cc-when"><span class="ck-cc-date">${ckDateLabel(String(r.completed_date), 'short')}</span><span class="ck-cc-time">${ckTime(r.created_at)}</span></div>
+        <span class="ck-cc-rate${r.rating >= 7 ? '' : ' is-low'}">${r.rating}/10</span>
+      </div>
+      ${plan ? `<div class="ck-cc-plan">${escHtml(plan)}</div>` : ''}
+      ${r.did_all || !skipped.length
+        ? `<div class="ck-cc-all">${CK_ICON_CHECK}Hizo todos los ejercicios</div>`
+        : `<div class="ck-cc-skip">${ckSkippedText(r, false)}</div><div class="ck-cc-chips">${skipped.map(s => `<span>${escHtml(s.name || '')}</span>`).join('')}</div>`}
+      ${r.comment ? `<p class="ck-cc-comment">“${escHtml(r.comment)}”</p>` : ''}
+      ${updated ? `<div class="ck-cc-upd">Actualizado ${ckDayWord(pgCRDate(r.updated_at))} a las ${ckTime(r.updated_at)}</div>` : ''}
+    </div>`;
+  };
+  box.innerHTML = `
+    <div class="section-header"><div class="section-title">Check-ins de entreno</div><span class="ck-cc-state${on ? '' : ' is-off'}">${on ? 'Activo' : 'Apagado'}</span></div>
+    <div class="ck-cc-sum">
+      <div><div class="ck-cc-sum-lbl">Últimos 7 días</div><div class="ck-cc-sum-num">${last7.length} ${last7.length === 1 ? 'check-in' : 'check-ins'}</div></div>
+      <div style="text-align:right;"><div class="ck-cc-sum-lbl">Nota promedio</div><div class="ck-cc-sum-avg">${avg}<span> /10</span></div></div>
+    </div>
+    ${rows.length ? `<div class="ck-cc-list">${rows.map(card).join('')}</div>` : '<div class="ck-cc-empty">Todavía no hay check-ins.</div>'}`;
 }
 
 async function openExDetail(ex) {
@@ -7977,6 +8435,7 @@ async function openCoachClient(clientId) {
       </span>
     </div>
     <div class="payment-row"><span class="payment-key">Tiempo entrenado</span><span class="payment-val payment-val-time">${Math.floor((c.total_training_minutes||0)/60)}h ${(c.total_training_minutes||0)%60}min</span></div>
+    ${ckCoachToggleHtml(c)}
     <div style="margin-top:14px;padding-top:12px;border-top:1.5px solid var(--gray2);display:flex;flex-direction:column;gap:8px;">
       ${c.is_churn ? `<button onclick="toggleChurnClient(false)" style="width:100%;padding:10px;background:var(--green-light);color:var(--green);border:1.5px solid var(--green);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Reactivar cliente</button>` : `<button onclick="toggleChurnClient(true)" style="width:100%;padding:10px;background:var(--red-light);color:var(--red);border:1.5px solid var(--red);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Marcar como Churn</button>`}
       ${c.hidden ? `<button onclick="toggleHiddenClient(false)" style="width:100%;padding:10px;background:var(--gray1);color:var(--black);border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Mostrar cliente</button>` : `<button onclick="toggleHiddenClient(true)" style="width:100%;padding:10px;background:var(--gray1);color:var(--black);border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Ocultar cliente</button>`}
@@ -7994,6 +8453,7 @@ async function openCoachClient(clientId) {
   document.getElementById('coach-c-days-adj').textContent = (c.days_trained_adjustment>0?'+':'')+(c.days_trained_adjustment||0);
   renderCoachDaysTotal();
   loadWeekTrainedCount(c.id);
+  loadCoachCheckins(c);
   loadCoachClientDetail(clientId);
   loadCoachPlans();
   loadCoachTrainingPanel();
@@ -8560,13 +9020,15 @@ async function loadWeekTrainedCount(clientId) {
   const {data:logs} = await sb.from('exercise_logs').select('logged_at').eq('client_id',clientId).gte('logged_at',weekStart);
   if(!logs) return;
   const uniqueDays = new Set(logs.map(l => l.logged_at.split('T')[0]));
-  document.getElementById('coach-c-week-trained').textContent = uniqueDays.size;
+  // Check-in de entreno: suma solo los días con check-in que no tienen ningún log (un día = un conteo)
+  const weekExtra = await ckExtraTrainedDays(clientId, logs, uniqueDays, weekStart.slice(0, 10));
+  document.getElementById('coach-c-week-trained').textContent = uniqueDays.size + weekExtra;
 
   // Also fix total days trained using all logs (not the stored counter)
   const {data:allLogs} = await sb.from('exercise_logs').select('logged_at').eq('client_id',clientId);
   if(allLogs) {
     const allUniqueDays = new Set(allLogs.map(l => l.logged_at.split('T')[0]));
-    const realTotal = allUniqueDays.size;
+    const realTotal = allUniqueDays.size + await ckExtraTrainedDays(clientId, allLogs, allUniqueDays);
     window._coachDaysBase = realTotal;
     renderCoachDaysTotal();
     // Sync the stored value if it's off (this base counter is separate from the manual adjustment)
