@@ -18381,7 +18381,7 @@ async function loadCoachContractPanel() {
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
       <div>
         <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;">${contract.program}</div>
-        <div style="font-size:12px;color:var(--gray4);margin-top:2px;">${contract.duration} · ${contract.payment_method}</div>
+        <div style="font-size:12px;color:var(--gray4);margin-top:2px;">${contract.duration}${contract.duration_weeks ? ` (${contract.duration_weeks} semanas)` : ''} · ${contract.payment_method}${(contract.contract_version || 1) >= 2 ? ' · Machote v2' : ''}</div>
       </div>
       ${signedHtml}
     </div>
@@ -18400,6 +18400,7 @@ async function openContractEditor() {
   currentContractId = existing?.id || null;
   contractEditorMode = existing ? 'edit' : 'create';
   window._existingContractSnapshot = existing ? { program: existing.program, duration: existing.duration, total_amount: existing.total_amount, includes_lift: !!existing.includes_lift, signed_at: existing.signed_at } : null;
+  window._existingContractVersion = existing ? (existing.contract_version || 1) : CONTRACT_TEMPLATE_VERSION;
 
   // Build modal HTML dynamically and inject into page
   let modal = document.getElementById('modal-contract-editor');
@@ -18433,6 +18434,10 @@ async function openContractEditor() {
         <option value="Semestral">Semestral (6 meses)</option>
       </select>
     </div>
+    <div class="form-group" ${window._existingContractVersion >= 2 ? '' : 'hidden'}>
+      <label class="form-label" for="ce-weeks">Duración (semanas)</label>
+      <input class="form-input" type="number" inputmode="numeric" min="1" step="1" id="ce-weeks" placeholder="ej: 13" oninput="this.dataset.touched='1'">
+    </div>
     <div class="form-group">
       <label class="form-label">Monto total (USD)</label>
       <input class="form-input" type="number" id="ce-total" placeholder="ej: 600" step="0.01">
@@ -18465,6 +18470,7 @@ async function openContractEditor() {
     document.getElementById('ce-total').value = existing.total_amount || '';
     document.getElementById('ce-payment-method').value = existing.payment_method || '';
     if (existing.payment_day) document.getElementById('ce-payment-day').value = existing.payment_day;
+    if (existing.duration_weeks) { const w = document.getElementById('ce-weeks'); w.value = existing.duration_weeks; w.dataset.touched = '1'; }
     (existing.installments || []).forEach((inst, i) => addInstallmentRow(inst));
   } else {
     addInstallmentRow(); // start with one empty row
@@ -18474,6 +18480,9 @@ async function openContractEditor() {
 
 function toggleContractDurationFields() {
   const isMensual = document.getElementById('ce-duration')?.value === 'Mensual';
+  // Semanas: se sugiere según la duración mientras Sau no lo haya escrito a mano
+  const weeksEl = document.getElementById('ce-weeks');
+  if (weeksEl && !weeksEl.dataset.touched) weeksEl.value = CONTRACT_DEFAULT_WEEKS[document.getElementById('ce-duration')?.value] || '';
   const daySection = document.getElementById('ce-payment-day-section');
   const instSection = document.getElementById('ce-installments-section');
   if (daySection) daySection.style.display = isMensual ? '' : 'none';
@@ -18514,8 +18523,12 @@ async function saveContract() {
   const installments = isMensual ? [] : getInstallmentsFromForm();
   const payment_day = isMensual ? parseInt(document.getElementById('ce-payment-day').value) : null;
   const includes_lift = document.getElementById('ce-includes-lift').checked;
+  const duration_weeks = parseInt(document.getElementById('ce-weeks').value, 10);
   if (!program || !duration || isNaN(total_amount) || !payment_method) { showToast('Completá todos los campos', 'error'); return; }
+  if (window._existingContractVersion >= 2 && !(duration_weeks > 0)) { showToast('Poné la duración en semanas', 'error'); return; }
   const payload = { client_id: currentClient.id, program, duration, total_amount, payment_method, installments, payment_day, includes_lift };
+  // Solo el machote v2 usa las semanas: a los contratos v1 (firmados o pendientes) no se les agrega nada
+  if (window._existingContractVersion >= 2) payload.duration_weeks = duration_weeks;
   if (currentContractId && window._existingContractSnapshot) {
     const snap = window._existingContractSnapshot;
     if (snap.signed_at) {
@@ -18526,8 +18539,11 @@ async function saveContract() {
   let error;
   if (currentContractId) {
     ({ error } = await sb.from('contracts').update(payload).eq('id', currentContractId));
+    if (error && contractMissingColumn(error)) { delete payload.duration_weeks; ({ error } = await sb.from('contracts').update(payload).eq('id', currentContractId)); }
   } else {
-    ({ error } = await sb.from('contracts').insert([{ ...payload, status: 'pendiente' }]));
+    // Contratos nuevos: machote v2. Sin migration_contract_versions.sql no se puede guardar la versión.
+    ({ error } = await sb.from('contracts').insert([{ ...payload, status: 'pendiente', contract_version: CONTRACT_TEMPLATE_VERSION }]));
+    if (error && contractMissingColumn(error)) { showToast('Falta correr migration_contract_versions.sql para crear contratos nuevos', 'error', 4000); return; }
   }
   if (error) { showToast(error.message, 'error'); return; }
   closeModal('modal-contract-editor');
@@ -18590,7 +18606,23 @@ function toggleClientContract(btn) {
   btn.querySelector('span').textContent = body.hidden ? 'Ver contrato completo' : 'Ocultar contrato';
 }
 
+// ---- Machote de contrato (versionado) ----
+// v1 = el texto de siempre: lo siguen usando los contratos sin contract_version (los ya firmados y
+// los pendientes que existían antes del v2). No tocar el texto v1.
+// v2 = contratos nuevos (contract_version = 2). PENDIENTE DE REVISIÓN LEGAL: borrador de Sau del
+// 27 oct 2026, lo revisa un abogado antes de darlo por final. No visible al cliente.
+// Un contrato firmado con contract_text_snapshot se muestra con ese texto exacto, nunca con el machote.
+const CONTRACT_TEMPLATE_VERSION = 2;
+const CONTRACT_DEFAULT_WEEKS = { Mensual: 4, Trimestral: 13, Semestral: 26 };
+function contractWeeks(contract) {
+  const w = parseInt(contract.duration_weeks, 10);
+  return w > 0 ? w : (CONTRACT_DEFAULT_WEEKS[contract.duration] || null);
+}
 function renderContractBody(contract) {
+  if (contract.status === 'firmado' && contract.contract_text_snapshot) return contract.contract_text_snapshot;
+  const v2 = (contract.contract_version || 1) >= 2;
+  const weeks = contractWeeks(contract);
+  const programBought = escHtml(contract.program + (contract.includes_lift ? ' + LIFT' : ''));
   const clientName = currentClient?.name || '—';
   const isMensual = contract.duration === 'Mensual';
   const installHtml = !isMensual ? (contract.installments || []).map((inst, i) =>
@@ -18603,7 +18635,7 @@ function renderContractBody(contract) {
     <div class="contract-highlight">
       <div class="contract-highlight-row"><span class="contract-highlight-key">Cliente</span><span class="contract-highlight-val">${clientName}</span></div>
       <div class="contract-highlight-row"><span class="contract-highlight-key">Programa</span><span class="contract-highlight-val">${contract.program}</span></div>
-      <div class="contract-highlight-row"><span class="contract-highlight-key">Duración</span><span class="contract-highlight-val">${contract.duration}</span></div>
+      <div class="contract-highlight-row"><span class="contract-highlight-key">Duración</span><span class="contract-highlight-val">${contract.duration}${v2 && weeks ? ` (${weeks} semanas)` : ''}</span></div>
       <div class="contract-highlight-row"><span class="contract-highlight-key">Total</span><span class="contract-highlight-val">$${contract.total_amount} USD</span></div>
       <div class="contract-highlight-row" style="border:none;padding-bottom:0;"><span class="contract-highlight-key">Método de pago</span><span class="contract-highlight-val">${contract.payment_method}</span></div>
     </div>
@@ -18625,9 +18657,20 @@ function renderContractBody(contract) {
       <li>Actualizar el plan semanalmente con base en el check-in recibido.</li>
       <li>Estar disponible para consultas por WhatsApp en horarios razonables.</li>
       <li>Mantener confidencialidad absoluta sobre la información del cliente.</li>
+      ${v2 ? `<li><strong>Seguimiento semanal.</strong> MOVE se compromete a contactar al Cliente al menos 2 veces por semana, por WhatsApp o por la plataforma, para dar seguimiento a su proceso.</li>
+      <li><strong>Horario de consulta.</strong> Las consultas se atienden de lunes a viernes, de 8:00 a. m. a 7:00 p. m. (hora de Costa Rica). Los mensajes enviados fuera de ese horario se consideran recibidos al inicio del siguiente día hábil.</li>
+      <li><strong>Plazo de respuesta.</strong> Las consultas enviadas por WhatsApp dentro del horario de consulta se responden en un plazo máximo de 24 horas, contado únicamente dentro de dicho horario. MOVE no presta servicio de atención de emergencias; ante una urgencia médica, el Cliente debe acudir a un servicio de salud.</li>` : ''}
     </ul>
     <h2>Términos y Condiciones</h2>
-    <p><strong>Garantía de Satisfacción Condicionada:</strong> El Cliente tiene derecho a solicitar una devolución parcial del monto pagado si, después de completar un mínimo del 85% de los entrenamientos del programa, seguir todas las recomendaciones de nutrición y descanso, mantener un mínimo de 7 horas de sueño diario, enviar check-ins semanales, y comunicar activamente con el coach, no experimenta cambios significativos en composición corporal, fuerza o bienestar al finalizar la membresía. Los resultados se evalúan mediante fotografías, mediciones de composición corporal y registros de fuerza. En caso de cumplimiento de todos los requisitos y confirmación de falta de cambios medibles, se procesará una devolución del 50% del monto pagado. El cliente debe solicitar la devolución dentro de 15 días después de completar el programa. Esta garantía no aplica en caso de lesión, enfermedad, cambios hormonales no prevenibles, medicamentos no comunicados, o incumplimiento de instrucciones médicas.</p>
+    ${v2 ? `<p><strong>Garantía de Satisfacción Condicionada:</strong> El Cliente podrá solicitar una devolución parcial del 50% del monto pagado si cumple todas las condiciones siguientes:</p>
+    <ol style="padding-left:18px;margin-bottom:8px;">
+      <li>Completó la totalidad de las ${weeks || '[duración]'} semanas pactadas al inicio del programa, sin abandono anticipado.</li>
+      <li>Cumplió al menos el 85% del Programa en su totalidad. El "Programa" es el conjunto de componentes contratados por el Cliente, detallados en este contrato (${programBought}), y su cumplimiento se mide sobre todos ellos en conjunto durante la totalidad de las semanas pactadas, no solo sobre los entrenamientos.</li>
+      <li>Siguió las recomendaciones del Programa y mantuvo comunicación activa con MOVE, incluyendo los check-ins semanales.</li>
+      <li>No obtuvo cambios medibles respecto al objetivo principal pactado al inicio del programa.</li>
+    </ol>
+    <p><strong>Cómo se comprueba.</strong> Solo se consideran cumplidas las acciones registradas en la plataforma MOVE o enviadas por los canales acordados (registro de ejercicios, "Entreno completado", registros de comida, check-ins, fotos y mediciones). Lo no registrado se considera no cumplido.</p>
+    <p><strong>Plazo y exclusiones.</strong> La solicitud debe presentarse dentro de los 15 días posteriores a la finalización del programa. La garantía no aplica en caso de lesión, enfermedad, cambios hormonales no previstos, medicamentos no comunicados o incumplimiento de indicaciones médicas.</p>` : `<p><strong>Garantía de Satisfacción Condicionada:</strong> El Cliente tiene derecho a solicitar una devolución parcial del monto pagado si, después de completar un mínimo del 85% de los entrenamientos del programa, seguir todas las recomendaciones de nutrición y descanso, mantener un mínimo de 7 horas de sueño diario, enviar check-ins semanales, y comunicar activamente con el coach, no experimenta cambios significativos en composición corporal, fuerza o bienestar al finalizar la membresía. Los resultados se evalúan mediante fotografías, mediciones de composición corporal y registros de fuerza. En caso de cumplimiento de todos los requisitos y confirmación de falta de cambios medibles, se procesará una devolución del 50% del monto pagado. El cliente debe solicitar la devolución dentro de 15 días después de completar el programa. Esta garantía no aplica en caso de lesión, enfermedad, cambios hormonales no prevenibles, medicamentos no comunicados, o incumplimiento de instrucciones médicas.</p>`}
     <p><strong>Confidencialidad:</strong> El cliente se compromete a mantener en secreto toda la información confidencial de MOVE, incluyendo programas y metodologías.</p>
     <p><strong>Derechos de autor:</strong> Todo el material del programa StrongFlow está protegido por derechos de autor y no puede divulgarse sin permiso expreso de MOVE.</p>
     <p><strong>Aviso médico:</strong> Este programa no sustituye el consejo médico profesional. Consultá con un médico antes de iniciar, especialmente si tenés condiciones preexistentes.</p>
@@ -18637,16 +18680,23 @@ function renderContractBody(contract) {
   </div>`;
 }
 
+// Columna nueva que todavía no existe (antes de correr migration_contract_versions.sql)
+function contractMissingColumn(error) {
+  return /contract_version|contract_text_snapshot|duration_weeks/.test(error?.message || '') || error?.code === '42703' || error?.code === 'PGRST204';
+}
+
 async function signContract(contractId) {
   const btn = document.querySelector('.contract-sign-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Procesando...'; }
   const signedAt = new Date().toISOString();
   const signedBy = currentClient?.name || currentUser?.name || 'Cliente';
-  const { error } = await sb.from('contracts').update({
-    status: 'firmado',
-    signed_at: signedAt,
-    signed_by: signedBy
-  }).eq('id', contractId);
+  const signFields = { status: 'firmado', signed_at: signedAt, signed_by: signedBy };
+  // Versión y copia exacta del texto que el cliente acepta (lo que ve en pantalla al firmar)
+  const { data: contract } = await sb.from('contracts').select('*').eq('id', contractId).maybeSingle();
+  const extra = contract ? { contract_version: contract.contract_version || 1, contract_text_snapshot: renderContractBody({ ...contract, status: 'pendiente' }) } : {};
+  let { error } = await sb.from('contracts').update({ ...signFields, ...extra }).eq('id', contractId);
+  // Sin las columnas nuevas se firma igual que siempre
+  if (error && contractMissingColumn(error)) ({ error } = await sb.from('contracts').update(signFields).eq('id', contractId));
   if (error) {
     showToast('Error al firmar: ' + error.message, 'error');
     if (btn) { btn.disabled = false; btn.textContent = 'Confirmo que acepto este contrato'; }
