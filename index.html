@@ -326,6 +326,19 @@ body.lift-mode #strongflow-btn { display:none !important; }
 .hoy-pay-btn { width:100%; min-height:50px; border:0; border-radius:16px; background:#C24E18; color:#FFFFFF; display:flex; align-items:center; justify-content:center; gap:8px; font-family:'DM Sans',sans-serif; font-size:16px; font-weight:700; cursor:pointer; }
 .hoy-pay-ok { width:100%; min-height:46px; border-radius:16px; background:transparent; border:1.5px solid #D8C3AE; color:#6B5446; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:700; cursor:pointer; }
 @media (prefers-reduced-motion:reduce) { .hoy-pay-fly, .hoy-pay-wing { animation:none; } }
+/* Contrato sin firmar: mismo estilo que el recordatorio de pago, sin cerrar y sin tapar "Entrenar" */
+.hoy-contract { width:100%; box-sizing:border-box; margin-bottom:14px; background:#FFFBF5; color:#2A2420; border-radius:24px; padding:16px; box-shadow:0 14px 30px rgba(60,20,0,.35); display:flex; flex-direction:column; gap:12px; text-align:left; }
+.hoy-contract[hidden] { display:none; }
+.hoy-pay + .hoy-contract { margin-top:12px; }
+.hoy-contract-row { display:flex; align-items:center; gap:12px; }
+.hoy-contract-ico { flex:none; width:44px; height:44px; border-radius:50%; background:#F6E2C4; color:#C24E18; display:flex; align-items:center; justify-content:center; }
+.hoy-contract-title { font-size:16px; font-weight:700; color:#4F2A17; line-height:1.3; }
+.hoy-contract-text { font-size:13px; line-height:1.4; color:#6B5446; margin-top:2px; }
+.hoy-contract-btn { width:100%; min-height:48px; border:0; border-radius:16px; background:#C24E18; color:#FFFFFF; display:flex; align-items:center; justify-content:center; gap:8px; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:700; cursor:pointer; }
+.hoy-cover.has-contract { justify-content:flex-start; padding-top:56px; overflow-y:auto; }
+.hoy-cover.has-contract .hoy-cover-badge { display:none; }
+.hoy-cover.has-contract > * { flex-shrink:0; } /* con pago + contrato no entra: que scrollee en vez de aplastar el pill */
+.hoy-cover.has-contract .hoy-cover-title { margin-bottom:14px; }
 .hoy-evo { width:100%; box-sizing:border-box; margin-top:12px; padding:30px 24px 26px; border-radius:28px; background:#141110; box-shadow:0 18px 40px rgba(40,12,0,0.45); display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center; }
 .hoy-evo[hidden] { display:none; }
 .hoy-evo-logo { width:104px; height:auto; }
@@ -1040,6 +1053,12 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 .add-installment-btn { display:flex; align-items:center; gap:6px; background:none; border:1.5px dashed var(--orange-mid); border-radius:var(--radius-sm); color:var(--orange); font-size:13px; font-weight:600; font-family:'DM Sans',sans-serif; padding:10px 14px; cursor:pointer; width:100%; justify-content:center; margin-top:2px; }
 .contract-sign-btn { width:100%; padding:18px; background:var(--orange); color:white; border:none; border-radius:var(--radius-sm); font-size:16px; font-weight:700; font-family:'DM Sans',sans-serif; cursor:pointer; letter-spacing:0.04em; transition:opacity 0.2s,transform 0.1s; margin-top:8px; }
 .contract-sign-btn:active { transform:scale(0.98); opacity:0.9; }
+/* Mi contrato (cliente): dropdown cerrado al entrar */
+.contract-sum { font-size:14px; font-weight:600; color:var(--black); line-height:1.4; margin-bottom:10px; }
+.contract-acc-btn { width:100%; min-height:48px; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 12px; background:var(--gray1); border:1.5px solid var(--gray2); border-radius:var(--radius-sm); font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; color:var(--black); cursor:pointer; }
+.contract-acc-btn .diary-acc-chev { transition:transform 0.2s; }
+.contract-acc-btn[aria-expanded="true"] .diary-acc-chev { transform:rotate(180deg); }
+.contract-acc-body { margin-top:12px; }
 .installment-table { width:100%; border-collapse:collapse; margin-top:8px; }
 .installment-table th { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.12em; color:var(--gray4); text-transform:uppercase; font-weight:600; text-align:left; padding:0 0 6px; }
 .installment-table td { font-size:13px; padding:6px 0; border-bottom:1px solid var(--gray2); color:var(--black); }
@@ -1208,7 +1227,89 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 .diary-pill { flex:none; padding:5px 10px; border-radius:12px; background:var(--gray1); font-size:12px; font-weight:700; color:var(--gray5); }
 .diary-acc-chev { display:inline-flex; color:var(--gray5); transition:transform 0.2s; }
 .diary-row[aria-expanded="true"] .diary-acc-chev { transform:rotate(180deg); }
-.diary-acc-body > .diary-item { border-top:1px solid var(--gray2); }</style>
+.diary-acc-body > .diary-item { border-top:1px solid var(--gray2); }
+/* Coach: fotos de progreso, un dropdown por fecha */
+.cph-body { display:flex; gap:8px; padding:4px 12px 12px; }
+.cph-body[hidden] { display:none; }
+/* Check-in de entreno ("Entreno completado") */
+.ck-bar { position:fixed; left:50%; transform:translateX(-50%); bottom:80px; width:100%; max-width:480px; padding:0 16px; box-sizing:border-box; z-index:101; }
+.ck-bar[hidden] { display:none; }
+.ck-bar::before { content:''; position:absolute; left:0; right:0; bottom:0; height:110px; background:linear-gradient(to top,#FBF8F4 55%,rgba(251,248,244,0)); z-index:-1; pointer-events:none; }
+.ck-bar-btn { width:100%; height:56px; border:0; border-radius:14px; background:#1E7A3C; color:#fff; font-family:'DM Sans',sans-serif; font-size:16px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:10px; box-shadow:0 6px 16px rgba(30,122,60,.35); cursor:pointer; }
+.ck-bar-done { min-height:64px; border-radius:16px; background:#E4F2E8; border:2px solid #1E7A3C; display:flex; align-items:center; gap:12px; padding:0 8px 0 14px; box-sizing:border-box; }
+.ck-bar-done-ico { width:36px; height:36px; border-radius:50%; background:#1E7A3C; color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.ck-bar-done-txt { flex:1; min-width:0; }
+.ck-bar-done-title { font-size:16px; font-weight:700; color:#16602E; }
+.ck-bar-done-sub { font-size:12px; color:#3F6B4D; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ck-bar-edit { border:0; background:none; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; color:#C24E18; min-width:44px; min-height:44px; padding:0 8px; cursor:pointer; }
+#screen-client-home.ck-on .scroll-body { padding-bottom:180px; }
+#screen-client-home.ck-on .hoy-fab { bottom:150px !important; }
+.ck-ov { position:fixed; inset:0; z-index:400; background:rgba(31,27,22,.58); display:flex; align-items:center; justify-content:center; padding:28px; box-sizing:border-box; font-family:'DM Sans',sans-serif; color:#1F1B16; }
+.ck-ov.is-sheet { align-items:flex-end; padding:0; }
+.ck-dialog { width:100%; max-width:340px; background:#fff; border-radius:26px; padding:28px 24px 24px; text-align:center; box-shadow:0 20px 50px rgba(31,27,22,.3); }
+.ck-dialog-ico { width:64px; height:64px; margin:0 auto 16px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+.ck-dialog-ico.is-green { background:#E4F2E8; color:#1E7A3C; }
+.ck-dialog-ico.is-orange { background:#FCEEE4; color:#C24E18; }
+.ck-dialog-title { margin:0; font-family:'Playfair Display',serif; font-size:25px; font-weight:700; line-height:1.2; }
+.ck-dialog-text { margin:10px 0 22px; font-size:15px; line-height:1.45; color:#6B6258; }
+.ck-dialog-time { margin:4px 0 12px; font-family:'DM Mono',monospace; font-size:26px; font-weight:500; }
+.ck-dialog-q { margin:0 0 22px; font-size:15px; line-height:1.45; font-weight:600; }
+.ck-btn { width:100%; height:52px; border-radius:14px; font-family:'DM Sans',sans-serif; font-size:16px; font-weight:700; cursor:pointer; }
+.ck-btn + .ck-btn { margin-top:10px; }
+.ck-btn-green { border:0; background:#1E7A3C; color:#fff; }
+.ck-btn-green:disabled { opacity:.6; cursor:default; }
+.ck-btn-orange { border:0; background:#C24E18; color:#fff; }
+.ck-btn-line { border:1.5px solid #D9CDBF; background:#fff; color:#1F1B16; }
+.ck-sheet { width:100%; max-width:480px; max-height:92vh; overflow-y:auto; background:#FBF8F3; border-radius:28px 28px 0 0; padding:10px 20px 24px; box-sizing:border-box; display:flex; flex-direction:column; gap:16px; }
+.ck-grab { width:44px; height:5px; border-radius:3px; background:#D9CDBF; margin:0 auto; flex-shrink:0; }
+.ck-sheet-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.ck-sheet-title { margin:0; font-family:'Playfair Display',serif; font-size:25px; font-weight:700; }
+.ck-close { width:44px; height:44px; border:0; border-radius:50%; background:#EFE8DC; color:#1F1B16; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+.ck-lbl { display:block; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#6B6258; margin-bottom:8px; }
+.ck-days { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.ck-chip { height:44px; padding:0 20px; border:1.5px solid #D9CDBF; border-radius:22px; background:#fff; color:#1F1B16; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600; cursor:pointer; }
+.ck-chip.is-on { border-color:#1F1B16; background:#1F1B16; color:#fff; font-weight:700; }
+.ck-days-date { margin-left:4px; font-size:14px; color:#6B6258; }
+.ck-nums { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
+.ck-num { height:48px; border:1.5px solid #E7DFD2; border-radius:14px; background:#fff; color:#1F1B16; font-family:'DM Mono',monospace; font-size:18px; font-weight:500; cursor:pointer; }
+.ck-num.is-on { border-color:#C24E18; background:#C24E18; color:#fff; font-size:20px; }
+.ck-ends { display:flex; justify-content:space-between; margin-top:6px; font-size:12px; color:#6B6258; }
+.ck-all { display:flex; gap:10px; }
+.ck-all-btn { flex:1; height:52px; border:1.5px solid #D9CDBF; border-radius:14px; background:#fff; color:#1F1B16; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; }
+.ck-all-btn.is-all { border:2px solid #1E7A3C; background:#E4F2E8; color:#16602E; font-weight:700; }
+.ck-all-btn.is-skip { border:2px solid #C24E18; background:#FCEEE4; color:#9A3C0F; font-weight:700; }
+.ck-skip-list { display:flex; flex-direction:column; gap:6px; }
+.ck-skip { min-height:44px; border-radius:12px; background:#fff; border:1.5px solid #E7DFD2; display:flex; align-items:center; gap:12px; padding:8px 12px; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600; color:#1F1B16; text-align:left; cursor:pointer; }
+.ck-skip.is-on { background:#FCEEE4; border-color:#C24E18; font-weight:700; }
+.ck-box { width:22px; height:22px; border-radius:7px; border:2px solid #C9BCAB; box-sizing:border-box; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.ck-skip.is-on .ck-box { border:0; background:#C24E18; color:#fff; }
+.ck-skip.is-on .ck-box svg { width:14px; height:14px; }
+.ck-empty { font-size:13px; color:#6B6258; }
+.ck-comment { width:100%; box-sizing:border-box; min-height:46px; border:1.5px solid #E7DFD2; border-radius:14px; background:#fff; padding:12px 14px; font-family:'DM Sans',sans-serif; font-size:15px; color:#1F1B16; resize:vertical; }
+.ck-cc-state { font-size:12px; font-weight:700; color:#16602E; background:#E4F2E8; border-radius:10px; padding:4px 10px; }
+.ck-cc-state.is-off { color:var(--gray5); background:var(--gray1); }
+.ck-cc-sum { background:#1F1B16; color:#fff; border-radius:22px; padding:18px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+.ck-cc-sum-lbl { font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:#C9BCAB; }
+.ck-cc-sum-num { margin-top:4px; font-family:'Playfair Display',serif; font-size:26px; font-weight:700; }
+.ck-cc-sum-avg { margin-top:4px; font-family:'DM Mono',monospace; font-size:26px; font-weight:500; }
+.ck-cc-sum-avg span { font-size:15px; color:#C9BCAB; }
+.ck-cc-list { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
+.ck-cc { background:#fff; border-radius:20px; padding:16px; box-shadow:var(--shadow); }
+.ck-cc.is-skip { border:1.5px solid #F3D9C6; }
+.ck-cc-head { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.ck-cc-when { display:flex; align-items:center; gap:10px; }
+.ck-cc-date { font-family:'DM Mono',monospace; font-size:13px; font-weight:500; background:#F3EEE5; border-radius:8px; padding:4px 8px; }
+.ck-cc-time { font-size:13px; color:#6B6258; }
+.ck-cc-rate { font-family:'DM Mono',monospace; font-size:15px; font-weight:500; color:#fff; background:#1E7A3C; border-radius:10px; padding:4px 10px; }
+.ck-cc-rate.is-low { background:#C24E18; }
+.ck-cc-plan { margin-top:8px; font-size:12px; color:#6B6258; }
+.ck-cc-all { margin-top:10px; display:flex; align-items:center; gap:6px; font-size:14px; font-weight:600; color:#16602E; }
+.ck-cc-skip { margin-top:10px; font-size:14px; font-weight:700; color:#9A3C0F; }
+.ck-cc-chips { margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; }
+.ck-cc-chips span { font-size:13px; font-weight:600; background:#FCEEE4; border-radius:8px; padding:4px 10px; }
+.ck-cc-comment { margin:10px 0 0; font-size:14px; line-height:1.4; }
+.ck-cc-upd { margin-top:8px; font-size:12px; color:#6B6258; }
+.ck-cc-empty { font-size:13px; color:var(--gray4); padding:4px 0 12px; }</style>
 </head>
 <body>
 <!-- Sprite de íconos (estilo Lucide, ISC). Se usan con icon(nombre, tamaño). -->
@@ -1385,7 +1486,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
     </div>
   </div>
   <!-- Floating action buttons — shared column so StrongFlow (grows when workout running) and WhatsApp never overlap -->
-  <div style="position:fixed;bottom:80px;right:16px;display:flex;flex-direction:column;align-items:center;gap:14px;z-index:99;">
+  <div class="hoy-fab" style="position:fixed;bottom:80px;right:16px;display:flex;flex-direction:column;align-items:center;gap:14px;z-index:99;">
     <!-- Cronómetro libre: no guarda nada; el estado vive en memoria (swState) -->
     <div class="sw-wrap" id="sw-wrap">
       <div class="sw-panel" id="sw-panel" role="dialog" aria-label="Cronómetro" hidden>
@@ -1401,6 +1502,8 @@ button.exx-pill { cursor:pointer; min-height:28px; }
     </div>
     <a href="https://wa.me/50672083564" target="_blank" style="width:50px;height:50px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,211,102,0.4);text-decoration:none;font-size:26px;" aria-label="WhatsApp"><svg class="ico" width="26" height="26" aria-hidden="true" focusable="false" style="color:#fff"><use href="#i-message-circle"/></svg></a>
   </div>
+  <!-- Check-in de entreno: botón fijo "Entreno completado" (solo clientes con quick_checkin_enabled) -->
+  <div class="ck-bar" id="ck-bar" hidden></div>
   <!-- Portada de Hoy: tapa el Hoy de siempre hasta tocar "Entrenar" (solo visual) -->
   <div id="hoy-cover" class="hoy-cover" hidden>
     <svg class="hoy-cover-honey" aria-hidden="true" focusable="false" viewBox="0 0 390 844" preserveAspectRatio="xMidYMin slice"><defs><linearGradient id="hoy-honey-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E08A0B"/><stop offset="0.5" stop-color="#D97706"/><stop offset="1" stop-color="#CC6A04"/></linearGradient></defs>
@@ -1431,6 +1534,14 @@ button.exx-pill { cursor:pointer; min-height:28px; }
       <p class="hoy-pay-thanks" id="hoy-pay-thanks">Gracias por ser parte de esta comunidad… vos hacés que sea especial.</p>
       <button type="button" class="hoy-pay-btn" onclick="payReminderPay()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>Pagar</button>
       <button type="button" class="hoy-pay-ok" onclick="payReminderDismiss()">Dale, gracias por el reminder</button>
+    </div>
+    <!-- Contrato sin firmar: no se cierra, desaparece al firmar. Si coincide con el pago, va debajo -->
+    <div class="hoy-contract" id="hoy-contract" role="status" hidden>
+      <div class="hoy-contract-row">
+        <span class="hoy-contract-ico"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-file-text"/></svg></span>
+        <div><div class="hoy-contract-title">Tu contrato sigue sin firmar</div><div class="hoy-contract-text">Leelo y confirmalo en tu perfil para seguir al día.</div></div>
+      </div>
+      <button type="button" class="hoy-contract-btn" onclick="goToClientContract()">Ver mi contrato</button>
     </div>
     <button type="button" class="hoy-cover-btn" id="hoy-cover-btn" onclick="enterTraining()"><svg class="ico" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-play"/></svg>Entrenar</button>
     <!-- Programa terminado (semana automática): reemplaza a "Entrenar" -->
@@ -1751,6 +1862,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
       <button onclick="adjustDaysTrained(1)" style="width:24px;height:24px;border-radius:6px;border:1.5px solid var(--gray2);background:white;font-size:14px;font-weight:700;line-height:1;cursor:pointer;font-family:'DM Sans',sans-serif;">+</button>
       <span id="coach-c-days-adj-saved" style="font-size:11px;color:var(--green);opacity:0;transition:opacity .3s;">✓ Guardado</span>
     </div>
+    <div id="coach-checkins"></div>
 
     <div class="section-header">
       <div class="section-title">Plan mensual</div>
@@ -3241,7 +3353,9 @@ async function initClient() {
   document.getElementById('lift-home-block').style.display = 'none';
   document.getElementById('lift-missions-block').style.display = 'none';
   if (applyTrainingAccessGate()) { loadClientDayStrip(); }
+  clientContractPending = false;
   showHoyCover();
+  loadClientContractBanner();
   loadClientPlans();
   loadTodayRating().catch(()=>{});
   if(localStorage.getItem('mws_timer_running') === '1') startTimerDisplay();
@@ -4617,11 +4731,14 @@ async function loadClientExercises() {
   if(!currentClient){list.innerHTML='<div class="empty-state"><div class="empty-icon">'+icon('dumbbell', 44)+'</div><div class="empty-text">Sin rutina asignada.</div></div>';return;}
   const {data:planDay} = await sb.from('monthly_plans').select('*').eq('client_id',currentClient.id).eq('week_number',clientWeek).eq('day_of_week',clientDay).single();
   if(requestId !== loadClientExercisesRequestId) return;
-  if(!planDay){list.innerHTML='<div class="empty-state"><div class="empty-icon">'+icon('moon', 44)+'</div><div class="empty-text">Sin ejercicios para este día.</div></div>';return;}
+  window._ckDay = null; // check-in de entreno: solo con un día del plan con ejercicios
+  if(!planDay){list.innerHTML='<div class="empty-state"><div class="empty-icon">'+icon('moon', 44)+'</div><div class="empty-text">Sin ejercicios para este día.</div></div>';ckRefresh();return;}
   currentPlanDayId = planDay.id;
   const {data:exs} = await sb.from('exercises').select('*').eq('plan_day_id',planDay.id).order('order_index');
   if(requestId !== loadClientExercisesRequestId) return;
-  if(!exs||exs.length===0){list.innerHTML='<div class="empty-state"><div class="empty-icon">'+icon('moon', 44)+'</div><div class="empty-text">Sin ejercicios para este día.</div></div>';return;}
+  if(!exs||exs.length===0){list.innerHTML='<div class="empty-state"><div class="empty-icon">'+icon('moon', 44)+'</div><div class="empty-text">Sin ejercicios para este día.</div></div>';ckRefresh();return;}
+  window._ckDay = { clientId: currentClient.id, planDayId: planDay.id, week: clientWeek, dayLabel: clientDay, exercises: exs.map(e => ({ id: String(e.id), name: e.name })) };
+  ckRefresh();
 
   // El acordeón (abierto/cerrado a mano) se resetea solo al cambiar de día real,
   // no en cada re-render disparado por un "Guardar ✓" dentro del mismo día.
@@ -5372,12 +5489,15 @@ async function loadHive() {
   const from = [monthStart, weekKeys[0]].sort()[0];
   const to = [monthEnd, weekKeys[6]].sort()[1];
   el.innerHTML = '<div class="spinner"></div>';
-  const [lr, sr, hist] = await Promise.all([
+  const [lr, sr, hist, ckr] = await Promise.all([
     sb.from('exercise_logs').select('logged_at,weight,weight_unit,exercises(name)').eq('client_id', cid)
       .gte('logged_at', crDayRange(from).start).lt('logged_at', crDayRange(to).end).limit(5000),
     sb.from('workout_sessions').select('session_date,duration_minutes').eq('client_id', cid)
       .gte('session_date', from).lte('session_date', to),
-    diaryLoadHistorical(cid, ym, 'kind,duration_minutes')
+    diaryLoadHistorical(cid, ym, 'kind,duration_minutes'),
+    // Check-in de entreno: mismo conjunto de días (un día = un conteo). Sin la tabla, [].
+    sb.from('workout_completions').select('completed_date').eq('client_id', cid)
+      .gte('completed_date', from).lte('completed_date', to).then(r => (r && !r.error && r.data) || [], () => [])
   ]);
   if (!currentClient || currentClient.id !== cid || hiveMonth !== ym) return;
   const days = new Set();
@@ -5399,6 +5519,7 @@ async function loadHive() {
     days.add(k);
     if (k.slice(0, 7) === ym) minutes += s.duration_minutes || 0;
   });
+  ckr.forEach(c => { const k = String(c.completed_date || '').slice(0, 10); if (k) days.add(k); });
   const monthDays = [...days].filter(k => k.slice(0, 7) === ym);
   const perWeek = {};
   monthDays.forEach(k => { const w = pgWeekKey(k); perWeek[w] = (perWeek[w] || 0) + 1; });
@@ -5699,20 +5820,22 @@ async function loadConstanciaData(st) {
   const last7 = tcAddDays(today, -6);
   const from = [monthStart, last7].sort()[0], to = [monthEnd, today].sort()[1];
   const safe = p => Promise.resolve(p).then(r => (r && !r.error && r.data) || [], () => []);
-  const [logs, sess, habits, diary, sleepOld, nights, sleepLogs] = await Promise.all([
+  const [logs, sess, habits, diary, sleepOld, nights, sleepLogs, ckDays] = await Promise.all([
     safe(sb.from('exercise_logs').select('logged_at').eq('client_id', cid).gte('logged_at', crDayRange(from).start).lt('logged_at', crDayRange(to).end).limit(5000)),
     safe(sb.from('workout_sessions').select('session_date').eq('client_id', cid).gte('session_date', from).lte('session_date', to)),
     safe(sb.from('habit_logs').select('completed_date').eq('client_id', cid).gte('completed_date', from).lte('completed_date', to).limit(5000)),
     safe(sb.from('diary_entries').select('entry_date,kind').eq('client_id', cid).not('entry_date', 'is', null).gte('entry_date', from).lte('entry_date', to).limit(5000)),
     safe(sb.from('diary_sleep').select('sleep_date').eq('client_id', cid).gte('sleep_date', from).lte('sleep_date', to)),
     sleepLoadNights(cid, from, to).then(r => (r && r.nights) || [], () => []),
-    safe(sb.from('sleep_logs').select('sleep_start').eq('client_id', cid).gte('sleep_start', crDayRange(from).start).lt('sleep_start', crDayRange(to).end).limit(2000))
+    safe(sb.from('sleep_logs').select('sleep_start').eq('client_id', cid).gte('sleep_start', crDayRange(from).start).lt('sleep_start', crDayRange(to).end).limit(2000)),
+    safe(sb.from('workout_completions').select('completed_date').eq('client_id', cid).gte('completed_date', from).lte('completed_date', to))
   ]);
   if (tcStates[st.mountId] !== st || st.client.id !== cid || st.ym !== ym) return;
   const days = {};
   const add = (k, type) => { if (!k || k < from || k > to) return; (days[k] = days[k] || new Set()).add(type); };
   logs.forEach(l => add(pgCRDate(l.logged_at), 'train'));
   sess.forEach(s => add(String(s.session_date || '').slice(0, 10), 'train'));
+  ckDays.forEach(c => add(String(c.completed_date || '').slice(0, 10), 'train'));
   habits.forEach(h => add(String(h.completed_date || '').slice(0, 10), 'habit'));
   diary.forEach(d => add(String(d.entry_date || '').slice(0, 10), d.kind === 'habit' ? 'habit' : 'diary'));
   sleepOld.forEach(s => add(String(s.sleep_date || '').slice(0, 10), 'sleep'));
@@ -6524,6 +6647,7 @@ function setHoyCover(on) {
   if (!cover || !screen) return;
   cover.hidden = !on;
   screen.classList.toggle('cover-on', on);
+  ckRefresh();
 }
 function updateHoyCoverPill() {
   const pill = document.getElementById('hoy-cover-pill');
@@ -6571,6 +6695,29 @@ function payReminderPay() {
   window.open(url, '_blank', 'noopener');
   payReminderDismiss();
 }
+// ---- Contrato sin firmar (portada de Hoy) ----
+// Solo cliente. Visible mientras contracts.status no sea 'firmado'; no tiene botón de cerrar.
+let clientContractPending = false;
+async function loadClientContractBanner() {
+  if (!currentClient || currentUser?.role === 'coach') return;
+  const cid = currentClient.id;
+  const { data, error } = await sb.from('contracts').select('id,status').eq('client_id', cid).maybeSingle();
+  if (error || currentClient?.id !== cid) return;
+  clientContractPending = !!data && data.status !== 'firmado';
+  applyHoyCoverMode();
+}
+async function goToClientContract() {
+  const navItem = document.querySelectorAll('#screen-client-home .bottom-nav .nav-item')[4];
+  clientNav('profile', navItem);
+  // El perfil termina de pintar de a poco (contrato, constancia…): bajar hasta "Mi contrato"
+  // y reintentar mientras la página todavía no es lo bastante alta para dejarlo arriba.
+  const target = document.getElementById('client-contract-panel')?.previousElementSibling;
+  for (let i = 0; target && i < 15; i++) {
+    target.scrollIntoView({ block: 'start' });
+    if (target.getBoundingClientRect().top < 40) break;
+    await new Promise(r => setTimeout(r, 100));
+  }
+}
 function applyHoyCoverMode() {
   const cover = document.getElementById('hoy-cover');
   if (!cover) return;
@@ -6595,6 +6742,9 @@ function applyHoyCoverMode() {
   $('hoy-pay').hidden = pay == null;
   cover.classList.toggle('has-pay', pay != null);
   if (pay != null) $('hoy-pay-when').textContent = pay === 0 ? 'vence hoy' : `venció hace ${pay} ${pay === 1 ? 'día' : 'días'}`;
+  const contractPending = mode !== 'finished' && clientContractPending;
+  $('hoy-contract').hidden = !contractPending;
+  cover.classList.toggle('has-contract', contractPending);
   $('hoy-cover-btn').hidden = mode !== 'train' || pay != null;
   $('hoy-cover-text').hidden = mode !== 'construction';
   $('hoy-cover-note').hidden = mode === 'train';
@@ -6684,7 +6834,8 @@ async function handleFinishWorkout() {
   refreshWorkoutLock();
   updateStrongFlowBtn();
   // Show rating modal after a short delay for toast to show
-  setTimeout(openRatingModal, 800);
+  // (los clientes con check-in de entreno no ven este rating: califican con "Entreno completado")
+  if(!ckEnabled()) setTimeout(openRatingModal, 800);
 }
 
 function openRatingModal() {
@@ -6738,6 +6889,371 @@ function applyRatingModalUI(emoji, showSaved) {
   if(savedEl) savedEl.textContent = showSaved ? '¡Guardado! Podés cambiarlo si querés.' : '';
   const closeBtn = document.getElementById('rating-close-btn');
   if(closeBtn) closeBtn.style.display = 'block';
+}
+
+// ===== CHECK-IN DE ENTRENO ("Entreno completado") =====
+// Para clientes con clients.quick_checkin_enabled (interruptor del coach en "Información de pago").
+// Un check-in por cliente y día (workout_completions, unique client_id+completed_date): tocar de
+// nuevo actualiza esa fila. Fecha de Costa Rica, solo hoy o ayer.
+// Conteo: un día = un conteo. El check-in suma a "Días entrenados" solo si ese día no tiene
+// exercise_logs ni workout_sessions; actualizarlo nunca suma. El recálculo del coach, el Hive y
+// "Tu constancia" suman la fecha del check-in al mismo conjunto de días, así que no hay doble conteo.
+// Para estos clientes no se abre el rating de emojis al finalizar.
+const CK_ICON_CHECK_CIRCLE = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+const CK_ICON_CHECK = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="20 6 9 17 4 12"/></svg>';
+const CK_ICON_CLOCK = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+const CK_ICON_X = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+let ckToday = null;      // check-in de hoy del cliente (o null)
+let ckTodayKey = null;   // client_id|fecha del último fetch
+let ckForm = null;       // estado del sheet abierto
+
+function ckEnabled() {
+  return !!currentClient && currentClient.quick_checkin_enabled === true && currentUser?.role !== 'coach';
+}
+function ckYesterday() { return tcAddDays(todayCR(), -1); }
+function ckTime(ts) {
+  return new Date(ts).toLocaleTimeString('es-CR', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Costa_Rica' });
+}
+function ckDateLabel(dateStr, weekday) {
+  return new Date(dateStr + 'T12:00:00Z').toLocaleDateString('es-CR', { weekday, day: 'numeric', month: 'short', timeZone: 'UTC' }).replace(/[,.]/g, '');
+}
+function ckDayWord(dateStr) {
+  return dateStr === todayCR() ? 'hoy' : dateStr === ckYesterday() ? 'ayer' : 'el ' + ckDateLabel(dateStr, 'short');
+}
+function ckStamp(row) { return row.updated_at || row.created_at; }
+function ckSkippedText(row, short) {
+  const n = (row.skipped_exercises || []).length;
+  if (row.did_all || !n) return short ? 'hiciste todos los ejercicios' : 'Hizo todos los ejercicios';
+  return short ? `saltaste ${n} ${n === 1 ? 'ejercicio' : 'ejercicios'}` : `Saltó ${n} ${n === 1 ? 'ejercicio' : 'ejercicios'}`;
+}
+
+// Botón fijo: solo en Hoy, sin portada, con un día del plan cargado
+async function ckRefresh() {
+  const screen = document.getElementById('screen-client-home');
+  const bar = document.getElementById('ck-bar');
+  if (!screen || !bar) return;
+  const show = ckEnabled() && currentClient.program_type !== 'lift' && !!window._ckDay
+    && window._ckDay.clientId === currentClient.id && !screen.classList.contains('cover-on');
+  bar.hidden = !show;
+  screen.classList.toggle('ck-on', show);
+  if (!show) return;
+  const key = currentClient.id + '|' + todayCR();
+  if (ckTodayKey !== key) {
+    ckTodayKey = key;
+    ckToday = null;
+    ckRenderBar();
+    const { data, error } = await sb.from('workout_completions').select('*')
+      .eq('client_id', currentClient.id).eq('completed_date', todayCR()).maybeSingle();
+    if (ckTodayKey !== key) return;
+    if (error) ckTodayKey = null; // se reintenta en el próximo refresh
+    ckToday = data || null;
+  }
+  ckRenderBar();
+}
+function ckRenderBar() {
+  const bar = document.getElementById('ck-bar');
+  if (!bar) return;
+  if (!ckToday) {
+    bar.innerHTML = `<button type="button" class="ck-bar-btn" onclick="ckOpenConfirm()">${CK_ICON_CHECK_CIRCLE}Entreno completado</button>`;
+    return;
+  }
+  bar.innerHTML = `<div class="ck-bar-done">
+    <span class="ck-bar-done-ico">${CK_ICON_CHECK}</span>
+    <div class="ck-bar-done-txt"><div class="ck-bar-done-title">Completado · ${ckToday.rating}/10</div>
+    <div class="ck-bar-done-sub">Hoy, ${ckTime(ckStamp(ckToday))} · ${ckSkippedText(ckToday, true)}</div></div>
+    <button type="button" class="ck-bar-edit" onclick="ckAskUpdate(ckToday, 'bar')">Editar</button>
+  </div>`;
+}
+
+function ckCloseOverlay(id) { document.getElementById(id)?.remove(); }
+function ckOverlay(id, html, sheet) {
+  ckCloseOverlay(id);
+  const ov = document.createElement('div');
+  ov.id = id;
+  ov.className = 'ck-ov' + (sheet ? ' is-sheet' : '');
+  ov.onclick = (ev) => { if (ev.target === ov) ov.remove(); };
+  ov.innerHTML = html;
+  document.body.appendChild(ov);
+  return ov;
+}
+
+// 1) "¿Ya terminaste tu entreno?" — No cierra y no guarda nada
+function ckOpenConfirm() {
+  ckOverlay('ck-confirm', `<div class="ck-dialog" role="dialog" aria-modal="true" aria-labelledby="ck-confirm-title">
+    <div class="ck-dialog-ico is-green">${CK_ICON_CHECK_CIRCLE.replace('width="22" height="22"', 'width="32" height="32"')}</div>
+    <h2 class="ck-dialog-title" id="ck-confirm-title">¿Ya terminaste tu entreno?</h2>
+    <p class="ck-dialog-text">Vamos a registrar tu entrenamiento de hoy para que lo veamos juntos.</p>
+    <button type="button" class="ck-btn ck-btn-green" onclick="ckCloseOverlay('ck-confirm');ckStartForm(todayCR())">Sí, ya terminé</button>
+    <button type="button" class="ck-btn ck-btn-line" onclick="ckCloseOverlay('ck-confirm')">No, todavía no</button>
+  </div>`);
+  document.querySelector('#ck-confirm .ck-btn-green')?.focus();
+}
+
+// 2) Aviso de segundo toque. Sí abre el calificador con lo anterior; No no hace nada.
+function ckAskUpdate(row, from) {
+  if (!row) return;
+  const forYesterday = row.completed_date === ckYesterday();
+  ckOverlay('ck-update', `<div class="ck-dialog" role="dialog" aria-modal="true" aria-labelledby="ck-update-title">
+    <div class="ck-dialog-ico is-orange">${CK_ICON_CLOCK}</div>
+    <h2 class="ck-dialog-title" id="ck-update-title" style="font-size:24px;">Ya registraste un entreno completado${forYesterday ? ' para ayer' : ''}</h2>
+    <p class="ck-dialog-text" style="margin:12px 0 0;">Lo registraste ${ckDayWord(pgCRDate(ckStamp(row)))} a las</p>
+    <div class="ck-dialog-time">${ckTime(ckStamp(row))}</div>
+    <p class="ck-dialog-q">¿Seguro que querés actualizarlo?</p>
+    <button type="button" class="ck-btn ck-btn-orange" id="ck-update-yes">Sí, actualizar</button>
+    <button type="button" class="ck-btn ck-btn-line" id="ck-update-no">No, dejarlo así</button>
+  </div>`);
+  // Tocar afuera es igual que "No, dejarlo así"
+  document.getElementById('ck-update').onclick = (ev) => { if (ev.target.id === 'ck-update') document.getElementById('ck-update-no').click(); };
+  document.getElementById('ck-update-yes').onclick = () => {
+    ckCloseOverlay('ck-update');
+    if (from === 'sheet' && ckForm) ckLoadIntoForm(row); else ckOpenSheet(row.completed_date, row);
+  };
+  document.getElementById('ck-update-no').onclick = () => {
+    ckCloseOverlay('ck-update');
+    if (from === 'sheet' && ckForm) { ckForm.date = ckForm.prevDate; ckRenderSheet(); }
+  };
+  document.getElementById('ck-update-yes').focus();
+}
+
+async function ckFetchDay(dateStr) {
+  const { data, error } = await sb.from('workout_completions').select('*')
+    .eq('client_id', currentClient.id).eq('completed_date', dateStr).maybeSingle();
+  if (error) { showToast('No pudimos revisar tus entrenos. Revisá tu conexión e intentá de nuevo.', 'error', 3500); return undefined; }
+  return data || null;
+}
+// Abre el calificador para ese día; si ya hay check-in, primero el aviso
+async function ckStartForm(dateStr) {
+  const row = await ckFetchDay(dateStr);
+  if (row === undefined) return;
+  if (row) { ckAskUpdate(row, 'start'); return; }
+  ckOpenSheet(dateStr, null);
+}
+
+// 3) Calificador (bottom sheet)
+function ckOpenSheet(dateStr, row) {
+  const day = window._ckDay || {};
+  ckForm = {
+    date: dateStr, prevDate: dateStr, existing: null, rating: null, didAll: null, skipped: new Set(), comment: '',
+    snapshot: { plan_day_id: day.planDayId || null, week_number: day.week || null, day_label: day.dayLabel || null },
+    exercises: day.exercises || [], saving: false
+  };
+  ckOverlay('ck-sheet', '<div class="ck-sheet" role="dialog" aria-modal="true" aria-labelledby="ck-sheet-title" id="ck-sheet-body"></div>', true);
+  if (row) ckLoadIntoForm(row); else ckRenderSheet();
+}
+async function ckLoadIntoForm(row) {
+  ckForm.date = ckForm.prevDate = row.completed_date;
+  ckForm.existing = row;
+  ckForm.rating = row.rating;
+  ckForm.didAll = row.did_all !== false;
+  ckForm.skipped = new Set((row.skipped_exercises || []).map(s => String(s.id)));
+  ckForm.comment = row.comment || '';
+  if (row.plan_day_id) {
+    ckForm.snapshot = { plan_day_id: row.plan_day_id, week_number: row.week_number, day_label: row.day_label };
+    // La lista de saltados es la del día del plan que se registró, aunque hoy veas otro
+    if (row.plan_day_id !== window._ckDay?.planDayId) {
+      const { data } = await sb.from('exercises').select('id,name').eq('plan_day_id', row.plan_day_id).order('order_index');
+      ckForm.exercises = (data || []).map(e => ({ id: String(e.id), name: e.name }));
+    }
+  }
+  // Ejercicios que ya no están en el plan pero quedaron marcados como saltados
+  (row.skipped_exercises || []).forEach(s => {
+    if (!ckForm.exercises.some(e => e.id === String(s.id))) ckForm.exercises.push({ id: String(s.id), name: s.name });
+  });
+  ckRenderSheet();
+}
+function ckRenderSheet() {
+  const body = document.getElementById('ck-sheet-body');
+  if (!body || !ckForm) return;
+  const f = ckForm;
+  const today = todayCR(), yest = ckYesterday();
+  const chip = (d, label) => `<button type="button" class="ck-chip${f.date === d ? ' is-on' : ''}" aria-pressed="${f.date === d}" onclick="ckPickDay('${d}')">${label}</button>`;
+  const nums = Array.from({ length: 10 }, (_, i) => i + 1).map(n =>
+    `<button type="button" class="ck-num${f.rating === n ? ' is-on' : ''}" aria-pressed="${f.rating === n}" aria-label="Nota ${n} de 10" onclick="ckPickRating(${n})">${n}</button>`).join('');
+  const list = f.didAll === false ? `<div>
+      <div class="ck-lbl">¿Cuáles saltaste?</div>
+      ${f.exercises.length ? `<div class="ck-skip-list">${f.exercises.map(e => {
+        const on = f.skipped.has(e.id);
+        return `<button type="button" class="ck-skip${on ? ' is-on' : ''}" role="checkbox" aria-checked="${on}" onclick="ckToggleSkip('${escHtml(e.id)}')"><span class="ck-box">${on ? CK_ICON_CHECK : ''}</span>${escHtml(e.name)}</button>`;
+      }).join('')}</div>` : '<div class="ck-empty">No encontramos los ejercicios de este día. Contalo en el comentario.</div>'}
+    </div>` : '';
+  body.innerHTML = `
+    <div class="ck-grab" aria-hidden="true"></div>
+    <div class="ck-sheet-head"><h2 class="ck-sheet-title" id="ck-sheet-title">Entreno completado</h2>
+      <button type="button" class="ck-close" aria-label="Cerrar" onclick="ckCloseSheet()">${CK_ICON_X}</button></div>
+    <div>
+      <div class="ck-lbl">¿Para qué día?</div>
+      <div class="ck-days">${chip(today, 'Hoy')}${chip(yest, 'Ayer')}<span class="ck-days-date">${ckDateLabel(f.date, 'long')}</span></div>
+    </div>
+    <div>
+      <div class="ck-lbl">¿Cómo calificás este entreno?</div>
+      <div class="ck-nums" role="group" aria-label="Nota del 1 al 10">${nums}</div>
+      <div class="ck-ends"><span>1 · Muy mal</span><span>10 · Excelente</span></div>
+    </div>
+    <div>
+      <div class="ck-lbl">¿Hiciste todos los ejercicios o saltaste alguno?</div>
+      <div class="ck-all">
+        <button type="button" class="ck-all-btn${f.didAll === true ? ' is-all' : ''}" aria-pressed="${f.didAll === true}" onclick="ckPickAll(true)">${f.didAll === true ? CK_ICON_CHECK : ''}Hice todos</button>
+        <button type="button" class="ck-all-btn${f.didAll === false ? ' is-skip' : ''}" aria-pressed="${f.didAll === false}" onclick="ckPickAll(false)">${f.didAll === false ? CK_ICON_CHECK : ''}Salté algunos</button>
+      </div>
+    </div>
+    ${list}
+    <div><label class="ck-lbl" for="ck-comment">Comentario (opcional)</label>
+      <textarea id="ck-comment" class="ck-comment" rows="2" maxlength="500" placeholder="Contanos cómo te fue" oninput="ckForm && (ckForm.comment = this.value)">${escHtml(f.comment)}</textarea></div>
+    <button type="button" class="ck-btn ck-btn-green" id="ck-save" onclick="ckSave()"${f.saving ? ' disabled' : ''}>${f.saving ? 'Guardando…' : (f.existing ? 'Actualizar entreno' : 'Guardar entreno')}</button>`;
+}
+function ckCloseSheet() { ckForm = null; ckCloseOverlay('ck-sheet'); }
+async function ckPickDay(dateStr) {
+  if (!ckForm || ckForm.date === dateStr) return;
+  if (dateStr !== todayCR() && dateStr !== ckYesterday()) return; // nunca más atrás ni futuro
+  ckForm.prevDate = ckForm.date;
+  ckForm.date = dateStr;
+  ckRenderSheet();
+  const row = await ckFetchDay(dateStr);
+  if (!ckForm || ckForm.date !== dateStr) return;
+  if (row === undefined) { ckForm.date = ckForm.prevDate; ckRenderSheet(); return; }
+  if (row && row.id !== ckForm.existing?.id) { ckAskUpdate(row, 'sheet'); return; }
+  if (!row && ckForm.existing) { // cambió a un día sin check-in: es uno nuevo
+    ckForm.existing = null;
+    const day = window._ckDay || {};
+    ckForm.snapshot = { plan_day_id: day.planDayId || null, week_number: day.week || null, day_label: day.dayLabel || null };
+    ckRenderSheet();
+  }
+}
+function ckPickRating(n) { if (ckForm) { ckForm.rating = n; ckRenderSheet(); } }
+function ckPickAll(v) { if (ckForm) { ckForm.didAll = v; if (v) ckForm.skipped.clear(); ckRenderSheet(); } }
+function ckToggleSkip(id) {
+  if (!ckForm) return;
+  if (ckForm.skipped.has(id)) ckForm.skipped.delete(id); else ckForm.skipped.add(id);
+  ckRenderSheet();
+}
+
+async function ckSave() {
+  const f = ckForm;
+  if (!f || f.saving) return;
+  if (f.date !== todayCR() && f.date !== ckYesterday()) { showToast('Solo podés registrar hoy o ayer', 'error'); return; }
+  if (!f.rating) { showToast('Elegí una nota del 1 al 10', 'error'); return; }
+  if (f.didAll === null) { showToast('Contanos si hiciste todos los ejercicios', 'error'); return; }
+  if (f.didAll === false && f.exercises.length && !f.skipped.size) { showToast('Marcá al menos un ejercicio que saltaste', 'error'); return; }
+  const skipped = f.didAll ? [] : f.exercises.filter(e => f.skipped.has(e.id)).map(e => ({ id: e.id, name: e.name }));
+  const payload = {
+    client_id: currentClient.id, completed_date: f.date, ...f.snapshot,
+    rating: f.rating, did_all: !!f.didAll, skipped_exercises: skipped,
+    comment: f.comment.trim() || null
+  };
+  f.saving = true; ckRenderSheet();
+  // Si alguien guardó ese día entre medio (otra pestaña), esto es update igual: el upsert no duplica
+  const before = f.existing || await ckFetchDay(f.date);
+  // updated_at solo al actualizar: en el alta queda igual a created_at (los dos del servidor)
+  if (before) payload.updated_at = new Date().toISOString();
+  const { data, error } = await sb.from('workout_completions').upsert([payload], { onConflict: 'client_id,completed_date' }).select().maybeSingle();
+  if (error || !data) {
+    f.saving = false; ckRenderSheet();
+    showToast('No se pudo guardar tu entreno. Revisá tu conexión e intentá de nuevo.', 'error', 3500);
+    return;
+  }
+  if (!before) await ckCountDay(f.date);
+  ckCloseSheet();
+  if (data.completed_date === todayCR()) { ckToday = data; ckTodayKey = currentClient.id + '|' + todayCR(); }
+  ckRenderBar();
+  showToast('Entreno guardado', 'success');
+}
+
+// Un día = un conteo: suma a days_trained solo si ese día no tiene registros ni sesión.
+// Rango amplio a propósito: cubre la fecha UTC (la que usa el recálculo del coach) y la de CR.
+async function ckCountDay(dateStr) {
+  const c = currentClient;
+  if (!c || String(c.last_trained_date || '') === dateStr) return;
+  const [logs, sess] = await Promise.all([
+    sb.from('exercise_logs').select('id').eq('client_id', c.id).gte('logged_at', dateStr + 'T00:00:00Z').lt('logged_at', crDayRange(dateStr).end).limit(1),
+    sb.from('workout_sessions').select('id').eq('client_id', c.id).eq('session_date', dateStr).limit(1)
+  ]);
+  if (logs.error || sess.error) return; // ante la duda no se suma: el recálculo del coach lo corrige
+  if ((logs.data || []).length || (sess.data || []).length) return;
+  const newDays = (c.days_trained || 0) + 1;
+  const updates = { days_trained: newDays };
+  if (!c.last_trained_date || dateStr > String(c.last_trained_date)) updates.last_trained_date = dateStr;
+  const { error } = await sb.from('clients').update(updates).eq('id', c.id);
+  if (error) return;
+  Object.assign(c, updates);
+  const total = newDays + (c.days_trained_adjustment || 0);
+  ['c-days-trained', 'c-profile-days'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = total; });
+}
+
+// Días con check-in que no tienen ningún log (ni por fecha UTC ni CR). Para el recálculo del coach.
+async function ckExtraTrainedDays(clientId, logs, utcDays, sinceDate) {
+  let q = sb.from('workout_completions').select('completed_date').eq('client_id', clientId);
+  if (sinceDate) q = q.gte('completed_date', sinceDate);
+  const { data, error } = await q;
+  if (error || !data) return 0; // sin la tabla (antes de la migración) todo queda como antes
+  const crDays = new Set((logs || []).map(l => pgCRDate(l.logged_at)));
+  return new Set(data.map(r => String(r.completed_date).slice(0, 10)).filter(d => !utcDays.has(d) && !crDays.has(d))).size;
+}
+
+// ---- COACH: interruptor y sección "Check-ins de entreno" ----
+function ckCoachToggleHtml(c) {
+  const on = c.quick_checkin_enabled === true;
+  return `<div class="payment-row" style="align-items:center;flex-wrap:wrap;">
+      <span class="payment-key">Check-in de entreno</span>
+      <span class="payment-val">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <div onclick="toggleClientQuickCheckin()" id="ck-toggle-btn" role="switch" aria-checked="${on}" aria-label="Check-in de entreno" style="width:44px;height:24px;border-radius:12px;background:${on ? 'var(--orange)' : 'var(--gray3)'};position:relative;transition:background 0.2s;cursor:pointer;flex-shrink:0;">
+            <div style="width:20px;height:20px;border-radius:50%;background:white;position:absolute;top:2px;${on ? 'left:22px' : 'left:2px'};transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
+          </div>
+          <span style="font-size:12px;color:${on ? 'var(--green)' : 'var(--gray4)'};">${on ? 'Activo' : 'Apagado'}</span>
+        </label>
+      </span>
+      <div style="flex-basis:100%;font-size:11px;line-height:1.4;color:var(--gray4);margin-top:4px;">El cliente ve el botón fijo “Entreno completado” en su pantalla de entreno y deja de ver el rating de siempre.</div>
+    </div>`;
+}
+async function toggleClientQuickCheckin() {
+  if (!currentClient) return;
+  const c = currentClient;
+  const newVal = c.quick_checkin_enabled !== true;
+  const { error } = await sb.from('clients').update({ quick_checkin_enabled: newVal }).eq('id', c.id);
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  c.quick_checkin_enabled = newVal;
+  const row = document.getElementById('ck-toggle-btn')?.closest('.payment-row');
+  if (row) row.outerHTML = ckCoachToggleHtml(c);
+  showToast(newVal ? 'Check-in de entreno activado' : 'Check-in de entreno apagado');
+  loadCoachCheckins(c);
+}
+async function loadCoachCheckins(c) {
+  const box = document.getElementById('coach-checkins');
+  if (!box || !c) return;
+  const cid = c.id;
+  const { data, error } = await sb.from('workout_completions').select('*').eq('client_id', cid)
+    .order('completed_date', { ascending: false }).limit(60);
+  if (currentClient?.id !== cid) return;
+  const rows = error ? [] : (data || []);
+  const on = c.quick_checkin_enabled === true;
+  if (!on && !rows.length) { box.innerHTML = ''; return; }
+  const since = tcAddDays(todayCR(), -6);
+  const last7 = rows.filter(r => String(r.completed_date) >= since);
+  const avg = last7.length ? (last7.reduce((a, r) => a + (r.rating || 0), 0) / last7.length).toLocaleString('es-CR', { maximumFractionDigits: 1 }) : '–';
+  const card = r => {
+    const skipped = r.skipped_exercises || [];
+    const updated = r.updated_at && r.created_at && (new Date(r.updated_at) - new Date(r.created_at)) > 1000;
+    const plan = [r.week_number ? 'Semana ' + r.week_number : '', r.day_label ? getDayShortLabel(r.day_label, 0) : ''].filter(Boolean).join(' · ');
+    return `<div class="ck-cc${r.did_all ? '' : ' is-skip'}">
+      <div class="ck-cc-head">
+        <div class="ck-cc-when"><span class="ck-cc-date">${ckDateLabel(String(r.completed_date), 'short')}</span><span class="ck-cc-time">${ckTime(r.created_at)}</span></div>
+        <span class="ck-cc-rate${r.rating >= 7 ? '' : ' is-low'}">${r.rating}/10</span>
+      </div>
+      ${plan ? `<div class="ck-cc-plan">${escHtml(plan)}</div>` : ''}
+      ${r.did_all || !skipped.length
+        ? `<div class="ck-cc-all">${CK_ICON_CHECK}Hizo todos los ejercicios</div>`
+        : `<div class="ck-cc-skip">${ckSkippedText(r, false)}</div><div class="ck-cc-chips">${skipped.map(s => `<span>${escHtml(s.name || '')}</span>`).join('')}</div>`}
+      ${r.comment ? `<p class="ck-cc-comment">“${escHtml(r.comment)}”</p>` : ''}
+      ${updated ? `<div class="ck-cc-upd">Actualizado ${ckDayWord(pgCRDate(r.updated_at))} a las ${ckTime(r.updated_at)}</div>` : ''}
+    </div>`;
+  };
+  box.innerHTML = `
+    <div class="section-header"><div class="section-title">Check-ins de entreno</div><span class="ck-cc-state${on ? '' : ' is-off'}">${on ? 'Activo' : 'Apagado'}</span></div>
+    <div class="ck-cc-sum">
+      <div><div class="ck-cc-sum-lbl">Últimos 7 días</div><div class="ck-cc-sum-num">${last7.length} ${last7.length === 1 ? 'check-in' : 'check-ins'}</div></div>
+      <div style="text-align:right;"><div class="ck-cc-sum-lbl">Nota promedio</div><div class="ck-cc-sum-avg">${avg}<span> /10</span></div></div>
+    </div>
+    ${rows.length ? `<div class="ck-cc-list">${rows.map(card).join('')}</div>` : '<div class="ck-cc-empty">Todavía no hay check-ins.</div>'}`;
 }
 
 async function openExDetail(ex) {
@@ -7974,6 +8490,7 @@ async function openCoachClient(clientId) {
       </span>
     </div>
     <div class="payment-row"><span class="payment-key">Tiempo entrenado</span><span class="payment-val payment-val-time">${Math.floor((c.total_training_minutes||0)/60)}h ${(c.total_training_minutes||0)%60}min</span></div>
+    ${ckCoachToggleHtml(c)}
     <div style="margin-top:14px;padding-top:12px;border-top:1.5px solid var(--gray2);display:flex;flex-direction:column;gap:8px;">
       ${c.is_churn ? `<button onclick="toggleChurnClient(false)" style="width:100%;padding:10px;background:var(--green-light);color:var(--green);border:1.5px solid var(--green);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Reactivar cliente</button>` : `<button onclick="toggleChurnClient(true)" style="width:100%;padding:10px;background:var(--red-light);color:var(--red);border:1.5px solid var(--red);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Marcar como Churn</button>`}
       ${c.hidden ? `<button onclick="toggleHiddenClient(false)" style="width:100%;padding:10px;background:var(--gray1);color:var(--black);border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Mostrar cliente</button>` : `<button onclick="toggleHiddenClient(true)" style="width:100%;padding:10px;background:var(--gray1);color:var(--black);border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Ocultar cliente</button>`}
@@ -7991,6 +8508,7 @@ async function openCoachClient(clientId) {
   document.getElementById('coach-c-days-adj').textContent = (c.days_trained_adjustment>0?'+':'')+(c.days_trained_adjustment||0);
   renderCoachDaysTotal();
   loadWeekTrainedCount(c.id);
+  loadCoachCheckins(c);
   loadCoachClientDetail(clientId);
   loadCoachPlans();
   loadCoachTrainingPanel();
@@ -8557,13 +9075,15 @@ async function loadWeekTrainedCount(clientId) {
   const {data:logs} = await sb.from('exercise_logs').select('logged_at').eq('client_id',clientId).gte('logged_at',weekStart);
   if(!logs) return;
   const uniqueDays = new Set(logs.map(l => l.logged_at.split('T')[0]));
-  document.getElementById('coach-c-week-trained').textContent = uniqueDays.size;
+  // Check-in de entreno: suma solo los días con check-in que no tienen ningún log (un día = un conteo)
+  const weekExtra = await ckExtraTrainedDays(clientId, logs, uniqueDays, weekStart.slice(0, 10));
+  document.getElementById('coach-c-week-trained').textContent = uniqueDays.size + weekExtra;
 
   // Also fix total days trained using all logs (not the stored counter)
   const {data:allLogs} = await sb.from('exercise_logs').select('logged_at').eq('client_id',clientId);
   if(allLogs) {
     const allUniqueDays = new Set(allLogs.map(l => l.logged_at.split('T')[0]));
-    const realTotal = allUniqueDays.size;
+    const realTotal = allUniqueDays.size + await ckExtraTrainedDays(clientId, allLogs, allUniqueDays);
     window._coachDaysBase = realTotal;
     renderCoachDaysTotal();
     // Sync the stored value if it's off (this base counter is separate from the manual adjustment)
@@ -17861,7 +18381,7 @@ async function loadCoachContractPanel() {
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
       <div>
         <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;">${contract.program}</div>
-        <div style="font-size:12px;color:var(--gray4);margin-top:2px;">${contract.duration} · ${contract.payment_method}</div>
+        <div style="font-size:12px;color:var(--gray4);margin-top:2px;">${contract.duration}${contract.duration_weeks ? ` (${contract.duration_weeks} semanas)` : ''} · ${contract.payment_method}${(contract.contract_version || 1) >= 2 ? ' · Machote v2' : ''}</div>
       </div>
       ${signedHtml}
     </div>
@@ -17880,6 +18400,7 @@ async function openContractEditor() {
   currentContractId = existing?.id || null;
   contractEditorMode = existing ? 'edit' : 'create';
   window._existingContractSnapshot = existing ? { program: existing.program, duration: existing.duration, total_amount: existing.total_amount, includes_lift: !!existing.includes_lift, signed_at: existing.signed_at } : null;
+  window._existingContractVersion = existing ? (existing.contract_version || 1) : CONTRACT_TEMPLATE_VERSION;
 
   // Build modal HTML dynamically and inject into page
   let modal = document.getElementById('modal-contract-editor');
@@ -17913,6 +18434,10 @@ async function openContractEditor() {
         <option value="Semestral">Semestral (6 meses)</option>
       </select>
     </div>
+    <div class="form-group" ${window._existingContractVersion >= 2 ? '' : 'hidden'}>
+      <label class="form-label" for="ce-weeks">Duración (semanas)</label>
+      <input class="form-input" type="number" inputmode="numeric" min="1" step="1" id="ce-weeks" placeholder="ej: 13" oninput="this.dataset.touched='1'">
+    </div>
     <div class="form-group">
       <label class="form-label">Monto total (USD)</label>
       <input class="form-input" type="number" id="ce-total" placeholder="ej: 600" step="0.01">
@@ -17945,6 +18470,7 @@ async function openContractEditor() {
     document.getElementById('ce-total').value = existing.total_amount || '';
     document.getElementById('ce-payment-method').value = existing.payment_method || '';
     if (existing.payment_day) document.getElementById('ce-payment-day').value = existing.payment_day;
+    if (existing.duration_weeks) { const w = document.getElementById('ce-weeks'); w.value = existing.duration_weeks; w.dataset.touched = '1'; }
     (existing.installments || []).forEach((inst, i) => addInstallmentRow(inst));
   } else {
     addInstallmentRow(); // start with one empty row
@@ -17954,6 +18480,9 @@ async function openContractEditor() {
 
 function toggleContractDurationFields() {
   const isMensual = document.getElementById('ce-duration')?.value === 'Mensual';
+  // Semanas: se sugiere según la duración mientras Sau no lo haya escrito a mano
+  const weeksEl = document.getElementById('ce-weeks');
+  if (weeksEl && !weeksEl.dataset.touched) weeksEl.value = CONTRACT_DEFAULT_WEEKS[document.getElementById('ce-duration')?.value] || '';
   const daySection = document.getElementById('ce-payment-day-section');
   const instSection = document.getElementById('ce-installments-section');
   if (daySection) daySection.style.display = isMensual ? '' : 'none';
@@ -17994,8 +18523,12 @@ async function saveContract() {
   const installments = isMensual ? [] : getInstallmentsFromForm();
   const payment_day = isMensual ? parseInt(document.getElementById('ce-payment-day').value) : null;
   const includes_lift = document.getElementById('ce-includes-lift').checked;
+  const duration_weeks = parseInt(document.getElementById('ce-weeks').value, 10);
   if (!program || !duration || isNaN(total_amount) || !payment_method) { showToast('Completá todos los campos', 'error'); return; }
+  if (window._existingContractVersion >= 2 && !(duration_weeks > 0)) { showToast('Poné la duración en semanas', 'error'); return; }
   const payload = { client_id: currentClient.id, program, duration, total_amount, payment_method, installments, payment_day, includes_lift };
+  // Solo el machote v2 usa las semanas: a los contratos v1 (firmados o pendientes) no se les agrega nada
+  if (window._existingContractVersion >= 2) payload.duration_weeks = duration_weeks;
   if (currentContractId && window._existingContractSnapshot) {
     const snap = window._existingContractSnapshot;
     if (snap.signed_at) {
@@ -18006,8 +18539,11 @@ async function saveContract() {
   let error;
   if (currentContractId) {
     ({ error } = await sb.from('contracts').update(payload).eq('id', currentContractId));
+    if (error && contractMissingColumn(error)) { delete payload.duration_weeks; ({ error } = await sb.from('contracts').update(payload).eq('id', currentContractId)); }
   } else {
-    ({ error } = await sb.from('contracts').insert([{ ...payload, status: 'pendiente' }]));
+    // Contratos nuevos: machote v2. Sin migration_contract_versions.sql no se puede guardar la versión.
+    ({ error } = await sb.from('contracts').insert([{ ...payload, status: 'pendiente', contract_version: CONTRACT_TEMPLATE_VERSION }]));
+    if (error && contractMissingColumn(error)) { showToast('Falta correr migration_contract_versions.sql para crear contratos nuevos', 'error', 4000); return; }
   }
   if (error) { showToast(error.message, 'error'); return; }
   closeModal('modal-contract-editor');
@@ -18033,36 +18569,60 @@ async function loadClientContractPanel() {
     panel.innerHTML = `<div class="card" style="text-align:center;padding:20px 16px;"><div style="display:flex;justify-content:center;color:var(--icon-empty);margin-bottom:10px;">${icon('file-text', 44)}</div><div style="font-size:13px;color:var(--gray4);">Tu coach aún no ha generado tu contrato.</div></div>`;
     return;
   }
-  // Already signed
-  if (contract.status === 'firmado') {
-    panel.innerHTML = `<div class="card">
-      <div class="contract-signed-banner">
+  // Dropdown cerrado siempre al entrar (no se recuerda). Si está pendiente, la aceptación
+  // queda afuera del dropdown y siempre visible. Misma lógica de firma de siempre.
+  const signed = contract.status === 'firmado';
+  const status = signed
+    ? `<div class="contract-signed-banner">
         <div style="font-size:14px;font-weight:700;color:var(--green);margin-bottom:3px;">Contrato firmado</div>
         <div style="font-size:12px;color:var(--gray5);">Confirmado por ${contract.signed_by}</div>
         <div style="font-size:11px;color:var(--gray4);margin-top:2px;">${new Date(contract.signed_at).toLocaleDateString('es-CR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
-      </div>
-      <div style="margin-top:12px;">
-        ${renderContractBody(contract)}
-      </div>
-    </div>`;
-    return;
-  }
-  // Pending signature
+      </div>`
+    : `<div style="display:flex;align-items:flex-start;gap:10px;background:#FBF1E1;border:1.5px solid #F1D9AE;border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+        <span style="color:#B45309;display:flex;margin-top:1px;">${icon('clock', 20)}</span>
+        <div><div style="font-size:14px;font-weight:700;color:#B45309;">Pendiente de tu firma</div>
+        <div style="font-size:13px;color:var(--gray5);margin-top:2px;">Leé el contrato completo y confirmá tu aceptación.</div></div>
+      </div>`;
+  const summary = [contract.program, contract.duration, `$${contract.total_amount} USD`].filter(Boolean).join(' · ');
   panel.innerHTML = `<div class="card">
-    <div style="display:flex;align-items:flex-start;gap:10px;background:#FBF1E1;border:1.5px solid #F1D9AE;border-radius:12px;padding:12px 14px;margin-bottom:14px;">
-      <span style="color:#B45309;display:flex;margin-top:1px;">${icon('clock', 20)}</span>
-      <div><div style="font-size:14px;font-weight:700;color:#B45309;">Pendiente de tu firma</div>
-      <div style="font-size:13px;color:var(--gray5);margin-top:2px;">Lee el contrato completo y confirma tu aceptación.</div></div>
-    </div>
-    ${renderContractBody(contract)}
-    <div style="margin-top:20px;padding-top:16px;border-top:2px solid var(--gray2);">
+    ${status}
+    <div class="contract-sum">${escHtml(summary)}</div>
+    <button type="button" class="contract-acc-btn" aria-expanded="false" aria-controls="client-contract-full" onclick="toggleClientContract(this)">
+      <span>Ver contrato completo</span><span class="diary-acc-chev">${icon('chevron-down', 18)}</span>
+    </button>
+    <div id="client-contract-full" class="contract-acc-body" hidden>${renderContractBody(contract)}</div>
+    ${signed ? '' : `<div style="margin-top:20px;padding-top:16px;border-top:2px solid var(--gray2);">
       <div style="font-size:12px;color:var(--gray5);margin-bottom:10px;line-height:1.5;">Al presionar el botón declarás haber leído, comprendido y aceptado todos los términos del presente contrato.</div>
       <button class="contract-sign-btn" onclick="signContract('${contract.id}')">Confirmo que acepto este contrato</button>
-    </div>
+    </div>`}
   </div>`;
 }
 
+function toggleClientContract(btn) {
+  const body = document.getElementById('client-contract-full');
+  if (!body) return;
+  body.hidden = !body.hidden;
+  btn.setAttribute('aria-expanded', String(!body.hidden));
+  btn.querySelector('span').textContent = body.hidden ? 'Ver contrato completo' : 'Ocultar contrato';
+}
+
+// ---- Machote de contrato (versionado) ----
+// v1 = el texto de siempre: lo siguen usando los contratos sin contract_version (los ya firmados y
+// los pendientes que existían antes del v2). No tocar el texto v1.
+// v2 = contratos nuevos (contract_version = 2). PENDIENTE DE REVISIÓN LEGAL: borrador de Sau del
+// 27 oct 2026, lo revisa un abogado antes de darlo por final. No visible al cliente.
+// Un contrato firmado con contract_text_snapshot se muestra con ese texto exacto, nunca con el machote.
+const CONTRACT_TEMPLATE_VERSION = 2;
+const CONTRACT_DEFAULT_WEEKS = { Mensual: 4, Trimestral: 13, Semestral: 26 };
+function contractWeeks(contract) {
+  const w = parseInt(contract.duration_weeks, 10);
+  return w > 0 ? w : (CONTRACT_DEFAULT_WEEKS[contract.duration] || null);
+}
 function renderContractBody(contract) {
+  if (contract.status === 'firmado' && contract.contract_text_snapshot) return contract.contract_text_snapshot;
+  const v2 = (contract.contract_version || 1) >= 2;
+  const weeks = contractWeeks(contract);
+  const programBought = escHtml(contract.program + (contract.includes_lift ? ' + LIFT' : ''));
   const clientName = currentClient?.name || '—';
   const isMensual = contract.duration === 'Mensual';
   const installHtml = !isMensual ? (contract.installments || []).map((inst, i) =>
@@ -18075,7 +18635,7 @@ function renderContractBody(contract) {
     <div class="contract-highlight">
       <div class="contract-highlight-row"><span class="contract-highlight-key">Cliente</span><span class="contract-highlight-val">${clientName}</span></div>
       <div class="contract-highlight-row"><span class="contract-highlight-key">Programa</span><span class="contract-highlight-val">${contract.program}</span></div>
-      <div class="contract-highlight-row"><span class="contract-highlight-key">Duración</span><span class="contract-highlight-val">${contract.duration}</span></div>
+      <div class="contract-highlight-row"><span class="contract-highlight-key">Duración</span><span class="contract-highlight-val">${contract.duration}${v2 && weeks ? ` (${weeks} semanas)` : ''}</span></div>
       <div class="contract-highlight-row"><span class="contract-highlight-key">Total</span><span class="contract-highlight-val">$${contract.total_amount} USD</span></div>
       <div class="contract-highlight-row" style="border:none;padding-bottom:0;"><span class="contract-highlight-key">Método de pago</span><span class="contract-highlight-val">${contract.payment_method}</span></div>
     </div>
@@ -18097,9 +18657,20 @@ function renderContractBody(contract) {
       <li>Actualizar el plan semanalmente con base en el check-in recibido.</li>
       <li>Estar disponible para consultas por WhatsApp en horarios razonables.</li>
       <li>Mantener confidencialidad absoluta sobre la información del cliente.</li>
+      ${v2 ? `<li><strong>Seguimiento semanal.</strong> MOVE se compromete a contactar al Cliente al menos 2 veces por semana, por WhatsApp o por la plataforma, para dar seguimiento a su proceso.</li>
+      <li><strong>Horario de consulta.</strong> Las consultas se atienden de lunes a viernes, de 8:00 a. m. a 7:00 p. m. (hora de Costa Rica). Los mensajes enviados fuera de ese horario se consideran recibidos al inicio del siguiente día hábil.</li>
+      <li><strong>Plazo de respuesta.</strong> Las consultas enviadas por WhatsApp dentro del horario de consulta se responden en un plazo máximo de 24 horas, contado únicamente dentro de dicho horario. MOVE no presta servicio de atención de emergencias; ante una urgencia médica, el Cliente debe acudir a un servicio de salud.</li>` : ''}
     </ul>
     <h2>Términos y Condiciones</h2>
-    <p><strong>Garantía de Satisfacción Condicionada:</strong> El Cliente tiene derecho a solicitar una devolución parcial del monto pagado si, después de completar un mínimo del 85% de los entrenamientos del programa, seguir todas las recomendaciones de nutrición y descanso, mantener un mínimo de 7 horas de sueño diario, enviar check-ins semanales, y comunicar activamente con el coach, no experimenta cambios significativos en composición corporal, fuerza o bienestar al finalizar la membresía. Los resultados se evalúan mediante fotografías, mediciones de composición corporal y registros de fuerza. En caso de cumplimiento de todos los requisitos y confirmación de falta de cambios medibles, se procesará una devolución del 50% del monto pagado. El cliente debe solicitar la devolución dentro de 15 días después de completar el programa. Esta garantía no aplica en caso de lesión, enfermedad, cambios hormonales no prevenibles, medicamentos no comunicados, o incumplimiento de instrucciones médicas.</p>
+    ${v2 ? `<p><strong>Garantía de Satisfacción Condicionada:</strong> El Cliente podrá solicitar una devolución parcial del 50% del monto pagado si cumple todas las condiciones siguientes:</p>
+    <ol style="padding-left:18px;margin-bottom:8px;">
+      <li>Completó la totalidad de las ${weeks || '[duración]'} semanas pactadas al inicio del programa, sin abandono anticipado.</li>
+      <li>Cumplió al menos el 85% del Programa en su totalidad. El "Programa" es el conjunto de componentes contratados por el Cliente, detallados en este contrato (${programBought}), y su cumplimiento se mide sobre todos ellos en conjunto durante la totalidad de las semanas pactadas, no solo sobre los entrenamientos.</li>
+      <li>Siguió las recomendaciones del Programa y mantuvo comunicación activa con MOVE, incluyendo los check-ins semanales.</li>
+      <li>No obtuvo cambios medibles respecto al objetivo principal pactado al inicio del programa.</li>
+    </ol>
+    <p><strong>Cómo se comprueba.</strong> Solo se consideran cumplidas las acciones registradas en la plataforma MOVE o enviadas por los canales acordados (registro de ejercicios, "Entreno completado", registros de comida, check-ins, fotos y mediciones). Lo no registrado se considera no cumplido.</p>
+    <p><strong>Plazo y exclusiones.</strong> La solicitud debe presentarse dentro de los 15 días posteriores a la finalización del programa. La garantía no aplica en caso de lesión, enfermedad, cambios hormonales no previstos, medicamentos no comunicados o incumplimiento de indicaciones médicas.</p>` : `<p><strong>Garantía de Satisfacción Condicionada:</strong> El Cliente tiene derecho a solicitar una devolución parcial del monto pagado si, después de completar un mínimo del 85% de los entrenamientos del programa, seguir todas las recomendaciones de nutrición y descanso, mantener un mínimo de 7 horas de sueño diario, enviar check-ins semanales, y comunicar activamente con el coach, no experimenta cambios significativos en composición corporal, fuerza o bienestar al finalizar la membresía. Los resultados se evalúan mediante fotografías, mediciones de composición corporal y registros de fuerza. En caso de cumplimiento de todos los requisitos y confirmación de falta de cambios medibles, se procesará una devolución del 50% del monto pagado. El cliente debe solicitar la devolución dentro de 15 días después de completar el programa. Esta garantía no aplica en caso de lesión, enfermedad, cambios hormonales no prevenibles, medicamentos no comunicados, o incumplimiento de instrucciones médicas.</p>`}
     <p><strong>Confidencialidad:</strong> El cliente se compromete a mantener en secreto toda la información confidencial de MOVE, incluyendo programas y metodologías.</p>
     <p><strong>Derechos de autor:</strong> Todo el material del programa StrongFlow está protegido por derechos de autor y no puede divulgarse sin permiso expreso de MOVE.</p>
     <p><strong>Aviso médico:</strong> Este programa no sustituye el consejo médico profesional. Consultá con un médico antes de iniciar, especialmente si tenés condiciones preexistentes.</p>
@@ -18109,22 +18680,31 @@ function renderContractBody(contract) {
   </div>`;
 }
 
+// Columna nueva que todavía no existe (antes de correr migration_contract_versions.sql)
+function contractMissingColumn(error) {
+  return /contract_version|contract_text_snapshot|duration_weeks/.test(error?.message || '') || error?.code === '42703' || error?.code === 'PGRST204';
+}
+
 async function signContract(contractId) {
   const btn = document.querySelector('.contract-sign-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Procesando...'; }
   const signedAt = new Date().toISOString();
   const signedBy = currentClient?.name || currentUser?.name || 'Cliente';
-  const { error } = await sb.from('contracts').update({
-    status: 'firmado',
-    signed_at: signedAt,
-    signed_by: signedBy
-  }).eq('id', contractId);
+  const signFields = { status: 'firmado', signed_at: signedAt, signed_by: signedBy };
+  // Versión y copia exacta del texto que el cliente acepta (lo que ve en pantalla al firmar)
+  const { data: contract } = await sb.from('contracts').select('*').eq('id', contractId).maybeSingle();
+  const extra = contract ? { contract_version: contract.contract_version || 1, contract_text_snapshot: renderContractBody({ ...contract, status: 'pendiente' }) } : {};
+  let { error } = await sb.from('contracts').update({ ...signFields, ...extra }).eq('id', contractId);
+  // Sin las columnas nuevas se firma igual que siempre
+  if (error && contractMissingColumn(error)) ({ error } = await sb.from('contracts').update(signFields).eq('id', contractId));
   if (error) {
     showToast('Error al firmar: ' + error.message, 'error');
     if (btn) { btn.disabled = false; btn.textContent = 'Confirmo que acepto este contrato'; }
     return;
   }
   showToast('Contrato firmado correctamente', 'success');
+  clientContractPending = false;
+  applyHoyCoverMode();
   loadClientContractPanel();
 }
 // ===== FOOD LIBRARY =====
@@ -21362,14 +21942,23 @@ async function loadCoachProgress(clientId) {
     </div>`;
   }).join('');
 
-  const photoBlocks = await Promise.all(logs.map(async log => {
+  // Un dropdown por fecha (patrón del acordeón por hábito), todos cerrados y se pueden abrir
+  // varios a la vez. Las fotos se piden al abrir: los links firmados vencen a los 5 min.
+  window._coachPhotoLogs = {};
+  const photoBlocks = logs.map((log, i) => {
     const label = new Date(log.week_start_date + 'T00:00:00').toLocaleDateString('es-CR', {day:'numeric', month:'short'});
-    const thumbsHtml = await progressPhotoThumbs(log);
-    return `<div style="margin-bottom:10px;">
-      <div style="font-size:11px;font-weight:700;color:var(--gray4);margin-bottom:6px;">${label}</div>
-      <div style="display:flex;gap:8px;">${thumbsHtml}</div>
+    const n = ['photo_front_path','photo_side_path','photo_back_path'].filter(f => log[f]).length;
+    const domId = `cph-${i}`;
+    window._coachPhotoLogs[domId] = log;
+    return `<div class="diary-list" style="margin-bottom:8px;">
+      <button type="button" class="diary-row" aria-expanded="false" aria-controls="${domId}" onclick="toggleCoachPhotoDate('${domId}',this)">
+        <div class="diary-row-main"><div class="diary-row-name" style="font-size:15px;">${label}</div></div>
+        <span class="diary-pill">${n} ${n === 1 ? 'foto' : 'fotos'}</span>
+        <span class="diary-acc-chev">${icon('chevron-down', 18)}</span>
+      </button>
+      <div id="${domId}" class="cph-body" hidden></div>
     </div>`;
-  }));
+  });
 
   container.innerHTML = `
     <div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 14px;margin-bottom:8px;">
@@ -21381,6 +21970,17 @@ async function loadCoachProgress(clientId) {
       ${photoBlocks.join('')}
     </div>
   `;
+}
+
+async function toggleCoachPhotoDate(domId, btn) {
+  const panel = document.getElementById(domId);
+  if(!panel) return;
+  panel.hidden = !panel.hidden;
+  btn.setAttribute('aria-expanded', String(!panel.hidden));
+  const log = (window._coachPhotoLogs || {})[domId];
+  if(panel.hidden || !log) return;
+  panel.innerHTML = '<div class="spinner" style="width:18px;height:18px;margin:8px auto;"></div>';
+  panel.innerHTML = await progressPhotoThumbs(log);
 }
 
 // ===== AI GENERATOR (MOVE STRONG FLOW) =====
