@@ -1286,30 +1286,51 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 .ck-skip.is-on .ck-box svg { width:14px; height:14px; }
 .ck-empty { font-size:13px; color:#6B6258; }
 .ck-comment { width:100%; box-sizing:border-box; min-height:46px; border:1.5px solid #E7DFD2; border-radius:14px; background:#fff; padding:12px 14px; font-family:'DM Sans',sans-serif; font-size:15px; color:#1F1B16; resize:vertical; }
-.ck-cc-state { font-size:12px; font-weight:700; color:#16602E; background:#E4F2E8; border-radius:10px; padding:4px 10px; }
-.ck-cc-state.is-off { color:var(--gray5); background:var(--gray1); }
-.ck-cc-sum { background:#1F1B16; color:#fff; border-radius:22px; padding:18px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
-.ck-cc-sum-lbl { font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:#C9BCAB; }
-.ck-cc-sum-num { margin-top:4px; font-family:'Playfair Display',serif; font-size:26px; font-weight:700; }
-.ck-cc-sum-avg { margin-top:4px; font-family:'DM Mono',monospace; font-size:26px; font-weight:500; }
-.ck-cc-sum-avg span { font-size:15px; color:#C9BCAB; }
-.ck-cc-list { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
-.ck-cc { background:#fff; border-radius:20px; padding:16px; box-shadow:var(--shadow); }
-.ck-cc.is-skip { border:1.5px solid #F3D9C6; }
 .ck-cc-head { display:flex; align-items:center; justify-content:space-between; gap:8px; }
 .ck-cc-when { display:flex; align-items:center; gap:10px; }
 .ck-cc-date { font-family:'DM Mono',monospace; font-size:13px; font-weight:500; background:#F3EEE5; border-radius:8px; padding:4px 8px; }
 .ck-cc-time { font-size:13px; color:#6B6258; }
 .ck-cc-rate { font-family:'DM Mono',monospace; font-size:15px; font-weight:500; color:#fff; background:#1E7A3C; border-radius:10px; padding:4px 10px; }
 .ck-cc-rate.is-low { background:#C24E18; }
-.ck-cc-plan { margin-top:8px; font-size:12px; color:#6B6258; }
 .ck-cc-all { margin-top:10px; display:flex; align-items:center; gap:6px; font-size:14px; font-weight:600; color:#16602E; }
 .ck-cc-skip { margin-top:10px; font-size:14px; font-weight:700; color:#9A3C0F; }
 .ck-cc-chips { margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; }
 .ck-cc-chips span { font-size:13px; font-weight:600; background:#FCEEE4; border-radius:8px; padding:4px 10px; }
 .ck-cc-comment { margin:10px 0 0; font-size:14px; line-height:1.4; }
 .ck-cc-upd { margin-top:8px; font-size:12px; color:#6B6258; }
-.ck-cc-empty { font-size:13px; color:var(--gray4); padding:4px 0 12px; }</style>
+.ent-row .ent-month { font-size:19px; }
+.ent-body { padding:0 14px 16px; }
+.ent-body[hidden] { display:none; }
+.ent-stats { display:flex; gap:8px; }
+.ent-stat { flex:1; min-width:0; background:#F5F2EC; border-radius:14px; padding:10px 12px; }
+.ent-stat-lbl { font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#6B6258; }
+.ent-stat-num { margin-top:2px; font-size:17px; font-weight:700; }
+.ent-stat-avg { margin-top:2px; font-family:'DM Mono',monospace; font-size:17px; font-weight:500; }
+.ent-stat-avg span { font-size:12px; color:#6B6258; }
+.ent-nav { display:flex; align-items:center; justify-content:space-between; margin-top:4px; }
+.ent-nav-btn { min-height:44px; border:0; background:none; padding:0; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:700; color:#C24E18; display:flex; align-items:center; gap:2px; cursor:pointer; }
+.ent-nav-btn:disabled { color:#A89F92; font-weight:600; cursor:default; }
+.ent-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); }
+.ent-wd { height:24px; text-align:center; font-family:'DM Mono',monospace; font-size:11px; color:#6B6258; }
+.ent-cell { height:44px; display:flex; align-items:center; justify-content:center; }
+.ent-day { position:relative; width:40px; height:40px; box-sizing:border-box; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'DM Sans',sans-serif; font-size:14px; color:#6B6258; }
+.ent-day.is-today { font-weight:700; color:#1F1B16; }
+.ent-day.is-on { border:0; padding:0; background:#C24E18; color:#fff; font-weight:700; cursor:pointer; }
+.ent-day.is-skip { border:2px solid #C24E18; background:#FCEEE4; color:#9A3C0F; }
+.ent-day.is-sel { box-shadow:0 0 0 2px #fff, 0 0 0 4px #1F1B16; }
+.ent-dot { position:absolute; bottom:5px; left:50%; margin-left:-2px; width:4px; height:4px; border-radius:50%; background:currentColor; }
+.ent-empty { margin-top:6px; text-align:center; font-size:13px; color:#6B6258; }
+.ent-legend { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:6px 14px; margin-top:8px; font-size:12px; color:#6B6258; }
+.ent-legend span { display:flex; align-items:center; gap:5px; }
+.ent-sw { width:12px; height:12px; box-sizing:border-box; border-radius:50%; background:#C24E18; }
+.ent-sw.is-skip { background:#FCEEE4; border:2px solid #C24E18; }
+.ent-sw.is-off { background:#E4DED4; }
+.ent-card { margin-top:14px; background:#fff; border:1.5px solid #F3D9C6; border-radius:18px; padding:14px; }
+.ent-card-title { margin-top:10px; font-size:14px; font-weight:700; }
+.ent-card-sub { margin-top:2px; font-size:13px; color:#6B6258; }
+.ent-chips span { background:#F3EEE5; }
+.ent-old-rate { font-size:12px; font-weight:600; color:#6B6258; border:1.5px solid #E4DED4; border-radius:10px; padding:3px 10px; }
+.ent-link { margin-top:10px; min-height:32px; border:0; background:none; padding:0; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; color:#C24E18; display:inline-flex; align-items:center; gap:2px; cursor:pointer; }</style>
 </head>
 <body>
 <!-- Sprite de íconos (estilo Lucide, ISC). Se usan con icon(nombre, tamaño). -->
@@ -1862,7 +1883,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
       <button onclick="adjustDaysTrained(1)" style="width:24px;height:24px;border-radius:6px;border:1.5px solid var(--gray2);background:white;font-size:14px;font-weight:700;line-height:1;cursor:pointer;font-family:'DM Sans',sans-serif;">+</button>
       <span id="coach-c-days-adj-saved" style="font-size:11px;color:var(--green);opacity:0;transition:opacity .3s;">✓ Guardado</span>
     </div>
-    <div id="coach-checkins"></div>
+    <div id="coach-entrenos"></div>
 
     <div class="section-header">
       <div class="section-title">Plan mensual</div>
@@ -7189,7 +7210,7 @@ async function ckExtraTrainedDays(clientId, logs, utcDays, sinceDate) {
   return new Set(data.map(r => String(r.completed_date).slice(0, 10)).filter(d => !utcDays.has(d) && !crDays.has(d))).size;
 }
 
-// ---- COACH: interruptor y sección "Check-ins de entreno" ----
+// ---- COACH: interruptor del check-in ----
 function ckCoachToggleHtml(c) {
   const on = c.quick_checkin_enabled === true;
   return `<div class="payment-row" style="align-items:center;flex-wrap:wrap;">
@@ -7215,45 +7236,230 @@ async function toggleClientQuickCheckin() {
   const row = document.getElementById('ck-toggle-btn')?.closest('.payment-row');
   if (row) row.outerHTML = ckCoachToggleHtml(c);
   showToast(newVal ? 'Check-in de entreno activado' : 'Check-in de entreno apagado');
-  loadCoachCheckins(c);
+  loadCoachEntrenos(c);
 }
-async function loadCoachCheckins(c) {
-  const box = document.getElementById('coach-checkins');
+// ---- COACH: "Entrenos" en calendario (todos los clientes, solo lectura) ----
+// Un día = un entreno, aunque tenga check-in, logs y sesión: se juntan por fecha de CR
+// (exercise_logs por pgCRDate, workout_sessions por session_date, workout_completions por
+// completed_date). Si el día tiene check-in, manda su color: sólido = hizo todo, claro = saltó algo.
+// workout_ratings se guarda por fecha UTC: para cada día se busca por las fechas UTC de sus
+// registros (cuando se calificó) y, si no hay, por la fecha del día.
+let entState = null; // {cid, ckOn, month:'YYYY-MM', open, sel, req, n7, days:{}, ratings:{}}
+const ENT_MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const ENT_OLD_RATING = {'😎':'Estuvo bien','🥵':'Estuvo fuerte','😵‍💫':'Estuvo duro'};
+function entMonthAdd(ym, n) { const [y, m] = ym.split('-').map(Number); return new Date(Date.UTC(y, m - 1 + n, 1)).toISOString().slice(0, 7); }
+function entMonthEnd(ym) { return tcAddDays(entMonthAdd(ym, 1) + '-01', -1); }
+function entMonthName(ym) { return ENT_MONTHS[Number(ym.slice(5, 7)) - 1]; }
+function entWord(n) { return n === 1 ? 'entreno' : 'entrenos'; }
+function entIsSkip(r) { return !!r && !r.did_all && (r.skipped_exercises || []).length > 0; }
+function entRatingRow(d, x) {
+  const st = entState;
+  const key = [...x.utc, d].find(k => st.ratings[k]);
+  return key ? st.ratings[key] : null;
+}
+
+async function loadCoachEntrenos(c) {
+  const box = document.getElementById('coach-entrenos');
   if (!box || !c) return;
-  const cid = c.id;
-  const { data, error } = await sb.from('workout_completions').select('*').eq('client_id', cid)
-    .order('completed_date', { ascending: false }).limit(60);
-  if (currentClient?.id !== cid) return;
-  const rows = error ? [] : (data || []);
-  const on = c.quick_checkin_enabled === true;
-  if (!on && !rows.length) { box.innerHTML = ''; return; }
-  const since = tcAddDays(todayCR(), -6);
-  const last7 = rows.filter(r => String(r.completed_date) >= since);
-  const avg = last7.length ? (last7.reduce((a, r) => a + (r.rating || 0), 0) / last7.length).toLocaleString('es-CR', { maximumFractionDigits: 1 }) : '–';
-  const card = r => {
+  const keepOpen = !!(entState && entState.cid === c.id && entState.open);
+  entState = { cid: c.id, ckOn: c.quick_checkin_enabled === true, month: todayCR().slice(0, 7), open: keepOpen, sel: null, req: 0, n7: null, days: {}, ratings: {} };
+  if (await entFetch()) entRender();
+}
+async function entFetch() {
+  const st = entState;
+  if (!st) return false;
+  const req = ++st.req;
+  const today = todayCR();
+  const mStart = st.month + '-01', mEnd = entMonthEnd(st.month);
+  // La primera carga (mes actual) incluye los últimos 7 días; navegar de mes pide solo ese mes
+  const withRecent = st.n7 == null;
+  const from = withRecent ? [mStart, tcAddDays(today, -6)].sort()[0] : mStart;
+  const to = withRecent ? [mEnd, today].sort()[1] : mEnd;
+  const cid = st.cid;
+  const rows = q => q.then(r => (r.error ? [] : (r.data || [])), () => []);
+  const [logs, sess, cks, rts] = await Promise.all([
+    rows(sb.from('exercise_logs').select('logged_at,exercises(name,plan_day_id)').eq('client_id', cid)
+      .gte('logged_at', crDayRange(from).start).lt('logged_at', crDayRange(to).end).order('logged_at', { ascending: true })),
+    rows(sb.from('workout_sessions').select('plan_day_id,week_number,session_date').eq('client_id', cid).gte('session_date', from).lte('session_date', to)),
+    rows(sb.from('workout_completions').select('*').eq('client_id', cid).gte('completed_date', from).lte('completed_date', to)),
+    rows(sb.from('workout_ratings').select('*').eq('client_id', cid).gte('date', tcAddDays(from, -1)).lte('date', tcAddDays(to, 1)))
+  ]);
+  if (entState !== st || st.req !== req || currentClient?.id !== cid) return false;
+  const days = {};
+  const day = d => days[d] || (days[d] = { ck: null, ex: [], planDays: [], sess: [], utc: [] });
+  const addTo = (arr, v) => { if (v && !arr.includes(v)) arr.push(v); };
+  logs.forEach(l => {
+    const d = pgCRDate(l.logged_at);
+    if (!d) return;
+    const x = day(d);
+    addTo(x.utc, String(l.logged_at).slice(0, 10));
+    addTo(x.ex, l.exercises?.name);
+    addTo(x.planDays, l.exercises?.plan_day_id);
+  });
+  sess.forEach(s => {
+    const d = String(s.session_date || '').slice(0, 10);
+    if (!d) return;
+    const x = day(d);
+    x.sess.push(s);
+    addTo(x.utc, d);
+    addTo(x.planDays, s.plan_day_id);
+  });
+  cks.forEach(r => { day(String(r.completed_date).slice(0, 10)).ck = r; });
+  st.days = days;
+  if (withRecent) st.n7 = Object.keys(days).filter(d => d >= tcAddDays(today, -6) && d <= today).length;
+  st.ratings = {};
+  rts.forEach(r => { if (r.date) st.ratings[String(r.date).slice(0, 10)] = r; });
+  return true;
+}
+
+function entRender() {
+  const box = document.getElementById('coach-entrenos');
+  const st = entState;
+  if (!box || !st) return;
+  const today = todayCR();
+  const curMonth = today.slice(0, 7);
+  const mStart = st.month + '-01', mEnd = entMonthEnd(st.month);
+  const monthLow = entMonthName(st.month).toLowerCase();
+  const inMonth = Object.keys(st.days).filter(d => d >= mStart && d <= mEnd).sort();
+  const n = inMonth.length;
+  const n7 = st.n7 || 0;
+  const ckMode = st.ckOn || inMonth.some(d => st.days[d].ck);
+  if (!st.sel || !inMonth.includes(st.sel)) st.sel = inMonth[n - 1] || null;
+  const notes = inMonth.map(d => st.days[d].ck?.rating).filter(v => v >= 1 && v <= 10);
+  const avg = notes.length ? (notes.reduce((a, v) => a + v, 0) / notes.length).toLocaleString('es-CR', { maximumFractionDigits: 1 }) : '';
+
+  const cells = [];
+  const offset = (new Date(mStart + 'T12:00:00Z').getUTCDay() + 6) % 7;
+  for (let i = 0; i < offset; i++) cells.push('<div></div>');
+  const last = Number(mEnd.slice(8, 10));
+  for (let k = 1; k <= last; k++) {
+    const d = st.month + '-' + String(k).padStart(2, '0');
+    const x = st.days[d];
+    const isToday = d === today;
+    const dot = isToday ? '<span class="ent-dot" aria-hidden="true"></span>' : '';
+    if (!x) {
+      cells.push(`<div class="ent-cell"><span class="ent-day${isToday ? ' is-today' : ''}"${isToday ? ` aria-label="${k} de ${monthLow}, hoy"` : ''}>${dot}${k}</span></div>`);
+      continue;
+    }
+    const skip = entIsSkip(x.ck);
+    const desc = x.ck ? (skip ? 'saltó ejercicios' : 'hizo todos los ejercicios') : 'entrenó';
+    const sel = d === st.sel;
+    cells.push(`<div class="ent-cell"><button type="button" class="ent-day is-on${skip ? ' is-skip' : ''}${sel ? ' is-sel' : ''}" data-day="${d}" aria-pressed="${sel}" aria-label="${k} de ${monthLow}${isToday ? ', hoy' : ''}, ${desc}" onclick="entPick('${d}')">${dot}${k}</button></div>`);
+  }
+
+  const legend = ckMode
+    ? '<span><i class="ent-sw"></i>Hizo todo</span><span><i class="ent-sw is-skip"></i>Saltó algo</span><span><i class="ent-sw is-off"></i>Sin check-in</span>'
+    : '<span><i class="ent-sw"></i>Registró entreno</span><span><i class="ent-sw is-off"></i>Sin registro</span>';
+
+  box.innerHTML = `
+    <div class="section-header"><div class="section-title">Entrenos</div></div>
+    <div class="diary-list ent">
+      <button type="button" class="diary-row ent-row" aria-expanded="${st.open}" aria-controls="ent-body" onclick="entToggle(this)">
+        <div class="diary-row-main"><div class="diary-row-name ent-month">${entMonthName(st.month)} ${st.month.slice(0, 4)}</div></div>
+        <span class="diary-pill">${n} ${entWord(n)}</span>
+        <span class="diary-acc-chev">${icon('chevron-down', 18)}</span>
+      </button>
+      <div id="ent-body" class="ent-body"${st.open ? '' : ' hidden'}>
+        <div class="ent-stats">
+          <div class="ent-stat"><div class="ent-stat-lbl">Últimos 7 días</div><div class="ent-stat-num">${n7} ${entWord(n7)}</div></div>
+          <div class="ent-stat">${notes.length
+            ? `<div class="ent-stat-lbl">Nota promedio</div><div class="ent-stat-avg">${avg} <span>/10</span></div>`
+            : `<div class="ent-stat-lbl">Este mes</div><div class="ent-stat-num">${n} ${entWord(n)}</div>`}</div>
+        </div>
+        <div class="ent-nav">
+          <button type="button" class="ent-nav-btn" aria-label="Mes anterior, ${entMonthName(entMonthAdd(st.month, -1))}" onclick="entMonth(-1)">${icon('chevron-left', 16)}${entMonthName(entMonthAdd(st.month, -1))}</button>
+          <button type="button" class="ent-nav-btn" aria-label="Mes siguiente, ${entMonthName(entMonthAdd(st.month, 1))}" onclick="entMonth(1)"${st.month >= curMonth ? ' disabled' : ''}>${entMonthName(entMonthAdd(st.month, 1))}${icon('chevron-right', 16)}</button>
+        </div>
+        <div class="ent-grid">
+          ${['L','M','M','J','V','S','D'].map(w => `<div class="ent-wd" aria-hidden="true">${w}</div>`).join('')}
+          ${cells.join('')}
+        </div>
+        ${n ? '' : `<div class="ent-empty">Sin entrenos en ${monthLow}.</div>`}
+        <div class="ent-legend">${legend}</div>
+        ${st.sel ? entCardHtml(st.sel, st.days[st.sel]) : ''}
+      </div>
+    </div>`;
+}
+
+function entCardHtml(d, x) {
+  const link = x.planDays.length
+    ? `<button type="button" class="ent-link" onclick="entOpenLogs('${d}')">Ver registros${icon('chevron-right', 16)}</button>` : '';
+  const exN = x.ex.length;
+  const exHtml = exN
+    ? `<div class="ent-card-title">${exN} ${exN === 1 ? 'ejercicio registrado' : 'ejercicios registrados'}</div>
+       <div class="ck-cc-chips ent-chips">${x.ex.map(e => `<span>${escHtml(e)}</span>`).join('')}</div>`
+    : '';
+  const r = x.ck;
+  if (r) {
     const skipped = r.skipped_exercises || [];
     const updated = r.updated_at && r.created_at && (new Date(r.updated_at) - new Date(r.created_at)) > 1000;
-    const plan = [r.week_number ? 'Semana ' + r.week_number : '', r.day_label ? getDayShortLabel(r.day_label, 0) : ''].filter(Boolean).join(' · ');
-    return `<div class="ck-cc${r.did_all ? '' : ' is-skip'}">
+    return `<div class="ent-card">
       <div class="ck-cc-head">
-        <div class="ck-cc-when"><span class="ck-cc-date">${ckDateLabel(String(r.completed_date), 'short')}</span><span class="ck-cc-time">${ckTime(r.created_at)}</span></div>
+        <div class="ck-cc-when"><span class="ck-cc-date">${ckDateLabel(d, 'short')}</span><span class="ck-cc-time">${ckTime(r.created_at)}</span></div>
         <span class="ck-cc-rate${r.rating >= 7 ? '' : ' is-low'}">${r.rating}/10</span>
       </div>
-      ${plan ? `<div class="ck-cc-plan">${escHtml(plan)}</div>` : ''}
-      ${r.did_all || !skipped.length
-        ? `<div class="ck-cc-all">${CK_ICON_CHECK}Hizo todos los ejercicios</div>`
-        : `<div class="ck-cc-skip">${ckSkippedText(r, false)}</div><div class="ck-cc-chips">${skipped.map(s => `<span>${escHtml(s.name || '')}</span>`).join('')}</div>`}
+      ${entIsSkip(r)
+        ? `<div class="ck-cc-skip">${ckSkippedText(r, false)}</div><div class="ck-cc-chips">${skipped.map(s => `<span>${escHtml(s.name || '')}</span>`).join('')}</div>`
+        : `<div class="ck-cc-all">${CK_ICON_CHECK}Hizo todos los ejercicios</div>`}
       ${r.comment ? `<p class="ck-cc-comment">“${escHtml(r.comment)}”</p>` : ''}
       ${updated ? `<div class="ck-cc-upd">Actualizado ${ckDayWord(pgCRDate(r.updated_at))} a las ${ckTime(r.updated_at)}</div>` : ''}
+      ${link}
     </div>`;
-  };
-  box.innerHTML = `
-    <div class="section-header"><div class="section-title">Check-ins de entreno</div><span class="ck-cc-state${on ? '' : ' is-off'}">${on ? 'Activo' : 'Apagado'}</span></div>
-    <div class="ck-cc-sum">
-      <div><div class="ck-cc-sum-lbl">Últimos 7 días</div><div class="ck-cc-sum-num">${last7.length} ${last7.length === 1 ? 'check-in' : 'check-ins'}</div></div>
-      <div style="text-align:right;"><div class="ck-cc-sum-lbl">Nota promedio</div><div class="ck-cc-sum-avg">${avg}<span> /10</span></div></div>
+  }
+  const rt = entRatingRow(d, x);
+  const old = rt && ENT_OLD_RATING[rt.rating];
+  return `<div class="ent-card">
+    <div class="ck-cc-head">
+      <span class="ck-cc-date">${ckDateLabel(d, 'short')}</span>
+      ${old ? `<span class="ent-old-rate">${old}</span>` : ''}
     </div>
-    ${rows.length ? `<div class="ck-cc-list">${rows.map(card).join('')}</div>` : '<div class="ck-cc-empty">Todavía no hay check-ins.</div>'}`;
+    ${exHtml || '<div class="ent-card-title">Marcado como entrenado</div><div class="ent-card-sub">Sin ejercicios registrados.</div>'}
+    ${link}
+  </div>`;
+}
+
+function entToggle(btn) {
+  if (!entState) return;
+  entState.open = !entState.open;
+  const body = document.getElementById('ent-body');
+  if (body) body.hidden = !entState.open;
+  btn.setAttribute('aria-expanded', String(entState.open));
+}
+function entPick(d) {
+  if (!entState) return;
+  entState.sel = d;
+  entRender();
+  document.querySelector(`#coach-entrenos .ent-day[data-day="${d}"]`)?.focus();
+}
+async function entMonth(n) {
+  const st = entState;
+  if (!st) return;
+  const next = entMonthAdd(st.month, n);
+  if (next > todayCR().slice(0, 7)) return;
+  st.month = next;
+  st.sel = null;
+  if (await entFetch()) {
+    entRender();
+    document.querySelector(`#coach-entrenos .ent-nav-btn:${n < 0 ? 'first' : 'last'}-child:not(:disabled)`)?.focus();
+  }
+}
+// "Ver registros": abre el Seguimiento semanal en la semana de ese día y despliega sus logs
+async function entOpenLogs(d) {
+  const st = entState;
+  const x = st?.days[d];
+  if (!x || !x.planDays.length) return;
+  const pdId = x.planDays[0];
+  let week = x.sess.find(s => s.plan_day_id === pdId)?.week_number;
+  if (!week) {
+    const { data } = await sb.from('monthly_plans').select('week_number').eq('id', pdId).maybeSingle();
+    week = data?.week_number;
+  }
+  if (week) { weeklyTrackerWeek = week; await renderWeeklyTracker(st.cid); }
+  const panel = document.getElementById('day-logs-' + pdId);
+  const btn = panel?.previousElementSibling?.querySelector('button[onclick^="toggleDayLogs"]');
+  if (btn && panel.style.display === 'none') btn.click();
+  // Sin animación: abrir los logs cambia el alto y corta el scroll suave
+  document.getElementById('coach-weekly-tracker')?.scrollIntoView({ block: 'start' });
 }
 
 async function openExDetail(ex) {
@@ -8508,7 +8714,7 @@ async function openCoachClient(clientId) {
   document.getElementById('coach-c-days-adj').textContent = (c.days_trained_adjustment>0?'+':'')+(c.days_trained_adjustment||0);
   renderCoachDaysTotal();
   loadWeekTrainedCount(c.id);
-  loadCoachCheckins(c);
+  loadCoachEntrenos(c);
   loadCoachClientDetail(clientId);
   loadCoachPlans();
   loadCoachTrainingPanel();
