@@ -1208,7 +1208,10 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 .diary-pill { flex:none; padding:5px 10px; border-radius:12px; background:var(--gray1); font-size:12px; font-weight:700; color:var(--gray5); }
 .diary-acc-chev { display:inline-flex; color:var(--gray5); transition:transform 0.2s; }
 .diary-row[aria-expanded="true"] .diary-acc-chev { transform:rotate(180deg); }
-.diary-acc-body > .diary-item { border-top:1px solid var(--gray2); }</style>
+.diary-acc-body > .diary-item { border-top:1px solid var(--gray2); }
+/* Coach: fotos de progreso, un dropdown por fecha */
+.cph-body { display:flex; gap:8px; padding:4px 12px 12px; }
+.cph-body[hidden] { display:none; }</style>
 </head>
 <body>
 <!-- Sprite de íconos (estilo Lucide, ISC). Se usan con icon(nombre, tamaño). -->
@@ -21362,14 +21365,23 @@ async function loadCoachProgress(clientId) {
     </div>`;
   }).join('');
 
-  const photoBlocks = await Promise.all(logs.map(async log => {
+  // Un dropdown por fecha (patrón del acordeón por hábito), todos cerrados y se pueden abrir
+  // varios a la vez. Las fotos se piden al abrir: los links firmados vencen a los 5 min.
+  window._coachPhotoLogs = {};
+  const photoBlocks = logs.map((log, i) => {
     const label = new Date(log.week_start_date + 'T00:00:00').toLocaleDateString('es-CR', {day:'numeric', month:'short'});
-    const thumbsHtml = await progressPhotoThumbs(log);
-    return `<div style="margin-bottom:10px;">
-      <div style="font-size:11px;font-weight:700;color:var(--gray4);margin-bottom:6px;">${label}</div>
-      <div style="display:flex;gap:8px;">${thumbsHtml}</div>
+    const n = ['photo_front_path','photo_side_path','photo_back_path'].filter(f => log[f]).length;
+    const domId = `cph-${i}`;
+    window._coachPhotoLogs[domId] = log;
+    return `<div class="diary-list" style="margin-bottom:8px;">
+      <button type="button" class="diary-row" aria-expanded="false" aria-controls="${domId}" onclick="toggleCoachPhotoDate('${domId}',this)">
+        <div class="diary-row-main"><div class="diary-row-name" style="font-size:15px;">${label}</div></div>
+        <span class="diary-pill">${n} ${n === 1 ? 'foto' : 'fotos'}</span>
+        <span class="diary-acc-chev">${icon('chevron-down', 18)}</span>
+      </button>
+      <div id="${domId}" class="cph-body" hidden></div>
     </div>`;
-  }));
+  });
 
   container.innerHTML = `
     <div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 14px;margin-bottom:8px;">
@@ -21381,6 +21393,17 @@ async function loadCoachProgress(clientId) {
       ${photoBlocks.join('')}
     </div>
   `;
+}
+
+async function toggleCoachPhotoDate(domId, btn) {
+  const panel = document.getElementById(domId);
+  if(!panel) return;
+  panel.hidden = !panel.hidden;
+  btn.setAttribute('aria-expanded', String(!panel.hidden));
+  const log = (window._coachPhotoLogs || {})[domId];
+  if(panel.hidden || !log) return;
+  panel.innerHTML = '<div class="spinner" style="width:18px;height:18px;margin:8px auto;"></div>';
+  panel.innerHTML = await progressPhotoThumbs(log);
 }
 
 // ===== AI GENERATOR (MOVE STRONG FLOW) =====
