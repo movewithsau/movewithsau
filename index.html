@@ -101,8 +101,8 @@ body::after { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.
 .nav-item.active .nav-label { color:var(--orange-text); font-weight:700; }
 .nav-dot { display:none; }
 /* Activo según la pantalla (clientNav/coachNav quitan .active del nav de la pantalla destino) */
-#screen-client-home .bottom-nav .nav-item:nth-child(1) .nav-icon, #screen-client-plan .bottom-nav .nav-item:nth-child(4) .nav-icon, #screen-client-profile .bottom-nav .nav-item:nth-child(5) .nav-icon, #screen-client-food .bottom-nav .nav-item:nth-child(2) .nav-icon, #screen-client-coaching .bottom-nav .nav-item:nth-child(2) .nav-icon, #screen-coach-home .bottom-nav .nav-item:nth-child(1) .nav-icon, #screen-ai-builder .bottom-nav .nav-item:nth-child(2) .nav-icon, #screen-templates .bottom-nav .nav-item:nth-child(2) .nav-icon, #screen-coach-settings .bottom-nav .nav-item:nth-child(5) .nav-icon, #screen-coach-data .bottom-nav .nav-item:nth-child(4) .nav-icon, #screen-coach-coaching .bottom-nav .nav-item:nth-child(3) .nav-icon { color:var(--orange); }
-#screen-client-home .bottom-nav .nav-item:nth-child(1) .nav-label, #screen-client-plan .bottom-nav .nav-item:nth-child(4) .nav-label, #screen-client-profile .bottom-nav .nav-item:nth-child(5) .nav-label, #screen-client-food .bottom-nav .nav-item:nth-child(2) .nav-label, #screen-client-coaching .bottom-nav .nav-item:nth-child(2) .nav-label, #screen-coach-home .bottom-nav .nav-item:nth-child(1) .nav-label, #screen-ai-builder .bottom-nav .nav-item:nth-child(2) .nav-label, #screen-templates .bottom-nav .nav-item:nth-child(2) .nav-label, #screen-coach-settings .bottom-nav .nav-item:nth-child(5) .nav-label, #screen-coach-data .bottom-nav .nav-item:nth-child(4) .nav-label, #screen-coach-coaching .bottom-nav .nav-item:nth-child(3) .nav-label { color:var(--orange-text); font-weight:700; }
+#screen-client-home .bottom-nav .nav-item:nth-child(1) .nav-icon, #screen-client-plan .bottom-nav .nav-item:nth-child(4) .nav-icon, #screen-client-profile .bottom-nav .nav-item:nth-child(5) .nav-icon, #screen-client-food .bottom-nav .nav-item:nth-child(2) .nav-icon, #screen-client-coaching .bottom-nav .nav-item:nth-child(2) .nav-icon, #screen-coach-home .bottom-nav .nav-item:nth-child(1) .nav-icon, #screen-ai-builder .bottom-nav .nav-item:nth-child(2) .nav-icon, #screen-templates .bottom-nav .nav-item:nth-child(2) .nav-icon, #screen-coach-settings .bottom-nav .nav-item:nth-child(5) .nav-icon, #screen-coach-data .bottom-nav .nav-item:nth-child(4) .nav-icon, #screen-coach-run .bottom-nav .nav-item:nth-child(4) .nav-icon, #screen-coach-coaching .bottom-nav .nav-item:nth-child(3) .nav-icon { color:var(--orange); }
+#screen-client-home .bottom-nav .nav-item:nth-child(1) .nav-label, #screen-client-plan .bottom-nav .nav-item:nth-child(4) .nav-label, #screen-client-profile .bottom-nav .nav-item:nth-child(5) .nav-label, #screen-client-food .bottom-nav .nav-item:nth-child(2) .nav-label, #screen-client-coaching .bottom-nav .nav-item:nth-child(2) .nav-label, #screen-coach-home .bottom-nav .nav-item:nth-child(1) .nav-label, #screen-ai-builder .bottom-nav .nav-item:nth-child(2) .nav-label, #screen-templates .bottom-nav .nav-item:nth-child(2) .nav-label, #screen-coach-settings .bottom-nav .nav-item:nth-child(5) .nav-label, #screen-coach-data .bottom-nav .nav-item:nth-child(4) .nav-label, #screen-coach-run .bottom-nav .nav-item:nth-child(4) .nav-label, #screen-coach-coaching .bottom-nav .nav-item:nth-child(3) .nav-label { color:var(--orange-text); font-weight:700; }
 body.lift-mode #screen-client-home .bottom-nav .nav-item:nth-child(4), body.lift-mode #screen-client-plan .bottom-nav .nav-item:nth-child(4), body.lift-mode #screen-client-profile .bottom-nav .nav-item:nth-child(4), body.lift-mode #screen-client-food .bottom-nav .nav-item:nth-child(4), body.lift-mode #screen-client-coaching .bottom-nav .nav-item:nth-child(4) , body.lift-mode #screen-client-hive .bottom-nav .nav-item:nth-child(4) { display:none; }
 body.lift-mode #strongflow-btn { display:none !important; }
 .nav-item.active .nav-dot { opacity:1; }
@@ -1607,6 +1607,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
       <div class="client-plan-tab-chip" onclick="switchClientPlanTab('tests', this)"><svg class="ico" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-bar-chart"/></svg>Evaluaciones</div>
       <div class="client-plan-tab-chip" onclick="switchClientPlanTab('habits', this)"><svg class="ico" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-notebook"/></svg>Mi diario</div>
       <div class="client-plan-tab-chip" onclick="switchClientPlanTab('extras', this)"><svg class="ico" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-zap"/></svg>Extras</div>
+      <div class="client-plan-tab-chip" id="rn-plan-chip" style="display:none;" onclick="switchClientPlanTab('run', this)"><svg class="ico" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-activity"/></svg>Run</div>
     </div>
 
     <!-- PLANES TAB -->
@@ -1639,6 +1640,9 @@ button.exx-pill { cursor:pointer; min-height:28px; }
     <div id="client-habits-tab" style="display:none;">
       <div id="c-diary-root"><div class="spinner"></div></div>
     </div>
+
+    <!-- RUN TAB (módulo Run, solo con run_module_enabled) -->
+    <div id="client-run-tab" style="display:none;"><div id="c-run-root"></div></div>
 
     <!-- EXTRAS TAB -->
     <div id="client-extras-tab" style="display:none;">
@@ -1843,12 +1847,8 @@ button.exx-pill { cursor:pointer; min-height:28px; }
       <div id="ctab-churn" onclick="setClientTab('churn')" style="flex:1;text-align:center;padding:13px 8px 11px;font-size:13px;font-weight:700;color:var(--gray4);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;">Churn <span id="coach-count-churn" style="font-size:11px;font-weight:600;color:var(--gray4);"></span></div>
       <div id="ctab-hidden" onclick="setClientTab('hidden')" style="flex:1;text-align:center;padding:13px 8px 11px;font-size:13px;font-weight:700;color:var(--gray4);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;">Ocultos <span id="coach-count-hidden" style="font-size:11px;font-weight:600;color:var(--gray4);"></span></div>
     </div>
-    <div id="client-sort-bar" class="sort-bar" style="margin-top:12px;">
-      <div class="sort-chip active" onclick="setSortClients('name',this)">A–Z</div>
-      <div class="sort-chip" onclick="setSortClients('payment_asc',this)">Pago próximo ↑</div>
-      <div class="sort-chip" onclick="setSortClients('start_date',this)">Fecha inicio</div>
-      <div class="sort-chip" onclick="setSortClients('last_active',this)">Última sesión</div>
-    </div>
+    <!-- Chips de orden quitados (módulo Run, R7). setSortClients y clientSortMode siguen en el código; orden por defecto A–Z. -->
+    <div style="height:12px;"></div>
     <div id="exx-assist-banner"></div>
     <div id="coach-clients-list"><div class="spinner"></div></div>
   </div>
@@ -1857,7 +1857,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
     <div class="nav-item active" onclick="coachNav('clients',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-users"/></svg></div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-layers"/></svg></div><div class="nav-label">Machotes</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('coaching',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-flask-conical"/></svg></div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
-    <div class="nav-item" onclick="coachNav('data',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-bar-chart"/></svg></div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('run',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-activity"/></svg></div><div class="nav-label">Run</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-settings"/></svg></div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
   </div>
 </div>
@@ -1872,6 +1872,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
     <div class="payment-card" id="coach-lift-card"></div>
     <div class="section-header"><div class="section-title">Información de pago</div><div class="section-action" onclick="showModal('modal-edit-payment')">Editar</div></div>
     <div class="payment-card" id="coach-payment-card"></div>
+    <div id="coach-run-section"></div>
     <div class="section-header"><div class="section-title">Días entrenados</div></div>
     <div class="stat-row"><div class="stat-card"><div class="stat-num" id="coach-c-days">0</div><div class="stat-label">Total</div></div><div class="stat-card"><div class="stat-num" id="coach-c-week-trained">0</div><div class="stat-label">Esta semana</div></div></div>
     <div style="display:flex;align-items:center;gap:8px;margin:6px 0 8px;">
@@ -2074,7 +2075,7 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
     <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-users"/></svg></div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
     <div class="nav-item active" onclick="coachNav('builder',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-layers"/></svg></div><div class="nav-label">Machotes</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('coaching',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-flask-conical"/></svg></div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
-    <div class="nav-item" onclick="coachNav('data',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-bar-chart"/></svg></div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('run',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-activity"/></svg></div><div class="nav-label">Run</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-settings"/></svg></div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
   </div>
 </div>
@@ -2190,7 +2191,7 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
     <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-users"/></svg></div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
     <div class="nav-item active" onclick="coachNav('builder',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-layers"/></svg></div><div class="nav-label">Machotes</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('coaching',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-flask-conical"/></svg></div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
-    <div class="nav-item" onclick="coachNav('data',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-bar-chart"/></svg></div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('run',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-activity"/></svg></div><div class="nav-label">Run</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-settings"/></svg></div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
   </div>
 </div>
@@ -2264,8 +2265,28 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
     <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-users"/></svg></div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-layers"/></svg></div><div class="nav-label">Machotes</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('coaching',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-flask-conical"/></svg></div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
-    <div class="nav-item" onclick="coachNav('data',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-bar-chart"/></svg></div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('run',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-activity"/></svg></div><div class="nav-label">Run</div><div class="nav-dot"></div></div>
     <div class="nav-item active" onclick="coachNav('settings',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-settings"/></svg></div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
+  </div>
+</div>
+
+<!-- ===== COACH: RUN (módulo Run) ===== -->
+<div class="screen" id="screen-coach-run">
+  <div class="topbar"><div class="topbar-logo">Move With Sau</div><div class="topbar-action" onclick="handleLogout()">Salir</div></div>
+  <div class="scroll-body">
+    <div style="margin-bottom:14px;">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Coach · Run</div>
+      <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;">Clientes con Run</div>
+      <div style="font-size:13px;color:var(--gray5);margin-top:2px;">Los que tienen el módulo activo.</div>
+    </div>
+    <div id="rn-coach-list"><div class="spinner"></div></div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-users"/></svg></div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-layers"/></svg></div><div class="nav-label">Machotes</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('coaching',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-flask-conical"/></svg></div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
+    <div class="nav-item active" onclick="coachNav('run',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-activity"/></svg></div><div class="nav-label">Run</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-settings"/></svg></div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
   </div>
 </div>
 
@@ -2288,7 +2309,7 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
     <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-users"/></svg></div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-layers"/></svg></div><div class="nav-label">Machotes</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('coaching',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-flask-conical"/></svg></div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
-    <div class="nav-item active" onclick="coachNav('data',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-bar-chart"/></svg></div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
+    <div class="nav-item active" onclick="coachNav('run',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-activity"/></svg></div><div class="nav-label">Run</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-settings"/></svg></div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
   </div>
 </div>
@@ -2349,6 +2370,7 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
         <div class="filter-chip" onclick="setExCoachingFilter('Cardio',this)">Cardio</div>
         <div class="filter-chip" onclick="setExCoachingFilter('Movilidad',this)">Movilidad</div>
         <div class="filter-chip" onclick="setExCoachingFilter('Performance',this)">Performance</div>
+        <div class="filter-chip" onclick="setExCoachingFilter('__run',this)">Run</div>
       </div>
       <div id="ex-coaching-list"><div class="spinner"></div></div>
     </div>
@@ -2357,7 +2379,7 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
     <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-users"/></svg></div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-layers"/></svg></div><div class="nav-label">Machotes</div><div class="nav-dot"></div></div>
     <div class="nav-item active" onclick="coachNav('coaching',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-flask-conical"/></svg></div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
-    <div class="nav-item" onclick="coachNav('data',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-bar-chart"/></svg></div><div class="nav-label">Data</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('run',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-activity"/></svg></div><div class="nav-label">Run</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-settings"/></svg></div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
   </div>
 </div>
@@ -3320,6 +3342,7 @@ async function initClient() {
   const {data:cd} = await sb.from('clients').select('*').eq('username',currentUser.username).single();
   currentClient = cd;
   clientWeek = 1;
+  rnApplyClientNav();
   // Show churn overlay if client is inactive
   if(cd?.is_churn) {
     document.getElementById('churn-overlay').classList.add('active');
@@ -7754,6 +7777,7 @@ function switchClientPlanTab(tab, chipEl) {
   document.getElementById('client-tests-tab').style.display = 'none';
   document.getElementById('client-habits-tab').style.display = 'none';
   document.getElementById('client-extras-tab').style.display = 'none';
+  const _rnTab = document.getElementById('client-run-tab'); if(_rnTab) _rnTab.style.display = 'none';
   if(tab === 'plans') {
     document.getElementById('client-plans-tab').style.display = 'block';
   } else if(tab === 'progress') {
@@ -7768,6 +7792,9 @@ function switchClientPlanTab(tab, chipEl) {
   } else if(tab === 'extras') {
     document.getElementById('client-extras-tab').style.display = 'block';
     loadClientExtras();
+  } else if(tab === 'run' && _rnTab) {
+    _rnTab.style.display = 'block';
+    rnLoadClientTab();
   }
 }
 
@@ -8574,7 +8601,7 @@ function renderCoachClients(clients) {
     // Programa terminado (semana automática): tarjeta negra. Se calcula acá, no se guarda nada.
     const progEnd = !exxReqs.length ? clientProgramEndMs(c) : null;
     return `<div class="client-card fade-up${exxReqs.length?' exx-assist-card':''}${progEnd?' prog-done-card':''}" onclick="openCoachClient('${c.id}')" style="${!exxReqs.length&&!progEnd&&hasOverdueReminder?'background:var(--orange-light);border:1.5px solid var(--orange);':''}">
-      <div class="client-avatar" style="${c.is_churn ? 'opacity:0.5;' : ''}">${getInitials(c.name)}</div>
+      ${rnHomeBadgeHtml(c)}
       <div class="client-info">
         <div class="client-name" style="display:flex;align-items:center;gap:6px;${c.is_churn ? 'color:var(--gray4);' : ''}">${c.name}${typeTag}${evolutionBadge}${liftBadge}${(window._clientsWithReminder||new Set()).has(c.id)?'<div style="width:22px;height:22px;border-radius:5px;background:#fff3e0;display:flex;align-items:center;justify-content:center;font-size:12px;"><svg class="ico" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-bell"/></svg></div>':''}</div>
         <div class="client-meta">@${c.username} · ${(c.days_trained||0)+(c.days_trained_adjustment||0)} días${startDateStr?` · Inicio: ${startDateStr}`:''}${endDateStr?` · Fin: ${endDateStr}`:''}${clientSortMode==='last_active'?(()=>{const t=(window._lastTrainedMap||{})[c.id];return t?` · ${new Date(t).toLocaleDateString('es-CR',{weekday:'short',day:'numeric',month:'short'})}`:' · Sin entreno';})():''}</div>
@@ -8641,6 +8668,8 @@ async function loadCoachClients() {
   // Solicitudes de asistencia abiertas (tarjeta naranja + banner); si falla, la lista se ve como antes
   try { await exxLoadOpenAssist(clientIds); } catch(e) { console.warn('exx assist load failed:', e); }
   exxStartAssistPolling();
+  // Días con registro esta semana (círculo de la tarjeta); si falla, se ve 0 y la lista sigue
+  try { await rnLoadHomeWeek((clients||[]).map(c => c.id)); } catch(e) { console.warn('rn home week failed:', e); }
   renderCoachClients(clients||[]);
 }
 
@@ -8703,6 +8732,7 @@ async function openCoachClient(clientId) {
     </div>
     <div class="payment-row"><span class="payment-key">Tiempo entrenado</span><span class="payment-val payment-val-time">${Math.floor((c.total_training_minutes||0)/60)}h ${(c.total_training_minutes||0)%60}min</span></div>
     ${ckCoachToggleHtml(c)}
+    ${rnCoachToggleHtml(c)}
     <div style="margin-top:14px;padding-top:12px;border-top:1.5px solid var(--gray2);display:flex;flex-direction:column;gap:8px;">
       ${c.is_churn ? `<button onclick="toggleChurnClient(false)" style="width:100%;padding:10px;background:var(--green-light);color:var(--green);border:1.5px solid var(--green);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Reactivar cliente</button>` : `<button onclick="toggleChurnClient(true)" style="width:100%;padding:10px;background:var(--red-light);color:var(--red);border:1.5px solid var(--red);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Marcar como Churn</button>`}
       ${c.hidden ? `<button onclick="toggleHiddenClient(false)" style="width:100%;padding:10px;background:var(--gray1);color:var(--black);border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Mostrar cliente</button>` : `<button onclick="toggleHiddenClient(true)" style="width:100%;padding:10px;background:var(--gray1);color:var(--black);border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Ocultar cliente</button>`}
@@ -8721,6 +8751,7 @@ async function openCoachClient(clientId) {
   renderCoachDaysTotal();
   loadWeekTrainedCount(c.id);
   loadCoachEntrenos(c);
+  rnLoadCoachSection(c);
   loadCoachClientDetail(clientId);
   loadCoachPlans();
   loadCoachTrainingPanel();
@@ -13903,12 +13934,13 @@ let exCoachingFilter = '';
 let allExCoaching = [];
 
 function coachNav(tab,el) {
-  document.querySelectorAll('#screen-coach-home .nav-item,#screen-coach-settings .nav-item,#screen-coach-data .nav-item,#screen-ai-builder .nav-item,#screen-templates .nav-item,#screen-template-editor .nav-item,#screen-coach-coaching .nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('#screen-coach-home .nav-item,#screen-coach-settings .nav-item,#screen-coach-data .nav-item,#screen-coach-run .nav-item,#screen-ai-builder .nav-item,#screen-templates .nav-item,#screen-template-editor .nav-item,#screen-coach-coaching .nav-item').forEach(n=>n.classList.remove('active'));
   el.classList.add('active');
   if(tab==='clients'){showScreen('screen-coach-home');loadCoachClients();}
   if(tab==='builder'){showScreen('screen-templates');loadTemplates();}
   if(tab==='coaching'){showScreen('screen-coach-coaching');loadFoodLibrary();switchCoachingTab(coachingActiveTab);}
   if(tab==='data'){showScreen('screen-coach-data');loadDataScreen();}
+  if(tab==='run'){showScreen('screen-coach-run');rnOpenCoachRun();}
   if(tab==='settings'){showScreen('screen-coach-settings');loadSettings();}
 }
 
@@ -19112,6 +19144,7 @@ function setExCoachingFilter(cat, el) {
 function renderExCoaching() {
   const list = document.getElementById('ex-coaching-list');
   if(!list) return;
+  if(exCoachingFilter === '__run') { rnRenderLibrary(); return; } // categoría Run: lee run_exercises
   const q = (document.getElementById('ex-coaching-search')?.value||'').toLowerCase();
   let items = allExCoaching;
   if(exCoachingFilter) items = items.filter(e=>e.muscle_group===exCoachingFilter);
@@ -19180,6 +19213,7 @@ async function deleteExCoaching(id) {
 
 function openAddExCoachingSheet() {
   document.getElementById('add-ex-coaching-sheet')?.remove();
+  if(exCoachingFilter === '__run') { rnExForm(); return; } // + Ejercicio con el chip Run activo
   const sheet = document.createElement('div');
   sheet.id = 'add-ex-coaching-sheet';
   sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:flex;align-items:flex-end;justify-content:center;';
@@ -19205,8 +19239,9 @@ function openAddExCoachingSheet() {
         </div>
         <div style="flex:1;">
           <label class="form-label">Músculo</label>
-          <select class="form-select" id="aec-muscle">
+          <select class="form-select" id="aec-muscle" onchange="if(this.value==='__run'){const n=document.getElementById('aec-name')?.value.trim(),v=document.getElementById('aec-video')?.value.trim();document.getElementById('add-ex-coaching-sheet')?.remove();rnLoadLibrary().then(()=>rnExForm(null,{name:n,video:v}));}">
             ${muscleOptions.map(m=>`<option value="${m}">${m||'—'}</option>`).join('')}
+            <option value="__run">Run</option>
           </select>
         </div>
       </div>
@@ -24026,6 +24061,1696 @@ async function confirmNutritionImport() {
   }
 }
 
+</script>
+
+<!-- ===================================================================== -->
+<!-- MÓDULO RUN (v1). Todo lo del módulo vive en este bloque (CSS + JS).    -->
+<!-- Solo lee exercise_logs / exercises / monthly_plans / workout_completions -->
+<!-- y exercise_library; escribe únicamente en tablas run_* y en             -->
+<!-- clients.run_module_enabled. pendiente: endurecer RLS (datos de salud).  -->
+<!-- ===================================================================== -->
+<style id="rn-css">
+.rn { font-family:'DM Sans',sans-serif; color:#1F1B16; }
+.rn-ey { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#5E564B; }
+.rn-h1 { font-family:'Playfair Display',Georgia,serif; font-weight:900; font-size:26px; line-height:1.12; margin:2px 0 10px; }
+.rn-h2 { font-family:'Playfair Display',Georgia,serif; font-weight:700; font-size:19px; line-height:1.2; margin:16px 0 8px; }
+.rn-cd { background:#fff; border:1px solid #E7DFD2; border-radius:16px; padding:12px 14px; margin-bottom:10px; box-sizing:border-box; }
+.rn-cd.is-warm { background:#FCEEE4; border-color:#F0CDB8; }
+.rn-cd.is-red { background:#FBE9E6; border-color:#EBC1B9; }
+.rn-cd.is-ghost { background:transparent; }
+.rn-row { display:flex; align-items:center; gap:10px; }
+.rn-sp { justify-content:space-between; }
+.rn-wrap { flex-wrap:wrap; }
+.rn-fx { flex:1; min-width:0; }
+.rn-mu { color:#5E564B; }
+.rn-m { font-family:'DM Mono',monospace; }
+.rn-sm { font-size:13px; line-height:1.4; }
+.rn-xs { font-size:12px; line-height:1.4; }
+.rn-lb { font-size:14px; font-weight:700; margin-bottom:8px; }
+.rn-fl { display:block; font-size:12px; font-weight:700; color:#5E564B; margin-bottom:4px; }
+.rn-ch { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:44px; box-sizing:border-box; padding:0 12px; border-radius:999px; border:1px solid #D2C7B6; background:#fff; font-size:14px; font-weight:600; color:#1F1B16; cursor:pointer; font-family:'DM Sans',sans-serif; }
+.rn-ch.is-on { background:#C24E18; border-color:#C24E18; color:#fff; }
+.rn-ch[disabled] { opacity:.45; cursor:default; }
+.rn-chs { display:flex; gap:6px; }
+.rn-chs > .rn-ch { flex:1; padding:0 6px; }
+.rn-bt { display:flex; width:100%; align-items:center; justify-content:center; gap:8px; min-height:50px; border-radius:14px; font-weight:700; font-size:15px; box-sizing:border-box; border:0; cursor:pointer; font-family:'DM Sans',sans-serif; margin-top:8px; }
+.rn-bt.is-g { background:#1E7A3C; color:#fff; }
+.rn-bt.is-o { background:#C24E18; color:#fff; }
+.rn-bt.is-l { background:#fff; border:1px solid #D2C7B6; color:#1F1B16; }
+.rn-bt[disabled] { opacity:.5; cursor:default; }
+.rn-pill { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:999px; font-size:12px; font-weight:700; white-space:nowrap; }
+.rn-pill.is-g { background:#E6F2EA; color:#17602F; }
+.rn-pill.is-o { background:#FCEEE4; color:#A8410F; }
+.rn-pill.is-n { background:#EFE9DF; color:#4F483E; }
+.rn-pill.is-r { background:#FBE9E6; color:#8F2719; }
+.rn-in { height:48px; border:1px solid #D2C7B6; border-radius:12px; background:#fff; padding:0 12px; font-family:'DM Mono',monospace; font-size:17px; width:100%; box-sizing:border-box; color:#1F1B16; }
+.rn-in.is-txt { font-family:'DM Sans',sans-serif; font-size:15px; }
+textarea.rn-in { height:auto; min-height:72px; padding:10px 12px; font-family:'DM Sans',sans-serif; font-size:15px; resize:vertical; }
+.rn-disc { font-size:12px; color:#5E564B; text-align:center; margin:10px 0 4px; }
+.rn-x { width:44px; height:44px; border-radius:999px; border:1px solid #D2C7B6; background:#fff; display:flex; align-items:center; justify-content:center; color:#1F1B16; cursor:pointer; flex-shrink:0; }
+.rn-ov { position:fixed; inset:0; z-index:400; background:rgba(31,27,22,.45); display:flex; align-items:flex-end; justify-content:center; }
+.rn-sheet { width:100%; max-width:480px; max-height:94vh; overflow-y:auto; background:#FAF6F0; border-radius:24px 24px 0 0; padding:16px 20px 28px; box-sizing:border-box; }
+.rn-sheet-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px; }
+.rn-tl { background:#fff; border:1px solid #E7DFD2; border-radius:16px; padding:12px 14px; box-sizing:border-box; flex:1; }
+.rn-tl .n { font-family:'DM Mono',monospace; font-size:24px; font-weight:500; line-height:1.1; }
+.rn-tl .t { font-size:12px; color:#5E564B; margin-top:2px; }
+.rn-bar { height:8px; border-radius:99px; background:#E2D9CB; overflow:hidden; }
+.rn-bar > div { height:8px; background:#1E7A3C; }
+.rn-ib { width:40px; height:40px; border-radius:10px; border:1px solid #D2C7B6; background:#fff; display:inline-flex; align-items:center; justify-content:center; color:#1F1B16; cursor:pointer; flex-shrink:0; }
+.rn-ib[disabled] { opacity:.35; cursor:default; }
+button.rn-cd { font-family:'DM Sans',sans-serif; color:#1F1B16; }
+.client-avatar.rn-wk { font-family:'DM Mono',monospace; font-size:17px; font-weight:500; background:#EFE9DF; color:#4F483E; }
+.client-avatar.rn-wk.is-on { background:#C24E18; color:#fff; }
+.rn-empty { text-align:center; padding:28px 12px; color:#5E564B; font-size:14px; line-height:1.5; }
+</style>
+<script>
+// ===== MÓDULO RUN =====
+// Constantes visibles y editables
+const RN_GREEN = '#1E7A3C', RN_ORANGE = '#C24E18', RN_RED = '#8F2719';
+const RN_DISCLAIMER = 'Esta es una guía de entrenamiento, no un consejo médico.';
+
+let rnProfile = null;   // run_profiles del cliente abierto (coach) o del cliente logueado
+let rnShoes = [];       // run_shoes del mismo cliente
+
+function rnEsc(s) { return escHtml(s == null ? '' : String(s)); }
+function rnIsCoach() { return currentUser?.role === 'coach'; }
+// Mostrar con coma, guardar con punto
+function rnKm(n, d = 1) { const v = Number(n); return Number.isFinite(v) ? v.toLocaleString('es-CR', { minimumFractionDigits: d, maximumFractionDigits: d }) : '—'; }
+function rnDisc() { return `<div class="rn-disc">${RN_DISCLAIMER}</div>`; }
+function rnCRDate(iso) { return iso ? new Date(iso).toLocaleDateString('en-CA', { timeZone: 'America/Costa_Rica' }) : ''; }
+function rnDayLabel(d) { return new Date(d + 'T12:00:00Z').toLocaleDateString('es-CR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }); }
+
+async function rnLoadProfile(cid) {
+  const { data, error } = await sb.from('run_profiles').select('*').eq('client_id', cid).maybeSingle();
+  if (error || !data) return null;
+  if (!data.mode) data.mode = 'plan';
+  if (!data.plan_status) data.plan_status = 'none';
+  return data;
+}
+// Crea el perfil la primera vez (upsert por cliente, sin pisar uno existente)
+async function rnEnsureProfile(cid) {
+  const cur = await rnLoadProfile(cid);
+  if (cur) return cur;
+  const { data, error } = await sb.from('run_profiles').upsert([{ client_id: cid, mode: 'plan', plan_status: 'none' }], { onConflict: 'client_id', ignoreDuplicates: true }).select().maybeSingle();
+  if (error) { showToast('No se pudo crear el perfil Run: ' + error.message, 'error'); return null; }
+  return data || await rnLoadProfile(cid);
+}
+async function rnUpdateProfile(patch) {
+  if (!rnProfile) return false;
+  const { data, error } = await sb.from('run_profiles').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', rnProfile.id).eq('client_id', rnProfile.client_id).select().maybeSingle();
+  if (error) { showToast('Error: ' + error.message, 'error'); return false; }
+  if (data) rnProfile = data;
+  return true;
+}
+async function rnLoadShoes(cid) {
+  const { data, error } = await sb.from('run_shoes').select('*').eq('client_id', cid).order('created_at', { ascending: true });
+  if (error) return [];
+  const shoes = data || [];
+  if (!shoes.length) return shoes;
+  // km = initial_km + suma de distance_km de sus corridas (se calcula, no se guarda)
+  const { data: ses } = await sb.from('run_sessions').select('shoe_id,distance_km').eq('client_id', cid).not('shoe_id', 'is', null);
+  const sum = {};
+  (ses || []).forEach(s => { sum[s.shoe_id] = (sum[s.shoe_id] || 0) + (Number(s.distance_km) || 0); });
+  shoes.forEach(z => { z.total_km = (Number(z.initial_km) || 0) + (sum[z.id] || 0); });
+  return shoes;
+}
+
+// Push por OneSignal (api/notify.js filtra por tag username). Nunca rompe el flujo.
+async function rnPush(username, title, message) {
+  try {
+    if (!username) return;
+    await fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, message, target: { username } }) });
+  } catch (e) { /* silencioso */ }
+}
+
+// ---------- COACH: interruptor en "Información de pago" ----------
+function rnCoachToggleHtml(c) {
+  const on = c.run_module_enabled === true;
+  return `<div class="payment-row" id="rn-toggle-row" style="align-items:center;flex-wrap:wrap;">
+      <span class="payment-key">Módulo Run</span>
+      <span class="payment-val">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <div onclick="rnToggleModule()" id="rn-toggle-btn" role="switch" aria-checked="${on}" aria-label="Módulo Run" style="width:44px;height:24px;border-radius:12px;background:${on ? 'var(--orange)' : 'var(--gray3)'};position:relative;transition:background 0.2s;cursor:pointer;flex-shrink:0;">
+            <div style="width:20px;height:20px;border-radius:50%;background:white;position:absolute;top:2px;${on ? 'left:22px' : 'left:2px'};transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
+          </div>
+          <span style="font-size:12px;color:${on ? 'var(--green)' : 'var(--gray4)'};">${on ? 'Activo' : 'Apagado'}</span>
+        </label>
+      </span>
+      <div style="flex-basis:100%;font-size:11px;line-height:1.4;color:var(--gray4);margin-top:4px;">El cliente ve la pestaña Run dentro de Tu Plan.</div>
+    </div>`;
+}
+async function rnToggleModule() {
+  if (!currentClient) return;
+  const c = currentClient;
+  const newVal = c.run_module_enabled !== true;
+  const { error } = await sb.from('clients').update({ run_module_enabled: newVal }).eq('id', c.id);
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  c.run_module_enabled = newVal;
+  if (newVal) rnProfile = await rnEnsureProfile(c.id);
+  const row = document.getElementById('rn-toggle-row');
+  if (row) row.outerHTML = rnCoachToggleHtml(c);
+  showToast(newVal ? 'Módulo Run activado' : 'Módulo Run apagado');
+  rnLoadCoachSection(c);
+}
+
+// ---------- COACH: sección Run del cliente (pantalla 14) ----------
+async function rnLoadCoachSection(c) {
+  const box = document.getElementById('coach-run-section');
+  if (!box) return;
+  if (!c || c.run_module_enabled !== true) { box.innerHTML = ''; return; }
+  const cid = c.id;
+  box.innerHTML = '<div class="section-header"><div class="section-title">Módulo Run</div></div><div class="payment-card"><div class="spinner"></div></div>';
+  const [p, shoes] = await Promise.all([rnEnsureProfile(cid), rnLoadShoes(cid)]);
+  if (currentClient?.id !== cid) return;
+  rnProfile = p; rnShoes = shoes;
+  rnRenderCoachSection();
+}
+function rnShoesReadOnlyHtml(shoes) {
+  const act = shoes.filter(z => !z.retired_at), ret = shoes.filter(z => z.retired_at);
+  if (!shoes.length) return '<div class="rn-xs rn-mu">Todavía no registró zapatos.</div>';
+  const row = z => `<div class="rn-row rn-sp" style="padding:6px 0;border-bottom:1px solid #EFE9DF;"><div class="rn-fx"><div style="font-weight:700;font-size:14px;${z.retired_at ? 'color:#5E564B;' : ''}">${rnEsc(z.name)}</div><div class="rn-xs rn-mu">${rnEsc(z.brand || '')}${z.retired_at ? ' · retirado' : ''}</div></div><span class="rn-m" style="font-size:15px;">${rnKm(z.total_km)} km</span></div>`;
+  return act.map(row).join('') + (ret.length ? `<div class="rn-ey" style="margin-top:10px;">Retirados</div>${ret.map(row).join('')}` : '');
+}
+function rnRenderCoachSection() {
+  const box = document.getElementById('coach-run-section');
+  if (!box || !rnProfile) return;
+  const p = rnProfile;
+  const modeChip = (m, label) => `<button type="button" class="rn-ch${p.mode === m ? ' is-on' : ''}" aria-pressed="${p.mode === m}" onclick="rnSetMode('${m}')">${label}</button>`;
+  box.innerHTML = `<div class="section-header"><div class="section-title">Módulo Run</div></div>
+    <div class="payment-card rn">
+      <div class="rn-lb">Modo</div>
+      <div class="rn-chs">${modeChip('plan', 'Plan completo')}${modeChip('seguimiento', 'Solo seguimiento')}</div>
+      <div class="rn-xs rn-mu" style="margin-top:6px;">En ambos modos el cliente puede registrar sesiones libres.</div>
+      <div id="rn-coach-extra"></div>
+      <div class="rn-row rn-sp" style="margin-top:14px;"><div class="rn-lb" style="margin:0;">Zapatos</div><span class="rn-xs rn-mu">Los maneja el cliente</span></div>
+      <div style="margin-top:4px;">${rnShoesReadOnlyHtml(rnShoes)}</div>
+    </div>`;
+  if (typeof rnRenderCoachExtra === 'function') rnRenderCoachExtra();
+}
+async function rnSetMode(mode) {
+  if (!rnProfile || rnProfile.mode === mode) return;
+  if (await rnUpdateProfile({ mode })) { showToast(mode === 'plan' ? 'Modo: Plan completo' : 'Modo: Solo seguimiento'); rnRenderCoachSection(); }
+}
+
+// ---------- CLIENTE: sub-pestaña Run dentro de Tu Plan ----------
+// Solo visible con clients.run_module_enabled. Apagado, el cliente ve exactamente lo de hoy.
+function rnApplyClientNav() {
+  const chip = document.getElementById('rn-plan-chip');
+  if (chip) chip.style.display = (currentClient?.run_module_enabled === true && !rnIsCoach()) ? '' : 'none';
+}
+async function rnLoadClientTab() {
+  const box = document.getElementById('c-run-root');
+  if (!box || !currentClient) return;
+  if (currentClient.run_module_enabled !== true) { box.innerHTML = ''; return; }
+  box.innerHTML = '<div class="spinner"></div>';
+  const cid = currentClient.id;
+  const [p, shoes] = await Promise.all([rnLoadProfile(cid), rnLoadShoes(cid)]);
+  if (currentClient?.id !== cid) return;
+  rnProfile = p; rnShoes = shoes;
+  if (typeof rnRenderClient === 'function') { rnClient = null; rnRenderClient(); return; }
+  box.innerHTML = `<div class="rn"><div class="rn-ey">Run</div><h1 class="rn-h1">Run</h1><div class="rn-empty">Tu coach está preparando tu módulo de running.</div></div>`;
+}
+// ---------- Hoja genérica del módulo (bottom-sheet) ----------
+function rnOpenSheet(html, onClose) {
+  rnCloseSheet();
+  const ov = document.createElement('div');
+  ov.className = 'rn-ov rn'; ov.id = 'rn-ov';
+  ov.innerHTML = `<div class="rn-sheet" role="dialog" aria-modal="true">${html}</div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) rnCloseSheet(); });
+  ov._onClose = onClose || null;
+  document.body.appendChild(ov);
+  return ov;
+}
+function rnSheetBody(html) { const s = document.querySelector('#rn-ov .rn-sheet'); if (s) { s.innerHTML = html; s.scrollTop = 0; } }
+function rnCloseSheet() { const ov = document.getElementById('rn-ov'); if (ov) { const f = ov._onClose; ov.remove(); if (f) f(); } }
+function rnSheetHead(ey, title, backFn) {
+  const btn = backFn
+    ? `<button type="button" class="rn-x" aria-label="Volver" onclick="${backFn}">${icon('chevron-left', 20)}</button>`
+    : `<button type="button" class="rn-x" aria-label="Cerrar" onclick="rnCloseSheet()">${icon('x', 20)}</button>`;
+  return `<div class="rn-sheet-head"><span class="rn-ey">${ey}</span>${btn}</div><h1 class="rn-h1">${title}</h1>`;
+}
+
+// ---------- R2: onboarding del coach (pantallas 11, 12, 13) ----------
+// Formulario provisional: las respuestas van completas a run_profiles.onboarding_answers (json),
+// así se puede cambiar el formulario sin migrar datos.
+// Reglas visibles y editables:
+const RN_ONB_RULES = {
+  yellowAgeMin: 45, yellowAgeMax: 65,   // edad en este rango: alerta amarilla
+  yellowBmi: 30,                        // IMC mayor a esto: alerta amarilla
+  level1MaxMinutes: 15                  // menos de esto corriendo seguido: nivel 1
+};
+const RN_GOALS = [['bajar_5k', 'Bajar tiempo de 5K'], ['primer_5k', 'Primer 5K'], ['habito', 'Hábito'], ['otra', 'Otra']];
+const RN_SURFACES = [['calle', 'Calle'], ['pista', 'Pista'], ['trail', 'Trail'], ['cinta', 'Cinta']];
+const RN_DOW = [['L', 'Lunes'], ['K', 'Martes'], ['M', 'Miércoles'], ['J', 'Jueves'], ['V', 'Viernes'], ['S', 'Sábado'], ['D', 'Domingo']];
+let rnOnb = null; // { step, a }
+
+function rnOnbStart() {
+  if (!rnProfile || !currentClient) return;
+  rnOpenSheet('', () => { rnOnb = null; });
+  rnOnb = { step: 1, a: { surfaces: [], days: [], ...(rnProfile.onboarding_answers || {}) } };
+  rnOnbRender();
+}
+function rnOnbRead() {
+  if (!rnOnb) return;
+  document.querySelectorAll('#rn-ov [data-onb]').forEach(el => { rnOnb.a[el.dataset.onb] = el.value.trim(); });
+}
+function rnOnbSet(k, v) { rnOnbRead(); rnOnb.a[k] = v; rnOnbRender(); }
+function rnOnbToggle(k, v) { rnOnbRead(); const arr = rnOnb.a[k] || (rnOnb.a[k] = []); const i = arr.indexOf(v); if (i >= 0) arr.splice(i, 1); else arr.push(v); rnOnbRender(); }
+function rnOnbGo(step) { rnOnbRead(); rnOnb.step = step; rnOnbRender(); }
+function rnChip(label, on, onclick, extra = '') { return `<button type="button" class="rn-ch${on ? ' is-on' : ''}" aria-pressed="${!!on}" onclick="${onclick}"${extra}>${label}</button>`; }
+function rnInput(key, label, val, mode = 'text', ph = '') {
+  const im = mode === 'decimal' ? ' inputmode="decimal"' : mode === 'numeric' ? ' inputmode="numeric"' : '';
+  const cls = mode === 'text' ? 'rn-in is-txt' : 'rn-in';
+  return `<div class="rn-fx"><label class="rn-fl" for="rn-onb-${key}">${label}</label><input id="rn-onb-${key}" class="${cls}" type="text"${im} data-onb="${key}" value="${rnEsc(val || '')}" placeholder="${rnEsc(ph)}"></div>`;
+}
+function rnOnbRender() {
+  if (!rnOnb) return;
+  const a = rnOnb.a, name = rnEsc((currentClient?.name || '').split(' ')[0]);
+  if (rnOnb.step === 1) {
+    rnSheetBody(`${rnSheetHead(`${name} · onboarding 1 de 2`, 'Experiencia')}
+      <div class="rn-cd"><div class="rn-lb">Meta</div><div class="rn-row rn-wrap" style="gap:6px;">${RN_GOALS.map(([k, l]) => rnChip(l, a.goal === k, `rnOnbSet('goal','${k}')`)).join('')}</div></div>
+      <div class="rn-row" style="gap:8px;margin-bottom:10px;">${rnInput('run_minutes', 'Minutos seguidos hoy', a.run_minutes, 'numeric')}${rnInput('best5k', 'Mejor 5K reciente', a.best5k, 'numeric', '29:50')}</div>
+      <div class="rn-row" style="gap:8px;margin-bottom:10px;">${rnInput('best5k_date', 'Fecha de ese 5K', a.best5k_date, 'text', 'mes y año')}${rnInput('longest_km', 'Más larga en 8 semanas (km)', a.longest_km, 'decimal')}</div>
+      <div class="rn-cd"><div class="rn-lb">¿Ya corre 5K con regularidad?</div><div class="rn-chs">${rnChip('Sí', a.regular5k === 'si', "rnOnbSet('regular5k','si')")}${rnChip('No', a.regular5k === 'no', "rnOnbSet('regular5k','no')")}</div></div>
+      <div class="rn-cd"><div class="rn-lb">¿Ha seguido un plan de running antes? ¿Cómo le fue?</div><input class="rn-in is-txt" type="text" data-onb="prev_plan" value="${rnEsc(a.prev_plan || '')}" aria-label="Plan de running anterior"></div>
+      <div class="rn-cd"><div class="rn-lb">¿En qué superficie corre?</div><div class="rn-chs">${RN_SURFACES.map(([k, l]) => rnChip(l, (a.surfaces || []).includes(k), `rnOnbToggle('surfaces','${k}')`)).join('')}</div></div>
+      <div class="rn-cd"><div class="rn-lb">Días disponibles para correr</div><div class="rn-chs">${RN_DOW.map(([k, l]) => rnChip(k === 'K' ? 'M' : k, (a.days || []).includes(k), `rnOnbToggle('days','${k}')`, ` aria-label="${l}"`)).join('')}</div></div>
+      <button type="button" class="rn-bt is-g" onclick="rnOnbGo(2)">Siguiente</button>`);
+  } else if (rnOnb.step === 2) {
+    rnSheetBody(`${rnSheetHead(`${name} · onboarding 2 de 2`, 'Salud y equipo', 'rnOnbGo(1)')}
+      <div class="rn-cd"><div class="rn-lb" style="line-height:1.35;">¿Ha sentido dolor o presión en el pecho, mareo o desmayo, o falta de aire que no es normal para su nivel?</div><div class="rn-chs">${rnChip('No', a.effort_symptom === 'no', "rnOnbSet('effort_symptom','no')")}${rnChip('Sí', a.effort_symptom === 'si', "rnOnbSet('effort_symptom','si')")}</div></div>
+      <div class="rn-cd"><div class="rn-lb">¿Alguna cirugía musculoesquelética?</div><div class="rn-chs">${rnChip('No', a.surgery === 'no', "rnOnbSet('surgery','no')")}${rnChip('Sí', a.surgery === 'si', "rnOnbSet('surgery','si')")}</div>
+        ${a.surgery === 'si' ? `<input class="rn-in is-txt" style="margin-top:8px;" type="text" data-onb="surgery_detail" value="${rnEsc(a.surgery_detail || '')}" placeholder="Detalle" aria-label="Detalle de la cirugía">` : ''}</div>
+      <div class="rn-cd"><div class="rn-lb">Lesiones en los últimos 5 años</div><input class="rn-in is-txt" type="text" data-onb="injuries" value="${rnEsc(a.injuries || '')}" aria-label="Lesiones en los últimos 5 años">
+        <div class="rn-xs rn-mu" style="margin:8px 0 6px;">¿Alguna relacionada con correr?</div><div class="rn-chs">${rnChip('No', a.injuries_running === 'no', "rnOnbSet('injuries_running','no')")}${rnChip('Sí', a.injuries_running === 'si', "rnOnbSet('injuries_running','si')")}</div></div>
+      <div class="rn-row" style="gap:8px;margin-bottom:10px;">${rnInput('age', 'Edad', a.age, 'numeric')}${rnInput('weight', 'Peso (kg)', a.weight, 'decimal')}${rnInput('height', 'Talla (m)', a.height, 'decimal')}</div>
+      <div class="rn-row" style="gap:8px;margin-bottom:10px;">${rnInput('watch', 'Reloj o app', a.watch)}${rnInput('max_minutes', 'Máx. por sesión (min)', a.max_minutes, 'numeric')}</div>
+      <div class="rn-row" style="gap:8px;margin-bottom:10px;">${rnInput('altitude', 'Altitud donde corre', a.altitude)}${rnInput('home_equipment', 'Equipo en casa', a.home_equipment)}</div>
+      <div class="rn-xs rn-mu">Su fuerza actual y sus zapatos no se preguntan: salen de sus entrenos en MOVE y de lo que registra.</div>
+      <button type="button" class="rn-bt is-g" onclick="rnOnbFinish()">Calcular nivel sugerido</button>`);
+  } else {
+    rnOnbRenderResult();
+  }
+}
+// Nivel sugerido y alertas a partir de las respuestas (puro: no toca la base)
+function rnOnbEvaluate(a) {
+  const min = parseDecimal(a.run_minutes), age = parseDecimal(a.age), kg = parseDecimal(a.weight);
+  let m = parseDecimal(a.height); if (m && m > 3) m = m / 100; // aceptan talla en cm
+  const bmi = kg && m ? kg / (m * m) : null;
+  let level = 2, why = '';
+  if (a.regular5k === 'si') { level = 3; why = 'Ya corre 5K con regularidad.'; }
+  else if (min != null && min < RN_ONB_RULES.level1MaxMinutes) { level = 1; why = `Corre ${min} min seguidos, menos de ${RN_ONB_RULES.level1MaxMinutes}.`; }
+  else { level = 2; why = min != null ? `Corre ${min} min seguidos sin estructura.` : 'Sin minutos registrados: confirmá vos el nivel.'; }
+  const lk = parseDecimal(a.longest_km); if (lk) why += ` Su más larga: ${rnKm(lk)} km.`;
+  const red = a.effort_symptom === 'si';
+  const yellow = [];
+  if (age != null && age >= RN_ONB_RULES.yellowAgeMin && age <= RN_ONB_RULES.yellowAgeMax) yellow.push(`Edad entre ${RN_ONB_RULES.yellowAgeMin} y ${RN_ONB_RULES.yellowAgeMax}.`);
+  if (bmi != null && bmi > RN_ONB_RULES.yellowBmi) yellow.push(`IMC ${rnKm(bmi)}, mayor de ${RN_ONB_RULES.yellowBmi}.`);
+  if ((a.injuries || '').trim() && a.injuries_running === 'no') yellow.push('Lesiones previas no relacionadas con correr.');
+  return { level, why: why.trim(), red, yellow, bmi, surgery: a.surgery === 'si' ? (a.surgery_detail || 'Sí') : null };
+}
+async function rnOnbFinish() {
+  rnOnbRead();
+  if (!rnOnb.a.effort_symptom) { showToast('Respondé la pregunta de síntomas al esfuerzo'); return; }
+  const ev = rnOnbEvaluate(rnOnb.a);
+  rnOnb.ev = ev; rnOnb.level = rnProfile.level || ev.level;
+  const alerts = [];
+  if (ev.red) alerts.push({ type: 'onboarding_roja', detail: 'Síntoma al esfuerzo en el onboarding. Recomendar evaluación médica antes de intensidad.' });
+  if (ev.yellow.length) alerts.push({ type: 'onboarding_amarilla', detail: ev.yellow.join(' ') + ' Progresión más lenta.' });
+  const ok = await rnUpdateProfile({ onboarding_answers: rnOnb.a, goal: rnOnb.a.goal || null, alerts: alerts.map(x => ({ ...x, at: new Date().toISOString() })) });
+  if (!ok) return;
+  await rnCreateAlerts(rnProfile.client_id, alerts);
+  rnOnb.step = 3; rnOnbRender();
+}
+// Crea alertas sin duplicar: si ya hay una abierta del mismo tipo, no se crea otra
+async function rnCreateAlerts(cid, alerts) {
+  if (!alerts.length) return;
+  const { data: open, error } = await sb.from('run_alerts').select('type').eq('client_id', cid).eq('status', 'open').in('type', alerts.map(a => a.type));
+  if (error) { showToast('No se pudo guardar la alerta: ' + error.message, 'error'); return; }
+  const have = new Set((open || []).map(r => r.type));
+  const rows = alerts.filter(a => !have.has(a.type)).map(a => ({ client_id: cid, type: a.type, detail: a.detail, status: 'open' }));
+  if (!rows.length) return;
+  const { error: e2 } = await sb.from('run_alerts').insert(rows);
+  if (e2) showToast('No se pudo guardar la alerta: ' + e2.message, 'error');
+}
+function rnOnbRenderResult() {
+  const ev = rnOnb.ev, name = rnEsc((currentClient?.name || '').split(' ')[0]), lv = rnOnb.level, isPlan = rnProfile.mode === 'plan';
+  const alertsHtml = `${ev.red ? `<div class="rn-row" style="gap:10px;align-items:flex-start;margin-bottom:8px;"><span class="rn-pill is-r">Roja</span><div class="rn-sm">Síntoma al esfuerzo. No se activa intensidad hasta que resuelvas la alerta y se recomiende evaluación médica.</div></div>` : ''}
+    ${ev.yellow.map(y => `<div class="rn-row" style="gap:10px;align-items:flex-start;margin-bottom:8px;"><span class="rn-pill" style="background:#FBF0CF;color:#7A5500;">Amarilla</span><div class="rn-sm">${rnEsc(y)} Conviene una progresión más lenta.</div></div>`).join('')}
+    ${ev.surgery ? `<div class="rn-row" style="gap:10px;align-items:flex-start;margin-bottom:8px;"><span class="rn-pill is-n">Dato</span><div class="rn-sm">Cirugía musculoesquelética: ${rnEsc(ev.surgery)}. Decidís vos.</div></div>` : ''}
+    ${!ev.red ? '<div class="rn-xs rn-mu">Sin síntomas al esfuerzo: no hay alerta roja.</div>' : ''}`;
+  rnSheetBody(`${rnSheetHead(`${name} · revisión`, 'Nivel sugerido', 'rnOnbGo(2)')}
+    <div class="rn-cd">
+      <div class="rn-row rn-sp" style="align-items:flex-end;"><div><div class="rn-m" style="font-size:38px;font-weight:500;line-height:1;">Nivel ${ev.level}</div><div class="rn-sm rn-mu" style="margin-top:6px;">${rnEsc(ev.why)}</div></div><span class="rn-pill is-g">Sugerido</span></div>
+      <div class="rn-lb" style="margin:14px 0 8px;">Tu decisión</div>
+      <div class="rn-chs">${[1, 2, 3].map(n => rnChip('Nivel ' + n, lv === n, `rnOnbPickLevel(${n})`)).join('')}</div>
+    </div>
+    <div class="rn-cd"><div class="rn-lb">Alertas</div>${alertsHtml}</div>
+    <div class="rn-xs rn-mu" style="margin-bottom:4px;">Reglas: síntoma al esfuerzo = roja; edad ${RN_ONB_RULES.yellowAgeMin} a ${RN_ONB_RULES.yellowAgeMax}, IMC mayor de ${RN_ONB_RULES.yellowBmi} o lesiones no relacionadas con correr = amarilla; menos de ${RN_ONB_RULES.level1MaxMinutes} min seguidos = nivel 1; 5K regular = nivel 3.</div>
+    ${isPlan
+      ? `<div class="rn-cd"><div class="rn-lb">Siguiente paso: el plan</div><div class="rn-sm">Armá el plan a mano o pegando un JSON. Después podés editarlo cuando quieras.</div></div>
+         <button type="button" class="rn-bt is-g" onclick="rnOnbConfirm(true)">Crear el plan</button>
+         <div class="rn-xs rn-mu" style="text-align:center;margin-top:6px;">Todavía no se activa nada: no ve el plan hasta que lo actives.</div>`
+      : `<button type="button" class="rn-bt is-g" onclick="rnOnbConfirm(false)">Guardar y seguir en seguimiento</button>`}
+    ${rnDisc()}`);
+}
+function rnOnbPickLevel(n) { rnOnb.level = n; rnOnbRenderResult(); }
+async function rnOnbConfirm(goPlan) {
+  if (!(await rnUpdateProfile({ level: rnOnb.level }))) return;
+  rnOnb = null; rnCloseSheet();
+  showToast('Onboarding guardado', 'success');
+  rnRenderCoachSection();
+  if (goPlan && typeof rnPlanCreateStart === 'function') rnPlanCreateStart();
+}
+
+// Zona extra de la sección Run del coach (onboarding, nivel, alertas, plan)
+async function rnRenderCoachExtra() {
+  const box = document.getElementById('rn-coach-extra');
+  if (!box || !rnProfile) return;
+  const p = rnProfile, cid = p.client_id;
+  const done = p.onboarding_answers && Object.keys(p.onboarding_answers).length > 0;
+  const { data: al } = await sb.from('run_alerts').select('*').eq('client_id', cid).eq('status', 'open').order('created_at', { ascending: false });
+  if (currentClient?.id !== cid) return;
+  const alerts = al || [];
+  const ALERT_NAMES = { alarma: 'Síntoma de alarma', dolor_3_dias: 'Dolor 3 días seguidos', dolor_fuerte: 'Dolor fuerte', onboarding_roja: 'Alerta roja del onboarding', onboarding_amarilla: 'Alerta amarilla del onboarding', sin_registro: 'Varios días sin registrar' };
+  const alertsHtml = alerts.map(x => `<div class="rn-cd ${x.type === 'onboarding_amarilla' || x.type === 'sin_registro' ? 'is-warm' : 'is-red'}" style="margin:8px 0 0;">
+      <div class="rn-row rn-sp"><div class="rn-fx"><div style="font-weight:700;font-size:14px;">${ALERT_NAMES[x.type] || rnEsc(x.type)}</div><div class="rn-xs rn-mu" style="margin-top:2px;">${rnEsc(x.detail || '')} · ${rnDayLabel(rnCRDate(x.created_at))}</div></div>
+      <button type="button" class="rn-ch" style="font-size:13px;" onclick="rnResolveAlert('${x.id}')">Resolver</button></div></div>`).join('');
+  const summary = p.level ? `<div class="rn-row rn-sp" style="margin-top:12px;"><div><div style="font-weight:700;font-size:15px;">Nivel ${p.level}${p.mode === 'plan' && typeof rnPlanSummary === 'function' ? rnPlanSummary() : ''}</div></div></div>` : '';
+  box.innerHTML = `${summary}
+    ${alertsHtml}
+    <button type="button" class="rn-bt is-l" onclick="rnOnbStart()">${done ? 'Ver o editar onboarding de running' : 'Onboarding de running'}</button>
+    ${p.mode === 'plan' && typeof rnPlanCoachButtonsHtml === 'function' ? rnPlanCoachButtonsHtml() : ''}`;
+}
+async function rnResolveAlert(id) {
+  const { error } = await sb.from('run_alerts').update({ status: 'resolved', resolved_at: new Date().toISOString() }).eq('id', id);
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  showToast('Alerta resuelta', 'success');
+  if (document.getElementById('rn-coach-extra')) rnRenderCoachExtra();
+  if (typeof rnAfterAlertResolved === 'function') rnAfterAlertResolved(id);
+}
+// ¿Hay alerta roja abierta? (bloquea activar el plan)
+async function rnHasOpenRed(cid) {
+  const { data } = await sb.from('run_alerts').select('id').eq('client_id', cid).eq('status', 'open').eq('type', 'onboarding_roja').limit(1);
+  return !!(data && data.length);
+}
+// ---------- R3: versiones de sesión (helpers PUROS, sin tablas) ----------
+// Se reusarán después en el entreno de fuerza: no dependen de nada del módulo Run
+// salvo los nombres de tipo de sesión. Constantes editables:
+const RUN_VERSION_FACTORS = { completa: 1, reducida: 0.7, minima: 0.5 };   // editable
+const RUN_QUALITY_TYPES = ['strides', 'umbral'];                           // se vuelven fácil al reducir
+const RUN_TEST_FALLBACK_MIN = 20;                                          // si hay prueba 5K y el día no da
+const RUN_MIN_FLOOR = 5;                                                   // piso de minutos al reducir
+
+// Devuelve una copia de la sesión ajustada a la versión. Aplica primero overrides[version]
+// (campos min, km, esfuerzo, notas, tipo); solo calcula lo que no está sobrescrito.
+function runApplyVersion(session, version) {
+  const s = session || {};
+  const v = RUN_VERSION_FACTORS[version] != null ? version : 'completa';
+  const out = { ...s, version: v, auto: {} };
+  if (v === 'completa') return out;
+  if (s.session_type === 'prueba_5k') {
+    // La prueba no se reduce: se pospone y se hace un fácil corto. No cuenta como hecha.
+    return { ...out, postponeTest: true, message: `Hoy no es día para la prueba: hacé ${RUN_TEST_FALLBACK_MIN} min fácil y la repetimos otro día`, fallback: { session_type: 'facil', minutes: RUN_TEST_FALLBACK_MIN } };
+  }
+  const f = RUN_VERSION_FACTORS[v];
+  const ov = (s.overrides && s.overrides[v]) || {};
+  const quality = RUN_QUALITY_TYPES.includes(s.session_type);
+  out.session_type = ov.tipo != null ? ov.tipo : (quality ? 'facil' : s.session_type);
+  if (ov.min != null) out.minutes = Number(ov.min);
+  else { out.minutes = Math.max(RUN_MIN_FLOOR, Math.round((Number(s.minutes) || 0) * f)); out.auto.minutes = true; }
+  if (ov.km != null) out.distance_km = Number(ov.km);
+  else if (s.distance_km != null && s.distance_km !== '') { out.distance_km = Math.round(Number(s.distance_km) * f * 10) / 10; out.auto.distance_km = true; }
+  if (ov.esfuerzo != null) out.effort = ov.esfuerzo;
+  out.notes = ov.notas != null ? ov.notas : (quality ? '' : s.notes); // en calidad no se copian los intervalos
+  return out;
+}
+// Elige la versión sugerida. checkin: {energy, sleep, pain, alarm_symptom} o null.
+// ctx: {manual, cantMore, lastTwoReduced, legHeavy, resumeCap}. La elección manual del cliente manda.
+function runPickVersion(checkin, ctx) {
+  const c = ctx || {}, k = checkin || null, reasons = [];
+  if (k && (k.alarm_symptom || k.pain === 'fuerte')) return { version: null, rest: true, reasons: [k.alarm_symptom ? 'Síntoma de alarma' : 'Dolor fuerte'] };
+  if (c.manual && RUN_VERSION_FACTORS[c.manual] != null) return { version: c.manual, reasons: ['Elegida por vos'] };
+  let version = 'completa';
+  if (c.cantMore) { version = 'minima'; reasons.push('Hoy no podés con más'); }
+  else if (c.lastTwoReduced) { version = 'minima'; reasons.push('Venís de 2 reducidas seguidas'); }
+  else if (c.legHeavy) { version = 'reducida'; reasons.push('Pierna pesada ayer u hoy'); }
+  else if (k && k.energy != null && k.energy <= 2 && k.sleep === 'mal') { version = 'reducida'; reasons.push('Energía baja y mal sueño'); }
+  else if (k && k.pain === 'moderado') { version = 'reducida'; reasons.push('Dolor moderado'); }
+  else if (k && k.energy >= 4 && (!k.pain || k.pain === 'ninguno')) reasons.push('Buena energía y sin dolor');
+  else if (!k) reasons.push('Sin check-in hoy');
+  if (c.resumeCap && version === 'completa') { version = 'reducida'; reasons.push('Primera semana tras la pausa'); }
+  return { version, reasons };
+}
+
+// ---------- R3: plan (pantallas 15 a 19) ----------
+const RN_TYPES = [['correr_caminar', 'Correr y caminar'], ['facil', 'Fácil'], ['larga_facil', 'Larga fácil'], ['strides', 'Strides'], ['umbral', 'Umbral e intervalos'], ['prueba_5k', 'Prueba 5K']];
+const RN_TYPE_NAME = Object.fromEntries(RN_TYPES);
+const RN_WEEK_TYPES = [['normal', 'Normal'], ['descarga', 'Descarga'], ['prueba_5k', 'Prueba 5K']];
+const RN_TYPE_ALIASES = { tempo: 'umbral', intervalos: 'umbral', intervals: 'umbral', threshold: 'umbral', series: 'umbral', easy: 'facil', 'fácil': 'facil', suave: 'facil', larga: 'larga_facil', long: 'larga_facil', 'larga fácil': 'larga_facil', run_walk: 'correr_caminar', 'correr y caminar': 'correr_caminar', caminar: 'correr_caminar', prueba: 'prueba_5k', test: 'prueba_5k', '5k': 'prueba_5k' };
+const RN_WEEK_ALIASES = { deload: 'descarga', prueba: 'prueba_5k', test: 'prueba_5k', '5k': 'prueba_5k' };
+const RN_PLAN_WEEKS_DEFAULT = 10, RN_PLAN_WEEKS_MIN = 4, RN_PLAN_WEEKS_MAX = 24;
+const RN_JSON_EXAMPLE = `{
+  "nivel": 2,
+  "semanas": [
+    {
+      "semana": 1,
+      "etiqueta": "normal",
+      "sesiones": [
+        { "tipo": "facil", "min": 30, "esfuerzo": "3-4" },
+        { "tipo": "strides", "min": 35, "notas": "6 x 20 s", "reducida": { "min": 25 } },
+        { "tipo": "larga_facil", "min": 45 }
+      ]
+    }
+  ]
+}`;
+let rnPlan = null;        // estado del editor
+let rnRoutines = [];      // run_routines (bloques pre y post)
+
+// Semana actual = floor((hoy - start_date) / 7) + 1, limitada a 1..weeks_total (0 si todavía no empieza)
+function rnCurrentWeek(p, today) {
+  if (!p || !p.start_date) return 0;
+  const t = today || todayCR();
+  const days = Math.round((Date.parse(t + 'T12:00:00Z') - Date.parse(String(p.start_date).slice(0, 10) + 'T12:00:00Z')) / 86400000);
+  if (days < 0) return 0;
+  return Math.min(Math.max(Math.floor(days / 7) + 1, 1), p.weeks_total || 1);
+}
+function rnPlanSummary() {
+  const p = rnProfile; if (!p) return '';
+  if (p.plan_status === 'draft') return ' · plan en borrador';
+  if (p.plan_status === 'paused') return ' · plan en pausa';
+  if (p.plan_status === 'active') { const w = rnCurrentWeek(p); return w ? ` · Semana ${w} de ${p.weeks_total}` : ` · empieza el ${rnDayLabel(String(p.start_date).slice(0, 10))}`; }
+  return '';
+}
+function rnPlanCoachButtonsHtml() {
+  const p = rnProfile; if (!p) return '';
+  if (!p.plan_status || p.plan_status === 'none') return `<button type="button" class="rn-bt is-g" onclick="rnPlanCreateStart()">Crear el plan</button>`;
+  if (p.plan_status === 'draft') return `<button type="button" class="rn-bt is-g" onclick="rnPlanOpenEditor()">Seguir armando el plan</button>`;
+  const pause = p.plan_status === 'paused'
+    ? `<button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="rnPlanResume()">Reanudar plan</button>`
+    : `<button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="rnPlanPause()">Pausar plan</button>`;
+  return `<button type="button" class="rn-bt is-l" onclick="rnPlanOpenEditor()">Modificar el plan</button>
+    <div class="rn-row" style="gap:6px;margin-top:8px;"><button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="rnPlanLevelSheet()">Cambiar nivel</button>${pause}</div>`;
+}
+
+// Pantalla 15: crear el plan
+function rnPlanCreateStart() {
+  if (!rnProfile) return;
+  const nextMonday = (() => { const t = todayCR(); const dow = (new Date(t + 'T12:00:00Z').getUTCDay() + 6) % 7; return tcAddDays(t, dow === 0 ? 0 : 7 - dow); })();
+  rnPlan = { create: { how: 'mano', start: rnProfile.start_date || nextMonday, weeks: rnProfile.weeks_total || RN_PLAN_WEEKS_DEFAULT } };
+  rnOpenSheet('');
+  rnPlanCreateRender();
+}
+function rnPlanCreateRender() {
+  const c = rnPlan.create, name = rnEsc((currentClient?.name || '').split(' ')[0]);
+  const opt = (k, t, d) => `<button type="button" class="rn-cd" style="display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;cursor:pointer;${c.how === k ? 'border-color:#C24E18;background:#FCEEE4;' : ''}" aria-pressed="${c.how === k}" onclick="rnPlan.create.how='${k}';rnPlanCreateRead();rnPlanCreateRender()"><span style="width:22px;height:22px;border-radius:99px;box-sizing:border-box;flex:none;margin-top:1px;background:#fff;border:${c.how === k ? '7px solid #C24E18' : '2px solid #8A8072'};"></span><span><span style="display:block;font-weight:700;font-size:15px;">${t}</span><span class="rn-xs rn-mu" style="display:block;margin-top:2px;">${d}</span></span></button>`;
+  rnSheetBody(`${rnSheetHead(`${name} · nivel ${rnProfile.level || '—'}`, 'Crear el plan')}
+    <div class="rn-sm rn-mu" style="margin-bottom:10px;">Elegí cómo querés armarlo. Después podés editarlo cuando quieras.</div>
+    ${opt('mano', 'Armar a mano', 'Semana por semana. Escribís la versión completa; la reducida (70%) y la mínima (50%) se calculan solas.')}
+    ${opt('json', 'Pegar JSON', 'Pegá un plan completo, por ejemplo uno que armaste con Claude. Lo validás antes de guardar.')}
+    <div class="rn-cd"><div class="rn-lb">Inicio y duración</div>
+      <div class="rn-row" style="gap:8px;"><div class="rn-fx"><label class="rn-fl" for="rn-pc-start">Fecha de inicio</label><input id="rn-pc-start" class="rn-in" type="date" value="${c.start}"></div>
+      <div class="rn-fx"><label class="rn-fl" for="rn-pc-weeks">Semanas (${RN_PLAN_WEEKS_MIN} a ${RN_PLAN_WEEKS_MAX})</label><input id="rn-pc-weeks" class="rn-in" type="text" inputmode="numeric" value="${c.weeks}"></div></div></div>
+    <button type="button" class="rn-bt is-g" onclick="rnPlanCreateNext()">Continuar</button>
+    <div class="rn-xs rn-mu" style="text-align:center;margin-top:6px;">No ve nada hasta que actives el plan.</div>`);
+}
+function rnPlanCreateRead() {
+  const c = rnPlan?.create; if (!c) return;
+  const s = document.getElementById('rn-pc-start'), w = document.getElementById('rn-pc-weeks');
+  if (s) c.start = s.value; if (w) c.weeks = w.value;
+}
+async function rnPlanCreateNext() {
+  rnPlanCreateRead();
+  const c = rnPlan.create, weeks = parseInt(c.weeks, 10);
+  if (!c.start) { showToast('Elegí la fecha de inicio'); return; }
+  if (!(weeks >= RN_PLAN_WEEKS_MIN && weeks <= RN_PLAN_WEEKS_MAX)) { showToast(`La duración va de ${RN_PLAN_WEEKS_MIN} a ${RN_PLAN_WEEKS_MAX} semanas`); return; }
+  if (!(await rnUpdateProfile({ start_date: c.start, weeks_total: weeks, plan_status: rnProfile.plan_status === 'active' || rnProfile.plan_status === 'paused' ? rnProfile.plan_status : 'draft' }))) return;
+  await rnPlanLoad();
+  if (c.how === 'json') rnJsonOpen(); else rnPlanRender();
+  rnRenderCoachSection();
+}
+
+// Carga el plan del cliente al editor
+async function rnPlanLoad() {
+  const cid = rnProfile.client_id;
+  const [{ data: rows, error }, { data: rts }] = await Promise.all([
+    sb.from('run_planned_sessions').select('*').eq('client_id', cid).order('week_number', { ascending: true }).order('position', { ascending: true }),
+    sb.from('run_routines').select('*').order('name', { ascending: true })
+  ]);
+  if (error) { showToast('No se pudo cargar el plan: ' + error.message, 'error'); return false; }
+  rnRoutines = rts || [];
+  const total = Math.max(rnProfile.weeks_total || 0, ...(rows || []).map(r => r.week_number), 1);
+  const weeks = [];
+  for (let n = 1; n <= total; n++) weeks.push({ n, type: 'normal', sessions: [] });
+  (rows || []).forEach(r => { const w = weeks[r.week_number - 1]; w.type = r.week_type || w.type; w.sessions.push({ ...r }); });
+  const cur = rnCurrentWeek(rnProfile);
+  rnPlan = { cid, weeks, sel: Math.max(cur, 1) - 1, view: 'completa', removed: [], dirty: false, edit: null };
+  return true;
+}
+async function rnPlanOpenEditor() { rnOpenSheet('<div class="spinner"></div>'); if (await rnPlanLoad()) rnPlanRender(); }
+
+function rnSessionLine(s, view) {
+  const v = runApplyVersion(s, view);
+  if (v.postponeTest) return { title: 'Prueba 5K', sub: `Se pospone: ${RUN_TEST_FALLBACK_MIN} min fácil` };
+  const km = v.distance_km != null && v.distance_km !== '' ? ` · ${rnKm(v.distance_km)} km` : '';
+  const auto = view !== 'completa' ? (v.auto.minutes ? ` · ${Math.round(RUN_VERSION_FACTORS[view] * 100)}%, automática` : ' · a mano') : '';
+  const pre = s.pre_routine_id ? rnRoutines.find(r => r.id === s.pre_routine_id) : null, post = s.post_routine_id ? rnRoutines.find(r => r.id === s.post_routine_id) : null;
+  const blocks = [pre ? 'Pre: ' + pre.name : '', post ? 'Post: ' + post.name : ''].filter(Boolean).join(' · ');
+  return { title: `${RN_TYPE_NAME[v.session_type] || v.session_type} · ${v.minutes} min${km}`, sub: [v.effort ? 'Esfuerzo ' + v.effort : '', v.notes || '', blocks].filter(Boolean).join(' · ') + auto };
+}
+// Pantallas 16 y 19: editor de semanas (borrador o plan activo)
+function rnPlanRender() {
+  if (!rnPlan || !rnPlan.weeks) return;
+  const p = rnProfile, st = p.plan_status, active = st === 'active' || st === 'paused';
+  const name = rnEsc((currentClient?.name || '').split(' ')[0]);
+  const w = rnPlan.weeks[rnPlan.sel], cur = rnCurrentWeek(p), view = rnPlan.view;
+  const weekChips = rnPlan.weeks.map((x, i) => {
+    const allDone = x.sessions.length && x.sessions.every(s => s.status === 'hecha');
+    return `<button type="button" class="rn-ch${i === rnPlan.sel ? ' is-on' : ''}" style="min-width:44px;padding:0 10px;" aria-pressed="${i === rnPlan.sel}" aria-label="Semana ${x.n}${x.n === cur && active ? ', actual' : ''}" onclick="rnPlan.sel=${i};rnPlanRender()">${x.n}${allDone ? ' ' + icon('check', 12) : ''}${x.n === cur && active ? '<span style="width:5px;height:5px;border-radius:9px;background:currentColor;display:inline-block;margin-left:4px;"></span>' : ''}</button>`;
+  }).join('');
+  const sessions = w.sessions.map((s, i) => {
+    const line = rnSessionLine(s, view), locked = s.status === 'hecha';
+    const badge = locked ? `<span class="rn-pill is-g">${icon('lock', 12)}Hecha</span>` : s.status === 'omitida' ? '<span class="rn-pill is-n">Omitida</span>' : (active ? '<span class="rn-pill is-n">Pendiente</span>' : '');
+    return `<div class="rn-cd${locked ? ' is-ghost' : ''}"><div class="rn-row" style="align-items:flex-start;">
+      ${locked ? '' : `<div style="display:flex;flex-direction:column;gap:4px;"><button type="button" class="rn-ib" aria-label="Subir" ${i === 0 ? 'disabled' : ''} onclick="rnPlanMove(${i},-1)">${icon('chevron-up', 16)}</button><button type="button" class="rn-ib" aria-label="Bajar" ${i === w.sessions.length - 1 ? 'disabled' : ''} onclick="rnPlanMove(${i},1)">${icon('chevron-down', 16)}</button></div>`}
+      <div class="rn-fx"><div style="font-weight:700;font-size:15px;">${rnEsc(line.title)}</div><div class="rn-xs rn-mu" style="margin-top:2px;">${rnEsc(line.sub)}</div>${badge ? `<div style="margin-top:6px;">${badge}</div>` : ''}</div>
+      ${locked ? `<span class="rn-ib" style="border:0;" aria-label="Bloqueada">${icon('lock', 16)}</span>` : `<button type="button" class="rn-ib" aria-label="Editar sesión" onclick="rnSessEdit(${i})">${icon('pencil', 16)}</button>`}
+    </div></div>`;
+  }).join('') || '<div class="rn-empty" style="padding:14px;">Sin sesiones esta semana.</div>';
+  rnSheetBody(`${rnSheetHead(`${name} · ${active ? 'plan ' + (st === 'paused' ? 'en pausa' : 'activo') : 'borrador'}`, active ? 'Plan' : 'Armar plan')}
+    ${active ? `<div class="rn-row rn-wrap" style="gap:6px;margin-bottom:8px;"><span class="rn-pill is-n">Nivel ${p.level || '—'}</span><span class="rn-pill is-n">Semana ${cur || '—'} de ${p.weeks_total}</span></div>` : ''}
+    <div class="rn-row" style="gap:6px;overflow-x:auto;padding-bottom:4px;">${weekChips}<button type="button" class="rn-ch" style="white-space:nowrap;color:#C24E18;" onclick="rnPlanAddWeek()">+ Semana</button></div>
+    <div class="rn-chs" style="margin-top:8px;">${RN_WEEK_TYPES.map(([k, l]) => rnChip(l, w.type === k, `rnPlanWeekType('${k}')`)).join('')}</div>
+    <div class="rn-chs" style="margin-top:8px;">${[['completa', 'Completa'], ['reducida', 'Reducida 70%'], ['minima', 'Mínima 50%']].map(([k, l]) => rnChip(l, view === k, `rnPlan.view='${k}';rnPlanRender()`)).join('')}</div>
+    <div class="rn-xs rn-mu" style="margin:6px 0 10px;">Editás la completa. Las otras dos se calculan solas; tocá el lápiz de una sesión para cambiarlas a mano.</div>
+    ${sessions}
+    <button type="button" class="rn-bt is-l" onclick="rnSessAdd()">+ Agregar sesión${active ? ' a esta semana' : ''}</button>
+    <div class="rn-row" style="gap:6px;margin-top:8px;">
+      <button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="rnPlanCopySheet()">Copiar semana a…</button>
+      <button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="rnJsonOpen()">Pegar JSON</button>
+      ${active ? `<button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="${st === 'paused' ? 'rnPlanResume()' : 'rnPlanPause()'}">${st === 'paused' ? 'Reanudar' : 'Pausar plan'}</button>` : ''}
+    </div>
+    ${active
+      ? `<button type="button" class="rn-bt is-g" onclick="rnPlanSave('keep')">Guardar cambios</button><div class="rn-xs rn-mu" style="text-align:center;margin-top:6px;">Los cambios solo afectan las sesiones pendientes.</div>`
+      : `<button type="button" class="rn-bt is-l" onclick="rnPlanSave('draft')">Guardar borrador</button><button type="button" class="rn-bt is-g" onclick="rnPlanSave('active')">Guardar y activar plan</button>`}
+    ${rnPlan.dirty ? '<div class="rn-xs" style="text-align:center;margin-top:6px;color:#A8410F;">Hay cambios sin guardar.</div>' : ''}`);
+}
+function rnPlanDirty() { rnPlan.dirty = true; }
+function rnPlanAddWeek() { rnPlan.weeks.push({ n: rnPlan.weeks.length + 1, type: 'normal', sessions: [] }); rnPlan.sel = rnPlan.weeks.length - 1; rnPlanDirty(); rnPlanRender(); }
+function rnPlanWeekType(t) { const w = rnPlan.weeks[rnPlan.sel]; w.type = t; rnPlanDirty(); rnPlanRender(); }
+function rnPlanMove(i, d) {
+  const arr = rnPlan.weeks[rnPlan.sel].sessions, j = i + d;
+  if (j < 0 || j >= arr.length || arr[i].status === 'hecha' || arr[j].status === 'hecha') return;
+  [arr[i], arr[j]] = [arr[j], arr[i]]; rnPlanDirty(); rnPlanRender();
+}
+function rnRemovePending(s) { if (s.id && s.status !== 'hecha') rnPlan.removed.push(s.id); }
+// Copiar semana a…: reemplaza las pendientes de la semana destino; las hechas no se tocan
+function rnPlanCopySheet() {
+  const src = rnPlan.weeks[rnPlan.sel];
+  if (!src.sessions.length) { showToast('Esta semana no tiene sesiones'); return; }
+  const chips = rnPlan.weeks.map((x, i) => i === rnPlan.sel ? '' : rnChip(String(x.n), false, `rnPlanCopyTo(${i})`, ` style="min-width:44px;" aria-label="Copiar a la semana ${x.n}"`)).join('');
+  rnSheetBody(`${rnSheetHead('Copiar semana ' + src.n, 'Copiar a…', 'rnPlanRender()')}<div class="rn-sm rn-mu" style="margin-bottom:10px;">Se reemplazan las sesiones pendientes de la semana elegida. Las hechas no se tocan.</div><div class="rn-row rn-wrap" style="gap:6px;">${chips}</div>`);
+}
+function rnPlanCopyTo(i) {
+  const src = rnPlan.weeks[rnPlan.sel], dst = rnPlan.weeks[i];
+  const done = dst.sessions.filter(s => s.status === 'hecha');
+  dst.sessions.filter(s => s.status !== 'hecha').forEach(rnRemovePending);
+  dst.sessions = done.concat(src.sessions.map(s => ({ session_type: s.session_type, minutes: s.minutes, distance_km: s.distance_km, effort: s.effort, notes: s.notes, pre_routine_id: s.pre_routine_id, post_routine_id: s.post_routine_id, overrides: JSON.parse(JSON.stringify(s.overrides || {})), status: 'planeada' })));
+  dst.type = src.type; rnPlan.sel = i; rnPlanDirty(); showToast(`Copiada a la semana ${dst.n}`); rnPlanRender();
+}
+
+// Pantalla 17: editar una sesión
+function rnSessAdd() { const w = rnPlan.weeks[rnPlan.sel]; rnPlan.edit = { idx: -1, s: { session_type: 'facil', minutes: 30, distance_km: null, effort: '', notes: '', overrides: {}, status: 'planeada' }, ovEdit: null }; rnSessRender(); }
+function rnSessEdit(i) { const s = rnPlan.weeks[rnPlan.sel].sessions[i]; if (s.status === 'hecha') return; rnPlan.edit = { idx: i, s: JSON.parse(JSON.stringify(s)), ovEdit: null }; rnSessRender(); }
+function rnSessRead() {
+  const e = rnPlan?.edit; if (!e) return;
+  const g = id => document.getElementById(id);
+  if (g('rn-se-min')) e.s.minutes = parseInt(g('rn-se-min').value, 10) || 0;
+  if (g('rn-se-km')) { const k = parseDecimal(g('rn-se-km').value); e.s.distance_km = k == null ? null : k; }
+  if (g('rn-se-eff')) e.s.effort = g('rn-se-eff').value.trim();
+  if (g('rn-se-notes')) e.s.notes = g('rn-se-notes').value.trim();
+  if (g('rn-se-pre')) e.s.pre_routine_id = g('rn-se-pre').value || null;
+  if (g('rn-se-post')) e.s.post_routine_id = g('rn-se-post').value || null;
+  ['reducida', 'minima'].forEach(v => {
+    const m = g('rn-se-ov-' + v), k = g('rn-se-ovkm-' + v);
+    if (m) { const o = e.s.overrides[v] || (e.s.overrides[v] = {}); const n = parseInt(m.value, 10); if (n) o.min = n; else delete o.min; if (k) { const kk = parseDecimal(k.value); if (kk != null) o.km = kk; else delete o.km; } if (!Object.keys(o).length) delete e.s.overrides[v]; }
+  });
+}
+function rnSessSet(k, v) { rnSessRead(); rnPlan.edit.s[k] = v; rnSessRender(); }
+function rnSessOv(v, mode) { rnSessRead(); const e = rnPlan.edit; if (mode === 'auto') { delete e.s.overrides[v]; e.ovEdit = null; } else e.ovEdit = v; rnSessRender(); }
+function rnRoutineSelect(id, block, type, val) {
+  const opts = rnRoutines.filter(r => r.block === block && (r.session_type === type || r.session_type === 'todas'));
+  return `<select id="${id}" class="rn-in is-txt" aria-label="Bloque ${block === 'pre' ? 'pre-run' : 'post-run'}"><option value="">${opts.length ? 'Sin bloque' : 'Todavía no hay bloques'}</option>${opts.map(r => `<option value="${r.id}"${r.id === val ? ' selected' : ''}>${rnEsc(r.name)}</option>`).join('')}</select>`;
+}
+function rnSessRender() {
+  const e = rnPlan.edit, s = e.s, w = rnPlan.weeks[rnPlan.sel];
+  const verRow = v => {
+    const x = runApplyVersion(s, v), pct = Math.round(RUN_VERSION_FACTORS[v] * 100), lab = v === 'reducida' ? 'Reducida' : 'Mínima';
+    if (x.postponeTest) return `<div class="rn-row rn-sp" style="padding:6px 0;"><div><b>${lab}</b> · no se reduce</div></div>`;
+    const manual = s.overrides && s.overrides[v];
+    const body = e.ovEdit === v
+      ? `<div class="rn-row" style="gap:6px;margin-top:6px;"><input id="rn-se-ov-${v}" class="rn-in" type="text" inputmode="numeric" placeholder="min" value="${manual && manual.min != null ? manual.min : x.minutes}" aria-label="Minutos ${lab}"><input id="rn-se-ovkm-${v}" class="rn-in" type="text" inputmode="decimal" placeholder="km (opcional)" value="${manual && manual.km != null ? String(manual.km).replace('.', ',') : ''}" aria-label="Km ${lab}"><button type="button" class="rn-ch" onclick="rnSessOv('${v}','auto')">Automática</button></div>`
+      : '';
+    return `<div style="padding:6px 0;border-bottom:1px solid #EFE9DF;"><div class="rn-row rn-sp"><div class="rn-sm"><b>${lab}</b> · ${RN_TYPE_NAME[x.session_type] || x.session_type} · ${x.minutes} min${x.distance_km != null && x.distance_km !== '' ? ' · ' + rnKm(x.distance_km) + ' km' : ''} <span class="rn-mu">· ${manual ? 'a mano' : pct + '%, automática'}</span></div>
+      ${e.ovEdit === v ? '' : `<button type="button" class="rn-ch" style="font-size:13px;" onclick="rnSessOv('${v}','edit')">Cambiar</button>`}</div>${body}</div>`;
+  };
+  rnSheetBody(`${rnSheetHead(`Semana ${w.n} · versión completa`, e.idx < 0 ? 'Nueva sesión' : 'Editar sesión', 'rnSessCancel()')}
+    <div class="rn-cd"><div class="rn-lb">Tipo</div><div class="rn-row rn-wrap" style="gap:6px;">${RN_TYPES.map(([k, l]) => rnChip(l, s.session_type === k, `rnSessSet('session_type','${k}')`)).join('')}</div></div>
+    <div class="rn-row" style="gap:8px;margin-bottom:10px;">
+      <div class="rn-fx"><label class="rn-fl" for="rn-se-min">Duración (min)</label><input id="rn-se-min" class="rn-in" type="text" inputmode="numeric" value="${s.minutes || ''}"></div>
+      <div class="rn-fx"><label class="rn-fl" for="rn-se-km">Distancia (km)</label><input id="rn-se-km" class="rn-in" type="text" inputmode="decimal" value="${s.distance_km != null ? String(s.distance_km).replace('.', ',') : ''}" placeholder="opcional"></div>
+      <div class="rn-fx"><label class="rn-fl" for="rn-se-eff">Esfuerzo</label><input id="rn-se-eff" class="rn-in" type="text" value="${rnEsc(s.effort || '')}" placeholder="3-4"></div></div>
+    <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-se-notes">Estructura o notas</label><textarea id="rn-se-notes" class="rn-in" rows="2">${rnEsc(s.notes || '')}</textarea></div>
+    <div class="rn-cd"><div class="rn-row" style="gap:8px;"><div class="rn-fx"><span class="rn-fl">Pre-run</span>${rnRoutineSelect('rn-se-pre', 'pre', s.session_type, s.pre_routine_id)}</div><div class="rn-fx"><span class="rn-fl">Post-run</span>${rnRoutineSelect('rn-se-post', 'post', s.session_type, s.post_routine_id)}</div></div></div>
+    <div class="rn-cd"><div class="rn-lb">Otras versiones</div>${verRow('reducida')}${verRow('minima')}
+      <div class="rn-xs rn-mu" style="margin-top:8px;">En intervalos, umbral y strides la reducida pasa a carrera fácil. La prueba 5K no se reduce.</div></div>
+    <button type="button" class="rn-bt is-g" onclick="rnSessSave()">Guardar sesión</button>
+    ${e.idx >= 0 ? `<button type="button" class="rn-bt is-l" style="color:#8F2719;" onclick="rnSessRemove()">Quitar esta sesión</button>` : ''}`);
+}
+function rnSessCancel() { rnPlan.edit = null; rnPlanRender(); }
+function rnSessSave() {
+  rnSessRead();
+  const e = rnPlan.edit, s = e.s;
+  if (!(s.minutes >= 5 && s.minutes <= 180)) { showToast('La duración va de 5 a 180 min'); return; }
+  const arr = rnPlan.weeks[rnPlan.sel].sessions;
+  if (e.idx < 0) arr.push(s); else arr[e.idx] = s;
+  rnPlan.edit = null; rnPlanDirty(); rnPlanRender();
+}
+function rnSessRemove() {
+  const e = rnPlan.edit, arr = rnPlan.weeks[rnPlan.sel].sessions, s = arr[e.idx];
+  if (!s || s.status === 'hecha') return;
+  rnRemovePending(s); arr.splice(e.idx, 1); rnPlan.edit = null; rnPlanDirty(); rnPlanRender();
+}
+
+// Guardar: status 'draft' | 'active' | 'keep' (plan activo o en pausa). Las sesiones hechas nunca se tocan.
+async function rnPlanSave(status) {
+  const p = rnProfile, cid = rnPlan.cid;
+  if (status === 'active') {
+    if (await rnHasOpenRed(cid)) { showToast('Hay una alerta roja abierta: resolvela antes de activar el plan', 'error'); return; }
+    if (!p.level) { showToast('Confirmá el nivel en el onboarding antes de activar'); return; }
+    if (!rnPlan.weeks.some(w => w.sessions.length)) { showToast('El plan no tiene sesiones'); return; }
+  }
+  const now = new Date().toISOString();
+  const removed = rnPlan.removed.filter(Boolean);
+  // Solo se borran filas planeadas sin corrida asociada (sesiones pendientes del plan, nunca registros del cliente)
+  if (removed.length) {
+    const { error } = await sb.from('run_planned_sessions').delete().in('id', removed).eq('client_id', cid).eq('status', 'planeada');
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  }
+  const inserts = [];
+  for (const w of rnPlan.weeks) {
+    for (let i = 0; i < w.sessions.length; i++) {
+      const s = w.sessions[i];
+      if (s.status === 'hecha') continue;
+      const row = { client_id: cid, week_number: w.n, week_type: w.type, position: i, session_type: s.session_type, minutes: s.minutes, distance_km: s.distance_km ?? null, effort: s.effort || null, notes: s.notes || null, pre_routine_id: s.pre_routine_id || null, post_routine_id: s.post_routine_id || null, overrides: s.overrides || {}, updated_at: now };
+      if (s.id) {
+        const { error } = await sb.from('run_planned_sessions').update(row).eq('id', s.id).eq('client_id', cid).neq('status', 'hecha');
+        if (error) { showToast('Error: ' + error.message, 'error'); return; }
+      } else inserts.push({ ...row, status: 'planeada' });
+    }
+  }
+  if (inserts.length) {
+    const { error } = await sb.from('run_planned_sessions').insert(inserts);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  }
+  const patch = { weeks_total: rnPlan.weeks.length };
+  if (status === 'draft') patch.plan_status = 'draft';
+  if (status === 'active') patch.plan_status = 'active';
+  if (!(await rnUpdateProfile(patch))) return;
+  if (status === 'active') {
+    if (currentClient && currentClient.run_module_enabled !== true) {
+      const { error } = await sb.from('clients').update({ run_module_enabled: true }).eq('id', cid);
+      if (!error) currentClient.run_module_enabled = true;
+    }
+    rnPush(currentClient?.username, 'Tu plan de running está listo', 'Entrá a Tu Plan › Run para ver tu semana.');
+    showToast('Plan activado', 'success');
+    rnCloseSheet();
+  } else {
+    showToast(status === 'draft' ? 'Borrador guardado' : 'Cambios guardados', 'success');
+    await rnPlanLoad(); rnPlanRender();
+  }
+  rnRenderCoachSection();
+}
+
+// Pausar y reanudar
+async function rnPlanPause() {
+  if (!(await rnUpdateProfile({ plan_status: 'paused', paused_at: new Date().toISOString() }))) return;
+  showToast('Plan en pausa'); rnRenderCoachSection(); if (rnPlan && rnPlan.weeks) rnPlanRender();
+}
+async function rnPlanResume() {
+  const p = rnProfile;
+  const from = p.paused_at ? new Date(p.paused_at).toLocaleDateString('en-CA', { timeZone: 'America/Costa_Rica' }) : todayCR();
+  const days = Math.max(0, Math.round((Date.parse(todayCR() + 'T12:00:00Z') - Date.parse(from + 'T12:00:00Z')) / 86400000));
+  const start = p.start_date ? tcAddDays(String(p.start_date).slice(0, 10), days) : todayCR();
+  const week = rnCurrentWeek({ ...p, start_date: start });
+  if (!(await rnUpdateProfile({ plan_status: 'active', paused_at: null, start_date: start, resume_reduced_week: week || 1 }))) return;
+  showToast(`Plan reanudado. La semana ${week || 1} va con tope en reducida.`); rnRenderCoachSection(); if (rnPlan && rnPlan.weeks) rnPlanRender();
+}
+// Cambiar nivel: solo cambia el nivel; si querés regenerar, el JSON reemplaza solo las semanas futuras
+function rnPlanLevelSheet() {
+  rnOpenSheet('');
+  rnSheetBody(`${rnSheetHead('Plan activo', 'Cambiar nivel')}
+    <div class="rn-chs">${[1, 2, 3].map(n => rnChip('Nivel ' + n, rnProfile.level === n, `rnPlanSetLevel(${n})`)).join('')}</div>
+    <div class="rn-sm rn-mu" style="margin-top:10px;">Cambiar el nivel no toca lo ya hecho. Para regenerar el plan, pegá el JSON del nuevo nivel: se reemplazan solo las semanas futuras.</div>
+    <button type="button" class="rn-bt is-l" onclick="rnPlanOpenEditor().then(()=>rnJsonOpen('futuro'))">Pegar JSON del nuevo nivel</button>`);
+}
+async function rnPlanSetLevel(n) { if (await rnUpdateProfile({ level: n })) { showToast('Nivel ' + n); rnPlanLevelSheet(); rnRenderCoachSection(); } }
+
+// Pantalla 18: pegar JSON. scope: 'todo' (todas las pendientes) | 'futuro' (semanas después de la actual)
+function rnJsonOpen(scope) {
+  if (!rnPlan || !rnPlan.weeks) return;
+  rnPlan.json = { text: rnPlan.json?.text || '', res: null, scope: scope || 'todo' };
+  rnJsonRender();
+}
+function rnJsonRender() {
+  const j = rnPlan.json, r = j.res, name = rnEsc((currentClient?.name || '').split(' ')[0]);
+  const box = r ? (r.errors.length
+    ? `<div class="rn-cd is-red"><div style="font-weight:700;color:#8F2719;">Hay errores</div>${r.errors.map(e => `<div class="rn-sm" style="margin-top:4px;">${rnEsc(e)}</div>`).join('')}</div>`
+    : `<div class="rn-cd" style="background:#E6F2EA;border-color:#BFDCC8;"><div style="font-weight:700;color:#17602F;">Plan válido · ${r.plan.weeks.length} semanas · ${r.count} sesiones</div></div>`) +
+    r.warnings.map(w => `<div class="rn-row" style="gap:8px;align-items:flex-start;margin-bottom:6px;"><span class="rn-pill is-o">Aviso</span><div class="rn-sm">${rnEsc(w)}</div></div>`).join('') : '';
+  rnSheetBody(`${rnSheetHead(`${name} · pegar JSON`, 'Pegar JSON', 'rnPlanRender()')}
+    <textarea id="rn-json" class="rn-in" rows="10" style="font-family:'DM Mono',monospace;font-size:13px;min-height:200px;" placeholder='{ "nivel": 2, "semanas": [ ... ] }' aria-label="JSON del plan">${rnEsc(j.text)}</textarea>
+    <button type="button" class="rn-bt is-l" onclick="rnJsonValidate()">Validar</button>
+    ${box}
+    <div class="rn-row" style="gap:8px;align-items:flex-start;margin:8px 0;"><span class="rn-pill is-n">Info</span><div class="rn-sm">Reducida (70%) y mínima (50%) se calculan solas. Solo agregá «reducida» o «minima» en una sesión si querés otro valor.</div></div>
+    <button type="button" class="rn-bt is-g" ${r && !r.errors.length ? '' : 'disabled'} onclick="rnJsonLoad()">Cargar al editor para revisar</button>
+    <button type="button" class="rn-bt is-l" onclick="rnCopyText(RN_JSON_EXAMPLE)">Copiar el formato de ejemplo</button>`);
+}
+function rnJsonValidate() {
+  const t = document.getElementById('rn-json'); rnPlan.json.text = t ? t.value : '';
+  rnPlan.json.res = rnParsePlanJson(rnPlan.json.text, rnRoutines);
+  rnJsonRender();
+}
+// Valida y normaliza el JSON (puro). Errores bloquean; avisos no.
+function rnParsePlanJson(text, routines) {
+  const errors = [], warnings = [];
+  let data;
+  try { data = JSON.parse(text); } catch (e) { return { errors: ['El JSON no es válido: ' + e.message], warnings, plan: null, count: 0 }; }
+  if (!data || !Array.isArray(data.semanas) || !data.semanas.length) return { errors: ['Falta la lista "semanas".'], warnings, plan: null, count: 0 };
+  const routineByName = n => (routines || []).find(r => r.name.toLowerCase() === String(n).toLowerCase());
+  const weeks = []; let count = 0, prev = null;
+  data.semanas.forEach((w, wi) => {
+    const n = Number(w.semana);
+    if (!Number.isInteger(n) || n < 1) { errors.push(`Semana en la posición ${wi + 1}: falta "semana" o no es un número.`); return; }
+    if (prev != null && n !== prev + 1) errors.push(`Las semanas no son consecutivas: después de la ${prev} viene la ${n}.`);
+    prev = n;
+    let type = String(w.etiqueta || 'normal').toLowerCase();
+    if (RN_WEEK_ALIASES[type]) type = RN_WEEK_ALIASES[type];
+    if (!RN_WEEK_TYPES.some(x => x[0] === type)) { warnings.push(`Semana ${n}: la etiqueta «${w.etiqueta}» no existe. Se usa «normal».`); type = 'normal'; }
+    const ss = Array.isArray(w.sesiones) ? w.sesiones : [];
+    if (ss.length > 7) warnings.push(`Semana ${n}: tiene ${ss.length} sesiones (más de 7).`);
+    const sessions = [];
+    ss.forEach((s, si) => {
+      const where = `Semana ${n}, sesión ${si + 1}`;
+      let tipo = String(s.tipo || '').toLowerCase().trim();
+      if (!RN_TYPE_NAME[tipo]) {
+        if (RN_TYPE_ALIASES[tipo]) { warnings.push(`${where}: el tipo «${s.tipo}» no existe. Se cambia a «${RN_TYPE_ALIASES[tipo]}».`); tipo = RN_TYPE_ALIASES[tipo]; }
+        else { errors.push(`${where}: el tipo «${s.tipo || ''}» no existe.`); return; }
+      }
+      const min = Number(s.min);
+      if (!(min >= 5 && min <= 180)) { errors.push(`${where}: «min» tiene que estar entre 5 y 180.`); return; }
+      const ov = {};
+      ['reducida', 'minima'].forEach(v => { if (s[v] && typeof s[v] === 'object') { const o = {}; ['min', 'km', 'esfuerzo', 'notas', 'tipo'].forEach(k => { if (s[v][k] != null) o[k] = s[v][k]; }); if (Object.keys(o).length) ov[v] = o; } });
+      let pre = null, post = null;
+      if (s.pre) { const r = routineByName(s.pre); if (r && r.block === 'pre') pre = r.id; else warnings.push(`${where}: el bloque pre «${s.pre}» no existe. Se ignora.`); }
+      if (s.post) { const r = routineByName(s.post); if (r && r.block === 'post') post = r.id; else warnings.push(`${where}: el bloque post «${s.post}» no existe. Se ignora.`); }
+      const km = s.km != null ? parseDecimal(s.km) : null;
+      sessions.push({ session_type: tipo, minutes: Math.round(min), distance_km: km, effort: s.esfuerzo != null ? String(s.esfuerzo) : '', notes: s.notas || '', pre_routine_id: pre, post_routine_id: post, overrides: ov, status: 'planeada' });
+      count++;
+    });
+    weeks.push({ n, type, sessions });
+  });
+  const nivel = Number(data.nivel);
+  return { errors, warnings, plan: { nivel: [1, 2, 3].includes(nivel) ? nivel : null, weeks }, count };
+}
+// Carga al editor como borrador (nada se activa). En un plan activo reemplaza solo lo pendiente.
+function rnJsonLoad() {
+  const r = rnPlan.json.res; if (!r || r.errors.length) return;
+  const p = rnProfile, active = p.plan_status === 'active' || p.plan_status === 'paused';
+  const cur = rnCurrentWeek(p), onlyFuture = rnPlan.json.scope === 'futuro';
+  const affected = w => !onlyFuture || w.n > cur;
+  const maxN = Math.max(rnPlan.weeks.length, ...r.plan.weeks.map(w => w.n));
+  while (rnPlan.weeks.length < maxN) rnPlan.weeks.push({ n: rnPlan.weeks.length + 1, type: 'normal', sessions: [] });
+  const pending = rnPlan.weeks.filter(affected).reduce((a, w) => a + w.sessions.filter(s => s.status !== 'hecha').length, 0);
+  if (active && !confirm(`Se reemplazan ${pending} sesiones pendientes${onlyFuture ? ' de las semanas futuras' : ''}; las hechas no se tocan. ¿Seguimos?`)) return;
+  const skipped = [];
+  rnPlan.weeks.forEach(w => {
+    if (!affected(w)) return;
+    const src = r.plan.weeks.find(x => x.n === w.n);
+    const done = w.sessions.filter(s => s.status === 'hecha');
+    if (done.length && done.length === w.sessions.length && src) { skipped.push(w.n); return; } // semana ya hecha completa: no cambia
+    if (!src && !active) return;
+    w.sessions.filter(s => s.status !== 'hecha').forEach(rnRemovePending);
+    w.sessions = done.concat(src ? src.sessions.map(s => JSON.parse(JSON.stringify(s))) : []);
+    if (src) w.type = src.type;
+  });
+  if (r.plan.nivel && !p.level) rnProfile.level = r.plan.nivel;
+  rnPlan.json = null; rnPlan.dirty = true; rnPlan.sel = Math.max(0, (onlyFuture ? cur : 1) - 1);
+  if (skipped.length) showToast(`Semanas ya hechas sin cambios: ${skipped.join(', ')}`);
+  else showToast('Plan cargado en el editor. Revisalo y guardá.');
+  rnPlanRender();
+}
+function rnCopyText(t) {
+  const fallback = () => { const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) {} ta.remove(); showToast(ok ? 'Formato copiado' : 'No se pudo copiar: seleccionalo a mano'); };
+  try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(() => showToast('Formato copiado', 'success'), fallback); else fallback(); } catch (e) { fallback(); }
+}
+// ---------- R4: cliente (pantallas 1, 4, 7, 8, 9, 10) ----------
+// Todas las consultas filtran por el id del cliente (RLS desactivado).
+const RN_FREE_TYPES = [['facil', 'Fácil'], ['larga', 'Larga'], ['intervalos', 'Intervalos'], ['otra', 'Otra']];
+const RN_TERRAINS = [['calle', 'Calle'], ['pista', 'Pista'], ['trail', 'Trail'], ['cinta', 'Cinta']];
+const RN_RUN_NAME = { ...RN_TYPE_NAME, larga: 'Larga', intervalos: 'Intervalos', otra: 'Otra' };
+let rnClient = null; // { tab, planned, runs, checkin, legHeavy, ... }
+
+function rnMinToClock(min) {
+  const v = Number(min); if (!Number.isFinite(v) || v <= 0) return '—';
+  const tot = Math.round(v * 60), h = Math.floor(tot / 3600), m = Math.floor((tot % 3600) / 60), s = tot % 60;
+  return h ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
+}
+// "34:10" → 34,17 min · "1:02:30" → 62,5 · "34" o "34,5" → minutos
+function rnParseDuration(v) {
+  const t = String(v || '').trim(); if (!t) return null;
+  if (t.includes(':')) { const p = t.split(':').map(x => parseInt(x, 10)); if (p.some(n => !Number.isFinite(n))) return null; const sec = p.length === 3 ? p[0] * 3600 + p[1] * 60 + p[2] : p[0] * 60 + p[1]; return Math.round(sec / 60 * 100) / 100; }
+  return parseDecimal(t);
+}
+function rnWeekMonday(d) { const dow = (new Date(d + 'T12:00:00Z').getUTCDay() + 6) % 7; return tcAddDays(d, -dow); }
+function rnVerKey() { return `rn_ver_${currentClient?.id}_${todayCR()}`; }
+function rnGetManualVersion() { try { return localStorage.getItem(rnVerKey()) || null; } catch (e) { return null; } }
+function rnSetManualVersion(v) { try { if (v) localStorage.setItem(rnVerKey(), v); else localStorage.removeItem(rnVerKey()); } catch (e) {} }
+
+async function rnLoadClientData() {
+  const cid = currentClient.id;
+  const since = tcAddDays(todayCR(), -180);
+  const [pl, rs, rt] = await Promise.all([
+    sb.from('run_planned_sessions').select('*').eq('client_id', cid).order('week_number', { ascending: true }).order('position', { ascending: true }),
+    sb.from('run_sessions').select('*').eq('client_id', cid).gte('session_date', since).order('session_date', { ascending: false }).order('created_at', { ascending: false }),
+    sb.from('run_routines').select('*')
+  ]);
+  rnRoutines = rt.data || [];
+  rnClient = { tab: rnClient?.tab || 'semana', planned: pl.data || [], runs: rs.data || [], checkin: rnClient?.checkin || null, legHeavy: rnClient?.legHeavy || false, legKnown: rnClient?.legKnown || false, exById: {} };
+  const exIds = [...new Set(rnRoutines.flatMap(r => (r.exercise_ids || []).map(String)))];
+  if (exIds.length) { const { data: exs } = await sb.from('run_exercises').select('*').in('id', exIds); (exs || []).forEach(e => { rnClient.exById[String(e.id)] = e; }); }
+  if (typeof rnLoadCheckinCtx === 'function') await rnLoadCheckinCtx();
+}
+function rnHasPlan() { return rnProfile && rnProfile.mode === 'plan' && (rnProfile.plan_status === 'active' || rnProfile.plan_status === 'paused'); }
+function rnSuggested() {
+  const p = rnProfile, wk = rnCurrentWeek(p);
+  const rk = rnClient.checkin && rnClient.checkin.recommendation && rnClient.checkin.recommendation.kind;
+  if (rk === 'rest' || rk === 'no_run') return { version: null, rest: true, reasons: [] }; // el módulo se pausa ese día
+  const planRuns = rnClient.runs.filter(r => r.kind === 'plan' && r.version_used);
+  const lastTwoReduced = planRuns.length >= 2 && planRuns.slice(0, 2).every(r => r.version_used === 'reducida');
+  return runPickVersion(rnClient.checkin, { manual: rnGetManualVersion(), cantMore: rnClient.cantMore, lastTwoReduced, legHeavy: rnClient.legHeavy, resumeCap: p.resume_reduced_week && p.resume_reduced_week === wk });
+}
+
+function rnRenderClient() {
+  const box = document.getElementById('c-run-root');
+  if (!box) return;
+  if (!rnProfile) { box.innerHTML = `<div class="rn"><div class="rn-ey">Run</div><h1 class="rn-h1">Run</h1><div class="rn-empty">Tu coach está preparando tu módulo de running.</div></div>`; return; }
+  if (!rnClient) { box.innerHTML = '<div class="spinner"></div>'; rnLoadClientData().then(rnRenderClient); return; }
+  const plan = rnHasPlan(), t = rnClient.tab;
+  const tabs = [['semana', plan ? 'Mi semana' : 'Mis corridas'], ['progreso', 'Mi progreso'], ['zapatos', 'Zapatos']];
+  const head = `<div class="rn-chs" style="margin-bottom:12px;">${tabs.map(([k, l]) => rnChip(l, t === k, `rnClient.tab='${k}';rnRenderClient()`)).join('')}</div>`;
+  let body = '';
+  if (t === 'zapatos') body = rnShoesHtml();
+  else if (t === 'progreso') body = rnDashHtml(plan);
+  else body = plan ? rnWeekHtml() : rnFollowHtml();
+  box.innerHTML = `<div class="rn">${head}${body}</div>`;
+}
+function rnCheckinCard() { return typeof rnCheckinCardHtml === 'function' ? rnCheckinCardHtml() : ''; }
+
+// Pantalla 1: Mi semana
+function rnWeekHtml() {
+  const p = rnProfile, wk = rnCurrentWeek(p), sug = rnSuggested();
+  const ey = `<div class="rn-ey">Run · Nivel ${p.level || '—'}${wk ? ` · Semana ${wk} de ${p.weeks_total}` : ''}</div>`;
+  if (!wk) return `${ey}<h1 class="rn-h1">Mi semana</h1><div class="rn-cd is-warm"><div style="font-weight:700;">Tu plan empieza el ${rnDayLabel(String(p.start_date).slice(0, 10))}</div><div class="rn-sm" style="margin-top:4px;">Mientras tanto podés registrar corridas libres.</div></div>${rnCheckinCard()}<button type="button" class="rn-bt is-g" onclick="rnRegOpen()">Registrar corrida</button>`;
+  const paused = p.plan_status === 'paused';
+  const sess = rnClient.planned.filter(s => s.week_number === wk);
+  const done = sess.filter(s => s.status === 'hecha').length;
+  const pct = sess.length ? Math.round(done / sess.length * 100) : 0;
+  const manual = rnGetManualVersion(), view = sug.rest ? null : sug.version;
+  const verChips = [['completa', 'Completa'], ['reducida', 'Reducida'], ['minima', 'Mínima']].map(([k, l]) => rnChip(l, view === k, `rnPickVer('${k}')`, sug.rest ? ' disabled' : '')).join('');
+  const why = sug.rest ? '' : (manual ? 'La elegiste vos. Podés cambiarla cuando quieras.' : `Sugerida: ${sug.reasons.join(' · ') || 'como está planeada'}.`);
+  const cards = sess.map(s => {
+    const v = runApplyVersion(s, view || 'completa'), isDone = s.status === 'hecha';
+    const run = isDone ? rnClient.runs.find(r => r.id === s.run_session_id) : null;
+    const km = v.distance_km != null && v.distance_km !== '' ? ` · ${rnKm(v.distance_km)} km` : '';
+    const defBlock = b => rnRoutines.find(r => r.session_type === s.session_type && r.block === b && r.is_default);
+    const pre = s.pre_routine_id ? rnRoutines.find(r => r.id === s.pre_routine_id) : defBlock('pre'), post = s.post_routine_id ? rnRoutines.find(r => r.id === s.post_routine_id) : defBlock('post');
+    const blocks = typeof rnBlocksHtml === 'function' ? rnBlocksHtml(pre, post) : '';
+    const title = v.postponeTest ? 'Prueba 5K' : `${RN_TYPE_NAME[v.session_type] || v.session_type}`;
+    const sub = v.postponeTest ? v.message : `${v.minutes} min${km}${v.effort ? ' · esfuerzo ' + rnEsc(v.effort) : ''}${v.notes ? ' · ' + rnEsc(v.notes) : ''}`;
+    return `<div class="rn-cd"><div class="rn-row rn-sp" style="align-items:flex-start;"><div class="rn-fx"><div style="font-weight:700;font-size:17px;">${title}</div><div class="rn-sm rn-mu">${sub}</div></div>
+      ${isDone ? `<span class="rn-pill is-g">${icon('check', 14)}Hecha</span>` : '<span class="rn-pill is-n">Pendiente</span>'}</div>
+      ${run ? `<div class="rn-m rn-mu rn-xs" style="margin-top:8px;">${run.distance_km != null ? rnKm(run.distance_km) + ' km · ' : ''}${rnDayLabel(run.session_date)}${rnShoeName(run.shoe_id) ? ' · ' + rnEsc(rnShoeName(run.shoe_id)) : ''}</div>` : ''}
+      ${!isDone ? blocks : ''}
+      ${!isDone && !paused && !sug.rest ? `<button type="button" class="rn-bt is-o" style="min-height:44px;" onclick="rnRegOpen('plan','${s.id}')">Registrar corrida</button>` : ''}</div>`;
+  }).join('') || '<div class="rn-empty">Tu coach todavía no cargó sesiones para esta semana.</div>';
+  return `${ey}<h1 class="rn-h1">Mi semana</h1>
+    ${paused ? '<div class="rn-cd is-warm"><div style="font-weight:700;">Tu plan está en pausa</div><div class="rn-sm" style="margin-top:4px;">Podés registrar corridas libres mientras tanto.</div></div>' : ''}
+    ${sug.rest ? '' : `<div class="rn-chs">${verChips}</div><div class="rn-sm rn-mu" style="margin:6px 0 4px;">${why}</div>
+      <button type="button" class="rn-ch" style="font-size:13px;margin-bottom:10px;" onclick="rnCantMore()">Hoy no puedo con más</button>`}
+    <div class="rn-row rn-sp rn-sm" style="margin:6px 0;"><span class="rn-m">${done} de ${sess.length} sesiones</span><span class="rn-mu">Adherencia de la semana</span></div>
+    <div class="rn-bar" style="margin-bottom:12px;"><div style="width:${pct}%;"></div></div>
+    ${rnCheckinCard()}
+    ${cards}
+    <button type="button" class="rn-bt is-l" onclick="rnRegOpen('libre')">Registrar una corrida libre</button>`;
+}
+function rnPickVer(v) { rnClient.cantMore = false; rnSetManualVersion(v); rnRenderClient(); }
+function rnCantMore() { rnClient.cantMore = true; rnSetManualVersion(null); rnRenderClient(); showToast('Hoy va la versión mínima'); }
+function rnShoeName(id) { const z = rnShoes.find(x => x.id === id); return z ? z.name : ''; }
+
+// Pantalla 8: modo seguimiento (o plan completo sin plan activo)
+function rnFollowHtml() {
+  const mon = rnWeekMonday(todayCR());
+  const wkRuns = rnClient.runs.filter(r => r.session_date >= mon);
+  const km = wkRuns.reduce((a, r) => a + (Number(r.distance_km) || 0), 0);
+  const list = rnClient.runs.slice(0, 15).map(rnRunRowHtml).join('') || '<div class="rn-empty">Todavía no registraste corridas.</div>';
+  const planPending = rnProfile.mode === 'plan';
+  return `<div class="rn-ey">Run · ${planPending ? 'Plan en preparación' : 'Seguimiento'}</div><h1 class="rn-h1">Mis corridas</h1>
+    <div class="rn-cd is-warm"><div style="font-weight:700;font-size:15px;color:#A8410F;">${planPending ? 'Tu coach está armando tu plan' : 'Sin plan asignado'}</div><div class="rn-sm" style="margin-top:4px;">Registrá tus corridas y tu coach las ve para darte seguimiento.</div></div>
+    <div class="rn-row" style="gap:8px;margin-bottom:10px;"><div class="rn-tl"><div class="n">${rnKm(km)}</div><div class="t">km esta semana</div></div><div class="rn-tl"><div class="n">${wkRuns.length}</div><div class="t">${wkRuns.length === 1 ? 'corrida' : 'corridas'}</div></div></div>
+    ${rnCheckinCard()}
+    <h2 class="rn-h2">Últimas corridas</h2>${list}
+    <button type="button" class="rn-bt is-g" onclick="rnRegOpen('libre')">Registrar corrida</button>`;
+}
+function rnRunRowHtml(r) {
+  const shoe = rnShoeName(r.shoe_id);
+  return `<div class="rn-cd rn-row rn-sp"><div class="rn-fx"><div style="font-weight:700;font-size:15px;">${rnDayLabel(r.session_date)}${r.distance_km != null ? ' · ' + rnKm(r.distance_km) + ' km' : ''}</div>
+    <div class="rn-mu rn-m rn-xs" style="margin-top:2px;">${rnMinToClock(r.duration_min)}${r.effort ? ' · esfuerzo ' + r.effort : ''}${shoe ? ' · ' + rnEsc(shoe) : ''}</div></div>
+    <span class="rn-pill ${r.kind === 'plan' ? 'is-g' : 'is-n'}">${r.kind === 'plan' ? 'Plan' : 'Libre'}</span></div>`;
+}
+
+// Pantallas 4 y 9: registrar corrida
+let rnReg = null;
+function rnRegOpen(kind, plannedId) {
+  if (!rnClient) return;
+  const plan = rnHasPlan() && rnProfile.plan_status === 'active';
+  const pend = plan ? rnClient.planned.filter(s => s.status !== 'hecha' && s.week_number <= rnCurrentWeek(rnProfile)) : [];
+  const k = plan && pend.length && kind !== 'libre' ? 'plan' : 'libre';
+  const lastShoe = (rnClient.runs.find(r => r.shoe_id && rnShoes.some(z => z.id === r.shoe_id && !z.retired_at)) || {}).shoe_id || (rnShoes.find(z => !z.retired_at) || {}).id || null;
+  const sug = rnSuggested();
+  rnOpenSheet('', () => { rnReg = null; });
+  rnReg = { kind: k, canPlan: plan && pend.length > 0, pend, planned: plannedId || (pend[0] && pend[0].id) || null, version: sug.version || 'completa', date: todayCR(), type: 'facil', effort: null, terrain: 'calle', shoe: lastShoe, more: false, newShoe: false, f: {} };
+  if (kind === 'plan' && !plannedId && pend.length) rnReg.planned = pend[0].id;
+  rnRegRender();
+}
+function rnRegRead() {
+  if (!rnReg) return;
+  document.querySelectorAll('#rn-ov [data-reg]').forEach(el => { rnReg.f[el.dataset.reg] = el.value; });
+}
+function rnRegSet(k, v) { rnRegRead(); rnReg[k] = v; rnRegRender(); }
+function rnRegRender() {
+  const r = rnReg, f = r.f;
+  const val = k => rnEsc(f[k] != null ? f[k] : '');
+  const kindChips = `<div class="rn-chs">${rnChip('De mi plan', r.kind === 'plan', "rnRegSet('kind','plan')", r.canPlan ? '' : ' disabled')}${rnChip('Libre', r.kind === 'libre', "rnRegSet('kind','libre')")}</div>`;
+  const ps = r.pend.find(s => s.id === r.planned);
+  const planPart = r.kind === 'plan' ? `
+    <div style="margin-top:10px;"><label class="rn-fl" for="rn-reg-pl">Sesión planeada</label><select id="rn-reg-pl" class="rn-in is-txt" onchange="rnRegSet('planned',this.value)">${r.pend.map(s => `<option value="${s.id}"${s.id === r.planned ? ' selected' : ''}>${RN_TYPE_NAME[s.session_type]} · ${s.minutes} min · sem. ${s.week_number}</option>`).join('')}</select></div>
+    <div class="rn-cd" style="margin-top:10px;"><div class="rn-lb">Versión que hiciste</div><div class="rn-chs">${[['completa', 'Completa'], ['reducida', 'Reducida'], ['minima', 'Mínima']].map(([k, l]) => rnChip(l, r.version === k, `rnRegSet('version','${k}')`)).join('')}</div>
+      ${ps && ps.session_type === 'prueba_5k' && r.version !== 'completa' ? `<div class="rn-sm" style="margin-top:8px;color:#A8410F;">Hoy no es día para la prueba: hacé ${RUN_TEST_FALLBACK_MIN} min fácil y la repetimos otro día. La prueba sigue pendiente.</div>` : ''}</div>`
+    : `<div class="rn-xs rn-mu" style="margin-top:6px;">Una corrida que no estaba programada. Tu coach la ve igual.</div>
+    <div class="rn-cd" style="margin-top:10px;"><div class="rn-lb">Tipo</div><div class="rn-chs">${RN_FREE_TYPES.map(([k, l]) => rnChip(l, r.type === k, `rnRegSet('type','${k}')`)).join('')}</div></div>`;
+  const effort = n => rnChip(String(n), r.effort === n, `rnRegSet('effort',${n})`);
+  const shoes = rnShoes.filter(z => !z.retired_at);
+  const shoeChips = shoes.map(z => `<button type="button" class="rn-ch${r.shoe === z.id ? ' is-on' : ''}" aria-pressed="${r.shoe === z.id}" style="min-height:48px;flex-direction:column;gap:0;border-radius:14px;align-items:flex-start;" onclick="rnRegSet('shoe',${r.shoe === z.id ? 'null' : `'${z.id}'`})"><span>${rnEsc(z.name)}</span><span class="rn-m" style="font-size:11px;font-weight:500;">${rnKm(z.total_km, 0)} km</span></button>`).join('');
+  const newShoe = r.newShoe ? `<div class="rn-row" style="gap:6px;margin-top:8px;"><input class="rn-in is-txt" data-reg="ns_name" value="${val('ns_name')}" placeholder="Nombre" aria-label="Nombre del zapato"><input class="rn-in" style="max-width:110px;" data-reg="ns_km" inputmode="decimal" value="${val('ns_km')}" placeholder="km" aria-label="Km iniciales"><button type="button" class="rn-ch" onclick="rnRegAddShoe()">Agregar</button></div>` : '';
+  rnSheetBody(`${rnSheetHead('Run · registro manual', 'Registrar corrida')}
+    ${kindChips}${planPart}
+    <div class="rn-row" style="gap:8px;margin-top:10px;"><div class="rn-fx"><label class="rn-fl" for="rn-reg-date">Fecha</label><input id="rn-reg-date" class="rn-in" type="date" max="${todayCR()}" data-reg="date" value="${rnEsc(f.date || r.date)}"></div></div>
+    <div class="rn-row" style="gap:8px;margin-top:10px;"><div class="rn-fx"><label class="rn-fl" for="rn-reg-km">Distancia (km)</label><input id="rn-reg-km" class="rn-in" type="text" inputmode="decimal" data-reg="km" value="${val('km')}" placeholder="5,2"></div>
+      <div class="rn-fx"><label class="rn-fl" for="rn-reg-dur">Duración</label><input id="rn-reg-dur" class="rn-in" type="text" inputmode="numeric" data-reg="dur" value="${val('dur')}" placeholder="34:10"></div></div>
+    <div class="rn-cd" style="margin-top:10px;"><div class="rn-lb">Esfuerzo percibido <span class="rn-mu" style="font-weight:500;">· 1 muy suave, 10 máximo</span></div>
+      <div class="rn-chs" style="margin-bottom:6px;">${[1, 2, 3, 4, 5].map(effort).join('')}</div><div class="rn-chs">${[6, 7, 8, 9, 10].map(effort).join('')}</div></div>
+    <div class="rn-cd"><div class="rn-lb">¿Con qué zapatos corriste?</div><div class="rn-row rn-wrap" style="gap:6px;">${shoeChips}<button type="button" class="rn-ch" style="min-height:48px;border-radius:14px;color:#C24E18;" onclick="rnRegSet('newShoe',true)">+ Nuevo</button></div>${newShoe}</div>
+    <div class="rn-cd"><div class="rn-lb">Terreno</div><div class="rn-chs">${RN_TERRAINS.map(([k, l]) => rnChip(l, r.terrain === k, `rnRegSet('terrain','${k}')`)).join('')}</div></div>
+    ${r.more ? `<div class="rn-row" style="gap:8px;margin-bottom:10px;"><div class="rn-fx"><label class="rn-fl" for="rn-reg-hr">FC media</label><input id="rn-reg-hr" class="rn-in" inputmode="numeric" data-reg="hr" value="${val('hr')}"></div><div class="rn-fx"><label class="rn-fl" for="rn-reg-elev">Desnivel (m)</label><input id="rn-reg-elev" class="rn-in" inputmode="numeric" data-reg="elev" value="${val('elev')}"></div></div>` : `<button type="button" class="rn-ch" style="font-size:13px;margin-bottom:10px;" onclick="rnRegSet('more',true)">+ FC media y desnivel (opcional)</button>`}
+    <div><label class="rn-fl" for="rn-reg-notes">Notas (opcional)</label><input id="rn-reg-notes" class="rn-in is-txt" type="text" data-reg="notes" value="${val('notes')}"></div>
+    <button type="button" class="rn-bt is-g" onclick="rnRegSave()">Guardar corrida</button>`);
+}
+async function rnRegAddShoe() {
+  rnRegRead();
+  const name = (rnReg.f.ns_name || '').trim();
+  if (!name) { showToast('Poné el nombre del zapato'); return; }
+  const z = await rnShoeInsert({ name, initial_km: parseDecimal(rnReg.f.ns_km) || 0 });
+  if (!z) return;
+  rnReg.shoe = z.id; rnReg.newShoe = false; rnReg.f.ns_name = ''; rnReg.f.ns_km = '';
+  rnRegRender();
+}
+async function rnRegSave() {
+  rnRegRead();
+  const r = rnReg, f = r.f, cid = currentClient.id;
+  const km = parseDecimal(f.km), dur = rnParseDuration(f.dur), date = f.date || todayCR();
+  if (km == null && dur == null) { showToast('Poné la distancia o la duración'); return; }
+  if (km != null && (km <= 0 || km > 100)) { showToast('Revisá la distancia'); return; }
+  if (date > todayCR()) { showToast('La fecha no puede ser futura'); return; }
+  const ps = r.kind === 'plan' ? r.pend.find(s => s.id === r.planned) : null;
+  if (r.kind === 'plan' && !ps) { showToast('Elegí la sesión del plan'); return; }
+  const row = { client_id: cid, kind: r.kind, planned_session_id: ps ? ps.id : null, version_used: ps ? r.version : null, session_date: date,
+    session_type: ps ? ps.session_type : r.type, distance_km: km, duration_min: dur, effort: r.effort, avg_hr: parseInt(f.hr, 10) || null, elevation: parseInt(f.elev, 10) || null,
+    terrain: r.terrain, shoe_id: r.shoe || null, notes: (f.notes || '').trim() || null, source: 'manual' };
+  const { data: saved, error } = await sb.from('run_sessions').insert([row]).select().maybeSingle();
+  if (error) { showToast('No se pudo guardar: ' + error.message, 'error'); return; }
+  // Prueba 5K en reducida o mínima: la sesión planeada NO se marca como hecha
+  const postpone = ps && ps.session_type === 'prueba_5k' && r.version !== 'completa';
+  if (ps && !postpone && saved) {
+    const { error: e2 } = await sb.from('run_planned_sessions').update({ status: 'hecha', run_session_id: saved.id, updated_at: new Date().toISOString() }).eq('id', ps.id).eq('client_id', cid);
+    if (e2) showToast('La corrida se guardó, pero no se pudo marcar la sesión: ' + e2.message, 'error');
+  }
+  rnReg = null;
+  rnShoes = await rnLoadShoes(cid);
+  await rnLoadClientData();
+  if (typeof rnAfterRun === 'function') rnAfterRun(saved || row, ps); else { rnCloseSheet(); showToast('Corrida guardada', 'success'); }
+  rnRenderClient();
+}
+
+// Pantalla 10: mis zapatos (los maneja el cliente; sin umbrales ni avisos)
+function rnShoesHtml() {
+  const act = rnShoes.filter(z => !z.retired_at), ret = rnShoes.filter(z => z.retired_at);
+  const card = z => `<div class="rn-cd${z.retired_at ? ' is-ghost' : ''}"><div class="rn-row rn-sp"><div class="rn-fx"><div style="font-weight:700;font-size:16px;${z.retired_at ? 'color:#5E564B;' : ''}">${rnEsc(z.name)}</div>
+      <div class="rn-xs rn-mu" style="margin-top:2px;">${z.brand ? rnEsc(z.brand) + ' · ' : ''}${z.retired_at ? 'Retirado el ' + rnDayLabel(rnCRDate(z.retired_at)) : `Inició con ${rnKm(z.initial_km, 0)} km${z.start_date ? ' · desde ' + rnDayLabel(String(z.start_date).slice(0, 10)) : ''}`}</div></div>
+      <span class="rn-m" style="font-size:19px;${z.retired_at ? 'color:#5E564B;' : ''}">${rnKm(z.total_km)} km</span></div>
+      ${z.retired_at ? '' : `<div class="rn-row" style="gap:6px;margin-top:10px;"><button type="button" class="rn-ch" style="font-size:13px;" onclick="rnShoeForm('${z.id}')">Editar</button><button type="button" class="rn-ch" style="font-size:13px;" onclick="rnShoeRetire('${z.id}')">Retirar</button></div>`}</div>`;
+  return `<div class="rn-ey">Run · Zapatos</div><h1 class="rn-h1">Mis zapatos</h1>
+    <div class="rn-sm rn-mu" style="margin-bottom:10px;">Agregalos acá y elegilos con un toque al registrar cada corrida. Los km se suman solos.</div>
+    ${act.map(card).join('') || '<div class="rn-empty">Todavía no agregaste zapatos.</div>'}
+    ${ret.length ? `<div class="rn-ey" style="margin:12px 0 8px;">Retirados</div>${ret.map(card).join('')}` : ''}
+    <button type="button" class="rn-bt is-g" onclick="rnShoeForm()">+ Agregar zapato</button>`;
+}
+function rnShoeForm(id) {
+  const z = id ? rnShoes.find(x => x.id === id) : null;
+  rnOpenSheet(`<div class="rn-sheet-head"><h2 class="rn-h2" style="margin:0;">${z ? 'Editar zapato' : 'Agregar zapato'}</h2><button type="button" class="rn-x" aria-label="Cerrar" onclick="rnCloseSheet()">${icon('x', 20)}</button></div>
+    <div style="margin:10px 0;"><label class="rn-fl" for="rn-z-name">Nombre</label><input id="rn-z-name" class="rn-in is-txt" value="${rnEsc(z?.name || '')}"></div>
+    <div class="rn-row" style="gap:8px;margin-bottom:10px;"><div class="rn-fx"><label class="rn-fl" for="rn-z-brand">Marca</label><input id="rn-z-brand" class="rn-in is-txt" value="${rnEsc(z?.brand || '')}"></div>
+      <div class="rn-fx"><label class="rn-fl" for="rn-z-km">Km iniciales</label><input id="rn-z-km" class="rn-in" inputmode="decimal" value="${z ? String(z.initial_km ?? 0).replace('.', ',') : '0'}"></div></div>
+    <div style="margin-bottom:6px;"><label class="rn-fl" for="rn-z-date">Desde</label><input id="rn-z-date" class="rn-in" type="date" value="${z?.start_date ? String(z.start_date).slice(0, 10) : todayCR()}"></div>
+    <div class="rn-xs rn-mu">Si ya lo usaste antes, poné los km que lleva. Tu coach también lo ve.</div>
+    <button type="button" class="rn-bt is-g" onclick="rnShoeSave(${z ? `'${z.id}'` : 'null'})">Guardar zapato</button>`);
+}
+async function rnShoeInsert(o) {
+  const { data, error } = await sb.from('run_shoes').insert([{ client_id: currentClient.id, name: o.name, brand: o.brand || null, initial_km: o.initial_km || 0, start_date: o.start_date || todayCR() }]).select().maybeSingle();
+  if (error) { showToast('No se pudo guardar: ' + error.message, 'error'); return null; }
+  rnShoes = await rnLoadShoes(currentClient.id);
+  return data;
+}
+async function rnShoeSave(id) {
+  const g = x => document.getElementById(x).value.trim();
+  const o = { name: g('rn-z-name'), brand: g('rn-z-brand'), initial_km: parseDecimal(g('rn-z-km')) || 0, start_date: g('rn-z-date') || null };
+  if (!o.name) { showToast('Poné el nombre'); return; }
+  if (o.initial_km < 0) { showToast('Los km no pueden ser negativos'); return; }
+  if (id) {
+    const { error } = await sb.from('run_shoes').update({ name: o.name, brand: o.brand || null, initial_km: o.initial_km, start_date: o.start_date }).eq('id', id).eq('client_id', currentClient.id);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+    rnShoes = await rnLoadShoes(currentClient.id);
+  } else if (!(await rnShoeInsert(o))) return;
+  rnCloseSheet(); showToast('Zapato guardado', 'success'); rnRenderClient();
+}
+async function rnShoeRetire(id) {
+  const z = rnShoes.find(x => x.id === id);
+  if (!z || !confirm(`¿Retirar ${z.name}? Se conserva su historial.`)) return;
+  const { error } = await sb.from('run_shoes').update({ retired_at: new Date().toISOString() }).eq('id', id).eq('client_id', currentClient.id);
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  rnShoes = await rnLoadShoes(currentClient.id); showToast('Zapato retirado'); rnRenderClient();
+}
+
+// Pantalla 7: mi progreso
+function rnDashHtml(plan) {
+  const runs = rnClient.runs, today = todayCR(), mon = rnWeekMonday(today), p = rnProfile;
+  const weeks = [5, 4, 3, 2, 1, 0].map(o => { const a = tcAddDays(mon, -7 * o), b = tcAddDays(a, 6); return runs.filter(r => r.session_date >= a && r.session_date <= b).reduce((s, r) => s + (Number(r.distance_km) || 0), 0); });
+  const max = Math.max(...weeks, 1);
+  const bars = weeks.map((v, i) => { const h = Math.round(v / max * 56); return `<rect x="${8 + i * 55}" y="${80 - h}" width="34" height="${h}" rx="4" fill="${i === 5 ? RN_ORANGE : '#E3B79D'}"/>`; }).join('');
+  const labels = ['S-5', 'S-4', 'S-3', 'S-2', 'S-1', 'Esta'].map((l, i) => `<text x="${25 + i * 55}" y="94">${l}</text>`).join('');
+  // Adherencia: hechas contra planeadas de Run hasta la semana actual (solo con plan)
+  let adh = '—';
+  if (plan) { const wk = rnCurrentWeek(p); const upto = rnClient.planned.filter(s => s.week_number <= wk); if (upto.length) adh = Math.round(upto.filter(s => s.status === 'hecha').length / upto.length * 100) + '%'; }
+  const tests = runs.filter(r => r.session_type === 'prueba_5k' && r.duration_min && (!r.version_used || r.version_used === 'completa')).sort((a, b) => a.session_date.localeCompare(b.session_date));
+  const best = tests.length ? Math.min(...tests.map(t => Number(t.duration_min))) : null;
+  const testsHtml = tests.length ? `<div class="rn-row rn-wrap" style="gap:10px;">${tests.map((t, i) => `<div style="text-align:center;"><div class="rn-m" style="font-size:18px;${i === tests.length - 1 ? 'color:#17602F;font-weight:500;' : ''}">${rnMinToClock(t.duration_min)}</div><div class="rn-mu" style="font-size:11px;">${rnDayLabel(t.session_date)}</div></div>`).join('<div class="rn-mu" aria-hidden="true">→</div>')}</div>
+    ${tests.length > 1 ? `<div class="rn-xs rn-mu" style="margin-top:8px;">${rnMinToClock(Math.abs(tests[0].duration_min - tests[tests.length - 1].duration_min))} ${tests[tests.length - 1].duration_min <= tests[0].duration_min ? 'menos' : 'más'} que la primera prueba</div>` : ''}` : '<div class="rn-sm rn-mu">Todavía no hay pruebas de 5K registradas.</div>';
+  const shoes = rnShoes.filter(z => !z.retired_at), maxKm = Math.max(...shoes.map(z => z.total_km || 0), 1);
+  const shoesHtml = shoes.map(z => `<div class="rn-row rn-sp" style="font-size:14px;"><span style="font-weight:600;">${rnEsc(z.name)}</span><span class="rn-m">${rnKm(z.total_km)} km</span></div><div class="rn-bar" style="height:6px;margin:6px 0 10px;"><div style="height:6px;background:${RN_ORANGE};width:${Math.round((z.total_km || 0) / maxKm * 100)}%;"></div></div>`).join('') || '<div class="rn-sm rn-mu">Sin zapatos activos.</div>';
+  const wk = rnCurrentWeek(p);
+  return `<div class="rn-ey">Run${plan ? ` · Nivel ${p.level || '—'}${wk ? ` · Semana ${wk} de ${p.weeks_total}` : ''}` : ' · Seguimiento'}</div><h1 class="rn-h1">Mi progreso</h1>
+    <div class="rn-row" style="gap:8px;margin-bottom:8px;"><div class="rn-tl"><div class="n">${rnKm(weeks[5])}</div><div class="t">km esta semana</div></div>${plan ? `<div class="rn-tl"><div class="n">${adh}</div><div class="t">adherencia</div></div>` : `<div class="rn-tl"><div class="n">${runs.filter(r => r.session_date >= mon).length}</div><div class="t">corridas esta semana</div></div>`}</div>
+    <div class="rn-row" style="gap:8px;margin-bottom:10px;"><div class="rn-tl"><div class="n">${runs.length}</div><div class="t">corridas en 6 meses</div></div><div class="rn-tl"><div class="n">${best ? rnMinToClock(best) : '—'}</div><div class="t">mejor 5K</div></div></div>
+    <div class="rn-cd"><div class="rn-lb">Volumen semanal (km)</div>
+      <svg viewBox="0 0 322 96" width="100%" height="96" role="img" aria-label="Volumen semanal en kilómetros: ${weeks.map(v => rnKm(v)).join('; ')}"><line x1="0" y1="80" x2="322" y2="80" stroke="#E2D9CB"/>${bars}<g font-family="DM Mono,monospace" font-size="10" fill="#4F483E" text-anchor="middle">${labels}</g></svg></div>
+    <div class="rn-cd"><div class="rn-lb">Tiempo de 5K entre pruebas</div>${testsHtml}</div>
+    <div class="rn-cd"><div class="rn-lb">Km por zapato</div>${shoesHtml}</div>`;
+}
+// ---------- R5: check-in diario, mini calendario y recomendaciones (pantallas 2, 3, 5, 6) ----------
+// No es una IA que diagnostica: son reglas visibles y editables.
+// Grupos que cuentan como pierna (exercises.muscle_group, normalizado sin tildes ni mayúsculas):
+const RN_LEG_GROUPS = ['cuadriceps', 'isquiotibiales', 'isquios', 'femoral', 'gluteos', 'gluteo', 'pantorrillas', 'pantorrilla', 'aductor', 'aductores'];
+// Un día cuenta como "pierna pesada" con esta cantidad o más de ejercicios distintos de pierna:
+const LEG_HEAVY_MIN_EXERCISES = 3;
+// Zonas de dolor que cuentan como articulares (dolor moderado articular = no correr)
+const RN_PAIN_ZONES = [['pantorrilla', 'Pantorrilla'], ['rodilla', 'Rodilla'], ['tobillo', 'Tobillo'], ['cadera', 'Cadera'], ['espalda', 'Espalda'], ['otra', 'Otra']];
+const RN_JOINT_ZONES = ['rodilla', 'tobillo', 'cadera'];
+const RN_PAIN_STREAK_DAYS = 3;          // dolor o molestia tantos días seguidos: alerta al coach
+const RN_RULES = {
+  lowEnergy: 2,                          // energía <= esto con sueño malo: reducida
+  goodEnergy: 4,                         // energía >= esto sin dolor: completa
+  legAfterEffort: 7                      // esfuerzo >= esto: mejor esperar con la pierna
+};
+const RN_QUALITY_OR_LONG = ['strides', 'umbral', 'larga_facil', 'prueba_5k', 'larga', 'intervalos'];
+
+function rnIsLeg(group) { return RN_LEG_GROUPS.includes(progressKey(group)); }
+// Días entrenados con sus ejercicios y grupos, misma lógica que el calendario "Entrenos" (entFetch):
+// exercise_logs por fecha de CR, workout_sessions por session_date y workout_completions por completed_date.
+// Solo lectura. Si un día tiene check-in sin logs, se usan los ejercicios de ese día del plan menos los saltados.
+async function rnTrainingDays(cid, from, to) {
+  const rows = q => q.then(r => (r.error ? [] : (r.data || [])), () => []);
+  const [logs, sess, cks] = await Promise.all([
+    rows(sb.from('exercise_logs').select('exercise_id,logged_at,exercises(name,muscle_group,plan_day_id)').eq('client_id', cid).gte('logged_at', crDayRange(from).start).lt('logged_at', crDayRange(to).end)),
+    rows(sb.from('workout_sessions').select('plan_day_id,session_date').eq('client_id', cid).gte('session_date', from).lte('session_date', to)),
+    rows(sb.from('workout_completions').select('completed_date,plan_day_id,skipped_exercises').eq('client_id', cid).gte('completed_date', from).lte('completed_date', to))
+  ]);
+  const days = {};
+  const day = d => days[d] || (days[d] = { ex: new Map(), unknown: 0, sources: 0 });
+  logs.forEach(l => {
+    const d = pgCRDate(l.logged_at); if (!d) return;
+    const x = day(d); x.sources++;
+    if (!l.exercises) { x.unknown++; return; }
+    x.ex.set(String(l.exercise_id), { name: l.exercises.name, group: l.exercises.muscle_group || null });
+  });
+  sess.forEach(s => { const d = String(s.session_date || '').slice(0, 10); if (d) day(d).sources++; });
+  // Check-in sin logs: ejercicios del día del plan menos los saltados
+  const ckOnly = cks.filter(c => { const d = String(c.completed_date).slice(0, 10); return !(days[d] && days[d].ex.size); });
+  const pdIds = [...new Set(ckOnly.map(c => c.plan_day_id).filter(Boolean))];
+  const pdEx = pdIds.length ? await rows(sb.from('exercises').select('id,name,muscle_group,plan_day_id').in('plan_day_id', pdIds)) : [];
+  cks.forEach(c => {
+    const d = String(c.completed_date).slice(0, 10), x = day(d); x.sources++;
+    if (!ckOnly.includes(c)) return;
+    const skipped = new Set((c.skipped_exercises || []).map(s => String(s.id)));
+    const list = pdEx.filter(e => e.plan_day_id === c.plan_day_id && !skipped.has(String(e.id)));
+    if (!list.length) x.unknown++;
+    list.forEach(e => x.ex.set(String(e.id), { name: e.name, group: e.muscle_group || null }));
+  });
+  Object.keys(days).forEach(d => {
+    const x = days[d], arr = [...x.ex.values()];
+    x.exercises = arr;
+    x.legCount = arr.filter(e => rnIsLeg(e.group)).length;
+    x.legHeavy = x.legCount >= LEG_HEAVY_MIN_EXERCISES;
+    x.groups = [...new Set(arr.map(e => e.group).filter(Boolean))];
+    x.known = arr.length > 0 && arr.some(e => e.group); // con grupos para decidir
+  });
+  return days;
+}
+// ¿Pierna pesada ayer u hoy? {value: true|false|null}. null = no se puede deducir: se pregunta.
+function rnLegRecent(days, today) {
+  const y = tcAddDays(today, -1), a = days[y], b = days[today];
+  if ((a && a.legHeavy) || (b && b.legHeavy)) return { value: true, day: (b && b.legHeavy) ? today : y };
+  const ok = x => x && x.known && !x.unknown;
+  if (ok(a) && (!b || ok(b))) return { value: false };
+  if (!a && ok(b)) return { value: false };
+  return { value: null };
+}
+async function rnLoadCheckinCtx() {
+  const cid = currentClient.id, today = todayCR();
+  const [cks, days] = await Promise.all([
+    sb.from('run_checkins').select('*').eq('client_id', cid).gte('checkin_date', tcAddDays(today, -14)).order('checkin_date', { ascending: false }).then(r => r.data || [], () => []),
+    rnTrainingDays(cid, tcAddDays(today, -6), today)
+  ]);
+  const ck = cks.find(c => String(c.checkin_date).slice(0, 10) === today) || null;
+  const leg = rnLegRecent(days, today);
+  rnClient.days = days; rnClient.recentCheckins = cks; rnClient.checkin = ck;
+  rnClient.legKnown = leg.value !== null;
+  rnClient.legHeavy = leg.value === true || (leg.value === null && ck && ck.leg_recent === true);
+  rnClient.legDay = leg.day || null;
+  rnClient.easyOnly = rnClient.legHeavy;
+}
+
+// Recomendación (pura). ck: respuestas del check-in; ctx: {legHeavy, painStreak}
+function rnRecommend(ck, ctx) {
+  const c = ctx || {}, alerts = [];
+  if (ck.alarm_symptom) return { kind: 'rest', version: null, title: 'Hoy no entrenes', alerts: c.painStreak ? ['alarma', 'dolor_3_dias'] : ['alarma'] };
+  const joint = RN_JOINT_ZONES.includes(ck.pain_zone);
+  if (c.painStreak) alerts.push('dolor_3_dias');
+  if (ck.pain === 'fuerte' || (ck.pain === 'moderado' && joint)) {
+    alerts.push('dolor_fuerte');
+    return { kind: 'no_run', version: null, title: 'Hoy no corras', lines: ['Descansá o hacé una alternativa sin impacto: bici suave, natación o movilidad.'], alerts };
+  }
+  if (c.legHeavy) return { kind: 'easy_only', version: 'reducida', title: 'Hoy: solo carrera fácil', lines: ['Entrenaste pierna pesada ayer u hoy, así que hoy sin calidad ni larga.'], alerts };
+  const pick = runPickVersion(ck, {});
+  const title = pick.version === 'completa' ? 'Hoy: tu sesión completa' : pick.version === 'reducida' ? 'Hoy: versión reducida' : 'Hoy: versión mínima';
+  return { kind: 'version', version: pick.version, title, lines: pick.reasons.length ? [pick.reasons.join(' · ') + '.'] : [], alerts };
+}
+
+// Tarjeta en Mi semana / Mis corridas
+function rnCheckinCardHtml() {
+  const ck = rnClient?.checkin;
+  if (!ck) return `<div class="rn-cd is-warm"><div style="font-weight:700;font-size:15px;">Antes de salir a correr</div><div class="rn-sm rn-mu" style="margin:2px 0 4px;">Contanos cómo estás hoy. Son 20 segundos.</div><button type="button" class="rn-bt is-g" style="min-height:46px;" onclick="rnCkOpen()">Hacer el check-in de hoy</button></div>`;
+  const rec = ck.recommendation || {};
+  const red = rec.kind === 'rest' || rec.kind === 'no_run';
+  return `<div class="rn-cd ${red ? 'is-red' : 'is-warm'}"><div class="rn-row rn-sp"><div class="rn-fx"><div class="rn-ey">Check-in de hoy</div><div style="font-weight:700;font-size:16px;margin-top:2px;${red ? 'color:#8F2719;' : ''}">${rnEsc(rec.title || 'Check-in hecho')}</div></div>
+    <button type="button" class="rn-ch" style="font-size:13px;" onclick="rnCkShowRec()">Ver</button></div>${rnDisc()}</div>`;
+}
+
+// Pantalla 2: check-in
+let rnCk = null;
+function rnCkOpen() {
+  const prev = rnClient.checkin;
+  rnOpenSheet('', () => { rnCk = null; });
+  rnCk = { energy: prev?.energy ?? null, sleep: prev?.sleep ?? null, pain: prev?.pain ?? 'ninguno', pain_zone: prev?.pain_zone ?? null, stress: prev?.stress ?? null, alarm_symptom: prev ? !!prev.alarm_symptom : null, leg_recent: prev?.leg_recent ?? null };
+  rnCkRender();
+}
+function rnCkSet(k, v) { rnCk[k] = v; if (k === 'pain' && v === 'ninguno') rnCk.pain_zone = null; rnCkRender(); }
+function rnCkRender() {
+  const c = rnCk, today = todayCR();
+  const nums = (k, n) => `<div class="rn-chs">${Array.from({ length: n }, (_, i) => rnChip(String(i + 1), c[k] === i + 1, `rnCkSet('${k}',${i + 1})`)).join('')}</div>`;
+  const legQ = rnClient.legKnown
+    ? `<div class="rn-row rn-mu rn-xs" style="justify-content:center;gap:6px;margin-top:8px;">${icon('check', 14)}${rnClient.legHeavy ? 'Ya vimos que entrenaste pierna' + (rnClient.legDay === today ? ' hoy' : ' ayer') + ': no hace falta preguntarte.' : 'Ya vimos tus entrenos de ayer y hoy: no hace falta preguntarte por pierna.'}</div>`
+    : `<div class="rn-cd"><div class="rn-lb">¿Entrenaste pierna ayer o hoy?</div><div class="rn-chs">${rnChip('No', c.leg_recent === false, "rnCkSet('leg_recent',false)")}${rnChip('Sí', c.leg_recent === true, "rnCkSet('leg_recent',true)")}</div></div>`;
+  rnSheetBody(`${rnSheetHead('Check-in · ' + rnDayLabel(today), '¿Cómo estás hoy?')}
+    <div class="rn-cd"><div class="rn-lb">Energía</div>${nums('energy', 5)}</div>
+    <div class="rn-cd"><div class="rn-lb">Sueño de anoche</div><div class="rn-chs">${[['mal', 'Mal'], ['regular', 'Regular'], ['bien', 'Bien']].map(([k, l]) => rnChip(l, c.sleep === k, `rnCkSet('sleep','${k}')`)).join('')}</div></div>
+    <div class="rn-cd"><div class="rn-lb">Dolor o molestia</div><div class="rn-chs">${[['ninguno', 'Ninguno'], ['leve', 'Leve'], ['moderado', 'Moderado'], ['fuerte', 'Fuerte']].map(([k, l]) => rnChip(l, c.pain === k, `rnCkSet('pain','${k}')`)).join('')}</div>
+      ${c.pain && c.pain !== 'ninguno' ? `<div class="rn-xs rn-mu" style="margin:8px 0 6px;">Zona</div><div class="rn-row rn-wrap" style="gap:6px;">${RN_PAIN_ZONES.map(([k, l]) => rnChip(l, c.pain_zone === k, `rnCkSet('pain_zone','${k}')`)).join('')}</div>` : ''}</div>
+    <div class="rn-cd"><div class="rn-lb">Estrés</div>${nums('stress', 5)}</div>
+    <div class="rn-cd"><div class="rn-lb" style="margin-bottom:2px;">¿Algún síntoma de alarma hoy?</div><div class="rn-xs rn-mu" style="margin-bottom:8px;">Dolor o presión en el pecho, mareo o falta de aire inusual.</div>
+      <div class="rn-chs">${rnChip('No', c.alarm_symptom === false, "rnCkSet('alarm_symptom',false)")}${rnChip('Sí', c.alarm_symptom === true, "rnCkSet('alarm_symptom',true)")}</div></div>
+    ${legQ}
+    <button type="button" class="rn-bt is-g" onclick="rnCkSave()">Ver mi recomendación</button>`);
+}
+async function rnCkSave() {
+  const c = rnCk, cid = currentClient.id, today = todayCR();
+  if (!c.energy || !c.sleep || c.alarm_symptom == null) { showToast('Respondé energía, sueño y síntoma de alarma'); return; }
+  if (!rnClient.legKnown && c.leg_recent == null) { showToast('Contanos si entrenaste pierna ayer o hoy'); return; }
+  const legHeavy = rnClient.legKnown ? rnClient.legHeavy : c.leg_recent === true;
+  // Dolor o molestia RN_PAIN_STREAK_DAYS días seguidos (hoy incluido)
+  let painStreak = false;
+  if (c.pain && c.pain !== 'ninguno') {
+    const byDate = Object.fromEntries((rnClient.recentCheckins || []).map(k => [String(k.checkin_date).slice(0, 10), k]));
+    painStreak = Array.from({ length: RN_PAIN_STREAK_DAYS - 1 }, (_, i) => byDate[tcAddDays(today, -(i + 1))]).every(k => k && k.pain && k.pain !== 'ninguno');
+  }
+  const rec = rnRecommend(c, { legHeavy, painStreak });
+  const row = { client_id: cid, checkin_date: today, energy: c.energy, sleep: c.sleep, pain: c.pain || 'ninguno', pain_zone: c.pain_zone, stress: c.stress, alarm_symptom: !!c.alarm_symptom,
+    leg_recent: rnClient.legKnown ? null : c.leg_recent, recommendation: { kind: rec.kind, version: rec.version, title: rec.title, lines: rec.lines || [] }, updated_at: new Date().toISOString() };
+  const { data, error } = await sb.from('run_checkins').upsert([row], { onConflict: 'client_id,checkin_date' }).select().maybeSingle();
+  if (error) showToast('No se pudo guardar el check-in. Igual te mostramos la recomendación.', 'error');
+  rnClient.checkin = data || row; rnClient.legHeavy = legHeavy; rnClient.easyOnly = legHeavy;
+  if (rec.version && !rnGetManualVersion()) { /* la sugerida sale de runPickVersion con el check-in */ }
+  if (rec.alerts.length) rnCkAlerts(rec, c);
+  rnCk = null;
+  rnCkShowRec();
+  rnRenderClient();
+}
+async function rnCkAlerts(rec, c) {
+  const cid = currentClient.id, first = (currentClient.name || '').trim().split(/\s+/)[0];
+  const detail = { alarma: 'Marcó un síntoma de alarma en el check-in. Se le indicó no entrenar hoy y buscar atención médica si persiste.', dolor_fuerte: `Dolor ${c.pain}${c.pain_zone ? ' en ' + c.pain_zone : ''}. Se le indicó no correr hoy.`, dolor_3_dias: `Dolor o molestia ${RN_PAIN_STREAK_DAYS} días seguidos${c.pain_zone ? ' (' + c.pain_zone + ')' : ''}.` };
+  await rnCreateAlerts(cid, rec.alerts.map(t => ({ type: t, detail: detail[t] || '' })));
+  try {
+    const { data: coach } = await sb.from('users').select('username').eq('id', currentClient.coach_id).maybeSingle();
+    const msg = rec.alerts.includes('alarma') ? `${first} marcó un síntoma de alarma` : rec.alerts.includes('dolor_fuerte') ? `${first} reportó dolor ${c.pain}` : `${first}: dolor ${RN_PAIN_STREAK_DAYS} días seguidos`;
+    rnPush(coach?.username, 'Run · alerta', msg);
+  } catch (e) { /* el push nunca rompe el flujo */ }
+}
+
+// Pantallas 3 y 6: recomendación con mini calendario
+function rnMiniCalHtml(sel, pickFn = 'rnCalPick') {
+  const today = todayCR(), days = rnClient.days || {};
+  const L = ['D', 'L', 'K', 'M', 'J', 'V', 'S'];
+  const cells = Array.from({ length: 7 }, (_, i) => tcAddDays(today, i - 6)).map(d => {
+    const x = days[d], dow = new Date(d + 'T12:00:00Z').getUTCDay(), n = Number(d.slice(8, 10)), on = !!(x && x.sources);
+    const lbl = `${n}${d === today ? ', hoy' : ''}, ${on ? (x.legHeavy ? 'pierna pesada' : 'entreno') : 'sin entreno'}`;
+    const bg = on ? `background:${RN_ORANGE};color:#fff;` : 'background:#EFE9DF;color:#4F483E;';
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;"><span class="rn-m rn-mu" style="font-size:11px;">${L[dow] === 'K' ? 'M' : L[dow]}</span>
+      <button type="button" aria-label="${lbl}" aria-pressed="${sel === d}" onclick="${pickFn}('${d}')" style="width:42px;height:56px;border-radius:12px;border:0;cursor:pointer;${bg}display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-family:'DM Mono',monospace;font-size:15px;${sel === d ? 'box-shadow:0 0 0 2px #FAF6F0,0 0 0 4px #1F1B16;' : ''}">${n}${x && x.legHeavy ? '<small style="font-family:\'DM Sans\',sans-serif;font-size:10px;font-weight:700;">Pierna</small>' : ''}${d === today ? `<span style="width:5px;height:5px;border-radius:9px;background:${on ? '#fff' : RN_ORANGE};display:block;"></span>` : ''}</button></div>`;
+  }).join('');
+  const x = sel && days[sel];
+  const det = sel ? (x && x.sources
+    ? `<div class="rn-cd"><div class="rn-row rn-sp"><span style="font-weight:700;font-size:15px;">${rnDayLabel(sel)}</span>${x.legHeavy ? '<span class="rn-pill is-o">Pierna pesada</span>' : ''}</div>
+       <div class="rn-sm rn-mu" style="margin:4px 0 8px;">${x.exercises.length ? `${x.exercises.length} ${x.exercises.length === 1 ? 'ejercicio' : 'ejercicios'}${x.legCount ? ` · ${x.legCount} de pierna` : ''}` : 'Entrenó, pero no sabemos qué ejercicios.'}</div>
+       ${x.groups.length ? `<div class="rn-row rn-wrap" style="gap:6px;">${x.groups.map(g => `<span class="rn-pill is-n">${rnEsc(g)}</span>`).join('')}</div>` : ''}</div>`
+    : `<div class="rn-cd is-ghost rn-sm rn-mu">${rnDayLabel(sel)}: sin entreno registrado.</div>`) : '';
+  return `<div class="rn-cd"><div class="rn-row rn-sp" style="margin-bottom:10px;"><span style="font-weight:700;font-size:14px;">Tus entrenos de la semana</span><span class="rn-pill is-n">Últimos 7 días</span></div><div class="rn-row" style="gap:4px;align-items:flex-start;">${cells}</div></div>${det}`;
+}
+let rnCalSel = null;
+function rnCalPick(d) { rnCalSel = rnCalSel === d ? null : d; rnCkShowRec(); }
+function rnSuggestSessionHtml(rec) {
+  if (!rnHasPlan() || rnProfile.plan_status !== 'active') return '';
+  const wk = rnCurrentWeek(rnProfile), pend = rnClient.planned.filter(s => s.week_number === wk && s.status !== 'hecha');
+  if (!pend.length) return '';
+  let s = pend[0];
+  if (rec.kind === 'easy_only') s = pend.find(x => ['facil', 'correr_caminar'].includes(x.session_type)) || { ...pend[0], session_type: 'facil', overrides: {} };
+  const v = runApplyVersion(s, rec.version || 'completa');
+  const txt = v.postponeTest ? v.message : `${RN_TYPE_NAME[v.session_type] || v.session_type} · ${v.minutes} min${v.effort ? ' · esfuerzo ' + rnEsc(v.effort) : ''}`;
+  return `<div class="rn-cd is-warm"><div class="rn-row" style="gap:8px;margin-bottom:6px;color:#A8410F;">${icon('activity', 20)}<span style="font-weight:700;font-size:15px;">Sesión sugerida</span></div><div style="font-weight:700;font-size:17px;">${txt}</div></div>`;
+}
+function rnCkShowRec() {
+  const ck = rnClient.checkin; if (!ck) return;
+  const rec = ck.recommendation || {};
+  if (!document.getElementById('rn-ov')) rnOpenSheet('');
+  if (rec.kind === 'rest') {
+    rnSheetBody(`${rnSheetHead('Tu recomendación de hoy', '')}
+      <div style="width:64px;height:64px;border-radius:999px;background:#FBE9E6;display:flex;align-items:center;justify-content:center;color:${RN_RED};margin-top:-6px;">${icon('alert-triangle', 32)}</div>
+      <h1 class="rn-h1" style="margin-top:10px;">Hoy no entrenes</h1>
+      <div class="rn-cd is-red"><div style="font-weight:700;font-size:16px;color:${RN_RED};">Marcaste un síntoma de alarma.</div><div class="rn-sm" style="margin-top:6px;">Descansá hoy. Si el síntoma persiste o empeora, buscá atención médica.</div></div>
+      <div class="rn-cd"><div class="rn-row" style="gap:10px;"><span class="rn-pill is-g">${icon('check', 14)}Aviso enviado</span><span style="font-size:14px;font-weight:600;">Tu coach ya lo sabe</span></div><div class="rn-sm rn-mu" style="margin-top:6px;">Te va a escribir para ver cómo seguís. El módulo queda en pausa hoy.</div></div>
+      ${rnDisc()}
+      <a class="rn-bt is-g" style="text-decoration:none;" href="https://wa.me/${EXX_WA_NUMBER}" target="_blank" rel="noopener">Escribirle a mi coach</a>
+      <button type="button" class="rn-bt is-l" onclick="rnCloseSheet()">Entendido</button>`);
+    return;
+  }
+  const lines = (rec.lines || []).map(l => rnEsc(l)).join('<br>');
+  const stats = `Energía ${ck.energy}, sueño ${ck.sleep}${ck.pain && ck.pain !== 'ninguno' ? `, dolor ${ck.pain}` : ', sin dolor'}.`;
+  rnSheetBody(`${rnSheetHead('Tu recomendación de hoy', rnEsc(rec.title || ''))}
+    ${rnMiniCalHtml(rnCalSel)}
+    ${rec.kind === 'no_run' ? `<div class="rn-cd is-red"><div style="font-weight:700;color:${RN_RED};">Hoy no corras</div><div class="rn-sm" style="margin-top:4px;">${lines}</div><div class="rn-sm rn-mu" style="margin-top:4px;">Tu coach ya recibió el aviso.</div></div>` : rnSuggestSessionHtml(rec)}
+    <div class="rn-cd"><div class="rn-sm">${lines ? lines + '<br>' : ''}${rnEsc(stats)}</div></div>
+    ${rnDisc()}
+    ${rec.kind === 'no_run' ? '' : `<button type="button" class="rn-bt is-g" onclick="rnCloseSheet();rnRegOpen()">Registrar corrida</button>`}
+    <button type="button" class="rn-bt is-l" onclick="rnCkOpen()">Rehacer el check-in</button>`);
+}
+
+// Pantalla 5: después de correr, ¿pierna hoy? Orientación, no bloqueo.
+function rnLegAfterAdvice(run, ck) {
+  const hard = RN_QUALITY_OR_LONG.includes(run.session_type) || (run.effort != null && run.effort >= RN_RULES.legAfterEffort);
+  const pain = ck && ck.pain && ck.pain !== 'ninguno', low = ck && ck.energy != null && ck.energy <= RN_RULES.lowEnergy;
+  if (hard || pain || low) {
+    const why = [hard ? (run.effort >= RN_RULES.legAfterEffort ? `Corriste fuerte (esfuerzo ${run.effort})` : 'Fue una sesión de calidad o larga') : '', pain ? `quedó una molestia ${ck.pain}${ck.pain_zone ? ' en ' + ck.pain_zone : ''}` : '', low ? 'tu energía está baja' : ''].filter(Boolean).join(', ');
+    return { wait: true, title: 'Mejor esperá con la pierna pesada.', text: `${why ? why.charAt(0).toUpperCase() + why.slice(1) + '. ' : ''}Dejala para mañana.` };
+  }
+  return { wait: false, title: 'Podés entrenar pierna hoy.', text: 'Hacé la fuerza primero y dejá la carrera para fácil.' };
+}
+function rnAfterRun(run, ps) {
+  const first = rnEsc((currentClient.name || '').trim().split(/\s+/)[0]);
+  const ad = rnLegAfterAdvice(run, rnClient.checkin);
+  const shoe = rnShoes.find(z => z.id === run.shoe_id);
+  const wk = rnHasPlan() ? rnCurrentWeek(rnProfile) : 0, wkS = wk ? rnClient.planned.filter(s => s.week_number === wk) : [];
+  rnSheetBody(`<div class="rn-row" style="gap:8px;color:#17602F;">${icon('check-circle', 22)}<span class="rn-ey" style="color:#17602F;">Corrida guardada</span></div>
+    <h1 class="rn-h1" style="margin-top:6px;">¡Buen trabajo, ${first}!</h1>
+    <div class="rn-cd"><div class="rn-row rn-sp" style="align-items:flex-end;"><div><div class="rn-m" style="font-size:28px;font-weight:500;">${run.distance_km != null ? rnKm(run.distance_km) + ' km' : rnMinToClock(run.duration_min)}</div><div class="rn-sm rn-mu">${rnMinToClock(run.duration_min)}${run.effort ? ' · esfuerzo ' + run.effort : ''} · ${RN_RUN_NAME[run.session_type] || 'Libre'}</div></div>
+      ${wkS.length && ps ? `<span class="rn-pill is-g">Sesión ${wkS.filter(s => s.status === 'hecha').length} de ${wkS.length}</span>` : ''}</div>
+      ${shoe ? `<div class="rn-m rn-mu rn-xs" style="margin-top:10px;border-top:1px solid #EFE9DF;padding-top:10px;">${rnEsc(shoe.name)}: ${rnKm(shoe.total_km)} km</div>` : ''}</div>
+    <h2 class="rn-h2">¿Pierna hoy?</h2>
+    <div class="rn-cd ${ad.wait ? 'is-warm' : ''}" ${ad.wait ? '' : 'style="background:#E6F2EA;border-color:#BFDCC8;"'}><div style="font-weight:700;font-size:17px;color:${ad.wait ? '#A8410F' : '#17602F'};">${ad.title}</div><div class="rn-sm" style="margin-top:6px;">${rnEsc(ad.text)}</div></div>
+    ${ad.wait
+      ? `<button type="button" class="rn-bt is-g" onclick="rnLegAfter('${run.id}','esperar')">Dejarla para mañana</button><button type="button" class="rn-bt is-l" onclick="rnLegAfter('${run.id}','igual')">La hago igual</button>
+         <div class="rn-xs rn-mu" style="text-align:center;margin-top:6px;">Si la hacés igual, queda registrado y tu coach lo ve. No se bloquea nada.</div>`
+      : `<button type="button" class="rn-bt is-g" onclick="rnLegAfter('${run.id}','igual')">Entendido</button>`}
+    ${rnDisc()}`);
+}
+async function rnLegAfter(runId, choice) {
+  if (runId && runId !== 'undefined') {
+    const { error } = await sb.from('run_sessions').update({ leg_after: choice }).eq('id', runId).eq('client_id', currentClient.id);
+    if (error) showToast('No se pudo guardar tu respuesta', 'error');
+  }
+  rnCloseSheet(); showToast('Listo', 'success');
+}
+// ---------- R6: coach, pestaña Run (pantallas 21 y 22) ----------
+const RUN_NO_LOG_DAYS = 3;             // días sin corridas ni check-in: alerta "sin registro" (una sola abierta)
+const RN_REFRESH_MS = 60000;           // refresco mientras la lista está visible (como las solicitudes de asistencia)
+const RN_ALERT_NAMES = { alarma: 'Síntoma de alarma', dolor_3_dias: 'Dolor 3 días seguidos', dolor_fuerte: 'Dolor fuerte', onboarding_roja: 'Alerta roja del onboarding', onboarding_amarilla: 'Alerta amarilla', sin_registro: 'Sin registrar' };
+let rnCoach = { filter: 'todos', data: null, timer: null, req: 0 };
+
+async function rnLoadCoachRun() {
+  const box = document.getElementById('rn-coach-list');
+  if (!box || !currentUser) return;
+  const req = ++rnCoach.req;
+  if (!rnCoach.data) box.innerHTML = '<div class="spinner"></div>';
+  const { data: clients, error } = await sb.from('clients').select('id,name,username,coach_id,run_module_enabled,is_churn,hidden').eq('coach_id', currentUser.id).eq('run_module_enabled', true);
+  if (error) { box.innerHTML = `<div class="rn-empty">No se pudo cargar: ${rnEsc(error.message)}</div>`; return; }
+  const list = (clients || []).filter(c => !c.is_churn);
+  const ids = list.map(c => c.id), today = todayCR(), since = tcAddDays(today, -28);
+  const rows = q => ids.length ? q.then(r => r.data || [], () => []) : Promise.resolve([]);
+  const [profiles, planned, runs, alerts, cks] = await Promise.all([
+    rows(sb.from('run_profiles').select('*').in('client_id', ids)),
+    rows(sb.from('run_planned_sessions').select('client_id,week_number,status').in('client_id', ids)),
+    rows(sb.from('run_sessions').select('client_id,session_date,distance_km,kind').in('client_id', ids).gte('session_date', since)),
+    rows(sb.from('run_alerts').select('*').in('client_id', ids).eq('status', 'open').order('created_at', { ascending: false })),
+    rows(sb.from('run_checkins').select('client_id,checkin_date').in('client_id', ids).gte('checkin_date', tcAddDays(today, -RUN_NO_LOG_DAYS)))
+  ]);
+  if (req !== rnCoach.req) return;
+  // Aviso de varios días sin registrar: crea una alerta abierta sin duplicados
+  const newNoLog = [];
+  list.forEach(c => {
+    const p = profiles.find(x => x.client_id === c.id);
+    if (!p || ((p.mode || 'plan') === 'plan' && p.plan_status !== 'active')) return;
+    const startedBefore = rnCRDate(p.created_at) <= tcAddDays(today, -RUN_NO_LOG_DAYS) && (!p.start_date || String(p.start_date).slice(0, 10) <= tcAddDays(today, -RUN_NO_LOG_DAYS));
+    if (!startedBefore) return;
+    const recent = runs.some(r => r.client_id === c.id && r.session_date > tcAddDays(today, -RUN_NO_LOG_DAYS)) || cks.some(k => k.client_id === c.id);
+    if (!recent && !alerts.some(a => a.client_id === c.id && a.type === 'sin_registro')) newNoLog.push(c.id);
+  });
+  for (const cid of newNoLog) await rnCreateAlerts(cid, [{ type: 'sin_registro', detail: `Sin corridas ni check-in en los últimos ${RUN_NO_LOG_DAYS} días.` }]);
+  const allAlerts = newNoLog.length ? await rows(sb.from('run_alerts').select('*').in('client_id', ids).eq('status', 'open').order('created_at', { ascending: false })) : alerts;
+  if (req !== rnCoach.req) return;
+  const mon = rnWeekMonday(today);
+  rnCoach.data = list.map(c => {
+    const p0 = profiles.find(x => x.client_id === c.id) || {};
+    const p = { ...p0, mode: p0.mode || 'plan', plan_status: p0.plan_status || 'none' };
+    const wk = rnCurrentWeek(p), pl = planned.filter(s => s.client_id === c.id && s.week_number <= wk);
+    const adh = p.mode === 'plan' && p.plan_status === 'active' && pl.length ? Math.round(pl.filter(s => s.status === 'hecha').length / pl.length * 100) : null;
+    const cr = runs.filter(r => r.client_id === c.id);
+    const RANK = ['alarma', 'dolor_fuerte', 'onboarding_roja', 'dolor_3_dias', 'sin_registro', 'onboarding_amarilla'];
+    return { c, p, wk, adh, weekRuns: cr.filter(r => r.session_date >= mon).length, last: cr.map(r => r.session_date).sort().pop() || null, alerts: allAlerts.filter(a => a.client_id === c.id).sort((a, b) => RANK.indexOf(a.type) - RANK.indexOf(b.type)) };
+  }).sort((a, b) => b.alerts.length - a.alerts.length || a.c.name.localeCompare(b.c.name));
+  rnRenderCoachRun();
+}
+function rnRenderCoachRun() {
+  const box = document.getElementById('rn-coach-list');
+  if (!box || !rnCoach.data) return;
+  const d = rnCoach.data, f = rnCoach.filter;
+  const alarms = d.filter(x => x.alerts.some(a => a.type === 'alarma'));
+  const nPlan = d.filter(x => x.p.mode === 'plan').length, nSeg = d.length - nPlan;
+  const nAl = d.reduce((s, x) => s + x.alerts.length, 0), nNo = d.filter(x => x.alerts.some(a => a.type === 'sin_registro')).length;
+  const pill = (k, l) => `<button type="button" class="rn-ch${f === k ? ' is-on' : ''}" style="font-size:13px;min-height:40px;white-space:nowrap;" aria-pressed="${f === k}" onclick="rnCoach.filter='${f === k ? 'todos' : k}';rnRenderCoachRun()">${l}</button>`;
+  const shown = d.filter(x => f === 'todos' || (f === 'alertas' && x.alerts.length) || (f === 'sin' && x.alerts.some(a => a.type === 'sin_registro')) || (f === 'plan' && x.p.mode === 'plan') || (f === 'seg' && x.p.mode !== 'plan'));
+  const banner = alarms.map(x => { const a = x.alerts.find(y => y.type === 'alarma'); return `<div class="rn-cd is-red rn-row" style="gap:10px;"><span style="color:${RN_RED};">${icon('alert-triangle', 22)}</span><div class="rn-fx"><div style="font-weight:700;font-size:15px;color:${RN_RED};">${rnEsc(x.c.name)} marcó un síntoma de alarma</div><div class="rn-xs rn-mu">${rnDayLabel(rnCRDate(a.created_at))}</div></div><button type="button" class="rn-ch" style="font-size:13px;" onclick="rnCoachDetail('${x.c.id}')">Ver</button></div>`; }).join('');
+  const card = x => {
+    const p = x.p, chip = x.alerts[0] ? `<span class="rn-pill ${['alarma', 'dolor_fuerte', 'onboarding_roja', 'dolor_3_dias'].includes(x.alerts[0].type) ? 'is-r' : 'is-o'}">${RN_ALERT_NAMES[x.alerts[0].type] || x.alerts[0].type}${x.alerts.length > 1 ? ' +' + (x.alerts.length - 1) : ''}</span>` : '<span class="rn-pill is-g">Sin alertas</span>';
+    const sub = p.mode === 'plan'
+      ? (p.plan_status === 'active' ? `Nivel ${p.level || '—'} · Semana ${x.wk || '—'} de ${p.weeks_total || '—'}` : p.plan_status === 'paused' ? `Nivel ${p.level || '—'} · plan en pausa` : p.plan_status === 'draft' ? 'Plan en borrador' : 'Sin plan todavía')
+      : `Solo seguimiento · ${x.weekRuns} ${x.weekRuns === 1 ? 'corrida' : 'corridas'} esta semana`;
+    return `<button type="button" class="rn-cd rn-row" style="width:100%;text-align:left;cursor:pointer;gap:12px;" onclick="rnCoachDetail('${x.c.id}')">
+      <span style="width:40px;height:40px;border-radius:99px;background:#EFE9DF;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none;">${rnEsc((x.c.name || '?').charAt(0))}</span>
+      <span class="rn-fx"><span style="display:block;font-weight:700;font-size:15px;">${rnEsc(x.c.name)}</span><span class="rn-xs rn-mu" style="display:block;margin:2px 0 6px;">${sub}</span>${chip}</span>
+      <span class="rn-m" style="font-size:17px;">${x.adh != null ? x.adh + '%' : p.mode === 'plan' ? '—' : 'Libre'}</span></button>`;
+  };
+  box.innerHTML = `<div class="rn">
+    ${banner}
+    <div class="rn-row" style="gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;">${pill('plan', `${nPlan} plan`)}${pill('seg', `${nSeg} seguimiento`)}${pill('alertas', `${nAl} ${nAl === 1 ? 'alerta abierta' : 'alertas abiertas'}`)}${pill('sin', `${nNo} sin registrar`)}</div>
+    ${shown.map(card).join('') || `<div class="rn-empty">${d.length ? 'Nadie en este filtro.' : 'Ningún cliente tiene el módulo Run activo todavía. Activalo desde la ficha del cliente, en Información de pago.'}</div>`}
+  </div>`;
+}
+function rnCoachRunVisible() { const s = document.getElementById('screen-coach-run'); return !!s && s.classList.contains('active') && document.visibilityState === 'visible'; }
+function rnCoachRunStartTimer() {
+  if (rnCoach.timer) clearInterval(rnCoach.timer);
+  rnCoach.timer = setInterval(() => { if (rnCoachRunVisible()) rnLoadCoachRun(); else { clearInterval(rnCoach.timer); rnCoach.timer = null; } }, RN_REFRESH_MS);
+}
+document.addEventListener('visibilitychange', () => { if (rnCoachRunVisible()) { rnLoadCoachRun(); if (!rnCoach.timer) rnCoachRunStartTimer(); } });
+function rnOpenCoachRun() { rnLoadCoachRun(); rnCoachRunStartTimer(); }
+
+// Detalle del cliente (pantalla 22)
+async function rnCoachDetail(cid) {
+  rnOpenSheet('<div class="spinner"></div>', () => { if (rnCoachRunVisible()) rnLoadCoachRun(); });
+  const today = todayCR();
+  const [{ data: c }, p, shoes, al, ck, rs, pl, days] = await Promise.all([
+    sb.from('clients').select('*').eq('id', cid).maybeSingle(),
+    rnLoadProfile(cid), rnLoadShoes(cid),
+    sb.from('run_alerts').select('*').eq('client_id', cid).eq('status', 'open').order('created_at', { ascending: false }).then(r => r.data || []),
+    sb.from('run_checkins').select('*').eq('client_id', cid).order('checkin_date', { ascending: false }).limit(5).then(r => r.data || []),
+    sb.from('run_sessions').select('*').eq('client_id', cid).order('session_date', { ascending: false }).limit(10).then(r => r.data || []),
+    sb.from('run_planned_sessions').select('*').eq('client_id', cid).then(r => r.data || []),
+    rnTrainingDays(cid, tcAddDays(today, -6), today)
+  ]);
+  if (!c || !document.getElementById('rn-ov')) return;
+  currentClient = c; rnProfile = p; rnShoes = shoes;
+  rnCoach.detail = { cid, days, sel: null, al, ck, rs, pl };
+  rnCoachDetailRender();
+}
+function rnCoachDetailRender() {
+  const d = rnCoach.detail, c = currentClient, p = rnProfile || { mode: 'plan', plan_status: 'none' };
+  const wk = rnCurrentWeek(p), wkS = d.pl.filter(s => s.week_number === wk);
+  const alertsHtml = d.al.map(a => `<div class="rn-cd ${['onboarding_amarilla', 'sin_registro'].includes(a.type) ? 'is-warm' : 'is-red'}">
+      <div class="rn-row rn-sp"><span class="rn-ey">Alerta abierta</span><span class="rn-xs rn-mu">${rnDayLabel(rnCRDate(a.created_at))}</span></div>
+      <div style="font-weight:700;font-size:16px;margin-top:4px;">${RN_ALERT_NAMES[a.type] || rnEsc(a.type)}</div><div class="rn-sm" style="margin-top:4px;">${rnEsc(a.detail || '')}</div>
+      <button type="button" class="rn-bt is-l" style="min-height:44px;" onclick="rnCoachResolve('${a.id}')">Marcar como resuelta</button></div>`).join('');
+  const ckHtml = d.ck.map(k => `<div class="rn-row rn-sp" style="padding:6px 0;border-bottom:1px solid #EFE9DF;"><div><div style="font-weight:700;font-size:14px;">${rnDayLabel(String(k.checkin_date).slice(0, 10))}</div><div class="rn-xs rn-mu">Energía ${k.energy ?? '—'} · sueño ${k.sleep || '—'} · ${k.pain && k.pain !== 'ninguno' ? 'dolor ' + k.pain + (k.pain_zone ? ' (' + k.pain_zone + ')' : '') : 'sin dolor'}</div></div>${k.alarm_symptom ? '<span class="rn-pill is-r">Alarma</span>' : k.recommendation?.version ? `<span class="rn-pill is-n">${k.recommendation.version}</span>` : ''}</div>`).join('') || '<div class="rn-sm rn-mu">Sin check-ins todavía.</div>';
+  const rsHtml = d.rs.map(r => `<div class="rn-row rn-sp" style="padding:6px 0;border-bottom:1px solid #EFE9DF;"><div><div style="font-weight:700;font-size:14px;">${rnDayLabel(r.session_date)}${r.distance_km != null ? ' · ' + rnKm(r.distance_km) + ' km' : ''}</div><div class="rn-xs rn-mu">${RN_RUN_NAME[r.session_type] || r.session_type || ''} · ${rnMinToClock(r.duration_min)}${r.effort ? ' · esfuerzo ' + r.effort : ''}${r.version_used ? ' · ' + r.version_used : ''}${r.leg_after === 'igual' ? ' · hizo pierna igual' : ''}</div></div><span class="rn-pill ${r.kind === 'plan' ? 'is-g' : 'is-n'}">${r.kind === 'plan' ? 'Plan' : 'Libre'}</span></div>`).join('') || '<div class="rn-sm rn-mu">Sin corridas registradas.</div>';
+  const savedDays = rnClient; rnClient = { days: d.days };
+  const cal = rnMiniCalHtml(d.sel, 'rnCoachCalPick');
+  rnClient = savedDays;
+  const actions = p.mode === 'plan' && (p.plan_status === 'active' || p.plan_status === 'paused')
+    ? `<div class="rn-row rn-wrap" style="gap:6px;margin-top:8px;"><button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="rnPlanLevelSheet()">Cambiar nivel</button><button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="rnPlanOpenEditor()">Editar semana</button><button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="${p.plan_status === 'paused' ? 'rnPlanResume().then(()=>rnCoachDetail(currentClient.id))' : 'rnPlanPause().then(()=>rnCoachDetail(currentClient.id))'}">${p.plan_status === 'paused' ? 'Reanudar' : 'Pausar'}</button></div>`
+    : '';
+  rnSheetBody(`${rnSheetHead(`${rnEsc(c.name)}${p.level ? ' · Nivel ' + p.level : ''}${wk && p.mode === 'plan' ? ' · Semana ' + wk : ''}`, rnEsc((c.name || '').split(' ')[0]))}
+    ${alertsHtml}
+    ${cal}
+    <div class="rn-cd"><div class="rn-lb">Últimos check-ins</div>${ckHtml}</div>
+    <div class="rn-cd"><div class="rn-row rn-sp"><div class="rn-lb" style="margin:0;">Sesiones registradas</div>${wkS.length ? `<span class="rn-pill is-n">${wkS.filter(s => s.status === 'hecha').length} de ${wkS.length} hechas</span>` : ''}</div>${rsHtml}</div>
+    <div class="rn-cd"><div class="rn-row rn-sp"><div class="rn-lb" style="margin:0;">Zapatos</div><span class="rn-xs rn-mu">Los maneja el cliente</span></div>${rnShoesReadOnlyHtml(rnShoes)}</div>
+    <div class="rn-cd"><div class="rn-lb">Modo</div><div class="rn-chs">${rnChip('Plan completo', p.mode === 'plan', "rnSetMode('plan').then(()=>rnCoachDetail(currentClient.id))")}${rnChip('Solo seguimiento', p.mode !== 'plan', "rnSetMode('seguimiento').then(()=>rnCoachDetail(currentClient.id))")}</div>${actions}</div>
+    <button type="button" class="rn-bt is-l" onclick="rnCloseSheet();openCoachClient('${c.id}');showScreen('screen-coach-client');">Abrir la ficha del cliente</button>
+    ${rnDisc()}`);
+}
+function rnCoachCalPick(day) { const d = rnCoach.detail; d.sel = d.sel === day ? null : day; rnCoachDetailRender(); }
+async function rnCoachResolve(id) {
+  const { error } = await sb.from('run_alerts').update({ status: 'resolved', resolved_at: new Date().toISOString() }).eq('id', id);
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  showToast('Alerta resuelta', 'success');
+  rnCoach.detail.al = rnCoach.detail.al.filter(a => a.id !== id);
+  rnCoachDetailRender();
+}
+// ---------- R7: home del coach (pantalla 20) ----------
+// En lugar de las iniciales: cuántos días de esta semana (lunes a domingo, hora de CR) tienen
+// algún registro de entreno: series (exercise_logs), sesión marcada (workout_sessions),
+// check-in de entreno (workout_completions), sesión de Mi diario (diary_entries kind 'session')
+// o corrida de Run (run_sessions). Un día con varias cosas cuenta 1. Gris si es 0. Solo lectura.
+let rnHomeWeek = new Map(); // client_id → Set de fechas
+async function rnLoadHomeWeek(ids) {
+  rnHomeWeek = new Map();
+  if (!ids || !ids.length) return;
+  const today = todayCR(), mon = rnWeekMonday(today);
+  const safe = q => Promise.resolve(q).then(r => (r && !r.error && r.data) || [], () => []);
+  const [logs, sess, cks, diary, runs] = await Promise.all([
+    safe(sb.from('exercise_logs').select('client_id,logged_at').in('client_id', ids).gte('logged_at', crDayRange(mon).start).lt('logged_at', crDayRange(today).end).limit(10000)),
+    safe(sb.from('workout_sessions').select('client_id,session_date').in('client_id', ids).gte('session_date', mon).lte('session_date', today)),
+    safe(sb.from('workout_completions').select('client_id,completed_date').in('client_id', ids).gte('completed_date', mon).lte('completed_date', today)),
+    safe(sb.from('diary_entries').select('client_id,entry_date,kind').in('client_id', ids).eq('kind', 'session').gte('entry_date', mon).lte('entry_date', today)),
+    safe(sb.from('run_sessions').select('client_id,session_date').in('client_id', ids).gte('session_date', mon).lte('session_date', today))
+  ]);
+  const add = (cid, d) => { if (!d || d < mon || d > today) return; if (!rnHomeWeek.has(cid)) rnHomeWeek.set(cid, new Set()); rnHomeWeek.get(cid).add(d); };
+  logs.forEach(l => add(l.client_id, pgCRDate(l.logged_at)));
+  sess.forEach(s => add(s.client_id, String(s.session_date || '').slice(0, 10)));
+  cks.forEach(c => add(c.client_id, String(c.completed_date || '').slice(0, 10)));
+  diary.forEach(e => add(e.client_id, String(e.entry_date || '').slice(0, 10)));
+  runs.forEach(r => add(r.client_id, String(r.session_date || '').slice(0, 10)));
+}
+function rnHomeBadgeHtml(c) {
+  const n = (rnHomeWeek.get(c.id) || new Set()).size;
+  return `<div class="client-avatar rn-wk${n ? ' is-on' : ''}" role="img" aria-label="${n} ${n === 1 ? 'día' : 'días'} con registro esta semana" style="${c.is_churn ? 'opacity:0.5;' : ''}">${n}</div>`;
+}
+// ---------- R8: biblioteca, categoría Run (pantallas 23 y 24) ----------
+// Lee y escribe run_exercises y run_routines. exercise_library no se toca.
+const RN_EX_CATS = [['pre', 'Pre-run'], ['post', 'Post-run'], ['apoyo', 'Apoyo']];
+const RN_EX_CAT_NAME = Object.fromEntries(RN_EX_CATS);
+let rnLib = { cat: '', ex: [], routines: [], loaded: false };
+
+async function rnLoadLibrary() {
+  const uid = currentUser?.id;
+  const [ex, rt] = await Promise.all([
+    sb.from('run_exercises').select('*').or(`coach_id.eq.${uid},coach_id.is.null`).order('name', { ascending: true }),
+    sb.from('run_routines').select('*').order('session_type', { ascending: true })
+  ]);
+  if (ex.error) { showToast('No se pudo cargar Run: ' + ex.error.message, 'error'); }
+  rnLib.ex = ex.data || []; rnLib.routines = rt.data || []; rnLib.loaded = true;
+}
+async function rnRenderLibrary(reload) {
+  const list = document.getElementById('ex-coaching-list');
+  if (!list) return;
+  if (!rnLib.loaded || reload) { list.innerHTML = '<div class="spinner"></div>'; await rnLoadLibrary(); if (exCoachingFilter !== '__run') return; }
+  const q = (document.getElementById('ex-coaching-search')?.value || '').toLowerCase();
+  let items = rnLib.ex.filter(e => !rnLib.cat || e.category === rnLib.cat);
+  if (q) items = items.filter(e => (e.name || '').toLowerCase().includes(q));
+  const sub = `<div class="rn-row" style="gap:6px;margin:4px 0 10px;overflow-x:auto;">${[['', 'Todos'], ...RN_EX_CATS].map(([k, l]) => `<div class="filter-chip${rnLib.cat === k ? ' active' : ''}" onclick="rnLib.cat='${k}';rnRenderLibrary()">${l}</div>`).join('')}</div>`;
+  const rows = items.map(e => `<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--gray2);">
+      <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;margin-bottom:3px;">${rnEsc(e.name)}</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;"><span class="muscle-tag" style="font-size:8px;">Run · ${RN_EX_CAT_NAME[e.category] || e.category}</span>${e.dose ? `<span class="muscle-tag" style="font-size:8px;">${rnEsc(e.dose)}</span>` : ''}${(e.levels || []).length && (e.levels || []).length < 3 ? `<span class="muscle-tag" style="font-size:8px;">Niv. ${(e.levels || []).join(', ')}</span>` : ''}${e.is_example ? '<span class="muscle-tag" style="font-size:8px;">ejemplo</span>' : ''}</div></div>
+      <div style="display:flex;gap:4px;flex-shrink:0;">
+        ${e.video_url ? `<a href="${rnEsc(e.video_url)}" target="_blank" rel="noopener" style="background:var(--blue-light);color:var(--blue);border:none;border-radius:6px;padding:6px 9px;" aria-label="Ver video">${icon('play', 18)}</a>` : ''}
+        <button class="icon-btn" onclick="rnExForm('${e.id}')" style="background:var(--orange-light);color:var(--orange);border:none;border-radius:6px;padding:6px 9px;cursor:pointer;" aria-label="Editar ejercicio">${icon('pencil', 18)}</button>
+        <button class="icon-btn" onclick="rnExDelete('${e.id}')" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:6px 9px;cursor:pointer;" aria-label="Borrar ejercicio">${icon('x', 18)}</button>
+      </div></div>`).join('') || '<div class="empty-state"><div class="empty-text">Sin ejercicios de Run en esta categoría.</div></div>';
+  const blocks = RN_TYPES.map(([t, l]) => {
+    const pre = rnLib.routines.find(r => r.session_type === t && r.block === 'pre' && r.is_default), post = rnLib.routines.find(r => r.session_type === t && r.block === 'post' && r.is_default);
+    const sum = r => r ? `${rnEsc(r.name)} (${(r.exercise_ids || []).length})` : '—';
+    return `<div class="rn-row rn-sp" style="padding:8px 0;border-bottom:1px solid var(--gray2);"><div class="rn-fx"><div style="font-weight:700;font-size:14px;">${l}</div><div class="rn-xs rn-mu">Pre: ${sum(pre)} · Post: ${sum(post)}</div></div>
+      <div class="rn-row" style="gap:4px;"><button type="button" class="rn-ch" style="font-size:12px;min-height:36px;" onclick="rnRoutineForm('${t}','pre')">Pre</button><button type="button" class="rn-ch" style="font-size:12px;min-height:36px;" onclick="rnRoutineForm('${t}','post')">Post</button></div></div>`;
+  }).join('');
+  list.innerHTML = `<div class="rn">${sub}${rows}
+    <div class="rn-xs rn-mu" style="margin:10px 0;">Pliometría y tramos fuertes: opcionales y de bajo impacto en los niveles 1 y 2. El post-run es práctica de coaching, no evidencia científica.</div>
+    <div class="section-header"><div class="section-title">Bloques por tipo de sesión</div></div>
+    <div class="rn-xs rn-mu" style="margin-bottom:6px;">Son los valores por defecto. En cada sesión del plan se pueden cambiar.</div>${blocks}</div>`;
+}
+// Pantalla 24: + Ejercicio de Run
+function rnExForm(id, pre) {
+  const e = id ? rnLib.ex.find(x => x.id === id) : null, p = pre || {};
+  const cat = e?.category || p.category || rnLib.cat || 'pre', lv = e?.levels || [1, 2, 3];
+  rnOpenSheet(`<div class="rn-sheet-head"><span class="rn-ey">Biblioteca · ${e ? 'editar' : 'nuevo'} ejercicio</span><button type="button" class="rn-x" aria-label="Cerrar" onclick="rnCloseSheet()">${icon('x', 20)}</button></div>
+    <h1 class="rn-h1">${e ? 'Editar ejercicio' : 'Nuevo ejercicio'}</h1>
+    <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-ex-name">Nombre</label><input id="rn-ex-name" class="rn-in is-txt" value="${rnEsc(e?.name || p.name || '')}"></div>
+    <div class="rn-cd"><div class="rn-lb">Categoría: Run · tipo</div><div class="rn-chs" id="rn-ex-cat">${RN_EX_CATS.map(([k, l]) => `<button type="button" class="rn-ch${cat === k ? ' is-on' : ''}" data-v="${k}" aria-pressed="${cat === k}" onclick="rnExPick(this,'rn-ex-cat',true)">${l}</button>`).join('')}</div></div>
+    <div class="rn-cd"><div class="rn-lb">Aplica a los niveles</div><div class="rn-chs" id="rn-ex-lv">${[1, 2, 3].map(n => `<button type="button" class="rn-ch${lv.includes(n) ? ' is-on' : ''}" data-v="${n}" aria-pressed="${lv.includes(n)}" onclick="rnExPick(this,'rn-ex-lv',false)">${n}</button>`).join('')}</div></div>
+    <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-ex-dose">Duración o repeticiones</label><input id="rn-ex-dose" class="rn-in is-txt" value="${rnEsc(e?.dose || '')}" placeholder="30 s, 2 x 10…"></div>
+    <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-ex-desc">Descripción</label><textarea id="rn-ex-desc" class="rn-in" rows="2">${rnEsc(e?.description || '')}</textarea></div>
+    <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-ex-cues">Indicaciones</label><textarea id="rn-ex-cues" class="rn-in" rows="2">${rnEsc(e?.cues || '')}</textarea></div>
+    <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-ex-video">Video (opcional)</label><input id="rn-ex-video" class="rn-in is-txt" type="url" value="${rnEsc(e?.video_url || p.video || '')}" placeholder="https://…"></div>
+    <div style="margin-bottom:6px;"><label class="rn-fl" for="rn-ex-contra">Contraindicaciones</label><textarea id="rn-ex-contra" class="rn-in" rows="2">${rnEsc(e?.contraindications || '')}</textarea></div>
+    <button type="button" class="rn-bt is-g" onclick="rnExSave(${e ? `'${e.id}'` : 'null'})">Guardar ejercicio</button>`);
+}
+function rnExPick(btn, groupId, single) {
+  if (single) document.querySelectorAll(`#${groupId} .rn-ch`).forEach(b => { b.classList.remove('is-on'); b.setAttribute('aria-pressed', 'false'); });
+  const on = single ? true : !btn.classList.contains('is-on');
+  btn.classList.toggle('is-on', on); btn.setAttribute('aria-pressed', String(on));
+}
+async function rnExSave(id) {
+  const g = x => (document.getElementById(x)?.value || '').trim();
+  const cat = document.querySelector('#rn-ex-cat .rn-ch.is-on')?.dataset.v;
+  const levels = [...document.querySelectorAll('#rn-ex-lv .rn-ch.is-on')].map(b => Number(b.dataset.v));
+  const row = { name: g('rn-ex-name'), category: cat, levels, dose: g('rn-ex-dose') || null, description: g('rn-ex-desc') || null, cues: g('rn-ex-cues') || null, video_url: g('rn-ex-video') || null, contraindications: g('rn-ex-contra') || null };
+  if (!row.name) { showToast('El nombre es obligatorio', 'error'); return; }
+  if (!cat) { showToast('Elegí el tipo de Run'); return; }
+  if (!levels.length) { showToast('Elegí al menos un nivel'); return; }
+  const res = id ? await sb.from('run_exercises').update({ ...row, is_example: false }).eq('id', id) : await sb.from('run_exercises').insert([{ ...row, coach_id: currentUser.id }]);
+  if (res.error) { showToast(res.error.message, 'error'); return; }
+  rnCloseSheet(); showToast('Ejercicio guardado', 'success');
+  if (exCoachingFilter === '__run') rnRenderLibrary(true); else rnLib.loaded = false;
+}
+async function rnExDelete(id) {
+  const e = rnLib.ex.find(x => x.id === id); if (!e) return;
+  const used = rnLib.routines.filter(r => (r.exercise_ids || []).map(String).includes(String(id)));
+  const msg = used.length ? `«${e.name}» se usa en ${used.length} ${used.length === 1 ? 'bloque' : 'bloques'} (${used.map(r => r.name).join(', ')}). Si lo borrás, se quita de ${used.length === 1 ? 'ese bloque' : 'esos bloques'}. ¿Borrarlo igual?` : `¿Borrar «${e.name}»?`;
+  if (!confirm(msg)) return;
+  for (const r of used) {
+    const { error } = await sb.from('run_routines').update({ exercise_ids: (r.exercise_ids || []).filter(x => String(x) !== String(id)) }).eq('id', r.id);
+    if (error) { showToast(error.message, 'error'); return; }
+  }
+  const { error } = await sb.from('run_exercises').delete().eq('id', id);
+  if (error) { showToast(error.message, 'error'); return; }
+  showToast('Ejercicio borrado'); rnRenderLibrary(true);
+}
+// Bloque pre o post por defecto de un tipo de sesión
+let rnRt = null;
+function rnRoutineForm(type, block) {
+  const r = rnLib.routines.find(x => x.session_type === type && x.block === block && x.is_default);
+  rnOpenSheet('', () => { rnRt = null; });
+  rnRt = { type, block, id: r?.id || null, name: r?.name || `${block === 'pre' ? 'Pre' : 'Post'} ${RN_TYPE_NAME[type].toLowerCase()}`, ids: (r?.exercise_ids || []).map(String) };
+  rnRoutineRender();
+}
+function rnRoutineRender() {
+  const t = rnRt, pool = rnLib.ex.filter(e => e.category === t.block || e.category === 'apoyo');
+  const chosen = t.ids.map(id => rnLib.ex.find(e => String(e.id) === id)).filter(Boolean);
+  const chosenHtml = chosen.map((e, i) => `<div class="rn-row" style="padding:6px 0;border-bottom:1px solid #EFE9DF;gap:6px;"><span class="rn-m rn-mu" style="width:18px;">${i + 1}</span><span class="rn-fx" style="font-size:14px;font-weight:600;">${rnEsc(e.name)}${e.dose ? ` <span class="rn-mu" style="font-weight:400;">· ${rnEsc(e.dose)}</span>` : ''}</span>
+      <button type="button" class="rn-ib" aria-label="Subir" ${i === 0 ? 'disabled' : ''} onclick="rnRtMove(${i},-1)">${icon('chevron-up', 16)}</button><button type="button" class="rn-ib" aria-label="Quitar" onclick="rnRtToggle('${e.id}')">${icon('x', 16)}</button></div>`).join('') || '<div class="rn-sm rn-mu">Todavía sin ejercicios.</div>';
+  const poolHtml = pool.filter(e => !t.ids.includes(String(e.id))).map(e => `<button type="button" class="rn-ch" style="font-size:13px;" onclick="rnRtToggle('${e.id}')">+ ${rnEsc(e.name)}</button>`).join('') || '<div class="rn-sm rn-mu">No hay más ejercicios de esta categoría.</div>';
+  rnSheetBody(`${rnSheetHead(`${RN_TYPE_NAME[t.type]} · bloque ${t.block === 'pre' ? 'pre-run' : 'post-run'}`, 'Bloque por defecto')}
+    <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-rt-name">Nombre</label><input id="rn-rt-name" class="rn-in is-txt" value="${rnEsc(t.name)}"></div>
+    <div class="rn-cd"><div class="rn-lb">En orden</div>${chosenHtml}</div>
+    <div class="rn-cd"><div class="rn-lb">Agregar</div><div class="rn-row rn-wrap" style="gap:6px;">${poolHtml}</div></div>
+    <button type="button" class="rn-bt is-g" onclick="rnRoutineSave()">Guardar bloque</button>`);
+}
+function rnRtRead() { const n = document.getElementById('rn-rt-name'); if (n) rnRt.name = n.value.trim(); }
+function rnRtToggle(id) { rnRtRead(); id = String(id); const i = rnRt.ids.indexOf(id); if (i >= 0) rnRt.ids.splice(i, 1); else rnRt.ids.push(id); rnRoutineRender(); }
+function rnRtMove(i, d) { rnRtRead(); const a = rnRt.ids, j = i + d; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; rnRoutineRender(); }
+async function rnRoutineSave() {
+  rnRtRead();
+  const t = rnRt;
+  if (!t.name) { showToast('Poné un nombre'); return; }
+  const row = { session_type: t.type, block: t.block, name: t.name, exercise_ids: t.ids, is_default: true };
+  const res = t.id ? await sb.from('run_routines').update(row).eq('id', t.id) : await sb.from('run_routines').insert([{ ...row, coach_id: currentUser.id }]);
+  if (res.error) { showToast(res.error.message, 'error'); return; }
+  rnCloseSheet(); showToast('Bloque guardado', 'success'); rnRenderLibrary(true);
+}
+// Bloques en la tarjeta de sesión del cliente (Mi semana)
+function rnBlocksHtml(pre, post) {
+  const one = (r, l) => {
+    if (!r) return '';
+    const ex = (r.exercise_ids || []).map(id => (rnLib.ex.find(e => String(e.id) === String(id)) || (rnClient && rnClient.exById && rnClient.exById[id]))).filter(Boolean);
+    return `<details style="margin-top:6px;"><summary class="rn-xs" style="cursor:pointer;font-weight:700;">${l}: ${rnEsc(r.name)}</summary>${ex.map(e => `<div class="rn-xs" style="padding:3px 0 3px 10px;">${rnEsc(e.name)}${e.dose ? ' · ' + rnEsc(e.dose) : ''}${e.video_url ? ` · <a href="${rnEsc(e.video_url)}" target="_blank" rel="noopener">video</a>` : ''}</div>`).join('') || '<div class="rn-xs rn-mu" style="padding-left:10px;">Sin ejercicios.</div>'}</details>`;
+  };
+  return one(pre, 'Pre-run') + one(post, 'Post-run');
+}
+// ===== FIN MÓDULO RUN =====
 </script>
 
 <!-- Add/Edit Food Modal -->
