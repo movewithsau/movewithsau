@@ -25231,7 +25231,8 @@ function rnParsePlanJson(text, routines) {
   let data;
   try { data = JSON.parse(text); } catch (e) { return { errors: ['El JSON no es válido: ' + e.message], warnings, plan: null, count: 0 }; }
   if (!data || !Array.isArray(data.semanas) || !data.semanas.length) return { errors: ['Falta la lista "semanas".'], warnings, plan: null, count: 0 };
-  const routineByName = n => (routines || []).find(r => r.name.toLowerCase() === String(n).toLowerCase());
+  // Bloque por nombre, sin importar mayúsculas ni tildes (mismo criterio que el match de ejercicios)
+  const routineByName = (n, block) => { const k = _normStr(String(n)); const all = (routines || []).filter(r => _normStr(r.name) === k); return all.find(r => r.block === block) || all[0]; };
   const weeks = []; let count = 0, prev = null;
   data.semanas.forEach((w, wi) => {
     const n = Number(w.semana);
@@ -25256,8 +25257,8 @@ function rnParsePlanJson(text, routines) {
       const ov = {};
       ['reducida', 'minima'].forEach(v => { if (s[v] && typeof s[v] === 'object') { const o = {}; ['min', 'km', 'esfuerzo', 'notas', 'tipo'].forEach(k => { if (s[v][k] != null) o[k] = s[v][k]; }); if (Object.keys(o).length) ov[v] = o; } });
       let pre = null, post = null;
-      if (s.pre) { const r = routineByName(s.pre); if (r && r.block === 'pre') pre = r.id; else warnings.push(`${where}: el bloque pre «${s.pre}» no existe. Se ignora.`); }
-      if (s.post) { const r = routineByName(s.post); if (r && r.block === 'post') post = r.id; else warnings.push(`${where}: el bloque post «${s.post}» no existe. Se ignora.`); }
+      if (s.pre) { const r = routineByName(s.pre, 'pre'); if (r && r.block === 'pre') pre = r.id; else warnings.push(`${where}: el bloque pre «${s.pre}» no existe. Se ignora.`); }
+      if (s.post) { const r = routineByName(s.post, 'post'); if (r && r.block === 'post') post = r.id; else warnings.push(`${where}: el bloque post «${s.post}» no existe. Se ignora.`); }
       const km = s.km != null ? parseDecimal(s.km) : null;
       sessions.push({ session_type: tipo, minutes: Math.round(min), distance_km: km, effort: s.esfuerzo != null ? String(s.esfuerzo) : '', notes: s.notas || '', pre_routine_id: pre, post_routine_id: post, overrides: ov, status: 'planeada' });
       count++;
@@ -25331,7 +25332,7 @@ async function rnLoadClientData() {
   ]);
   rnRoutines = rt.data || [];
   rnClient = { tab: rnClient?.tab || 'semana', planned: pl.data || [], runs: rs.data || [], checkin: rnClient?.checkin || null, legHeavy: rnClient?.legHeavy || false, legKnown: rnClient?.legKnown || false, exById: {} };
-  const exIds = [...new Set(rnRoutines.flatMap(r => (r.exercise_ids || []).map(String)))];
+  const exIds = [...new Set(rnRoutines.flatMap(r => rnRtItems(r).map(it => it.id)))];
   if (exIds.length) { const { data: exs } = await sb.from('run_exercises').select('*').in('id', exIds); (exs || []).forEach(e => { rnClient.exById[String(e.id)] = e; }); }
   if (typeof rnLoadCheckinCtx === 'function') await rnLoadCheckinCtx();
 }
@@ -25379,13 +25380,13 @@ function rnWeekHtml() {
     const km = v.distance_km != null && v.distance_km !== '' ? ` · ${rnKm(v.distance_km)} km` : '';
     const defBlock = b => rnRoutines.find(r => r.session_type === s.session_type && r.block === b && r.is_default);
     const pre = s.pre_routine_id ? rnRoutines.find(r => r.id === s.pre_routine_id) : defBlock('pre'), post = s.post_routine_id ? rnRoutines.find(r => r.id === s.post_routine_id) : defBlock('post');
-    const blocks = typeof rnBlocksHtml === 'function' ? rnBlocksHtml(pre, post) : '';
+    const preHtml = typeof rnBlockHtml === 'function' ? rnBlockHtml(pre, 'Antes de correr') : '', postHtml = typeof rnBlockHtml === 'function' ? rnBlockHtml(post, 'Después de correr') : '';
     const title = v.postponeTest ? 'Prueba 5K' : `${RN_TYPE_NAME[v.session_type] || v.session_type}`;
     const sub = v.postponeTest ? v.message : `${v.minutes} min${km}${v.effort ? ' · esfuerzo ' + rnEsc(v.effort) : ''}${v.notes ? ' · ' + rnEsc(v.notes) : ''}`;
-    return `<div class="rn-cd"><div class="rn-row rn-sp" style="align-items:flex-start;"><div class="rn-fx"><div style="font-weight:700;font-size:17px;">${title}</div><div class="rn-sm rn-mu">${sub}</div></div>
+    return `<div class="rn-cd">${!isDone && preHtml ? `<div style="margin-bottom:8px;">${preHtml}</div>` : ''}<div class="rn-row rn-sp" style="align-items:flex-start;"><div class="rn-fx"><div style="font-weight:700;font-size:17px;">${title}</div><div class="rn-sm rn-mu">${sub}</div></div>
       ${isDone ? `<span class="rn-pill is-g">${icon('check', 14)}Hecha</span>` : '<span class="rn-pill is-n">Pendiente</span>'}</div>
       ${run ? `<div class="rn-m rn-mu rn-xs" style="margin-top:8px;">${run.distance_km != null ? rnKm(run.distance_km) + ' km · ' : ''}${rnDayLabel(run.session_date)}${rnShoeName(run.shoe_id) ? ' · ' + rnEsc(rnShoeName(run.shoe_id)) : ''}</div>` : ''}
-      ${!isDone ? blocks : ''}
+      ${!isDone ? postHtml : ''}
       ${!isDone && !paused && !sug.rest ? `<button type="button" class="rn-bt is-o" style="min-height:44px;" onclick="rnRegOpen('plan','${s.id}')">Registrar corrida</button>` : ''}</div>`;
   }).join('') || '<div class="rn-empty">Tu coach todavía no cargó sesiones para esta semana.</div>';
   return `${ey}<h1 class="rn-h1">Mi semana</h1>
@@ -26041,26 +26042,46 @@ async function rnRenderLibrary(reload) {
     return `<div class="rn-row rn-sp" style="padding:8px 0;border-bottom:1px solid var(--gray2);"><div class="rn-fx"><div style="font-weight:700;font-size:14px;">${l}</div><div class="rn-xs rn-mu">Pre: ${sum(pre)} · Post: ${sum(post)}</div></div>
       <div class="rn-row" style="gap:4px;"><button type="button" class="rn-ch" style="font-size:12px;min-height:36px;" onclick="rnRoutineForm('${t}','pre')">Pre</button><button type="button" class="rn-ch" style="font-size:12px;min-height:36px;" onclick="rnRoutineForm('${t}','post')">Post</button></div></div>`;
   }).join('');
+  const named = [...rnLib.routines].sort((a, b) => (a.block === b.block ? 0 : a.block === 'pre' ? -1 : 1) || String(a.name).localeCompare(String(b.name), 'es'));
+  const namedHtml = named.map(r => `<div class="rn-row rn-sp" style="padding:8px 0;border-bottom:1px solid var(--gray2);"><div class="rn-fx"><div style="font-weight:700;font-size:14px;">${rnEsc(r.name)}</div><div class="rn-xs rn-mu">${r.block === 'pre' ? 'Pre-run' : 'Post-run'} · ${rnRtItems(r).length} ${rnRtItems(r).length === 1 ? 'ejercicio' : 'ejercicios'}${r.is_default ? ' · por defecto en ' + rnEsc((RN_TYPE_NAME[r.session_type] || r.session_type).toLowerCase()) : ''}</div></div>
+      <button type="button" class="rn-ch" style="font-size:12px;min-height:36px;" onclick="rnBlockForm('${r.id}')">Editar</button></div>`).join('') || '<div class="rn-sm rn-mu" style="padding:6px 0;">Todavía no hay bloques.</div>';
   list.innerHTML = `<div class="rn">${sub}${rows}
     <div class="rn-xs rn-mu" style="margin:10px 0;">Pliometría y tramos fuertes: opcionales y de bajo impacto en los niveles 1 y 2. El post-run es práctica de coaching, no evidencia científica.</div>
-    <div class="section-header"><div class="section-title">Bloques por tipo de sesión</div></div>
+    <div class="section-header"><div class="section-title">Bloques</div><div class="section-action" onclick="rnBlockForm(null)">+ Nuevo bloque</div></div>
+    <div class="rn-xs rn-mu" style="margin-bottom:6px;">Un bloque agrupa ejercicios de la biblioteca. En el JSON del plan se nombran en «pre» y «post».</div>${namedHtml}
+    <div class="section-header" style="margin-top:12px;"><div class="section-title">Bloques por tipo de sesión</div></div>
     <div class="rn-xs rn-mu" style="margin-bottom:6px;">Son los valores por defecto. En cada sesión del plan se pueden cambiar.</div>${blocks}</div>`;
 }
 // Pantalla 24: + Ejercicio de Run
-function rnExForm(id, pre) {
-  const e = id ? rnLib.ex.find(x => x.id === id) : null, p = pre || {};
+function rnExFieldsHtml(e, p) {
+  p = p || {};
   const cat = e?.category || p.category || rnLib.cat || 'pre', lv = e?.levels || [1, 2, 3];
-  rnOpenSheet(`<div class="rn-sheet-head"><span class="rn-ey">Biblioteca · ${e ? 'editar' : 'nuevo'} ejercicio</span><button type="button" class="rn-x" aria-label="Cerrar" onclick="rnCloseSheet()">${icon('x', 20)}</button></div>
-    <h1 class="rn-h1">${e ? 'Editar ejercicio' : 'Nuevo ejercicio'}</h1>
-    <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-ex-name">Nombre</label><input id="rn-ex-name" class="rn-in is-txt" value="${rnEsc(e?.name || p.name || '')}"></div>
+  return `<div style="margin-bottom:10px;"><label class="rn-fl" for="rn-ex-name">Nombre</label><input id="rn-ex-name" class="rn-in is-txt" value="${rnEsc(e?.name || p.name || '')}"></div>
     <div class="rn-cd"><div class="rn-lb">Categoría: Run · tipo</div><div class="rn-chs" id="rn-ex-cat">${RN_EX_CATS.map(([k, l]) => `<button type="button" class="rn-ch${cat === k ? ' is-on' : ''}" data-v="${k}" aria-pressed="${cat === k}" onclick="rnExPick(this,'rn-ex-cat',true)">${l}</button>`).join('')}</div></div>
     <div class="rn-cd"><div class="rn-lb">Aplica a los niveles</div><div class="rn-chs" id="rn-ex-lv">${[1, 2, 3].map(n => `<button type="button" class="rn-ch${lv.includes(n) ? ' is-on' : ''}" data-v="${n}" aria-pressed="${lv.includes(n)}" onclick="rnExPick(this,'rn-ex-lv',false)">${n}</button>`).join('')}</div></div>
     <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-ex-dose">Duración o repeticiones</label><input id="rn-ex-dose" class="rn-in is-txt" value="${rnEsc(e?.dose || '')}" placeholder="30 s, 2 x 10…"></div>
     <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-ex-desc">Descripción</label><textarea id="rn-ex-desc" class="rn-in" rows="2">${rnEsc(e?.description || '')}</textarea></div>
     <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-ex-cues">Indicaciones</label><textarea id="rn-ex-cues" class="rn-in" rows="2">${rnEsc(e?.cues || '')}</textarea></div>
     <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-ex-video">Video (opcional)</label><input id="rn-ex-video" class="rn-in is-txt" type="url" value="${rnEsc(e?.video_url || p.video || '')}" placeholder="https://…"></div>
-    <div style="margin-bottom:6px;"><label class="rn-fl" for="rn-ex-contra">Contraindicaciones</label><textarea id="rn-ex-contra" class="rn-in" rows="2">${rnEsc(e?.contraindications || '')}</textarea></div>
+    <div style="margin-bottom:6px;"><label class="rn-fl" for="rn-ex-contra">Contraindicaciones</label><textarea id="rn-ex-contra" class="rn-in" rows="2">${rnEsc(e?.contraindications || '')}</textarea></div>`;
+}
+function rnExForm(id, pre) {
+  const e = id ? rnLib.ex.find(x => x.id === id) : null;
+  rnOpenSheet(`<div class="rn-sheet-head"><span class="rn-ey">Biblioteca · ${e ? 'editar' : 'nuevo'} ejercicio</span><button type="button" class="rn-x" aria-label="Cerrar" onclick="rnCloseSheet()">${icon('x', 20)}</button></div>
+    <h1 class="rn-h1">${e ? 'Editar ejercicio' : 'Nuevo ejercicio'}</h1>
+    ${rnExFieldsHtml(e, pre)}
     <button type="button" class="rn-bt is-g" onclick="rnExSave(${e ? `'${e.id}'` : 'null'})">Guardar ejercicio</button>`);
+}
+// Lee el formulario de ejercicio; avisa y devuelve null si falta algo
+function rnExReadForm() {
+  const g = x => (document.getElementById(x)?.value || '').trim();
+  const cat = document.querySelector('#rn-ex-cat .rn-ch.is-on')?.dataset.v;
+  const levels = [...document.querySelectorAll('#rn-ex-lv .rn-ch.is-on')].map(b => Number(b.dataset.v));
+  const row = { name: g('rn-ex-name'), category: cat, levels, dose: g('rn-ex-dose') || null, description: g('rn-ex-desc') || null, cues: g('rn-ex-cues') || null, video_url: g('rn-ex-video') || null, contraindications: g('rn-ex-contra') || null };
+  if (!row.name) { showToast('El nombre es obligatorio', 'error'); return null; }
+  if (!cat) { showToast('Elegí el tipo de Run'); return null; }
+  if (!levels.length) { showToast('Elegí al menos un nivel'); return null; }
+  return row;
 }
 function rnExPick(btn, groupId, single) {
   if (single) document.querySelectorAll(`#${groupId} .rn-ch`).forEach(b => { b.classList.remove('is-on'); b.setAttribute('aria-pressed', 'false'); });
@@ -26068,13 +26089,7 @@ function rnExPick(btn, groupId, single) {
   btn.classList.toggle('is-on', on); btn.setAttribute('aria-pressed', String(on));
 }
 async function rnExSave(id) {
-  const g = x => (document.getElementById(x)?.value || '').trim();
-  const cat = document.querySelector('#rn-ex-cat .rn-ch.is-on')?.dataset.v;
-  const levels = [...document.querySelectorAll('#rn-ex-lv .rn-ch.is-on')].map(b => Number(b.dataset.v));
-  const row = { name: g('rn-ex-name'), category: cat, levels, dose: g('rn-ex-dose') || null, description: g('rn-ex-desc') || null, cues: g('rn-ex-cues') || null, video_url: g('rn-ex-video') || null, contraindications: g('rn-ex-contra') || null };
-  if (!row.name) { showToast('El nombre es obligatorio', 'error'); return; }
-  if (!cat) { showToast('Elegí el tipo de Run'); return; }
-  if (!levels.length) { showToast('Elegí al menos un nivel'); return; }
+  const row = rnExReadForm(); if (!row) return;
   const res = id ? await sb.from('run_exercises').update({ ...row, is_example: false }).eq('id', id) : await sb.from('run_exercises').insert([{ ...row, coach_id: currentUser.id }]);
   if (res.error) { showToast(res.error.message, 'error'); return; }
   rnCloseSheet(); showToast('Ejercicio guardado', 'success');
@@ -26082,58 +26097,133 @@ async function rnExSave(id) {
 }
 async function rnExDelete(id) {
   const e = rnLib.ex.find(x => x.id === id); if (!e) return;
-  const used = rnLib.routines.filter(r => (r.exercise_ids || []).map(String).includes(String(id)));
+  const used = rnLib.routines.filter(r => rnRtItems(r).some(it => it.id === String(id)));
   const msg = used.length ? `«${e.name}» se usa en ${used.length} ${used.length === 1 ? 'bloque' : 'bloques'} (${used.map(r => r.name).join(', ')}). Si lo borrás, se quita de ${used.length === 1 ? 'ese bloque' : 'esos bloques'}. ¿Borrarlo igual?` : `¿Borrar «${e.name}»?`;
   if (!(await appConfirm(msg))) return;
   for (const r of used) {
-    const { error } = await sb.from('run_routines').update({ exercise_ids: (r.exercise_ids || []).filter(x => String(x) !== String(id)) }).eq('id', r.id);
+    const { error } = await sb.from('run_routines').update({ exercise_ids: rnRtSerialize(rnRtItems(r).filter(it => it.id !== String(id))) }).eq('id', r.id);
     if (error) { showToast(error.message, 'error'); return; }
   }
   const { error } = await sb.from('run_exercises').delete().eq('id', id);
   if (error) { showToast(error.message, 'error'); return; }
   showToast('Ejercicio borrado'); rnRenderLibrary(true);
 }
-// Bloque pre o post por defecto de un tipo de sesión
-let rnRt = null;
+// ---------- Bloques (run_routines): editor único para bloques con nombre y bloques por defecto ----------
+// exercise_ids guarda REFERENCIAS a run_exercises, en orden. Cada item es el id (texto) o {id, dose}
+// cuando el bloque usa su propia "duración o repeticiones"; el ejercicio original no se toca.
+function rnRtItems(r) {
+  return ((r && r.exercise_ids) || []).map(x => (x && typeof x === 'object') ? { id: String(x.id), dose: x.dose || '' } : { id: String(x), dose: '' }).filter(it => it.id && it.id !== 'undefined');
+}
+function rnRtSerialize(items) { return items.map(it => (it.dose && it.dose.trim()) ? { id: it.id, dose: it.dose.trim() } : it.id); }
+let rnBk = null;
 function rnRoutineForm(type, block) {
   const r = rnLib.routines.find(x => x.session_type === type && x.block === block && x.is_default);
-  rnOpenSheet('', () => { rnRt = null; });
-  rnRt = { type, block, id: r?.id || null, name: r?.name || `${block === 'pre' ? 'Pre' : 'Post'} ${RN_TYPE_NAME[type].toLowerCase()}`, ids: (r?.exercise_ids || []).map(String) };
-  rnRoutineRender();
+  if (r) return rnBlockForm(r.id);
+  rnBlockOpen({ id: null, name: `${block === 'pre' ? 'Pre' : 'Post'} ${RN_TYPE_NAME[type].toLowerCase()}`, block, session_type: type, is_default: true, items: [] });
 }
-function rnRoutineRender() {
-  const t = rnRt, pool = rnLib.ex.filter(e => e.category === t.block || e.category === 'apoyo');
-  const chosen = t.ids.map(id => rnLib.ex.find(e => String(e.id) === id)).filter(Boolean);
-  const chosenHtml = chosen.map((e, i) => `<div class="rn-row" style="padding:6px 0;border-bottom:1px solid #EFE9DF;gap:6px;"><span class="rn-m rn-mu" style="width:18px;">${i + 1}</span><span class="rn-fx" style="font-size:14px;font-weight:600;">${rnEsc(e.name)}${e.dose ? ` <span class="rn-mu" style="font-weight:400;">· ${rnEsc(e.dose)}</span>` : ''}</span>
-      <button type="button" class="rn-ib" aria-label="Subir" ${i === 0 ? 'disabled' : ''} onclick="rnRtMove(${i},-1)">${icon('chevron-up', 16)}</button><button type="button" class="rn-ib" aria-label="Quitar" onclick="rnRtToggle('${e.id}')">${icon('x', 16)}</button></div>`).join('') || '<div class="rn-sm rn-mu">Todavía sin ejercicios.</div>';
-  const poolHtml = pool.filter(e => !t.ids.includes(String(e.id))).map(e => `<button type="button" class="rn-ch" style="font-size:13px;" onclick="rnRtToggle('${e.id}')">+ ${rnEsc(e.name)}</button>`).join('') || '<div class="rn-sm rn-mu">No hay más ejercicios de esta categoría.</div>';
-  rnSheetBody(`${rnSheetHead(`${RN_TYPE_NAME[t.type]} · bloque ${t.block === 'pre' ? 'pre-run' : 'post-run'}`, 'Bloque por defecto')}
-    <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-rt-name">Nombre</label><input id="rn-rt-name" class="rn-in is-txt" value="${rnEsc(t.name)}"></div>
-    <div class="rn-cd"><div class="rn-lb">En orden</div>${chosenHtml}</div>
-    <div class="rn-cd"><div class="rn-lb">Agregar</div><div class="rn-row rn-wrap" style="gap:6px;">${poolHtml}</div></div>
-    <button type="button" class="rn-bt is-g" onclick="rnRoutineSave()">Guardar bloque</button>`);
+function rnBlockForm(id) {
+  const r = id ? rnLib.routines.find(x => x.id === id) : null;
+  rnBlockOpen(r ? { id: r.id, name: r.name, block: r.block, session_type: r.session_type, is_default: !!r.is_default, items: rnRtItems(r) }
+                : { id: null, name: '', block: 'pre', session_type: 'todas', is_default: false, items: [] });
 }
-function rnRtRead() { const n = document.getElementById('rn-rt-name'); if (n) rnRt.name = n.value.trim(); }
-function rnRtToggle(id) { rnRtRead(); id = String(id); const i = rnRt.ids.indexOf(id); if (i >= 0) rnRt.ids.splice(i, 1); else rnRt.ids.push(id); rnRoutineRender(); }
-function rnRtMove(i, d) { rnRtRead(); const a = rnRt.ids, j = i + d; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; rnRoutineRender(); }
-async function rnRoutineSave() {
-  rnRtRead();
-  const t = rnRt;
-  if (!t.name) { showToast('Poné un nombre'); return; }
-  const row = { session_type: t.type, block: t.block, name: t.name, exercise_ids: t.ids, is_default: true };
-  const res = t.id ? await sb.from('run_routines').update(row).eq('id', t.id) : await sb.from('run_routines').insert([{ ...row, coach_id: currentUser.id }]);
+function rnBlockOpen(state) {
+  rnOpenSheet('', () => { rnBk = null; });
+  rnBk = { ...state, q: '', creating: false };
+  rnBlockRender();
+}
+function rnBkRead() {
+  if (!rnBk) return;
+  const n = document.getElementById('rn-bk-name'); if (n) rnBk.name = n.value;
+  document.querySelectorAll('[data-bk-dose]').forEach(inp => { const it = rnBk.items[Number(inp.dataset.bkDose)]; if (it) it.dose = inp.value; });
+  const q = document.getElementById('rn-bk-q'); if (q) rnBk.q = q.value;
+}
+function rnBlockRender() {
+  const b = rnBk; if (!b) return;
+  if (b.creating) return rnBkNewExRender();
+  const exOf = id => rnLib.ex.find(e => String(e.id) === id);
+  const itemsHtml = b.items.map((it, i) => {
+    const e = exOf(it.id);
+    if (!e) return `<div class="rn-row" style="padding:6px 0;gap:6px;"><span class="rn-fx rn-sm rn-mu">Ejercicio borrado de la biblioteca</span><button type="button" class="rn-ib" aria-label="Quitar" onclick="rnBkRemove(${i})">${icon('x', 16)}</button></div>`;
+    return `<div style="padding:8px 0;border-bottom:1px solid #EFE9DF;">
+      <div class="rn-row" style="gap:6px;align-items:center;"><span class="rn-m rn-mu" style="width:18px;">${i + 1}</span><span class="rn-fx" style="font-size:14px;font-weight:600;">${rnEsc(e.name)}</span>
+        <button type="button" class="rn-ib" aria-label="Subir ${rnEsc(e.name)}" ${i === 0 ? 'disabled' : ''} onclick="rnBkMove(${i},-1)">${icon('chevron-up', 16)}</button>
+        <button type="button" class="rn-ib" aria-label="Bajar ${rnEsc(e.name)}" ${i === b.items.length - 1 ? 'disabled' : ''} onclick="rnBkMove(${i},1)">${icon('chevron-down', 16)}</button>
+        <button type="button" class="rn-ib" aria-label="Quitar ${rnEsc(e.name)}" onclick="rnBkRemove(${i})">${icon('x', 16)}</button></div>
+      <div style="margin:6px 0 0 24px;"><label class="rn-fl" for="rn-bk-dose-${i}">Duración o repeticiones en este bloque</label><input id="rn-bk-dose-${i}" data-bk-dose="${i}" class="rn-in is-txt" value="${rnEsc(it.dose)}" placeholder="${rnEsc(e.dose || '30 s, 10 por lado…')}"></div>
+    </div>`;
+  }).join('') || '<div class="rn-sm rn-mu">Todavía sin ejercicios. Buscalos abajo.</div>';
+  rnSheetBody(`${rnSheetHead(b.is_default ? `${RN_TYPE_NAME[b.session_type] || ''} · bloque por defecto` : 'Biblioteca · bloque', b.id ? 'Editar bloque' : 'Nuevo bloque')}
+    <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-bk-name">Nombre</label><input id="rn-bk-name" class="rn-in is-txt" value="${rnEsc(b.name)}" placeholder="Pre-Run Express"></div>
+    <div class="rn-cd"><div class="rn-lb">Va</div><div class="rn-chs">${[['pre', 'Antes de correr (pre)'], ['post', 'Después de correr (post)']].map(([k, l]) => `<button type="button" class="rn-ch${b.block === k ? ' is-on' : ''}" aria-pressed="${b.block === k}" ${b.is_default && b.id ? 'disabled' : ''} onclick="rnBkRead();rnBk.block='${k}';rnBlockRender()">${l}</button>`).join('')}</div></div>
+    <div class="rn-cd"><div class="rn-lb">Ejercicios, en orden</div>${itemsHtml}
+      <div class="rn-xs rn-mu" style="margin-top:6px;">Si dejás vacío «duración o repeticiones», se usa la del ejercicio. Cambiarla acá no cambia el ejercicio original.</div></div>
+    <div class="rn-cd"><label class="rn-lb" for="rn-bk-q" style="display:block;">Agregar de la biblioteca</label>
+      <input id="rn-bk-q" class="rn-in is-txt" type="search" value="${rnEsc(b.q)}" placeholder="Buscar ejercicio…" autocomplete="off" oninput="rnBk.q=this.value;rnBkResults()">
+      <div id="rn-bk-results" style="margin-top:8px;"></div>
+      <button type="button" class="rn-bt is-l" style="margin-top:8px;" onclick="rnBkNewEx()">+ Crear ejercicio nuevo</button></div>
+    <button type="button" class="rn-bt is-g" onclick="rnBlockSave()">Guardar bloque</button>`);
+  rnBkResults();
+}
+// Resultados del buscador: sin importar mayúsculas ni tildes; se repinta solo la lista (el campo no pierde el foco)
+function rnBkResults() {
+  const box = document.getElementById('rn-bk-results'); if (!box || !rnBk) return;
+  const q = _normStr(rnBk.q || ''), chosen = new Set(rnBk.items.map(it => it.id));
+  const pool = rnLib.ex.filter(e => !chosen.has(String(e.id)) && (!q || _normStr(e.name).includes(q)));
+  const shown = pool.slice(0, q ? 30 : 8);
+  box.innerHTML = shown.map(e => `<button type="button" class="rn-row" style="width:100%;gap:8px;padding:8px 4px;border:0;border-bottom:1px solid #EFE9DF;background:none;text-align:left;cursor:pointer;font-family:inherit;" onclick="rnBkAdd('${e.id}')">
+      <span style="color:#C24E18;">${icon('plus', 16)}</span><span class="rn-fx"><span style="display:block;font-size:14px;font-weight:600;color:var(--black);">${rnEsc(e.name)}</span><span class="rn-xs rn-mu">${RN_EX_CAT_NAME[e.category] || e.category}${e.dose ? ' · ' + rnEsc(e.dose) : ''}</span></span></button>`).join('')
+    + (pool.length > shown.length ? `<div class="rn-xs rn-mu" style="padding:6px 4px;">${pool.length - shown.length} más. Escribí para filtrar.</div>` : '')
+    + (!pool.length ? `<div class="rn-sm rn-mu" style="padding:6px 0;">${q ? 'No hay ejercicios con ese nombre.' : 'No quedan ejercicios por agregar.'}</div>` : '');
+}
+function rnBkAdd(id) { rnBkRead(); rnBk.items.push({ id: String(id), dose: '' }); rnBk.q = ''; rnBlockRender(); document.getElementById('rn-bk-q')?.focus(); }
+function rnBkRemove(i) { rnBkRead(); rnBk.items.splice(i, 1); rnBlockRender(); }
+function rnBkMove(i, d) { rnBkRead(); const a = rnBk.items, j = i + d; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; rnBlockRender(); }
+async function rnBlockSave() {
+  rnBkRead();
+  const b = rnBk; if (!b) return;
+  const name = (b.name || '').trim();
+  if (!name) { showToast('Poné un nombre al bloque', 'error'); return; }
+  const dup = rnLib.routines.find(r => r.id !== b.id && r.block === b.block && _normStr(r.name) === _normStr(name));
+  if (dup) { showToast(`Ya hay un bloque ${b.block} llamado «${dup.name}»`, 'error'); return; }
+  const row = { name, block: b.block, session_type: b.session_type || 'todas', is_default: !!b.is_default, exercise_ids: rnRtSerialize(b.items) };
+  const res = b.id ? await sb.from('run_routines').update(row).eq('id', b.id) : await sb.from('run_routines').insert([{ ...row, coach_id: currentUser.id }]);
   if (res.error) { showToast(res.error.message, 'error'); return; }
   rnCloseSheet(); showToast('Bloque guardado', 'success'); rnRenderLibrary(true);
 }
-// Bloques en la tarjeta de sesión del cliente (Mi semana)
-function rnBlocksHtml(pre, post) {
-  const one = (r, l) => {
-    if (!r) return '';
-    const ex = (r.exercise_ids || []).map(id => (rnLib.ex.find(e => String(e.id) === String(id)) || (rnClient && rnClient.exById && rnClient.exById[id]))).filter(Boolean);
-    return `<details style="margin-top:6px;"><summary class="rn-xs" style="cursor:pointer;font-weight:700;">${l}: ${rnEsc(r.name)}</summary>${ex.map(e => `<div class="rn-xs" style="padding:3px 0 3px 10px;">${rnEsc(e.name)}${e.dose ? ' · ' + rnEsc(e.dose) : ''}${e.video_url ? ` · <a href="${rnEsc(e.video_url)}" target="_blank" rel="noopener">video</a>` : ''}</div>`).join('') || '<div class="rn-xs rn-mu" style="padding-left:10px;">Sin ejercicios.</div>'}</details>`;
-  };
-  return one(pre, 'Pre-run') + one(post, 'Post-run');
+// Crear un ejercicio nuevo sin salir del bloque: mismo formulario de la biblioteca; al guardar queda en la
+// biblioteca y agregado al bloque.
+function rnBkNewEx() { rnBkRead(); rnBk.creating = true; rnBlockRender(); }
+function rnBkNewExRender() {
+  rnSheetBody(`${rnSheetHead('Bloque · ' + rnEsc(rnBk.name || 'nuevo'), 'Nuevo ejercicio')}
+    ${rnExFieldsHtml(null, { name: rnBk.q || '', category: rnBk.block })}
+    <button type="button" class="rn-bt is-g" onclick="rnBkNewExSave()">Guardar y agregar al bloque</button>
+    <button type="button" class="rn-bt is-l" onclick="rnBk.creating=false;rnBlockRender()">Volver al bloque</button>`);
 }
+async function rnBkNewExSave() {
+  const row = rnExReadForm(); if (!row) return;
+  const { data, error } = await sb.from('run_exercises').insert([{ ...row, coach_id: currentUser.id }]).select().maybeSingle();
+  if (error || !data) { showToast(error ? error.message : 'No se pudo guardar', 'error'); return; }
+  rnLib.ex.push(data); rnLib.ex.sort((a, b) => String(a.name).localeCompare(String(b.name), 'es'));
+  rnBk.items.push({ id: String(data.id), dose: '' }); rnBk.creating = false; rnBk.q = '';
+  showToast('Ejercicio creado y agregado', 'success');
+  rnBlockRender();
+}
+// Bloques en la tarjeta de sesión del cliente (Mi semana). Video e indicaciones salen del ejercicio original;
+// la duración o repeticiones, del bloque si la tiene.
+function rnBlockHtml(r, label) {
+  if (!r) return '';
+  const exOf = id => rnLib.ex.find(e => String(e.id) === id) || (rnClient && rnClient.exById && rnClient.exById[id]);
+  const rows = rnRtItems(r).map(it => ({ e: exOf(it.id), dose: it.dose })).filter(x => x.e).map(({ e, dose }) => {
+    const d = dose || e.dose;
+    return `<div style="padding:8px 0 8px 10px;border-top:1px solid #EFE9DF;">
+      <div class="rn-row rn-sp" style="gap:8px;align-items:flex-start;"><span style="font-size:14px;font-weight:600;">${rnEsc(e.name)}${d ? ` <span class="rn-mu" style="font-weight:400;">· ${rnEsc(d)}</span>` : ''}</span>
+        ${e.video_url ? `<a href="${rnEsc(e.video_url)}" target="_blank" rel="noopener" class="rn-xs" style="display:inline-flex;align-items:center;gap:4px;color:#A63E10;font-weight:700;flex:none;min-height:32px;">${icon('play', 14)}Video</a>` : ''}</div>
+      ${e.cues ? `<div class="rn-xs rn-mu" style="margin-top:2px;line-height:1.45;">${rnEsc(e.cues)}</div>` : ''}
+    </div>`;
+  }).join('');
+  return `<details class="rn-blk" style="margin-top:6px;"><summary class="rn-sm" style="cursor:pointer;font-weight:700;min-height:32px;display:flex;align-items:center;gap:6px;"><span class="rn-xs rn-mu" style="font-weight:500;">${label}</span>${rnEsc(r.name)}</summary>${rows || '<div class="rn-xs rn-mu" style="padding-left:10px;">Sin ejercicios.</div>'}</details>`;
+}
+function rnBlocksHtml(pre, post) { return rnBlockHtml(pre, 'Antes de correr') + rnBlockHtml(post, 'Después de correr'); }
 // ===== FIN MÓDULO RUN =====
 </script>
 
