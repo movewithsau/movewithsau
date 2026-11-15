@@ -2274,6 +2274,26 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
   </div>
 </div>
 
+<!-- ===== COACH: RUN (módulo Run) ===== -->
+<div class="screen" id="screen-coach-run">
+  <div class="topbar"><div class="topbar-logo">Move With Sau</div><div class="topbar-action" onclick="handleLogout()">Salir</div></div>
+  <div class="scroll-body">
+    <div style="margin-bottom:14px;">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Coach · Run</div>
+      <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;">Clientes con Run</div>
+      <div style="font-size:13px;color:var(--gray5);margin-top:2px;">Los que tienen el módulo activo.</div>
+    </div>
+    <div id="rn-coach-list"><div class="spinner"></div></div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="coachNav('clients',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-users"/></svg></div><div class="nav-label">Clientes</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('builder',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-layers"/></svg></div><div class="nav-label">Machotes</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('coaching',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-flask-conical"/></svg></div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
+    <div class="nav-item active" onclick="coachNav('run',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-activity"/></svg></div><div class="nav-label">Run</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-settings"/></svg></div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
+  </div>
+</div>
+
 <!-- ===== COACH: DATA ===== -->
 <div class="screen" id="screen-coach-data">
   <div class="topbar"><div class="topbar-logo">Move With Sau</div><div class="topbar-action" onclick="handleLogout()">Salir</div></div>
@@ -13915,12 +13935,13 @@ let exCoachingFilter = '';
 let allExCoaching = [];
 
 function coachNav(tab,el) {
-  document.querySelectorAll('#screen-coach-home .nav-item,#screen-coach-settings .nav-item,#screen-coach-data .nav-item,#screen-ai-builder .nav-item,#screen-templates .nav-item,#screen-template-editor .nav-item,#screen-coach-coaching .nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('#screen-coach-home .nav-item,#screen-coach-settings .nav-item,#screen-coach-data .nav-item,#screen-coach-run .nav-item,#screen-ai-builder .nav-item,#screen-templates .nav-item,#screen-template-editor .nav-item,#screen-coach-coaching .nav-item').forEach(n=>n.classList.remove('active'));
   el.classList.add('active');
   if(tab==='clients'){showScreen('screen-coach-home');loadCoachClients();}
   if(tab==='builder'){showScreen('screen-templates');loadTemplates();}
   if(tab==='coaching'){showScreen('screen-coach-coaching');loadFoodLibrary();switchCoachingTab(coachingActiveTab);}
   if(tab==='data'){showScreen('screen-coach-data');loadDataScreen();}
+  if(tab==='run'){showScreen('screen-coach-run');rnOpenCoachRun();}
   if(tab==='settings'){showScreen('screen-coach-settings');loadSettings();}
 }
 
@@ -24095,6 +24116,7 @@ textarea.rn-in { height:auto; min-height:72px; padding:10px 12px; font-family:'D
 .rn-bar > div { height:8px; background:#1E7A3C; }
 .rn-ib { width:40px; height:40px; border-radius:10px; border:1px solid #D2C7B6; background:#fff; display:inline-flex; align-items:center; justify-content:center; color:#1F1B16; cursor:pointer; flex-shrink:0; }
 .rn-ib[disabled] { opacity:.35; cursor:default; }
+button.rn-cd { font-family:'DM Sans',sans-serif; color:#1F1B16; }
 .rn-empty { text-align:center; padding:28px 12px; color:#5E564B; font-size:14px; line-height:1.5; }
 </style>
 <script>
@@ -25337,7 +25359,7 @@ async function rnCkAlerts(rec, c) {
 }
 
 // Pantallas 3 y 6: recomendación con mini calendario
-function rnMiniCalHtml(sel) {
+function rnMiniCalHtml(sel, pickFn = 'rnCalPick') {
   const today = todayCR(), days = rnClient.days || {};
   const L = ['D', 'L', 'K', 'M', 'J', 'V', 'S'];
   const cells = Array.from({ length: 7 }, (_, i) => tcAddDays(today, i - 6)).map(d => {
@@ -25345,7 +25367,7 @@ function rnMiniCalHtml(sel) {
     const lbl = `${n}${d === today ? ', hoy' : ''}, ${on ? (x.legHeavy ? 'pierna pesada' : 'entreno') : 'sin entreno'}`;
     const bg = on ? `background:${RN_ORANGE};color:#fff;` : 'background:#EFE9DF;color:#4F483E;';
     return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;"><span class="rn-m rn-mu" style="font-size:11px;">${L[dow] === 'K' ? 'M' : L[dow]}</span>
-      <button type="button" aria-label="${lbl}" aria-pressed="${sel === d}" onclick="rnCalPick('${d}')" style="width:42px;height:56px;border-radius:12px;border:0;cursor:pointer;${bg}display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-family:'DM Mono',monospace;font-size:15px;${sel === d ? 'box-shadow:0 0 0 2px #FAF6F0,0 0 0 4px #1F1B16;' : ''}">${n}${x && x.legHeavy ? '<small style="font-family:\'DM Sans\',sans-serif;font-size:10px;font-weight:700;">Pierna</small>' : ''}${d === today ? `<span style="width:5px;height:5px;border-radius:9px;background:${on ? '#fff' : RN_ORANGE};display:block;"></span>` : ''}</button></div>`;
+      <button type="button" aria-label="${lbl}" aria-pressed="${sel === d}" onclick="${pickFn}('${d}')" style="width:42px;height:56px;border-radius:12px;border:0;cursor:pointer;${bg}display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-family:'DM Mono',monospace;font-size:15px;${sel === d ? 'box-shadow:0 0 0 2px #FAF6F0,0 0 0 4px #1F1B16;' : ''}">${n}${x && x.legHeavy ? '<small style="font-family:\'DM Sans\',sans-serif;font-size:10px;font-weight:700;">Pierna</small>' : ''}${d === today ? `<span style="width:5px;height:5px;border-radius:9px;background:${on ? '#fff' : RN_ORANGE};display:block;"></span>` : ''}</button></div>`;
   }).join('');
   const x = sel && days[sel];
   const det = sel ? (x && x.sources
@@ -25427,6 +25449,140 @@ async function rnLegAfter(runId, choice) {
     if (error) showToast('No se pudo guardar tu respuesta', 'error');
   }
   rnCloseSheet(); showToast('Listo', 'success');
+}
+// ---------- R6: coach, pestaña Run (pantallas 21 y 22) ----------
+const RUN_NO_LOG_DAYS = 3;             // días sin corridas ni check-in: alerta "sin registro" (una sola abierta)
+const RN_REFRESH_MS = 60000;           // refresco mientras la lista está visible (como las solicitudes de asistencia)
+const RN_ALERT_NAMES = { alarma: 'Síntoma de alarma', dolor_3_dias: 'Dolor 3 días seguidos', dolor_fuerte: 'Dolor fuerte', onboarding_roja: 'Alerta roja del onboarding', onboarding_amarilla: 'Alerta amarilla', sin_registro: 'Sin registrar' };
+let rnCoach = { filter: 'todos', data: null, timer: null, req: 0 };
+
+async function rnLoadCoachRun() {
+  const box = document.getElementById('rn-coach-list');
+  if (!box || !currentUser) return;
+  const req = ++rnCoach.req;
+  if (!rnCoach.data) box.innerHTML = '<div class="spinner"></div>';
+  const { data: clients, error } = await sb.from('clients').select('id,name,username,coach_id,run_module_enabled,is_churn,hidden').eq('coach_id', currentUser.id).eq('run_module_enabled', true);
+  if (error) { box.innerHTML = `<div class="rn-empty">No se pudo cargar: ${rnEsc(error.message)}</div>`; return; }
+  const list = (clients || []).filter(c => !c.is_churn);
+  const ids = list.map(c => c.id), today = todayCR(), since = tcAddDays(today, -28);
+  const rows = q => ids.length ? q.then(r => r.data || [], () => []) : Promise.resolve([]);
+  const [profiles, planned, runs, alerts, cks] = await Promise.all([
+    rows(sb.from('run_profiles').select('*').in('client_id', ids)),
+    rows(sb.from('run_planned_sessions').select('client_id,week_number,status').in('client_id', ids)),
+    rows(sb.from('run_sessions').select('client_id,session_date,distance_km,kind').in('client_id', ids).gte('session_date', since)),
+    rows(sb.from('run_alerts').select('*').in('client_id', ids).eq('status', 'open').order('created_at', { ascending: false })),
+    rows(sb.from('run_checkins').select('client_id,checkin_date').in('client_id', ids).gte('checkin_date', tcAddDays(today, -RUN_NO_LOG_DAYS)))
+  ]);
+  if (req !== rnCoach.req) return;
+  // Aviso de varios días sin registrar: crea una alerta abierta sin duplicados
+  const newNoLog = [];
+  list.forEach(c => {
+    const p = profiles.find(x => x.client_id === c.id);
+    if (!p || ((p.mode || 'plan') === 'plan' && p.plan_status !== 'active')) return;
+    const startedBefore = rnCRDate(p.created_at) <= tcAddDays(today, -RUN_NO_LOG_DAYS) && (!p.start_date || String(p.start_date).slice(0, 10) <= tcAddDays(today, -RUN_NO_LOG_DAYS));
+    if (!startedBefore) return;
+    const recent = runs.some(r => r.client_id === c.id && r.session_date > tcAddDays(today, -RUN_NO_LOG_DAYS)) || cks.some(k => k.client_id === c.id);
+    if (!recent && !alerts.some(a => a.client_id === c.id && a.type === 'sin_registro')) newNoLog.push(c.id);
+  });
+  for (const cid of newNoLog) await rnCreateAlerts(cid, [{ type: 'sin_registro', detail: `Sin corridas ni check-in en los últimos ${RUN_NO_LOG_DAYS} días.` }]);
+  const allAlerts = newNoLog.length ? await rows(sb.from('run_alerts').select('*').in('client_id', ids).eq('status', 'open').order('created_at', { ascending: false })) : alerts;
+  if (req !== rnCoach.req) return;
+  const mon = rnWeekMonday(today);
+  rnCoach.data = list.map(c => {
+    const p0 = profiles.find(x => x.client_id === c.id) || {};
+    const p = { ...p0, mode: p0.mode || 'plan', plan_status: p0.plan_status || 'none' };
+    const wk = rnCurrentWeek(p), pl = planned.filter(s => s.client_id === c.id && s.week_number <= wk);
+    const adh = p.mode === 'plan' && p.plan_status === 'active' && pl.length ? Math.round(pl.filter(s => s.status === 'hecha').length / pl.length * 100) : null;
+    const cr = runs.filter(r => r.client_id === c.id);
+    const RANK = ['alarma', 'dolor_fuerte', 'onboarding_roja', 'dolor_3_dias', 'sin_registro', 'onboarding_amarilla'];
+    return { c, p, wk, adh, weekRuns: cr.filter(r => r.session_date >= mon).length, last: cr.map(r => r.session_date).sort().pop() || null, alerts: allAlerts.filter(a => a.client_id === c.id).sort((a, b) => RANK.indexOf(a.type) - RANK.indexOf(b.type)) };
+  }).sort((a, b) => b.alerts.length - a.alerts.length || a.c.name.localeCompare(b.c.name));
+  rnRenderCoachRun();
+}
+function rnRenderCoachRun() {
+  const box = document.getElementById('rn-coach-list');
+  if (!box || !rnCoach.data) return;
+  const d = rnCoach.data, f = rnCoach.filter;
+  const alarms = d.filter(x => x.alerts.some(a => a.type === 'alarma'));
+  const nPlan = d.filter(x => x.p.mode === 'plan').length, nSeg = d.length - nPlan;
+  const nAl = d.reduce((s, x) => s + x.alerts.length, 0), nNo = d.filter(x => x.alerts.some(a => a.type === 'sin_registro')).length;
+  const pill = (k, l) => `<button type="button" class="rn-ch${f === k ? ' is-on' : ''}" style="font-size:13px;min-height:40px;white-space:nowrap;" aria-pressed="${f === k}" onclick="rnCoach.filter='${f === k ? 'todos' : k}';rnRenderCoachRun()">${l}</button>`;
+  const shown = d.filter(x => f === 'todos' || (f === 'alertas' && x.alerts.length) || (f === 'sin' && x.alerts.some(a => a.type === 'sin_registro')) || (f === 'plan' && x.p.mode === 'plan') || (f === 'seg' && x.p.mode !== 'plan'));
+  const banner = alarms.map(x => { const a = x.alerts.find(y => y.type === 'alarma'); return `<div class="rn-cd is-red rn-row" style="gap:10px;"><span style="color:${RN_RED};">${icon('alert-triangle', 22)}</span><div class="rn-fx"><div style="font-weight:700;font-size:15px;color:${RN_RED};">${rnEsc(x.c.name)} marcó un síntoma de alarma</div><div class="rn-xs rn-mu">${rnDayLabel(rnCRDate(a.created_at))}</div></div><button type="button" class="rn-ch" style="font-size:13px;" onclick="rnCoachDetail('${x.c.id}')">Ver</button></div>`; }).join('');
+  const card = x => {
+    const p = x.p, chip = x.alerts[0] ? `<span class="rn-pill ${['alarma', 'dolor_fuerte', 'onboarding_roja', 'dolor_3_dias'].includes(x.alerts[0].type) ? 'is-r' : 'is-o'}">${RN_ALERT_NAMES[x.alerts[0].type] || x.alerts[0].type}${x.alerts.length > 1 ? ' +' + (x.alerts.length - 1) : ''}</span>` : '<span class="rn-pill is-g">Sin alertas</span>';
+    const sub = p.mode === 'plan'
+      ? (p.plan_status === 'active' ? `Nivel ${p.level || '—'} · Semana ${x.wk || '—'} de ${p.weeks_total || '—'}` : p.plan_status === 'paused' ? `Nivel ${p.level || '—'} · plan en pausa` : p.plan_status === 'draft' ? 'Plan en borrador' : 'Sin plan todavía')
+      : `Solo seguimiento · ${x.weekRuns} ${x.weekRuns === 1 ? 'corrida' : 'corridas'} esta semana`;
+    return `<button type="button" class="rn-cd rn-row" style="width:100%;text-align:left;cursor:pointer;gap:12px;" onclick="rnCoachDetail('${x.c.id}')">
+      <span style="width:40px;height:40px;border-radius:99px;background:#EFE9DF;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none;">${rnEsc((x.c.name || '?').charAt(0))}</span>
+      <span class="rn-fx"><span style="display:block;font-weight:700;font-size:15px;">${rnEsc(x.c.name)}</span><span class="rn-xs rn-mu" style="display:block;margin:2px 0 6px;">${sub}</span>${chip}</span>
+      <span class="rn-m" style="font-size:17px;">${x.adh != null ? x.adh + '%' : p.mode === 'plan' ? '—' : 'Libre'}</span></button>`;
+  };
+  box.innerHTML = `<div class="rn">
+    ${banner}
+    <div class="rn-row" style="gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;">${pill('plan', `${nPlan} plan`)}${pill('seg', `${nSeg} seguimiento`)}${pill('alertas', `${nAl} ${nAl === 1 ? 'alerta abierta' : 'alertas abiertas'}`)}${pill('sin', `${nNo} sin registrar`)}</div>
+    ${shown.map(card).join('') || `<div class="rn-empty">${d.length ? 'Nadie en este filtro.' : 'Ningún cliente tiene el módulo Run activo todavía. Activalo desde la ficha del cliente, en Información de pago.'}</div>`}
+  </div>`;
+}
+function rnCoachRunVisible() { const s = document.getElementById('screen-coach-run'); return !!s && s.classList.contains('active') && document.visibilityState === 'visible'; }
+function rnCoachRunStartTimer() {
+  if (rnCoach.timer) clearInterval(rnCoach.timer);
+  rnCoach.timer = setInterval(() => { if (rnCoachRunVisible()) rnLoadCoachRun(); else { clearInterval(rnCoach.timer); rnCoach.timer = null; } }, RN_REFRESH_MS);
+}
+document.addEventListener('visibilitychange', () => { if (rnCoachRunVisible()) { rnLoadCoachRun(); if (!rnCoach.timer) rnCoachRunStartTimer(); } });
+function rnOpenCoachRun() { rnLoadCoachRun(); rnCoachRunStartTimer(); }
+
+// Detalle del cliente (pantalla 22)
+async function rnCoachDetail(cid) {
+  rnOpenSheet('<div class="spinner"></div>', () => { if (rnCoachRunVisible()) rnLoadCoachRun(); });
+  const today = todayCR();
+  const [{ data: c }, p, shoes, al, ck, rs, pl, days] = await Promise.all([
+    sb.from('clients').select('*').eq('id', cid).maybeSingle(),
+    rnLoadProfile(cid), rnLoadShoes(cid),
+    sb.from('run_alerts').select('*').eq('client_id', cid).eq('status', 'open').order('created_at', { ascending: false }).then(r => r.data || []),
+    sb.from('run_checkins').select('*').eq('client_id', cid).order('checkin_date', { ascending: false }).limit(5).then(r => r.data || []),
+    sb.from('run_sessions').select('*').eq('client_id', cid).order('session_date', { ascending: false }).limit(10).then(r => r.data || []),
+    sb.from('run_planned_sessions').select('*').eq('client_id', cid).then(r => r.data || []),
+    rnTrainingDays(cid, tcAddDays(today, -6), today)
+  ]);
+  if (!c || !document.getElementById('rn-ov')) return;
+  currentClient = c; rnProfile = p; rnShoes = shoes;
+  rnCoach.detail = { cid, days, sel: null, al, ck, rs, pl };
+  rnCoachDetailRender();
+}
+function rnCoachDetailRender() {
+  const d = rnCoach.detail, c = currentClient, p = rnProfile || { mode: 'plan', plan_status: 'none' };
+  const wk = rnCurrentWeek(p), wkS = d.pl.filter(s => s.week_number === wk);
+  const alertsHtml = d.al.map(a => `<div class="rn-cd ${['onboarding_amarilla', 'sin_registro'].includes(a.type) ? 'is-warm' : 'is-red'}">
+      <div class="rn-row rn-sp"><span class="rn-ey">Alerta abierta</span><span class="rn-xs rn-mu">${rnDayLabel(rnCRDate(a.created_at))}</span></div>
+      <div style="font-weight:700;font-size:16px;margin-top:4px;">${RN_ALERT_NAMES[a.type] || rnEsc(a.type)}</div><div class="rn-sm" style="margin-top:4px;">${rnEsc(a.detail || '')}</div>
+      <button type="button" class="rn-bt is-l" style="min-height:44px;" onclick="rnCoachResolve('${a.id}')">Marcar como resuelta</button></div>`).join('');
+  const ckHtml = d.ck.map(k => `<div class="rn-row rn-sp" style="padding:6px 0;border-bottom:1px solid #EFE9DF;"><div><div style="font-weight:700;font-size:14px;">${rnDayLabel(String(k.checkin_date).slice(0, 10))}</div><div class="rn-xs rn-mu">Energía ${k.energy ?? '—'} · sueño ${k.sleep || '—'} · ${k.pain && k.pain !== 'ninguno' ? 'dolor ' + k.pain + (k.pain_zone ? ' (' + k.pain_zone + ')' : '') : 'sin dolor'}</div></div>${k.alarm_symptom ? '<span class="rn-pill is-r">Alarma</span>' : k.recommendation?.version ? `<span class="rn-pill is-n">${k.recommendation.version}</span>` : ''}</div>`).join('') || '<div class="rn-sm rn-mu">Sin check-ins todavía.</div>';
+  const rsHtml = d.rs.map(r => `<div class="rn-row rn-sp" style="padding:6px 0;border-bottom:1px solid #EFE9DF;"><div><div style="font-weight:700;font-size:14px;">${rnDayLabel(r.session_date)}${r.distance_km != null ? ' · ' + rnKm(r.distance_km) + ' km' : ''}</div><div class="rn-xs rn-mu">${RN_RUN_NAME[r.session_type] || r.session_type || ''} · ${rnMinToClock(r.duration_min)}${r.effort ? ' · esfuerzo ' + r.effort : ''}${r.version_used ? ' · ' + r.version_used : ''}${r.leg_after === 'igual' ? ' · hizo pierna igual' : ''}</div></div><span class="rn-pill ${r.kind === 'plan' ? 'is-g' : 'is-n'}">${r.kind === 'plan' ? 'Plan' : 'Libre'}</span></div>`).join('') || '<div class="rn-sm rn-mu">Sin corridas registradas.</div>';
+  const savedDays = rnClient; rnClient = { days: d.days };
+  const cal = rnMiniCalHtml(d.sel, 'rnCoachCalPick');
+  rnClient = savedDays;
+  const actions = p.mode === 'plan' && (p.plan_status === 'active' || p.plan_status === 'paused')
+    ? `<div class="rn-row rn-wrap" style="gap:6px;margin-top:8px;"><button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="rnPlanLevelSheet()">Cambiar nivel</button><button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="rnPlanOpenEditor()">Editar semana</button><button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="${p.plan_status === 'paused' ? 'rnPlanResume().then(()=>rnCoachDetail(currentClient.id))' : 'rnPlanPause().then(()=>rnCoachDetail(currentClient.id))'}">${p.plan_status === 'paused' ? 'Reanudar' : 'Pausar'}</button></div>`
+    : '';
+  rnSheetBody(`${rnSheetHead(`${rnEsc(c.name)}${p.level ? ' · Nivel ' + p.level : ''}${wk && p.mode === 'plan' ? ' · Semana ' + wk : ''}`, rnEsc((c.name || '').split(' ')[0]))}
+    ${alertsHtml}
+    ${cal}
+    <div class="rn-cd"><div class="rn-lb">Últimos check-ins</div>${ckHtml}</div>
+    <div class="rn-cd"><div class="rn-row rn-sp"><div class="rn-lb" style="margin:0;">Sesiones registradas</div>${wkS.length ? `<span class="rn-pill is-n">${wkS.filter(s => s.status === 'hecha').length} de ${wkS.length} hechas</span>` : ''}</div>${rsHtml}</div>
+    <div class="rn-cd"><div class="rn-row rn-sp"><div class="rn-lb" style="margin:0;">Zapatos</div><span class="rn-xs rn-mu">Los maneja el cliente</span></div>${rnShoesReadOnlyHtml(rnShoes)}</div>
+    <div class="rn-cd"><div class="rn-lb">Modo</div><div class="rn-chs">${rnChip('Plan completo', p.mode === 'plan', "rnSetMode('plan').then(()=>rnCoachDetail(currentClient.id))")}${rnChip('Solo seguimiento', p.mode !== 'plan', "rnSetMode('seguimiento').then(()=>rnCoachDetail(currentClient.id))")}</div>${actions}</div>
+    <button type="button" class="rn-bt is-l" onclick="rnCloseSheet();openCoachClient('${c.id}');showScreen('screen-coach-client');">Abrir la ficha del cliente</button>
+    ${rnDisc()}`);
+}
+function rnCoachCalPick(day) { const d = rnCoach.detail; d.sel = d.sel === day ? null : day; rnCoachDetailRender(); }
+async function rnCoachResolve(id) {
+  const { error } = await sb.from('run_alerts').update({ status: 'resolved', resolved_at: new Date().toISOString() }).eq('id', id);
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  showToast('Alerta resuelta', 'success');
+  rnCoach.detail.al = rnCoach.detail.al.filter(a => a.id !== id);
+  rnCoachDetailRender();
 }
 // ===== FIN MÓDULO RUN =====
 </script>
