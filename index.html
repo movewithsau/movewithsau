@@ -2370,6 +2370,7 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
         <div class="filter-chip" onclick="setExCoachingFilter('Cardio',this)">Cardio</div>
         <div class="filter-chip" onclick="setExCoachingFilter('Movilidad',this)">Movilidad</div>
         <div class="filter-chip" onclick="setExCoachingFilter('Performance',this)">Performance</div>
+        <div class="filter-chip" onclick="setExCoachingFilter('__run',this)">Run</div>
       </div>
       <div id="ex-coaching-list"><div class="spinner"></div></div>
     </div>
@@ -19143,6 +19144,7 @@ function setExCoachingFilter(cat, el) {
 function renderExCoaching() {
   const list = document.getElementById('ex-coaching-list');
   if(!list) return;
+  if(exCoachingFilter === '__run') { rnRenderLibrary(); return; } // categoría Run: lee run_exercises
   const q = (document.getElementById('ex-coaching-search')?.value||'').toLowerCase();
   let items = allExCoaching;
   if(exCoachingFilter) items = items.filter(e=>e.muscle_group===exCoachingFilter);
@@ -19211,6 +19213,7 @@ async function deleteExCoaching(id) {
 
 function openAddExCoachingSheet() {
   document.getElementById('add-ex-coaching-sheet')?.remove();
+  if(exCoachingFilter === '__run') { rnExForm(); return; } // + Ejercicio con el chip Run activo
   const sheet = document.createElement('div');
   sheet.id = 'add-ex-coaching-sheet';
   sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:flex;align-items:flex-end;justify-content:center;';
@@ -19236,8 +19239,9 @@ function openAddExCoachingSheet() {
         </div>
         <div style="flex:1;">
           <label class="form-label">Músculo</label>
-          <select class="form-select" id="aec-muscle">
+          <select class="form-select" id="aec-muscle" onchange="if(this.value==='__run'){const n=document.getElementById('aec-name')?.value.trim(),v=document.getElementById('aec-video')?.value.trim();document.getElementById('add-ex-coaching-sheet')?.remove();rnLoadLibrary().then(()=>rnExForm(null,{name:n,video:v}));}">
             ${muscleOptions.map(m=>`<option value="${m}">${m||'—'}</option>`).join('')}
+            <option value="__run">Run</option>
           </select>
         </div>
       </div>
@@ -24942,7 +24946,9 @@ async function rnLoadClientData() {
     sb.from('run_routines').select('*')
   ]);
   rnRoutines = rt.data || [];
-  rnClient = { tab: rnClient?.tab || 'semana', planned: pl.data || [], runs: rs.data || [], checkin: rnClient?.checkin || null, legHeavy: rnClient?.legHeavy || false, legKnown: rnClient?.legKnown || false };
+  rnClient = { tab: rnClient?.tab || 'semana', planned: pl.data || [], runs: rs.data || [], checkin: rnClient?.checkin || null, legHeavy: rnClient?.legHeavy || false, legKnown: rnClient?.legKnown || false, exById: {} };
+  const exIds = [...new Set(rnRoutines.flatMap(r => (r.exercise_ids || []).map(String)))];
+  if (exIds.length) { const { data: exs } = await sb.from('run_exercises').select('*').in('id', exIds); (exs || []).forEach(e => { rnClient.exById[String(e.id)] = e; }); }
   if (typeof rnLoadCheckinCtx === 'function') await rnLoadCheckinCtx();
 }
 function rnHasPlan() { return rnProfile && rnProfile.mode === 'plan' && (rnProfile.plan_status === 'active' || rnProfile.plan_status === 'paused'); }
@@ -24987,7 +24993,8 @@ function rnWeekHtml() {
     const v = runApplyVersion(s, view || 'completa'), isDone = s.status === 'hecha';
     const run = isDone ? rnClient.runs.find(r => r.id === s.run_session_id) : null;
     const km = v.distance_km != null && v.distance_km !== '' ? ` · ${rnKm(v.distance_km)} km` : '';
-    const pre = rnRoutines.find(r => r.id === s.pre_routine_id), post = rnRoutines.find(r => r.id === s.post_routine_id);
+    const defBlock = b => rnRoutines.find(r => r.session_type === s.session_type && r.block === b && r.is_default);
+    const pre = s.pre_routine_id ? rnRoutines.find(r => r.id === s.pre_routine_id) : defBlock('pre'), post = s.post_routine_id ? rnRoutines.find(r => r.id === s.post_routine_id) : defBlock('post');
     const blocks = typeof rnBlocksHtml === 'function' ? rnBlocksHtml(pre, post) : '';
     const title = v.postponeTest ? 'Prueba 5K' : `${RN_TYPE_NAME[v.session_type] || v.session_type}`;
     const sub = v.postponeTest ? v.message : `${v.minutes} min${km}${v.effort ? ' · esfuerzo ' + rnEsc(v.effort) : ''}${v.notes ? ' · ' + rnEsc(v.notes) : ''}`;
@@ -25612,6 +25619,136 @@ async function rnLoadHomeWeek(ids) {
 function rnHomeBadgeHtml(c) {
   const n = (rnHomeWeek.get(c.id) || new Set()).size;
   return `<div class="client-avatar rn-wk${n ? ' is-on' : ''}" role="img" aria-label="${n} ${n === 1 ? 'día' : 'días'} con registro esta semana" style="${c.is_churn ? 'opacity:0.5;' : ''}">${n}</div>`;
+}
+// ---------- R8: biblioteca, categoría Run (pantallas 23 y 24) ----------
+// Lee y escribe run_exercises y run_routines. exercise_library no se toca.
+const RN_EX_CATS = [['pre', 'Pre-run'], ['post', 'Post-run'], ['apoyo', 'Apoyo']];
+const RN_EX_CAT_NAME = Object.fromEntries(RN_EX_CATS);
+let rnLib = { cat: '', ex: [], routines: [], loaded: false };
+
+async function rnLoadLibrary() {
+  const uid = currentUser?.id;
+  const [ex, rt] = await Promise.all([
+    sb.from('run_exercises').select('*').or(`coach_id.eq.${uid},coach_id.is.null`).order('name', { ascending: true }),
+    sb.from('run_routines').select('*').order('session_type', { ascending: true })
+  ]);
+  if (ex.error) { showToast('No se pudo cargar Run: ' + ex.error.message, 'error'); }
+  rnLib.ex = ex.data || []; rnLib.routines = rt.data || []; rnLib.loaded = true;
+}
+async function rnRenderLibrary(reload) {
+  const list = document.getElementById('ex-coaching-list');
+  if (!list) return;
+  if (!rnLib.loaded || reload) { list.innerHTML = '<div class="spinner"></div>'; await rnLoadLibrary(); if (exCoachingFilter !== '__run') return; }
+  const q = (document.getElementById('ex-coaching-search')?.value || '').toLowerCase();
+  let items = rnLib.ex.filter(e => !rnLib.cat || e.category === rnLib.cat);
+  if (q) items = items.filter(e => (e.name || '').toLowerCase().includes(q));
+  const sub = `<div class="rn-row" style="gap:6px;margin:4px 0 10px;overflow-x:auto;">${[['', 'Todos'], ...RN_EX_CATS].map(([k, l]) => `<div class="filter-chip${rnLib.cat === k ? ' active' : ''}" onclick="rnLib.cat='${k}';rnRenderLibrary()">${l}</div>`).join('')}</div>`;
+  const rows = items.map(e => `<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--gray2);">
+      <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;margin-bottom:3px;">${rnEsc(e.name)}</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;"><span class="muscle-tag" style="font-size:8px;">Run · ${RN_EX_CAT_NAME[e.category] || e.category}</span>${e.dose ? `<span class="muscle-tag" style="font-size:8px;">${rnEsc(e.dose)}</span>` : ''}${(e.levels || []).length && (e.levels || []).length < 3 ? `<span class="muscle-tag" style="font-size:8px;">Niv. ${(e.levels || []).join(', ')}</span>` : ''}${e.is_example ? '<span class="muscle-tag" style="font-size:8px;">ejemplo</span>' : ''}</div></div>
+      <div style="display:flex;gap:4px;flex-shrink:0;">
+        ${e.video_url ? `<a href="${rnEsc(e.video_url)}" target="_blank" rel="noopener" style="background:var(--blue-light);color:var(--blue);border:none;border-radius:6px;padding:6px 9px;" aria-label="Ver video">${icon('play', 18)}</a>` : ''}
+        <button class="icon-btn" onclick="rnExForm('${e.id}')" style="background:var(--orange-light);color:var(--orange);border:none;border-radius:6px;padding:6px 9px;cursor:pointer;" aria-label="Editar ejercicio">${icon('pencil', 18)}</button>
+        <button class="icon-btn" onclick="rnExDelete('${e.id}')" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:6px 9px;cursor:pointer;" aria-label="Borrar ejercicio">${icon('x', 18)}</button>
+      </div></div>`).join('') || '<div class="empty-state"><div class="empty-text">Sin ejercicios de Run en esta categoría.</div></div>';
+  const blocks = RN_TYPES.map(([t, l]) => {
+    const pre = rnLib.routines.find(r => r.session_type === t && r.block === 'pre' && r.is_default), post = rnLib.routines.find(r => r.session_type === t && r.block === 'post' && r.is_default);
+    const sum = r => r ? `${rnEsc(r.name)} (${(r.exercise_ids || []).length})` : '—';
+    return `<div class="rn-row rn-sp" style="padding:8px 0;border-bottom:1px solid var(--gray2);"><div class="rn-fx"><div style="font-weight:700;font-size:14px;">${l}</div><div class="rn-xs rn-mu">Pre: ${sum(pre)} · Post: ${sum(post)}</div></div>
+      <div class="rn-row" style="gap:4px;"><button type="button" class="rn-ch" style="font-size:12px;min-height:36px;" onclick="rnRoutineForm('${t}','pre')">Pre</button><button type="button" class="rn-ch" style="font-size:12px;min-height:36px;" onclick="rnRoutineForm('${t}','post')">Post</button></div></div>`;
+  }).join('');
+  list.innerHTML = `<div class="rn">${sub}${rows}
+    <div class="rn-xs rn-mu" style="margin:10px 0;">Pliometría y tramos fuertes: opcionales y de bajo impacto en los niveles 1 y 2. El post-run es práctica de coaching, no evidencia científica.</div>
+    <div class="section-header"><div class="section-title">Bloques por tipo de sesión</div></div>
+    <div class="rn-xs rn-mu" style="margin-bottom:6px;">Son los valores por defecto. En cada sesión del plan se pueden cambiar.</div>${blocks}</div>`;
+}
+// Pantalla 24: + Ejercicio de Run
+function rnExForm(id, pre) {
+  const e = id ? rnLib.ex.find(x => x.id === id) : null, p = pre || {};
+  const cat = e?.category || p.category || rnLib.cat || 'pre', lv = e?.levels || [1, 2, 3];
+  rnOpenSheet(`<div class="rn-sheet-head"><span class="rn-ey">Biblioteca · ${e ? 'editar' : 'nuevo'} ejercicio</span><button type="button" class="rn-x" aria-label="Cerrar" onclick="rnCloseSheet()">${icon('x', 20)}</button></div>
+    <h1 class="rn-h1">${e ? 'Editar ejercicio' : 'Nuevo ejercicio'}</h1>
+    <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-ex-name">Nombre</label><input id="rn-ex-name" class="rn-in is-txt" value="${rnEsc(e?.name || p.name || '')}"></div>
+    <div class="rn-cd"><div class="rn-lb">Categoría: Run · tipo</div><div class="rn-chs" id="rn-ex-cat">${RN_EX_CATS.map(([k, l]) => `<button type="button" class="rn-ch${cat === k ? ' is-on' : ''}" data-v="${k}" aria-pressed="${cat === k}" onclick="rnExPick(this,'rn-ex-cat',true)">${l}</button>`).join('')}</div></div>
+    <div class="rn-cd"><div class="rn-lb">Aplica a los niveles</div><div class="rn-chs" id="rn-ex-lv">${[1, 2, 3].map(n => `<button type="button" class="rn-ch${lv.includes(n) ? ' is-on' : ''}" data-v="${n}" aria-pressed="${lv.includes(n)}" onclick="rnExPick(this,'rn-ex-lv',false)">${n}</button>`).join('')}</div></div>
+    <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-ex-dose">Duración o repeticiones</label><input id="rn-ex-dose" class="rn-in is-txt" value="${rnEsc(e?.dose || '')}" placeholder="30 s, 2 x 10…"></div>
+    <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-ex-desc">Descripción</label><textarea id="rn-ex-desc" class="rn-in" rows="2">${rnEsc(e?.description || '')}</textarea></div>
+    <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-ex-cues">Indicaciones</label><textarea id="rn-ex-cues" class="rn-in" rows="2">${rnEsc(e?.cues || '')}</textarea></div>
+    <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-ex-video">Video (opcional)</label><input id="rn-ex-video" class="rn-in is-txt" type="url" value="${rnEsc(e?.video_url || p.video || '')}" placeholder="https://…"></div>
+    <div style="margin-bottom:6px;"><label class="rn-fl" for="rn-ex-contra">Contraindicaciones</label><textarea id="rn-ex-contra" class="rn-in" rows="2">${rnEsc(e?.contraindications || '')}</textarea></div>
+    <button type="button" class="rn-bt is-g" onclick="rnExSave(${e ? `'${e.id}'` : 'null'})">Guardar ejercicio</button>`);
+}
+function rnExPick(btn, groupId, single) {
+  if (single) document.querySelectorAll(`#${groupId} .rn-ch`).forEach(b => { b.classList.remove('is-on'); b.setAttribute('aria-pressed', 'false'); });
+  const on = single ? true : !btn.classList.contains('is-on');
+  btn.classList.toggle('is-on', on); btn.setAttribute('aria-pressed', String(on));
+}
+async function rnExSave(id) {
+  const g = x => (document.getElementById(x)?.value || '').trim();
+  const cat = document.querySelector('#rn-ex-cat .rn-ch.is-on')?.dataset.v;
+  const levels = [...document.querySelectorAll('#rn-ex-lv .rn-ch.is-on')].map(b => Number(b.dataset.v));
+  const row = { name: g('rn-ex-name'), category: cat, levels, dose: g('rn-ex-dose') || null, description: g('rn-ex-desc') || null, cues: g('rn-ex-cues') || null, video_url: g('rn-ex-video') || null, contraindications: g('rn-ex-contra') || null };
+  if (!row.name) { showToast('El nombre es obligatorio', 'error'); return; }
+  if (!cat) { showToast('Elegí el tipo de Run'); return; }
+  if (!levels.length) { showToast('Elegí al menos un nivel'); return; }
+  const res = id ? await sb.from('run_exercises').update({ ...row, is_example: false }).eq('id', id) : await sb.from('run_exercises').insert([{ ...row, coach_id: currentUser.id }]);
+  if (res.error) { showToast(res.error.message, 'error'); return; }
+  rnCloseSheet(); showToast('Ejercicio guardado', 'success');
+  if (exCoachingFilter === '__run') rnRenderLibrary(true); else rnLib.loaded = false;
+}
+async function rnExDelete(id) {
+  const e = rnLib.ex.find(x => x.id === id); if (!e) return;
+  const used = rnLib.routines.filter(r => (r.exercise_ids || []).map(String).includes(String(id)));
+  const msg = used.length ? `«${e.name}» se usa en ${used.length} ${used.length === 1 ? 'bloque' : 'bloques'} (${used.map(r => r.name).join(', ')}). Si lo borrás, se quita de ${used.length === 1 ? 'ese bloque' : 'esos bloques'}. ¿Borrarlo igual?` : `¿Borrar «${e.name}»?`;
+  if (!confirm(msg)) return;
+  for (const r of used) {
+    const { error } = await sb.from('run_routines').update({ exercise_ids: (r.exercise_ids || []).filter(x => String(x) !== String(id)) }).eq('id', r.id);
+    if (error) { showToast(error.message, 'error'); return; }
+  }
+  const { error } = await sb.from('run_exercises').delete().eq('id', id);
+  if (error) { showToast(error.message, 'error'); return; }
+  showToast('Ejercicio borrado'); rnRenderLibrary(true);
+}
+// Bloque pre o post por defecto de un tipo de sesión
+let rnRt = null;
+function rnRoutineForm(type, block) {
+  const r = rnLib.routines.find(x => x.session_type === type && x.block === block && x.is_default);
+  rnOpenSheet('', () => { rnRt = null; });
+  rnRt = { type, block, id: r?.id || null, name: r?.name || `${block === 'pre' ? 'Pre' : 'Post'} ${RN_TYPE_NAME[type].toLowerCase()}`, ids: (r?.exercise_ids || []).map(String) };
+  rnRoutineRender();
+}
+function rnRoutineRender() {
+  const t = rnRt, pool = rnLib.ex.filter(e => e.category === t.block || e.category === 'apoyo');
+  const chosen = t.ids.map(id => rnLib.ex.find(e => String(e.id) === id)).filter(Boolean);
+  const chosenHtml = chosen.map((e, i) => `<div class="rn-row" style="padding:6px 0;border-bottom:1px solid #EFE9DF;gap:6px;"><span class="rn-m rn-mu" style="width:18px;">${i + 1}</span><span class="rn-fx" style="font-size:14px;font-weight:600;">${rnEsc(e.name)}${e.dose ? ` <span class="rn-mu" style="font-weight:400;">· ${rnEsc(e.dose)}</span>` : ''}</span>
+      <button type="button" class="rn-ib" aria-label="Subir" ${i === 0 ? 'disabled' : ''} onclick="rnRtMove(${i},-1)">${icon('chevron-up', 16)}</button><button type="button" class="rn-ib" aria-label="Quitar" onclick="rnRtToggle('${e.id}')">${icon('x', 16)}</button></div>`).join('') || '<div class="rn-sm rn-mu">Todavía sin ejercicios.</div>';
+  const poolHtml = pool.filter(e => !t.ids.includes(String(e.id))).map(e => `<button type="button" class="rn-ch" style="font-size:13px;" onclick="rnRtToggle('${e.id}')">+ ${rnEsc(e.name)}</button>`).join('') || '<div class="rn-sm rn-mu">No hay más ejercicios de esta categoría.</div>';
+  rnSheetBody(`${rnSheetHead(`${RN_TYPE_NAME[t.type]} · bloque ${t.block === 'pre' ? 'pre-run' : 'post-run'}`, 'Bloque por defecto')}
+    <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-rt-name">Nombre</label><input id="rn-rt-name" class="rn-in is-txt" value="${rnEsc(t.name)}"></div>
+    <div class="rn-cd"><div class="rn-lb">En orden</div>${chosenHtml}</div>
+    <div class="rn-cd"><div class="rn-lb">Agregar</div><div class="rn-row rn-wrap" style="gap:6px;">${poolHtml}</div></div>
+    <button type="button" class="rn-bt is-g" onclick="rnRoutineSave()">Guardar bloque</button>`);
+}
+function rnRtRead() { const n = document.getElementById('rn-rt-name'); if (n) rnRt.name = n.value.trim(); }
+function rnRtToggle(id) { rnRtRead(); id = String(id); const i = rnRt.ids.indexOf(id); if (i >= 0) rnRt.ids.splice(i, 1); else rnRt.ids.push(id); rnRoutineRender(); }
+function rnRtMove(i, d) { rnRtRead(); const a = rnRt.ids, j = i + d; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; rnRoutineRender(); }
+async function rnRoutineSave() {
+  rnRtRead();
+  const t = rnRt;
+  if (!t.name) { showToast('Poné un nombre'); return; }
+  const row = { session_type: t.type, block: t.block, name: t.name, exercise_ids: t.ids, is_default: true };
+  const res = t.id ? await sb.from('run_routines').update(row).eq('id', t.id) : await sb.from('run_routines').insert([{ ...row, coach_id: currentUser.id }]);
+  if (res.error) { showToast(res.error.message, 'error'); return; }
+  rnCloseSheet(); showToast('Bloque guardado', 'success'); rnRenderLibrary(true);
+}
+// Bloques en la tarjeta de sesión del cliente (Mi semana)
+function rnBlocksHtml(pre, post) {
+  const one = (r, l) => {
+    if (!r) return '';
+    const ex = (r.exercise_ids || []).map(id => (rnLib.ex.find(e => String(e.id) === String(id)) || (rnClient && rnClient.exById && rnClient.exById[id]))).filter(Boolean);
+    return `<details style="margin-top:6px;"><summary class="rn-xs" style="cursor:pointer;font-weight:700;">${l}: ${rnEsc(r.name)}</summary>${ex.map(e => `<div class="rn-xs" style="padding:3px 0 3px 10px;">${rnEsc(e.name)}${e.dose ? ' · ' + rnEsc(e.dose) : ''}${e.video_url ? ` · <a href="${rnEsc(e.video_url)}" target="_blank" rel="noopener">video</a>` : ''}</div>`).join('') || '<div class="rn-xs rn-mu" style="padding-left:10px;">Sin ejercicios.</div>'}</details>`;
+  };
+  return one(pre, 'Pre-run') + one(post, 'Post-run');
 }
 // ===== FIN MÓDULO RUN =====
 </script>
