@@ -4254,10 +4254,10 @@ function closeDaySwitcher() {
   if(modal) modal.style.display = 'none';
 }
 
-function switchWorkoutDay(day) {
+async function switchWorkoutDay(day) {
   if(day === clientDay) { closeDaySwitcher(); return; }
   if(workoutLock) { closeDaySwitcher(); showWorkoutLockToast(); return; }
-  if(hasUnsavedDayData() && !confirm('Tenés cambios sin guardar en este día, ¿querés continuar y cambiar de día de todos modos?')) return;
+  if(hasUnsavedDayData() && !(await appConfirm('Tenés cambios sin guardar en este día, ¿querés continuar y cambiar de día de todos modos?'))) return;
   closeDaySwitcher();
   clientDay = day;
   // loadClientDayStrip() re-pinta la card de la Hoy y al final llama a
@@ -8036,7 +8036,7 @@ async function submitTestResults(testId, exerciseIds) {
     document.body.appendChild(msg);
     setTimeout(() => msg.remove(), 3000);
   } catch(err) {
-    alert('Error guardando resultados: ' + err.message);
+    appAlert('Error guardando resultados: ' + err.message);
   }
 }
 
@@ -8123,12 +8123,12 @@ async function saveClientTest() {
   const contextNotes = document.getElementById('test-context-notes').value.trim();
   
   if(!testName || !testDate) {
-    alert('Por favor completa el nombre y la fecha del test');
+    appAlert('Por favor completa el nombre y la fecha del test');
     return;
   }
   
   if(!currentClient) {
-    alert('Error: No hay cliente seleccionado');
+    appAlert('Error: No hay cliente seleccionado');
     return;
   }
   
@@ -8149,7 +8149,7 @@ async function saveClientTest() {
   });
   
   if(exercises.length === 0) {
-    alert('Por favor agrega al menos un ejercicio al test');
+    appAlert('Por favor agrega al menos un ejercicio al test');
     return;
   }
   
@@ -8165,7 +8165,7 @@ async function saveClientTest() {
   }).select();
   
   if(testError) {
-    alert('Error al guardar el test: ' + testError.message);
+    appAlert('Error al guardar el test: ' + testError.message);
     return;
   }
   
@@ -8184,7 +8184,7 @@ async function saveClientTest() {
   const {error: exError} = await sb.from('test_exercises').insert(exercisesToInsert);
   
   if(exError) {
-    alert('Error al guardar ejercicios: ' + exError.message);
+    appAlert('Error al guardar ejercicios: ' + exError.message);
     return;
   }
   
@@ -8192,7 +8192,7 @@ async function saveClientTest() {
   closeModal('modal-create-test');
   resetTestForm();
   loadClientTests();
-  alert('¡Evaluación creada exitosamente!');
+  appAlert('¡Evaluación creada exitosamente!');
 }
 
 function showCoachEvaluaciones() {
@@ -8345,7 +8345,7 @@ function toggleTestCard(testId) {
 
 async function openEditTestModal(testId) {
   const {data: test, error} = await sb.from('tests').select('*').eq('id', testId).single();
-  if (error || !test) { alert('Error al cargar la evaluación'); return; }
+  if (error || !test) { appAlert('Error al cargar la evaluación'); return; }
   document.getElementById('edit-test-id').value = testId;
   document.getElementById('edit-test-name').value = test.test_name || '';
   document.getElementById('edit-test-date').value = test.test_date || '';
@@ -8397,12 +8397,12 @@ async function saveEditTest() {
   const testDate = document.getElementById('edit-test-date').value;
   const contextNotes = document.getElementById('edit-test-notes').value.trim();
   const status = document.getElementById('edit-test-status').value;
-  if (!testName) { alert('El nombre no puede estar vacío'); return; }
-  if (!testDate) { alert('Selecciona una fecha'); return; }
+  if (!testName) { appAlert('El nombre no puede estar vacío'); return; }
+  if (!testDate) { appAlert('Selecciona una fecha'); return; }
 
   // Save test header
   const {error} = await sb.from('tests').update({ test_name: testName, test_date: testDate, context_notes: contextNotes, status }).eq('id', testId);
-  if (error) { alert('Error: ' + error.message); return; }
+  if (error) { appAlert('Error: ' + error.message); return; }
 
   // Save exercises
   const exItems = document.querySelectorAll('#edit-test-exercises-container .edit-ex-item');
@@ -8453,8 +8453,8 @@ async function executeCopyTest() {
   const testId = document.getElementById('copy-test-id').value;
   const clientId = document.getElementById('copy-test-client-select').value;
   const newDate = document.getElementById('copy-test-date').value;
-  if (!clientId) { alert('Selecciona un cliente destino'); return; }
-  if (!newDate) { alert('Selecciona una fecha para la copia'); return; }
+  if (!clientId) { appAlert('Selecciona un cliente destino'); return; }
+  if (!newDate) { appAlert('Selecciona una fecha para la copia'); return; }
 
   const btn = document.getElementById('copy-test-confirm-btn');
   btn.disabled = true;
@@ -8496,9 +8496,9 @@ async function executeCopyTest() {
 
     closeModal('modal-copy-test');
     if (currentClient) loadCoachClientTests(currentClient.id);
-    alert('¡Evaluación copiada exitosamente!');
+    appAlert('¡Evaluación copiada exitosamente!');
   } catch(err) {
-    alert('Error: ' + err.message);
+    appAlert('Error: ' + err.message);
   } finally {
     btn.disabled = false;
     btn.textContent = 'Copiar Evaluación';
@@ -8506,10 +8506,10 @@ async function executeCopyTest() {
 }
 
 async function confirmDeleteTest(testId, testName) {
-  if (!confirm('¿Eliminar "' + testName + '"?\n\nEsta acción no se puede deshacer.')) return;
+  if (!(await appConfirm('¿Eliminar "' + testName + '"?\n\nEsta acción no se puede deshacer.'))) return;
   await sb.from('test_exercises').delete().eq('test_id', testId);
   const {error} = await sb.from('tests').delete().eq('id', testId);
-  if (error) { alert('Error: ' + error.message); return; }
+  if (error) { appAlert('Error: ' + error.message); return; }
   if (currentClient) loadCoachClientTests(currentClient.id);
 }
 
@@ -8545,9 +8545,9 @@ async function saveCoachTest() {
   const testDate = document.getElementById('test-date-input').value;
   const contextNotes = document.getElementById('test-context-notes').value.trim();
 
-  if(!clientId) { alert('Selecciona un cliente'); return; }
-  if(!testName) { alert('Ingresa un nombre para la evaluación'); return; }
-  if(!testDate) { alert('Selecciona una fecha'); return; }
+  if(!clientId) { appAlert('Selecciona un cliente'); return; }
+  if(!testName) { appAlert('Ingresa un nombre para la evaluación'); return; }
+  if(!testDate) { appAlert('Selecciona una fecha'); return; }
 
   const exercises = [];
   document.querySelectorAll('.test-exercise-item').forEach(item => {
@@ -8559,7 +8559,7 @@ async function saveCoachTest() {
     if(name) exercises.push({ name, result, unit, videoUrl, notes });
   });
 
-  if(exercises.length === 0) { alert('Agrega al menos un ejercicio'); return; }
+  if(exercises.length === 0) { appAlert('Agrega al menos un ejercicio'); return; }
 
   const {data: newTest, error: testError} = await sb.from('tests').insert({
     client_id: clientId,
@@ -8571,7 +8571,7 @@ async function saveCoachTest() {
     created_at: new Date().toISOString()
   }).select();
 
-  if(testError) { alert('Error: ' + testError.message); return; }
+  if(testError) { appAlert('Error: ' + testError.message); return; }
 
   const testId = newTest[0].id;
   const exercisesToInsert = exercises.map(ex => ({
@@ -8584,12 +8584,12 @@ async function saveCoachTest() {
   }));
 
   const {error: exError} = await sb.from('test_exercises').insert(exercisesToInsert);
-  if(exError) { alert('Error guardando ejercicios: ' + exError.message); return; }
+  if(exError) { appAlert('Error guardando ejercicios: ' + exError.message); return; }
 
   closeModal('modal-create-test');
   resetTestForm();
   if (currentClient) loadCoachClientTests(currentClient.id);
-  alert('¡Evaluación creada!');
+  appAlert('¡Evaluación creada!');
 }
 
 // Bloqueo del módulo Entreno (espejo de food_access), no aplica a clientes LIFT.
@@ -8973,7 +8973,7 @@ async function loadCoachLiftDocuments(clientId) {
 async function deleteLiftDocument(i, clientId) {
   const doc = window._coachLiftDocsCache?.[i];
   if (!doc) return;
-  if (!confirm('¿Eliminar este documento?')) return;
+  if (!(await appConfirm('¿Eliminar este documento?'))) return;
   try { await sb.storage.from('client-documents').remove([doc.file_path]); } catch (e) { console.warn('Storage delete failed:', e); }
   const { error } = await sb.from('client_documents').delete().eq('id', doc.id);
   if (error) { showToast('❌ ' + error.message); return; }
@@ -9816,7 +9816,7 @@ function renderDayExercises(exList, exs, planDayId) {
 }
 
 async function deleteOrphanPlanDay(planDayId) {
-  if(!confirm('¿Borrar esta entrada vacía del plan?')) return;
+  if(!(await appConfirm('¿Borrar esta entrada vacía del plan?'))) return;
   await sb.from('exercises').delete().eq('plan_day_id', planDayId);
   const {error} = await sb.from('monthly_plans').delete().eq('id', planDayId);
   if(error){showToast('\u274C '+error.message);return;}
@@ -10671,7 +10671,7 @@ async function moveDayExercise(exId, planDayId, direction) {
 }
 
 async function deleteExercise(exId, planDayId) {
-  if(!confirm('¿Borrar este ejercicio?')) return;
+  if(!(await appConfirm('¿Borrar este ejercicio?'))) return;
   const {error} = await sb.from('exercises').delete().eq('id', exId);
   if(error){showToast('❌ '+error.message);return;}
   showToast('🗑 Ejercicio eliminado');
@@ -10679,7 +10679,7 @@ async function deleteExercise(exId, planDayId) {
 }
 
 async function deleteAllExercises(planDayId) {
-  if(!confirm('¿Borrar TODOS los ejercicios de esta rutina? Esto no se puede deshacer.')) return;
+  if(!(await appConfirm('¿Borrar TODOS los ejercicios de esta rutina? Esto no se puede deshacer.'))) return;
   const {error} = await sb.from('exercises').delete().eq('plan_day_id', planDayId);
   if(error){showToast('❌ '+error.message);return;}
   showToast('🗑 Rutina completa eliminada');
@@ -10688,7 +10688,7 @@ async function deleteAllExercises(planDayId) {
 
 async function deleteWeek(weekNum) {
   const weekLabel = weekLabelFor(weekNum);
-  if (!confirm(`¿Borrar ${weekLabel} completa? Se eliminarán todos sus días y ejercicios. Esto no se puede deshacer.`)) return;
+  if (!(await appConfirm(`¿Borrar ${weekLabel} completa? Se eliminarán todos sus días y ejercicios. Esto no se puede deshacer.`))) return;
   const {data: planDays} = await sb.from('monthly_plans').select('id').eq('client_id', currentClient.id).eq('week_number', weekNum);
   if (planDays && planDays.length > 0) {
     for (const pd of planDays) {
@@ -10702,7 +10702,7 @@ async function deleteWeek(weekNum) {
 }
 
 async function deleteEntireProgram() {
-  if (!confirm('¿Borrar el programa COMPLETO de este cliente? Se eliminarán todas las semanas y ejercicios. Esto no se puede deshacer.')) return;
+  if (!(await appConfirm('¿Borrar el programa COMPLETO de este cliente? Se eliminarán todas las semanas y ejercicios. Esto no se puede deshacer.'))) return;
   const {data: planDays} = await sb.from('monthly_plans').select('id').eq('client_id', currentClient.id);
   if (planDays && planDays.length > 0) {
     for (const pd of planDays) {
@@ -11221,10 +11221,10 @@ async function buildDayStrip() {
   }
 }
 
-function openAddTrainingDayModal() {
+async function openAddTrainingDayModal() {
   const existingDays = parseInt(document.querySelectorAll('#builder-day-strip .day-chip.has-workout').length)||0;
   const suggested = 'Día ' + (existingDays + 1);
-  const name = prompt('Nombre del día de entrenamiento:', suggested);
+  const name = await appDialog({ title: 'Nombre del día de entrenamiento', input: suggested, okLabel: 'Crear día' });
   if(!name || !name.trim()) return;
   addNewTrainingDay(name.trim());
 }
@@ -11276,11 +11276,26 @@ function openDayOptionsMenu(dayValue, label, anchorEl) {
 
 // Hoja de diálogo del app: reemplaza prompt()/confirm() (algunos navegadores embebidos no los soportan).
 // opts: { title, text, input (valor inicial; si viene, pide texto), okLabel, cancelLabel }. Devuelve string | true | null.
+// Reemplazo de confirm(): misma pregunta en una hoja del app. Devuelve Promise<boolean>.
+function appConfirm(msg) {
+  const txt = String(msg ?? '');
+  const cut = txt.indexOf('\n\n');
+  const title = cut >= 0 ? txt.slice(0, cut) : txt;
+  const text = cut >= 0 ? txt.slice(cut + 2) : '';
+  const verb = /^¿?\s*(borrar|eliminar|limpiar|retirar)/i.exec(title);
+  const okLabel = verb ? verb[1][0].toUpperCase() + verb[1].slice(1).toLowerCase() : 'Sí, seguir';
+  return appDialog({ title, text, okLabel }).then(v => !!v);
+}
+// Reemplazo de alert(): aviso breve (toast), no bloquea.
+function appAlert(msg) {
+  const txt = String(msg ?? '');
+  showToast(txt, /^¡/.test(txt) ? 'success' : 'error', 4000);
+}
 function appDialog(opts) {
   return new Promise(resolve => {
     const esc = t => String(t ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
     const pop = document.createElement('div');
-    pop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:600;display:flex;align-items:flex-end;justify-content:center;';
+    pop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10000;display:flex;align-items:flex-end;justify-content:center;';
     const hasInput = opts.input != null;
     pop.innerHTML = `
       <div role="dialog" aria-modal="true" aria-labelledby="app-dlg-ttl" style="background:var(--white);border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;max-width:480px;box-sizing:border-box;">
@@ -11323,7 +11338,7 @@ async function moveDayOrder(dayValue, direction) {
 
 
 async function deleteTrainingDay(dayValue, label) {
-  if(!confirm('¿Borrar el día "'+label+'" y todos sus ejercicios?')) return;
+  if(!(await appConfirm('¿Borrar el día "'+label+'" y todos sus ejercicios?'))) return;
   const {data:pd} = await sb.from('monthly_plans').select('id').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',dayValue).maybeSingle();
   if(pd) {
     await sb.from('exercises').delete().eq('plan_day_id',pd.id);
@@ -12044,7 +12059,7 @@ async function tplDuplicateDay(templateId, dayId) {
 
 // Delete a single day
 async function tplDeleteDay(templateId, dayId, dayName) {
-  if (!confirm(`¿Borrar "${dayName}"? Se eliminarán todos sus ejercicios.`)) return;
+  if (!(await appConfirm(`¿Borrar "${dayName}"? Se eliminarán todos sus ejercicios.`))) return;
   await sb.from('template_exercises').delete().eq('template_day_id', dayId);
   await sb.from('template_days').delete().eq('id', dayId);
   showToast('🗑️ Día eliminado');
@@ -12491,7 +12506,7 @@ async function saveTemplate() {
 }
 
 async function deleteTemplate(id, name) {
-  if (!confirm(`¿Borrar el machote "${name}"?`)) return;
+  if (!(await appConfirm(`¿Borrar el machote "${name}"?`))) return;
   const { data: days } = await sb.from('template_days').select('id').eq('template_id', id);
   if (days) { for (const d of days) { await sb.from('template_exercises').delete().eq('template_day_id', d.id); } }
   await sb.from('template_days').delete().eq('template_id', id);
@@ -12703,7 +12718,7 @@ async function createNewWorkout() {
 }
 
 async function deleteWorkout(workoutId, name) {
-  if (!confirm('¿Borrar el workout "' + name + '"?')) return;
+  if (!(await appConfirm('¿Borrar el workout "' + name + '"?'))) return;
   await sb.from('workout_exercises').delete().eq('workout_id', workoutId);
   await sb.from('workout_templates').delete().eq('id', workoutId);
   showToast('🗑️ Workout eliminado');
@@ -12795,7 +12810,7 @@ async function confirmAssignProgramaToClient() {
   const clientId = document.getElementById('assign-prog-client-select').value;
   if (!clientId) { showToast('⚠️ Selecciona un cliente'); return; }
   if (!_assignProgLibTemplateId) return;
-  if (!confirm('¿Asignar este programa? Reemplazará el plan actual del cliente.')) return;
+  if (!(await appConfirm('¿Asignar este programa? Reemplazará el plan actual del cliente.'))) return;
   closeModal('modal-assign-programa-to-client');
   showToast('⏳ Generando plan...');
   // Reuse existing assignTemplateToClient logic — temporarily set the selects
@@ -12869,7 +12884,7 @@ async function confirmPasteWorkoutToClient() {
   const checkedWeeks = [1,2,3,4].filter(w => document.getElementById('pwc-wk'+w)?.checked);
   const weeksToApply = checkedWeeks.length > 0 ? checkedWeeks : [1,2,3,4];
   const weekLabel = checkedWeeks.length > 0 ? 'S' + checkedWeeks.join(', S') : 'todas las semanas';
-  if (!confirm(`¿Pegar workout en "${day}" (${weekLabel}) de este cliente? Reemplazará los ejercicios existentes.`)) return;
+  if (!(await appConfirm(`¿Pegar workout en "${day}" (${weekLabel}) de este cliente? Reemplazará los ejercicios existentes.`))) return;
   closeModal('modal-paste-workout-to-client');
   showToast('⏳ Pegando workout...');
   const { data: exs } = await sb.from('workout_exercises').select('*').eq('workout_id', _pasteWktLibWorkoutId).order('exercise_order');
@@ -12970,7 +12985,7 @@ function toggleBloqueCard(id) {
 }
 
 async function deleteBloque(id, name) {
-  if (!confirm('¿Borrar el bloque "' + name + '"?')) return;
+  if (!(await appConfirm('¿Borrar el bloque "' + name + '"?'))) return;
   await sb.from('block_exercises').delete().eq('block_id', id);
   await sb.from('block_templates').delete().eq('id', id);
   showToast('🗑️ Bloque eliminado');
@@ -13231,7 +13246,7 @@ async function confirmPasteWorkout() {
   const checkedWeeks = [1,2,3,4].filter(w => document.getElementById('paste-wk'+w)?.checked);
   const weeksToApply = checkedWeeks.length > 0 ? checkedWeeks : [1,2,3,4];
   const weekLabel = checkedWeeks.length > 0 ? 'S' + checkedWeeks.join(', S') : 'todas las semanas';
-  if (!confirm(`¿Pegar workout en "${builderDay}" (${weekLabel})? Esto reemplazará los ejercicios de ese día en las semanas seleccionadas.`)) return;
+  if (!(await appConfirm(`¿Pegar workout en "${builderDay}" (${weekLabel})? Esto reemplazará los ejercicios de ese día en las semanas seleccionadas.`))) return;
   closeModal('modal-paste-workout');
   showToast('⏳ Pegando workout...');
   const { data: exs } = await sb.from('workout_exercises').select('*').eq('workout_id', workoutId).order('exercise_order');
@@ -13859,7 +13874,7 @@ async function addCustomKpiFromPicker(mesoId) {
 }
 
 async function deleteMesocycle(mesoId) {
-  if (!confirm('¿Eliminar este mesociclo? No se puede deshacer.')) return;
+  if (!(await appConfirm('¿Eliminar este mesociclo? No se puede deshacer.'))) return;
   await sb.from('mesocycle_kpis').delete().eq('mesocycle_id', mesoId);
   await sb.from('mesocycles').delete().eq('id', mesoId);
   document.getElementById('mesocycle-drawer')?.remove();
@@ -13925,7 +13940,7 @@ async function toggleChurnClient(makeChurn) {
   const msg = makeChurn
     ? '¿Marcar este cliente como Churn? Se moverá al tab de clientes inactivos.'
     : '¿Reactivar este cliente? Volverá al listado de clientes activos.';
-  if (!confirm(msg)) return;
+  if (!(await appConfirm(msg))) return;
   const { error } = await sb.from('clients').update({ is_churn: makeChurn }).eq('id', currentClient.id);
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
   currentClient.is_churn = makeChurn;
@@ -13939,7 +13954,7 @@ async function toggleHiddenClient(makeHidden) {
   const msg = makeHidden
     ? `¿Ocultar a ${currentClient.name} de tu lista principal? Vas a poder verlo bajo el tab "Ocultos". Su acceso a la app no se ve afectado.`
     : `¿Mostrar a ${currentClient.name} de nuevo en tu lista principal?`;
-  if (!confirm(msg)) return;
+  if (!(await appConfirm(msg))) return;
   const { error } = await sb.from('clients').update({ hidden: makeHidden }).eq('id', currentClient.id);
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
   currentClient.hidden = makeHidden;
@@ -13997,7 +14012,7 @@ async function loadCoachPlans() {
 }
 
 async function deletePdf(planId, pdfUrl) {
-  if(!confirm('¿Eliminar este PDF?')) return;
+  if(!(await appConfirm('¿Eliminar este PDF?'))) return;
   try {
     const urlParts = pdfUrl.split('/plans/');
     if(urlParts.length > 1) {
@@ -14106,7 +14121,7 @@ async function editPaymentSettings(clientId) {
 }
 
 async function deleteClient(clientId,clientName) {
-  if(!confirm('¿Eliminar a '+clientName+'? No se puede deshacer.'))return;
+  if(!(await appConfirm('¿Eliminar a '+clientName+'? No se puede deshacer.')))return;
   const {data:pds} = await sb.from('monthly_plans').select('id').eq('client_id',clientId);
   if(pds){ for(const pd of pds){ await sb.from('exercises').delete().eq('plan_day_id',pd.id); } }
   await sb.from('monthly_plans').delete().eq('client_id',clientId);
@@ -14465,7 +14480,7 @@ async function markDayTrained(planDayId, clientId, week) {
 // no le queda ninguna otra sesión ese mismo día.
 async function deleteDayRecord(planDayId, clientId, week, label) {
   const weekLabel = weekLabelFor(week);
-  if(!confirm(`¿Seguro que querés borrar el registro de ${label} — ${weekLabel}? Esto eliminará la sesión y todos los logs de ejercicios guardados para este día. Esta acción no se puede deshacer.`)) return;
+  if(!(await appConfirm(`¿Seguro que querés borrar el registro de ${label} — ${weekLabel}? Esto eliminará la sesión y todos los logs de ejercicios guardados para este día. Esta acción no se puede deshacer.`))) return;
 
   let deletedLogs = 0, deletedSessions = 0;
 
@@ -15486,7 +15501,7 @@ ${currentClient.macros_notas ? `Notas del coach: ${currentClient.macros_notas}` 
 
 async function clearFoodChat() {
   if(!currentClient) return;
-  if(!confirm('¿Limpiar el historial del chat de NutriFlex?')) return;
+  if(!(await appConfirm('¿Limpiar el historial del chat de NutriFlex?'))) return;
   await sb.from('nutrition_chats').delete().eq('client_id', currentClient.id);
   foodChatHistory = [];
   const msgs = document.getElementById('food-chat-messages');
@@ -16404,7 +16419,7 @@ async function renameNutritionDay(oldName, newName) {
 }
 
 async function deleteNutritionDay(dayValue) {
-  if (!confirm('¿Borrar el día "' + dayValue + '" y todas sus comidas?')) return;
+  if (!(await appConfirm('¿Borrar el día "' + dayValue + '" y todas sus comidas?'))) return;
   const {data: pd} = await sb.from('nutrition_plans').select('id').eq('client_id', currentClient.id).eq('day_of_week', dayValue).maybeSingle();
   if (pd) {
     const {data: meals} = await sb.from('nutrition_meals').select('id').eq('nutrition_plan_id', pd.id);
@@ -17148,7 +17163,7 @@ async function addExxNote() {
 
 // Soft delete: la nota queda en la base con deleted_at
 async function deleteExxNote(noteId) {
-  if(!confirm('¿Eliminar esta nota?')) return;
+  if(!(await appConfirm('¿Eliminar esta nota?'))) return;
   const {error} = await sb.from('exercise_notes').update({deleted_at: new Date().toISOString()}).eq('id', noteId).eq('client_id', currentClient.id);
   if(error) { showToast('No se pudo eliminar la nota', 'error'); return; }
   showToast('Nota eliminada');
@@ -18126,7 +18141,7 @@ function closeStrongFlow() {
 
 async function clearStrongFlowChat() {
   if(!currentClient) return;
-  if(!confirm('¿Limpiar el historial de StrongFlow?')) return;
+  if(!(await appConfirm('¿Limpiar el historial de StrongFlow?'))) return;
   await sb.from('training_chats').delete().eq('client_id', currentClient.id);
   sfChatHistory = [];
   const msgs = document.getElementById('sf-messages');
@@ -18367,7 +18382,7 @@ async function saveLibraryEdit(id) {
 }
 
 async function deleteLibraryEx(id) {
-  if(!confirm('¿Eliminar este ejercicio de la biblioteca?'))return;
+  if(!(await appConfirm('¿Eliminar este ejercicio de la biblioteca?')))return;
   await sb.from('exercise_library').delete().eq('id',id);
   showToast('🗑️ Eliminado');
   loadLibrary();
@@ -18986,7 +19001,7 @@ async function saveContract() {
 
 async function deleteContract() {
   if (!currentContractId) return;
-  if (!confirm('¿Eliminar este contrato? Esta acción no se puede deshacer.')) return;
+  if (!(await appConfirm('¿Eliminar este contrato? Esta acción no se puede deshacer.'))) return;
   await sb.from('contracts').delete().eq('id', currentContractId);
   closeModal('modal-contract-editor');
   showToast('🗑️ Contrato eliminado');
@@ -19288,7 +19303,7 @@ async function saveFoodItem() {
 }
 
 async function deleteFoodItem(id) {
-  if(!confirm('Eliminar este alimento de la libreria?')) return;
+  if(!(await appConfirm('Eliminar este alimento de la libreria?'))) return;
   await sb.from('food_library').delete().eq('id', id);
   showToast('🗑️ Alimento eliminado');
   loadFoodLibrary();
@@ -19394,7 +19409,7 @@ async function saveExCoaching(id) {
 }
 
 async function deleteExCoaching(id) {
-  if(!confirm('¿Eliminar este ejercicio de la biblioteca?')) return;
+  if(!(await appConfirm('¿Eliminar este ejercicio de la biblioteca?'))) return;
   await sb.from('exercise_library').delete().eq('id',id);
   showToast('🗑️ Eliminado');
   loadExCoaching();
@@ -19469,7 +19484,7 @@ function renumberForms() {
 
 // ===== DELETE DAY =====
 async function deleteBuilderDay() {
-  if(!confirm(`¿Borrar todos los ejercicios del ${builderDay} Semana ${builderWeek}? Esto no se puede deshacer.`)) return;
+  if(!(await appConfirm(`¿Borrar todos los ejercicios del ${builderDay} Semana ${builderWeek}? Esto no se puede deshacer.`))) return;
   const {data:pd} = await sb.from('monthly_plans').select('id').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',builderDay).maybeSingle();
   if(!pd) { showToast('⚠️ Este día no tiene ejercicios guardados'); return; }
   await sb.from('exercises').delete().eq('plan_day_id', pd.id);
@@ -19776,7 +19791,7 @@ async function saveRenameExtraSession(sessionId) {
 }
 
 async function deleteExtraSession(sessionId) {
-  if (!confirm('¿Borrar esta sesión y todos sus ejercicios?')) return;
+  if (!(await appConfirm('¿Borrar esta sesión y todos sus ejercicios?'))) return;
   await sb.from('extra_exercises').delete().eq('extra_session_id', sessionId);
   await sb.from('extra_sessions').delete().eq('id', sessionId);
   showToast('✅ Sesión eliminada');
@@ -20119,7 +20134,7 @@ async function saveNewHabit() {
 }
 
 async function deleteHabit(habitId, clientId) {
-  if(!confirm('¿Borrar este hábito? Se perderá el historial de este hábito.')) return;
+  if(!(await appConfirm('¿Borrar este hábito? Se perderá el historial de este hábito.'))) return;
   await sb.from('habit_logs').delete().eq('habit_id', habitId);
   await sb.from('habits').delete().eq('id', habitId);
   showToast('🗑️ Hábito eliminado');
@@ -21177,7 +21192,7 @@ async function saveSleepEntry(id) {
 
 // Soft delete: el evento queda en la base con deleted_at
 async function deleteSleepEntry(id, night) {
-  if(!confirm('¿Eliminar esta entrada?')) return;
+  if(!(await appConfirm('¿Eliminar esta entrada?'))) return;
   const {error} = await sb.from('diary_sleep_events').update({ deleted_at: new Date().toISOString() }).eq('id', id).eq('client_id', currentClient.id);
   if(error) { showToast('No se pudo eliminar', 'error'); return; }
   showToast('Entrada eliminada');
@@ -21433,7 +21448,7 @@ async function renameDiaryOption(optionId) {
   const f = diaryForm;
   const o = f?.options.find(x => x.option_id === optionId && x.source === 'own');
   if(!o) return;
-  const name = (prompt('Nuevo nombre', o.name) || '').trim();
+  const name = ((await appDialog({ title: 'Nuevo nombre', input: o.name, okLabel: 'Guardar' })) || '').trim();
   if(!name || name === o.name) return;
   const {error} = await sb.from('diary_options').update({name}).eq('id', optionId).eq('client_id', currentClient.id);
   if(error) { showToast(error.code === '23505' ? 'Ya tenés una actividad con ese nombre' : '' + error.message); return; }
@@ -21447,7 +21462,7 @@ async function deleteDiaryOption(optionId) {
   const f = diaryForm;
   const o = f?.options.find(x => x.option_id === optionId && x.source === 'own');
   if(!o) return;
-  if(!confirm(`¿Borrar "${o.name}" de tus actividades?\n\nTus registros anteriores se quedan como están.`)) return;
+  if(!(await appConfirm(`¿Borrar "${o.name}" de tus actividades?\n\nTus registros anteriores se quedan como están.`))) return;
   const {error} = await sb.from('diary_options').delete().eq('id', optionId).eq('client_id', currentClient.id);
   if(error) { showToast('❌ ' + error.message); return; }
   f.options = f.options.filter(x => x !== o);
@@ -21758,7 +21773,7 @@ async function deleteDiaryEntry(id) {
   const e = diaryState.entriesById[id];
   if(!e || !currentClient) return;
   const when = e.entry_date ? `del ${diaryFmtDay(e.entry_date)}` : `(un registro ${diaryWhenLabel(e)})`;
-  if(!confirm(`¿Borrar "${e.activity_name}" ${when}?\n\nEsta acción no se puede deshacer.`)) return;
+  if(!(await appConfirm(`¿Borrar "${e.activity_name}" ${when}?\n\nEsta acción no se puede deshacer.`))) return;
   const {error} = await sb.from('diary_entries').delete().eq('id', id).eq('client_id', currentClient.id);
   if(error) { showToast('❌ ' + error.message); return; }
   if(e.photo_path) await sb.storage.from('diary-photos').remove([e.photo_path]);
@@ -24199,7 +24214,7 @@ async function loadTestTemplate(templateId, templateName) {
 }
 
 async function deleteTestTemplate(templateId) {
-  if (!confirm('¿Eliminar esta plantilla?')) return;
+  if (!(await appConfirm('¿Eliminar esta plantilla?'))) return;
   await sb.from('test_template_exercises').delete().eq('template_id', templateId);
   const {error} = await sb.from('test_templates').delete().eq('id', templateId);
   if (error) { showToast('❌ '+error.message); return; }
@@ -25218,7 +25233,7 @@ function rnParsePlanJson(text, routines) {
   return { errors, warnings, plan: { nivel: [1, 2, 3].includes(nivel) ? nivel : null, weeks }, count };
 }
 // Carga al editor como borrador (nada se activa). En un plan activo reemplaza solo lo pendiente.
-function rnJsonLoad() {
+async function rnJsonLoad() {
   const r = rnPlan.json.res; if (!r || r.errors.length) return;
   const p = rnProfile, active = p.plan_status === 'active' || p.plan_status === 'paused';
   const cur = rnCurrentWeek(p), onlyFuture = rnPlan.json.scope === 'futuro';
@@ -25226,7 +25241,7 @@ function rnJsonLoad() {
   const maxN = Math.max(rnPlan.weeks.length, ...r.plan.weeks.map(w => w.n));
   while (rnPlan.weeks.length < maxN) rnPlan.weeks.push({ n: rnPlan.weeks.length + 1, type: 'normal', sessions: [] });
   const pending = rnPlan.weeks.filter(affected).reduce((a, w) => a + w.sessions.filter(s => s.status !== 'hecha').length, 0);
-  if (active && !confirm(`Se reemplazan ${pending} sesiones pendientes${onlyFuture ? ' de las semanas futuras' : ''}; las hechas no se tocan. ¿Seguimos?`)) return;
+  if (active && !(await appConfirm(`Se reemplazan ${pending} sesiones pendientes${onlyFuture ? ' de las semanas futuras' : ''}; las hechas no se tocan. ¿Seguimos?`))) return;
   const skipped = [];
   rnPlan.weeks.forEach(w => {
     if (!affected(w)) return;
@@ -25499,7 +25514,7 @@ async function rnShoeSave(id) {
 }
 async function rnShoeRetire(id) {
   const z = rnShoes.find(x => x.id === id);
-  if (!z || !confirm(`¿Retirar ${z.name}? Se conserva su historial.`)) return;
+  if (!z || !(await appConfirm(`¿Retirar ${z.name}? Se conserva su historial.`))) return;
   const { error } = await sb.from('run_shoes').update({ retired_at: new Date().toISOString() }).eq('id', id).eq('client_id', currentClient.id);
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
   rnShoes = await rnLoadShoes(currentClient.id); showToast('Zapato retirado'); rnRenderClient();
@@ -26034,7 +26049,7 @@ async function rnExDelete(id) {
   const e = rnLib.ex.find(x => x.id === id); if (!e) return;
   const used = rnLib.routines.filter(r => (r.exercise_ids || []).map(String).includes(String(id)));
   const msg = used.length ? `«${e.name}» se usa en ${used.length} ${used.length === 1 ? 'bloque' : 'bloques'} (${used.map(r => r.name).join(', ')}). Si lo borrás, se quita de ${used.length === 1 ? 'ese bloque' : 'esos bloques'}. ¿Borrarlo igual?` : `¿Borrar «${e.name}»?`;
-  if (!confirm(msg)) return;
+  if (!(await appConfirm(msg))) return;
   for (const r of used) {
     const { error } = await sb.from('run_routines').update({ exercise_ids: (r.exercise_ids || []).filter(x => String(x) !== String(id)) }).eq('id', r.id);
     if (error) { showToast(error.message, 'error'); return; }
