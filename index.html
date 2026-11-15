@@ -24280,8 +24280,8 @@ let rnOnb = null; // { step, a }
 
 function rnOnbStart() {
   if (!rnProfile || !currentClient) return;
-  rnOnb = { step: 1, a: { surfaces: [], days: [], ...(rnProfile.onboarding_answers || {}) } };
   rnOpenSheet('', () => { rnOnb = null; });
+  rnOnb = { step: 1, a: { surfaces: [], days: [], ...(rnProfile.onboarding_answers || {}) } };
   rnOnbRender();
 }
 function rnOnbRead() {
@@ -24926,6 +24926,8 @@ async function rnLoadClientData() {
 function rnHasPlan() { return rnProfile && rnProfile.mode === 'plan' && (rnProfile.plan_status === 'active' || rnProfile.plan_status === 'paused'); }
 function rnSuggested() {
   const p = rnProfile, wk = rnCurrentWeek(p);
+  const rk = rnClient.checkin && rnClient.checkin.recommendation && rnClient.checkin.recommendation.kind;
+  if (rk === 'rest' || rk === 'no_run') return { version: null, rest: true, reasons: [] }; // el módulo se pausa ese día
   const planRuns = rnClient.runs.filter(r => r.kind === 'plan' && r.version_used);
   const lastTwoReduced = planRuns.length >= 2 && planRuns.slice(0, 2).every(r => r.version_used === 'reducida');
   return runPickVersion(rnClient.checkin, { manual: rnGetManualVersion(), cantMore: rnClient.cantMore, lastTwoReduced, legHeavy: rnClient.legHeavy, resumeCap: p.resume_reduced_week && p.resume_reduced_week === wk });
@@ -25017,9 +25019,9 @@ function rnRegOpen(kind, plannedId) {
   const k = plan && pend.length && kind !== 'libre' ? 'plan' : 'libre';
   const lastShoe = (rnClient.runs.find(r => r.shoe_id && rnShoes.some(z => z.id === r.shoe_id && !z.retired_at)) || {}).shoe_id || (rnShoes.find(z => !z.retired_at) || {}).id || null;
   const sug = rnSuggested();
+  rnOpenSheet('', () => { rnReg = null; });
   rnReg = { kind: k, canPlan: plan && pend.length > 0, pend, planned: plannedId || (pend[0] && pend[0].id) || null, version: sug.version || 'completa', date: todayCR(), type: 'facil', effort: null, terrain: 'calle', shoe: lastShoe, more: false, newShoe: false, f: {} };
   if (kind === 'plan' && !plannedId && pend.length) rnReg.planned = pend[0].id;
-  rnOpenSheet('', () => { rnReg = null; });
   rnRegRender();
 }
 function rnRegRead() {
@@ -25164,6 +25166,267 @@ function rnDashHtml(plan) {
       <svg viewBox="0 0 322 96" width="100%" height="96" role="img" aria-label="Volumen semanal en kilómetros: ${weeks.map(v => rnKm(v)).join('; ')}"><line x1="0" y1="80" x2="322" y2="80" stroke="#E2D9CB"/>${bars}<g font-family="DM Mono,monospace" font-size="10" fill="#4F483E" text-anchor="middle">${labels}</g></svg></div>
     <div class="rn-cd"><div class="rn-lb">Tiempo de 5K entre pruebas</div>${testsHtml}</div>
     <div class="rn-cd"><div class="rn-lb">Km por zapato</div>${shoesHtml}</div>`;
+}
+// ---------- R5: check-in diario, mini calendario y recomendaciones (pantallas 2, 3, 5, 6) ----------
+// No es una IA que diagnostica: son reglas visibles y editables.
+// Grupos que cuentan como pierna (exercises.muscle_group, normalizado sin tildes ni mayúsculas):
+const RN_LEG_GROUPS = ['cuadriceps', 'isquiotibiales', 'isquios', 'femoral', 'gluteos', 'gluteo', 'pantorrillas', 'pantorrilla', 'aductor', 'aductores'];
+// Un día cuenta como "pierna pesada" con esta cantidad o más de ejercicios distintos de pierna:
+const LEG_HEAVY_MIN_EXERCISES = 3;
+// Zonas de dolor que cuentan como articulares (dolor moderado articular = no correr)
+const RN_PAIN_ZONES = [['pantorrilla', 'Pantorrilla'], ['rodilla', 'Rodilla'], ['tobillo', 'Tobillo'], ['cadera', 'Cadera'], ['espalda', 'Espalda'], ['otra', 'Otra']];
+const RN_JOINT_ZONES = ['rodilla', 'tobillo', 'cadera'];
+const RN_PAIN_STREAK_DAYS = 3;          // dolor o molestia tantos días seguidos: alerta al coach
+const RN_RULES = {
+  lowEnergy: 2,                          // energía <= esto con sueño malo: reducida
+  goodEnergy: 4,                         // energía >= esto sin dolor: completa
+  legAfterEffort: 7                      // esfuerzo >= esto: mejor esperar con la pierna
+};
+const RN_QUALITY_OR_LONG = ['strides', 'umbral', 'larga_facil', 'prueba_5k', 'larga', 'intervalos'];
+
+function rnIsLeg(group) { return RN_LEG_GROUPS.includes(progressKey(group)); }
+// Días entrenados con sus ejercicios y grupos, misma lógica que el calendario "Entrenos" (entFetch):
+// exercise_logs por fecha de CR, workout_sessions por session_date y workout_completions por completed_date.
+// Solo lectura. Si un día tiene check-in sin logs, se usan los ejercicios de ese día del plan menos los saltados.
+async function rnTrainingDays(cid, from, to) {
+  const rows = q => q.then(r => (r.error ? [] : (r.data || [])), () => []);
+  const [logs, sess, cks] = await Promise.all([
+    rows(sb.from('exercise_logs').select('exercise_id,logged_at,exercises(name,muscle_group,plan_day_id)').eq('client_id', cid).gte('logged_at', crDayRange(from).start).lt('logged_at', crDayRange(to).end)),
+    rows(sb.from('workout_sessions').select('plan_day_id,session_date').eq('client_id', cid).gte('session_date', from).lte('session_date', to)),
+    rows(sb.from('workout_completions').select('completed_date,plan_day_id,skipped_exercises').eq('client_id', cid).gte('completed_date', from).lte('completed_date', to))
+  ]);
+  const days = {};
+  const day = d => days[d] || (days[d] = { ex: new Map(), unknown: 0, sources: 0 });
+  logs.forEach(l => {
+    const d = pgCRDate(l.logged_at); if (!d) return;
+    const x = day(d); x.sources++;
+    if (!l.exercises) { x.unknown++; return; }
+    x.ex.set(String(l.exercise_id), { name: l.exercises.name, group: l.exercises.muscle_group || null });
+  });
+  sess.forEach(s => { const d = String(s.session_date || '').slice(0, 10); if (d) day(d).sources++; });
+  // Check-in sin logs: ejercicios del día del plan menos los saltados
+  const ckOnly = cks.filter(c => { const d = String(c.completed_date).slice(0, 10); return !(days[d] && days[d].ex.size); });
+  const pdIds = [...new Set(ckOnly.map(c => c.plan_day_id).filter(Boolean))];
+  const pdEx = pdIds.length ? await rows(sb.from('exercises').select('id,name,muscle_group,plan_day_id').in('plan_day_id', pdIds)) : [];
+  cks.forEach(c => {
+    const d = String(c.completed_date).slice(0, 10), x = day(d); x.sources++;
+    if (!ckOnly.includes(c)) return;
+    const skipped = new Set((c.skipped_exercises || []).map(s => String(s.id)));
+    const list = pdEx.filter(e => e.plan_day_id === c.plan_day_id && !skipped.has(String(e.id)));
+    if (!list.length) x.unknown++;
+    list.forEach(e => x.ex.set(String(e.id), { name: e.name, group: e.muscle_group || null }));
+  });
+  Object.keys(days).forEach(d => {
+    const x = days[d], arr = [...x.ex.values()];
+    x.exercises = arr;
+    x.legCount = arr.filter(e => rnIsLeg(e.group)).length;
+    x.legHeavy = x.legCount >= LEG_HEAVY_MIN_EXERCISES;
+    x.groups = [...new Set(arr.map(e => e.group).filter(Boolean))];
+    x.known = arr.length > 0 && arr.some(e => e.group); // con grupos para decidir
+  });
+  return days;
+}
+// ¿Pierna pesada ayer u hoy? {value: true|false|null}. null = no se puede deducir: se pregunta.
+function rnLegRecent(days, today) {
+  const y = tcAddDays(today, -1), a = days[y], b = days[today];
+  if ((a && a.legHeavy) || (b && b.legHeavy)) return { value: true, day: (b && b.legHeavy) ? today : y };
+  const ok = x => x && x.known && !x.unknown;
+  if (ok(a) && (!b || ok(b))) return { value: false };
+  if (!a && ok(b)) return { value: false };
+  return { value: null };
+}
+async function rnLoadCheckinCtx() {
+  const cid = currentClient.id, today = todayCR();
+  const [cks, days] = await Promise.all([
+    sb.from('run_checkins').select('*').eq('client_id', cid).gte('checkin_date', tcAddDays(today, -14)).order('checkin_date', { ascending: false }).then(r => r.data || [], () => []),
+    rnTrainingDays(cid, tcAddDays(today, -6), today)
+  ]);
+  const ck = cks.find(c => String(c.checkin_date).slice(0, 10) === today) || null;
+  const leg = rnLegRecent(days, today);
+  rnClient.days = days; rnClient.recentCheckins = cks; rnClient.checkin = ck;
+  rnClient.legKnown = leg.value !== null;
+  rnClient.legHeavy = leg.value === true || (leg.value === null && ck && ck.leg_recent === true);
+  rnClient.legDay = leg.day || null;
+  rnClient.easyOnly = rnClient.legHeavy;
+}
+
+// Recomendación (pura). ck: respuestas del check-in; ctx: {legHeavy, painStreak}
+function rnRecommend(ck, ctx) {
+  const c = ctx || {}, alerts = [];
+  if (ck.alarm_symptom) return { kind: 'rest', version: null, title: 'Hoy no entrenes', alerts: c.painStreak ? ['alarma', 'dolor_3_dias'] : ['alarma'] };
+  const joint = RN_JOINT_ZONES.includes(ck.pain_zone);
+  if (c.painStreak) alerts.push('dolor_3_dias');
+  if (ck.pain === 'fuerte' || (ck.pain === 'moderado' && joint)) {
+    alerts.push('dolor_fuerte');
+    return { kind: 'no_run', version: null, title: 'Hoy no corras', lines: ['Descansá o hacé una alternativa sin impacto: bici suave, natación o movilidad.'], alerts };
+  }
+  if (c.legHeavy) return { kind: 'easy_only', version: 'reducida', title: 'Hoy: solo carrera fácil', lines: ['Entrenaste pierna pesada ayer u hoy, así que hoy sin calidad ni larga.'], alerts };
+  const pick = runPickVersion(ck, {});
+  const title = pick.version === 'completa' ? 'Hoy: tu sesión completa' : pick.version === 'reducida' ? 'Hoy: versión reducida' : 'Hoy: versión mínima';
+  return { kind: 'version', version: pick.version, title, lines: pick.reasons.length ? [pick.reasons.join(' · ') + '.'] : [], alerts };
+}
+
+// Tarjeta en Mi semana / Mis corridas
+function rnCheckinCardHtml() {
+  const ck = rnClient?.checkin;
+  if (!ck) return `<div class="rn-cd is-warm"><div style="font-weight:700;font-size:15px;">Antes de salir a correr</div><div class="rn-sm rn-mu" style="margin:2px 0 4px;">Contanos cómo estás hoy. Son 20 segundos.</div><button type="button" class="rn-bt is-g" style="min-height:46px;" onclick="rnCkOpen()">Hacer el check-in de hoy</button></div>`;
+  const rec = ck.recommendation || {};
+  const red = rec.kind === 'rest' || rec.kind === 'no_run';
+  return `<div class="rn-cd ${red ? 'is-red' : 'is-warm'}"><div class="rn-row rn-sp"><div class="rn-fx"><div class="rn-ey">Check-in de hoy</div><div style="font-weight:700;font-size:16px;margin-top:2px;${red ? 'color:#8F2719;' : ''}">${rnEsc(rec.title || 'Check-in hecho')}</div></div>
+    <button type="button" class="rn-ch" style="font-size:13px;" onclick="rnCkShowRec()">Ver</button></div>${rnDisc()}</div>`;
+}
+
+// Pantalla 2: check-in
+let rnCk = null;
+function rnCkOpen() {
+  const prev = rnClient.checkin;
+  rnOpenSheet('', () => { rnCk = null; });
+  rnCk = { energy: prev?.energy ?? null, sleep: prev?.sleep ?? null, pain: prev?.pain ?? 'ninguno', pain_zone: prev?.pain_zone ?? null, stress: prev?.stress ?? null, alarm_symptom: prev ? !!prev.alarm_symptom : null, leg_recent: prev?.leg_recent ?? null };
+  rnCkRender();
+}
+function rnCkSet(k, v) { rnCk[k] = v; if (k === 'pain' && v === 'ninguno') rnCk.pain_zone = null; rnCkRender(); }
+function rnCkRender() {
+  const c = rnCk, today = todayCR();
+  const nums = (k, n) => `<div class="rn-chs">${Array.from({ length: n }, (_, i) => rnChip(String(i + 1), c[k] === i + 1, `rnCkSet('${k}',${i + 1})`)).join('')}</div>`;
+  const legQ = rnClient.legKnown
+    ? `<div class="rn-row rn-mu rn-xs" style="justify-content:center;gap:6px;margin-top:8px;">${icon('check', 14)}${rnClient.legHeavy ? 'Ya vimos que entrenaste pierna' + (rnClient.legDay === today ? ' hoy' : ' ayer') + ': no hace falta preguntarte.' : 'Ya vimos tus entrenos de ayer y hoy: no hace falta preguntarte por pierna.'}</div>`
+    : `<div class="rn-cd"><div class="rn-lb">¿Entrenaste pierna ayer o hoy?</div><div class="rn-chs">${rnChip('No', c.leg_recent === false, "rnCkSet('leg_recent',false)")}${rnChip('Sí', c.leg_recent === true, "rnCkSet('leg_recent',true)")}</div></div>`;
+  rnSheetBody(`${rnSheetHead('Check-in · ' + rnDayLabel(today), '¿Cómo estás hoy?')}
+    <div class="rn-cd"><div class="rn-lb">Energía</div>${nums('energy', 5)}</div>
+    <div class="rn-cd"><div class="rn-lb">Sueño de anoche</div><div class="rn-chs">${[['mal', 'Mal'], ['regular', 'Regular'], ['bien', 'Bien']].map(([k, l]) => rnChip(l, c.sleep === k, `rnCkSet('sleep','${k}')`)).join('')}</div></div>
+    <div class="rn-cd"><div class="rn-lb">Dolor o molestia</div><div class="rn-chs">${[['ninguno', 'Ninguno'], ['leve', 'Leve'], ['moderado', 'Moderado'], ['fuerte', 'Fuerte']].map(([k, l]) => rnChip(l, c.pain === k, `rnCkSet('pain','${k}')`)).join('')}</div>
+      ${c.pain && c.pain !== 'ninguno' ? `<div class="rn-xs rn-mu" style="margin:8px 0 6px;">Zona</div><div class="rn-row rn-wrap" style="gap:6px;">${RN_PAIN_ZONES.map(([k, l]) => rnChip(l, c.pain_zone === k, `rnCkSet('pain_zone','${k}')`)).join('')}</div>` : ''}</div>
+    <div class="rn-cd"><div class="rn-lb">Estrés</div>${nums('stress', 5)}</div>
+    <div class="rn-cd"><div class="rn-lb" style="margin-bottom:2px;">¿Algún síntoma de alarma hoy?</div><div class="rn-xs rn-mu" style="margin-bottom:8px;">Dolor o presión en el pecho, mareo o falta de aire inusual.</div>
+      <div class="rn-chs">${rnChip('No', c.alarm_symptom === false, "rnCkSet('alarm_symptom',false)")}${rnChip('Sí', c.alarm_symptom === true, "rnCkSet('alarm_symptom',true)")}</div></div>
+    ${legQ}
+    <button type="button" class="rn-bt is-g" onclick="rnCkSave()">Ver mi recomendación</button>`);
+}
+async function rnCkSave() {
+  const c = rnCk, cid = currentClient.id, today = todayCR();
+  if (!c.energy || !c.sleep || c.alarm_symptom == null) { showToast('Respondé energía, sueño y síntoma de alarma'); return; }
+  if (!rnClient.legKnown && c.leg_recent == null) { showToast('Contanos si entrenaste pierna ayer o hoy'); return; }
+  const legHeavy = rnClient.legKnown ? rnClient.legHeavy : c.leg_recent === true;
+  // Dolor o molestia RN_PAIN_STREAK_DAYS días seguidos (hoy incluido)
+  let painStreak = false;
+  if (c.pain && c.pain !== 'ninguno') {
+    const byDate = Object.fromEntries((rnClient.recentCheckins || []).map(k => [String(k.checkin_date).slice(0, 10), k]));
+    painStreak = Array.from({ length: RN_PAIN_STREAK_DAYS - 1 }, (_, i) => byDate[tcAddDays(today, -(i + 1))]).every(k => k && k.pain && k.pain !== 'ninguno');
+  }
+  const rec = rnRecommend(c, { legHeavy, painStreak });
+  const row = { client_id: cid, checkin_date: today, energy: c.energy, sleep: c.sleep, pain: c.pain || 'ninguno', pain_zone: c.pain_zone, stress: c.stress, alarm_symptom: !!c.alarm_symptom,
+    leg_recent: rnClient.legKnown ? null : c.leg_recent, recommendation: { kind: rec.kind, version: rec.version, title: rec.title, lines: rec.lines || [] }, updated_at: new Date().toISOString() };
+  const { data, error } = await sb.from('run_checkins').upsert([row], { onConflict: 'client_id,checkin_date' }).select().maybeSingle();
+  if (error) showToast('No se pudo guardar el check-in. Igual te mostramos la recomendación.', 'error');
+  rnClient.checkin = data || row; rnClient.legHeavy = legHeavy; rnClient.easyOnly = legHeavy;
+  if (rec.version && !rnGetManualVersion()) { /* la sugerida sale de runPickVersion con el check-in */ }
+  if (rec.alerts.length) rnCkAlerts(rec, c);
+  rnCk = null;
+  rnCkShowRec();
+  rnRenderClient();
+}
+async function rnCkAlerts(rec, c) {
+  const cid = currentClient.id, first = (currentClient.name || '').trim().split(/\s+/)[0];
+  const detail = { alarma: 'Marcó un síntoma de alarma en el check-in. Se le indicó no entrenar hoy y buscar atención médica si persiste.', dolor_fuerte: `Dolor ${c.pain}${c.pain_zone ? ' en ' + c.pain_zone : ''}. Se le indicó no correr hoy.`, dolor_3_dias: `Dolor o molestia ${RN_PAIN_STREAK_DAYS} días seguidos${c.pain_zone ? ' (' + c.pain_zone + ')' : ''}.` };
+  await rnCreateAlerts(cid, rec.alerts.map(t => ({ type: t, detail: detail[t] || '' })));
+  try {
+    const { data: coach } = await sb.from('users').select('username').eq('id', currentClient.coach_id).maybeSingle();
+    const msg = rec.alerts.includes('alarma') ? `${first} marcó un síntoma de alarma` : rec.alerts.includes('dolor_fuerte') ? `${first} reportó dolor ${c.pain}` : `${first}: dolor ${RN_PAIN_STREAK_DAYS} días seguidos`;
+    rnPush(coach?.username, 'Run · alerta', msg);
+  } catch (e) { /* el push nunca rompe el flujo */ }
+}
+
+// Pantallas 3 y 6: recomendación con mini calendario
+function rnMiniCalHtml(sel) {
+  const today = todayCR(), days = rnClient.days || {};
+  const L = ['D', 'L', 'K', 'M', 'J', 'V', 'S'];
+  const cells = Array.from({ length: 7 }, (_, i) => tcAddDays(today, i - 6)).map(d => {
+    const x = days[d], dow = new Date(d + 'T12:00:00Z').getUTCDay(), n = Number(d.slice(8, 10)), on = !!(x && x.sources);
+    const lbl = `${n}${d === today ? ', hoy' : ''}, ${on ? (x.legHeavy ? 'pierna pesada' : 'entreno') : 'sin entreno'}`;
+    const bg = on ? `background:${RN_ORANGE};color:#fff;` : 'background:#EFE9DF;color:#4F483E;';
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;"><span class="rn-m rn-mu" style="font-size:11px;">${L[dow] === 'K' ? 'M' : L[dow]}</span>
+      <button type="button" aria-label="${lbl}" aria-pressed="${sel === d}" onclick="rnCalPick('${d}')" style="width:42px;height:56px;border-radius:12px;border:0;cursor:pointer;${bg}display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-family:'DM Mono',monospace;font-size:15px;${sel === d ? 'box-shadow:0 0 0 2px #FAF6F0,0 0 0 4px #1F1B16;' : ''}">${n}${x && x.legHeavy ? '<small style="font-family:\'DM Sans\',sans-serif;font-size:10px;font-weight:700;">Pierna</small>' : ''}${d === today ? `<span style="width:5px;height:5px;border-radius:9px;background:${on ? '#fff' : RN_ORANGE};display:block;"></span>` : ''}</button></div>`;
+  }).join('');
+  const x = sel && days[sel];
+  const det = sel ? (x && x.sources
+    ? `<div class="rn-cd"><div class="rn-row rn-sp"><span style="font-weight:700;font-size:15px;">${rnDayLabel(sel)}</span>${x.legHeavy ? '<span class="rn-pill is-o">Pierna pesada</span>' : ''}</div>
+       <div class="rn-sm rn-mu" style="margin:4px 0 8px;">${x.exercises.length ? `${x.exercises.length} ${x.exercises.length === 1 ? 'ejercicio' : 'ejercicios'}${x.legCount ? ` · ${x.legCount} de pierna` : ''}` : 'Entrenó, pero no sabemos qué ejercicios.'}</div>
+       ${x.groups.length ? `<div class="rn-row rn-wrap" style="gap:6px;">${x.groups.map(g => `<span class="rn-pill is-n">${rnEsc(g)}</span>`).join('')}</div>` : ''}</div>`
+    : `<div class="rn-cd is-ghost rn-sm rn-mu">${rnDayLabel(sel)}: sin entreno registrado.</div>`) : '';
+  return `<div class="rn-cd"><div class="rn-row rn-sp" style="margin-bottom:10px;"><span style="font-weight:700;font-size:14px;">Tus entrenos de la semana</span><span class="rn-pill is-n">Últimos 7 días</span></div><div class="rn-row" style="gap:4px;align-items:flex-start;">${cells}</div></div>${det}`;
+}
+let rnCalSel = null;
+function rnCalPick(d) { rnCalSel = rnCalSel === d ? null : d; rnCkShowRec(); }
+function rnSuggestSessionHtml(rec) {
+  if (!rnHasPlan() || rnProfile.plan_status !== 'active') return '';
+  const wk = rnCurrentWeek(rnProfile), pend = rnClient.planned.filter(s => s.week_number === wk && s.status !== 'hecha');
+  if (!pend.length) return '';
+  let s = pend[0];
+  if (rec.kind === 'easy_only') s = pend.find(x => ['facil', 'correr_caminar'].includes(x.session_type)) || { ...pend[0], session_type: 'facil', overrides: {} };
+  const v = runApplyVersion(s, rec.version || 'completa');
+  const txt = v.postponeTest ? v.message : `${RN_TYPE_NAME[v.session_type] || v.session_type} · ${v.minutes} min${v.effort ? ' · esfuerzo ' + rnEsc(v.effort) : ''}`;
+  return `<div class="rn-cd is-warm"><div class="rn-row" style="gap:8px;margin-bottom:6px;color:#A8410F;">${icon('activity', 20)}<span style="font-weight:700;font-size:15px;">Sesión sugerida</span></div><div style="font-weight:700;font-size:17px;">${txt}</div></div>`;
+}
+function rnCkShowRec() {
+  const ck = rnClient.checkin; if (!ck) return;
+  const rec = ck.recommendation || {};
+  if (!document.getElementById('rn-ov')) rnOpenSheet('');
+  if (rec.kind === 'rest') {
+    rnSheetBody(`${rnSheetHead('Tu recomendación de hoy', '')}
+      <div style="width:64px;height:64px;border-radius:999px;background:#FBE9E6;display:flex;align-items:center;justify-content:center;color:${RN_RED};margin-top:-6px;">${icon('alert-triangle', 32)}</div>
+      <h1 class="rn-h1" style="margin-top:10px;">Hoy no entrenes</h1>
+      <div class="rn-cd is-red"><div style="font-weight:700;font-size:16px;color:${RN_RED};">Marcaste un síntoma de alarma.</div><div class="rn-sm" style="margin-top:6px;">Descansá hoy. Si el síntoma persiste o empeora, buscá atención médica.</div></div>
+      <div class="rn-cd"><div class="rn-row" style="gap:10px;"><span class="rn-pill is-g">${icon('check', 14)}Aviso enviado</span><span style="font-size:14px;font-weight:600;">Tu coach ya lo sabe</span></div><div class="rn-sm rn-mu" style="margin-top:6px;">Te va a escribir para ver cómo seguís. El módulo queda en pausa hoy.</div></div>
+      ${rnDisc()}
+      <a class="rn-bt is-g" style="text-decoration:none;" href="https://wa.me/${EXX_WA_NUMBER}" target="_blank" rel="noopener">Escribirle a mi coach</a>
+      <button type="button" class="rn-bt is-l" onclick="rnCloseSheet()">Entendido</button>`);
+    return;
+  }
+  const lines = (rec.lines || []).map(l => rnEsc(l)).join('<br>');
+  const stats = `Energía ${ck.energy}, sueño ${ck.sleep}${ck.pain && ck.pain !== 'ninguno' ? `, dolor ${ck.pain}` : ', sin dolor'}.`;
+  rnSheetBody(`${rnSheetHead('Tu recomendación de hoy', rnEsc(rec.title || ''))}
+    ${rnMiniCalHtml(rnCalSel)}
+    ${rec.kind === 'no_run' ? `<div class="rn-cd is-red"><div style="font-weight:700;color:${RN_RED};">Hoy no corras</div><div class="rn-sm" style="margin-top:4px;">${lines}</div><div class="rn-sm rn-mu" style="margin-top:4px;">Tu coach ya recibió el aviso.</div></div>` : rnSuggestSessionHtml(rec)}
+    <div class="rn-cd"><div class="rn-sm">${lines ? lines + '<br>' : ''}${rnEsc(stats)}</div></div>
+    ${rnDisc()}
+    ${rec.kind === 'no_run' ? '' : `<button type="button" class="rn-bt is-g" onclick="rnCloseSheet();rnRegOpen()">Registrar corrida</button>`}
+    <button type="button" class="rn-bt is-l" onclick="rnCkOpen()">Rehacer el check-in</button>`);
+}
+
+// Pantalla 5: después de correr, ¿pierna hoy? Orientación, no bloqueo.
+function rnLegAfterAdvice(run, ck) {
+  const hard = RN_QUALITY_OR_LONG.includes(run.session_type) || (run.effort != null && run.effort >= RN_RULES.legAfterEffort);
+  const pain = ck && ck.pain && ck.pain !== 'ninguno', low = ck && ck.energy != null && ck.energy <= RN_RULES.lowEnergy;
+  if (hard || pain || low) {
+    const why = [hard ? (run.effort >= RN_RULES.legAfterEffort ? `Corriste fuerte (esfuerzo ${run.effort})` : 'Fue una sesión de calidad o larga') : '', pain ? `quedó una molestia ${ck.pain}${ck.pain_zone ? ' en ' + ck.pain_zone : ''}` : '', low ? 'tu energía está baja' : ''].filter(Boolean).join(', ');
+    return { wait: true, title: 'Mejor esperá con la pierna pesada.', text: `${why ? why.charAt(0).toUpperCase() + why.slice(1) + '. ' : ''}Dejala para mañana.` };
+  }
+  return { wait: false, title: 'Podés entrenar pierna hoy.', text: 'Hacé la fuerza primero y dejá la carrera para fácil.' };
+}
+function rnAfterRun(run, ps) {
+  const first = rnEsc((currentClient.name || '').trim().split(/\s+/)[0]);
+  const ad = rnLegAfterAdvice(run, rnClient.checkin);
+  const shoe = rnShoes.find(z => z.id === run.shoe_id);
+  const wk = rnHasPlan() ? rnCurrentWeek(rnProfile) : 0, wkS = wk ? rnClient.planned.filter(s => s.week_number === wk) : [];
+  rnSheetBody(`<div class="rn-row" style="gap:8px;color:#17602F;">${icon('check-circle', 22)}<span class="rn-ey" style="color:#17602F;">Corrida guardada</span></div>
+    <h1 class="rn-h1" style="margin-top:6px;">¡Buen trabajo, ${first}!</h1>
+    <div class="rn-cd"><div class="rn-row rn-sp" style="align-items:flex-end;"><div><div class="rn-m" style="font-size:28px;font-weight:500;">${run.distance_km != null ? rnKm(run.distance_km) + ' km' : rnMinToClock(run.duration_min)}</div><div class="rn-sm rn-mu">${rnMinToClock(run.duration_min)}${run.effort ? ' · esfuerzo ' + run.effort : ''} · ${RN_RUN_NAME[run.session_type] || 'Libre'}</div></div>
+      ${wkS.length && ps ? `<span class="rn-pill is-g">Sesión ${wkS.filter(s => s.status === 'hecha').length} de ${wkS.length}</span>` : ''}</div>
+      ${shoe ? `<div class="rn-m rn-mu rn-xs" style="margin-top:10px;border-top:1px solid #EFE9DF;padding-top:10px;">${rnEsc(shoe.name)}: ${rnKm(shoe.total_km)} km</div>` : ''}</div>
+    <h2 class="rn-h2">¿Pierna hoy?</h2>
+    <div class="rn-cd ${ad.wait ? 'is-warm' : ''}" ${ad.wait ? '' : 'style="background:#E6F2EA;border-color:#BFDCC8;"'}><div style="font-weight:700;font-size:17px;color:${ad.wait ? '#A8410F' : '#17602F'};">${ad.title}</div><div class="rn-sm" style="margin-top:6px;">${rnEsc(ad.text)}</div></div>
+    ${ad.wait
+      ? `<button type="button" class="rn-bt is-g" onclick="rnLegAfter('${run.id}','esperar')">Dejarla para mañana</button><button type="button" class="rn-bt is-l" onclick="rnLegAfter('${run.id}','igual')">La hago igual</button>
+         <div class="rn-xs rn-mu" style="text-align:center;margin-top:6px;">Si la hacés igual, queda registrado y tu coach lo ve. No se bloquea nada.</div>`
+      : `<button type="button" class="rn-bt is-g" onclick="rnLegAfter('${run.id}','igual')">Entendido</button>`}
+    ${rnDisc()}`);
+}
+async function rnLegAfter(runId, choice) {
+  if (runId && runId !== 'undefined') {
+    const { error } = await sb.from('run_sessions').update({ leg_after: choice }).eq('id', runId).eq('client_id', currentClient.id);
+    if (error) showToast('No se pudo guardar tu respuesta', 'error');
+  }
+  rnCloseSheet(); showToast('Listo', 'success');
 }
 // ===== FIN MÓDULO RUN =====
 </script>
