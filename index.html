@@ -2093,7 +2093,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
       <div class="ai-week-chip" onclick="setAiWeek(2,this)">Semana 2</div>
       <div class="ai-week-chip" onclick="setAiWeek(3,this)">Semana 3</div>
       <div class="ai-week-chip" onclick="setAiWeek(4,this)">Semana 4</div>
-      <div class="ai-week-chip" onclick="setAiWeek(5,this)">Deload</div>
+      <div class="ai-week-chip" onclick="setAiWeek(5,this)">Semana 5</div>
     </div>
     <div class="section-header">
       <div class="section-title">Día</div>
@@ -9667,7 +9667,7 @@ function renderWeekSync() {
   const start = weekSyncStartMs(weekSync.pos, weekSync.mode, now);
   const cur = getProgramPosition(new Date(start).toISOString(), now, seq.length);
   const nextChange = lastWeekChangeMs(now) + WEEK_MS;
-  const chips = seq.map((e, i) => `<button type="button" class="aw-pos-chip" aria-pressed="${weekSync.pos === i + 1}" onclick="pickWeekSyncPos(${i + 1})">${e === 'deload' ? 'Deload' : e}</button>`).join('');
+  const chips = seq.map((e, i) => `<button type="button" class="aw-pos-chip" aria-pressed="${weekSync.pos === i + 1}" onclick="pickWeekSyncPos(${i + 1})">${i + 1}</button>`).join('');
   const seg = (m, label, ms) => `<button type="button" class="aw-seg-btn" aria-pressed="${weekSync.mode === m}" onclick="pickWeekSyncMode('${m}')"><span class="aw-seg-label">${label}</span><span class="aw-seg-date">${fmtCRDay(ms, true)}</span></button>`;
   const empties = [];
   const rows = seq.map((_, i) => {
