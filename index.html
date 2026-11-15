@@ -24241,7 +24241,7 @@ async function rnLoadClientTab() {
   const [p, shoes] = await Promise.all([rnLoadProfile(cid), rnLoadShoes(cid)]);
   if (currentClient?.id !== cid) return;
   rnProfile = p; rnShoes = shoes;
-  if (typeof rnRenderClient === 'function') { rnRenderClient(); return; }
+  if (typeof rnRenderClient === 'function') { rnClient = null; rnRenderClient(); return; }
   box.innerHTML = `<div class="rn"><div class="rn-ey">Run</div><h1 class="rn-h1">Run</h1><div class="rn-empty">Tu coach está preparando tu módulo de running.</div></div>`;
 }
 // ---------- Hoja genérica del módulo (bottom-sheet) ----------
@@ -24887,6 +24887,283 @@ function rnJsonLoad() {
 function rnCopyText(t) {
   const fallback = () => { const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) {} ta.remove(); showToast(ok ? 'Formato copiado' : 'No se pudo copiar: seleccionalo a mano'); };
   try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(() => showToast('Formato copiado', 'success'), fallback); else fallback(); } catch (e) { fallback(); }
+}
+// ---------- R4: cliente (pantallas 1, 4, 7, 8, 9, 10) ----------
+// Todas las consultas filtran por el id del cliente (RLS desactivado).
+const RN_FREE_TYPES = [['facil', 'Fácil'], ['larga', 'Larga'], ['intervalos', 'Intervalos'], ['otra', 'Otra']];
+const RN_TERRAINS = [['calle', 'Calle'], ['pista', 'Pista'], ['trail', 'Trail'], ['cinta', 'Cinta']];
+const RN_RUN_NAME = { ...RN_TYPE_NAME, larga: 'Larga', intervalos: 'Intervalos', otra: 'Otra' };
+let rnClient = null; // { tab, planned, runs, checkin, legHeavy, ... }
+
+function rnMinToClock(min) {
+  const v = Number(min); if (!Number.isFinite(v) || v <= 0) return '—';
+  const tot = Math.round(v * 60), h = Math.floor(tot / 3600), m = Math.floor((tot % 3600) / 60), s = tot % 60;
+  return h ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
+}
+// "34:10" → 34,17 min · "1:02:30" → 62,5 · "34" o "34,5" → minutos
+function rnParseDuration(v) {
+  const t = String(v || '').trim(); if (!t) return null;
+  if (t.includes(':')) { const p = t.split(':').map(x => parseInt(x, 10)); if (p.some(n => !Number.isFinite(n))) return null; const sec = p.length === 3 ? p[0] * 3600 + p[1] * 60 + p[2] : p[0] * 60 + p[1]; return Math.round(sec / 60 * 100) / 100; }
+  return parseDecimal(t);
+}
+function rnWeekMonday(d) { const dow = (new Date(d + 'T12:00:00Z').getUTCDay() + 6) % 7; return tcAddDays(d, -dow); }
+function rnVerKey() { return `rn_ver_${currentClient?.id}_${todayCR()}`; }
+function rnGetManualVersion() { try { return localStorage.getItem(rnVerKey()) || null; } catch (e) { return null; } }
+function rnSetManualVersion(v) { try { if (v) localStorage.setItem(rnVerKey(), v); else localStorage.removeItem(rnVerKey()); } catch (e) {} }
+
+async function rnLoadClientData() {
+  const cid = currentClient.id;
+  const since = tcAddDays(todayCR(), -180);
+  const [pl, rs, rt] = await Promise.all([
+    sb.from('run_planned_sessions').select('*').eq('client_id', cid).order('week_number', { ascending: true }).order('position', { ascending: true }),
+    sb.from('run_sessions').select('*').eq('client_id', cid).gte('session_date', since).order('session_date', { ascending: false }).order('created_at', { ascending: false }),
+    sb.from('run_routines').select('*')
+  ]);
+  rnRoutines = rt.data || [];
+  rnClient = { tab: rnClient?.tab || 'semana', planned: pl.data || [], runs: rs.data || [], checkin: rnClient?.checkin || null, legHeavy: rnClient?.legHeavy || false, legKnown: rnClient?.legKnown || false };
+  if (typeof rnLoadCheckinCtx === 'function') await rnLoadCheckinCtx();
+}
+function rnHasPlan() { return rnProfile && rnProfile.mode === 'plan' && (rnProfile.plan_status === 'active' || rnProfile.plan_status === 'paused'); }
+function rnSuggested() {
+  const p = rnProfile, wk = rnCurrentWeek(p);
+  const planRuns = rnClient.runs.filter(r => r.kind === 'plan' && r.version_used);
+  const lastTwoReduced = planRuns.length >= 2 && planRuns.slice(0, 2).every(r => r.version_used === 'reducida');
+  return runPickVersion(rnClient.checkin, { manual: rnGetManualVersion(), cantMore: rnClient.cantMore, lastTwoReduced, legHeavy: rnClient.legHeavy, resumeCap: p.resume_reduced_week && p.resume_reduced_week === wk });
+}
+
+function rnRenderClient() {
+  const box = document.getElementById('c-run-root');
+  if (!box) return;
+  if (!rnProfile) { box.innerHTML = `<div class="rn"><div class="rn-ey">Run</div><h1 class="rn-h1">Run</h1><div class="rn-empty">Tu coach está preparando tu módulo de running.</div></div>`; return; }
+  if (!rnClient) { box.innerHTML = '<div class="spinner"></div>'; rnLoadClientData().then(rnRenderClient); return; }
+  const plan = rnHasPlan(), t = rnClient.tab;
+  const tabs = [['semana', plan ? 'Mi semana' : 'Mis corridas'], ['progreso', 'Mi progreso'], ['zapatos', 'Zapatos']];
+  const head = `<div class="rn-chs" style="margin-bottom:12px;">${tabs.map(([k, l]) => rnChip(l, t === k, `rnClient.tab='${k}';rnRenderClient()`)).join('')}</div>`;
+  let body = '';
+  if (t === 'zapatos') body = rnShoesHtml();
+  else if (t === 'progreso') body = rnDashHtml(plan);
+  else body = plan ? rnWeekHtml() : rnFollowHtml();
+  box.innerHTML = `<div class="rn">${head}${body}</div>`;
+}
+function rnCheckinCard() { return typeof rnCheckinCardHtml === 'function' ? rnCheckinCardHtml() : ''; }
+
+// Pantalla 1: Mi semana
+function rnWeekHtml() {
+  const p = rnProfile, wk = rnCurrentWeek(p), sug = rnSuggested();
+  const ey = `<div class="rn-ey">Run · Nivel ${p.level || '—'}${wk ? ` · Semana ${wk} de ${p.weeks_total}` : ''}</div>`;
+  if (!wk) return `${ey}<h1 class="rn-h1">Mi semana</h1><div class="rn-cd is-warm"><div style="font-weight:700;">Tu plan empieza el ${rnDayLabel(String(p.start_date).slice(0, 10))}</div><div class="rn-sm" style="margin-top:4px;">Mientras tanto podés registrar corridas libres.</div></div>${rnCheckinCard()}<button type="button" class="rn-bt is-g" onclick="rnRegOpen()">Registrar corrida</button>`;
+  const paused = p.plan_status === 'paused';
+  const sess = rnClient.planned.filter(s => s.week_number === wk);
+  const done = sess.filter(s => s.status === 'hecha').length;
+  const pct = sess.length ? Math.round(done / sess.length * 100) : 0;
+  const manual = rnGetManualVersion(), view = sug.rest ? null : sug.version;
+  const verChips = [['completa', 'Completa'], ['reducida', 'Reducida'], ['minima', 'Mínima']].map(([k, l]) => rnChip(l, view === k, `rnPickVer('${k}')`, sug.rest ? ' disabled' : '')).join('');
+  const why = sug.rest ? '' : (manual ? 'La elegiste vos. Podés cambiarla cuando quieras.' : `Sugerida: ${sug.reasons.join(' · ') || 'como está planeada'}.`);
+  const cards = sess.map(s => {
+    const v = runApplyVersion(s, view || 'completa'), isDone = s.status === 'hecha';
+    const run = isDone ? rnClient.runs.find(r => r.id === s.run_session_id) : null;
+    const km = v.distance_km != null && v.distance_km !== '' ? ` · ${rnKm(v.distance_km)} km` : '';
+    const pre = rnRoutines.find(r => r.id === s.pre_routine_id), post = rnRoutines.find(r => r.id === s.post_routine_id);
+    const blocks = typeof rnBlocksHtml === 'function' ? rnBlocksHtml(pre, post) : '';
+    const title = v.postponeTest ? 'Prueba 5K' : `${RN_TYPE_NAME[v.session_type] || v.session_type}`;
+    const sub = v.postponeTest ? v.message : `${v.minutes} min${km}${v.effort ? ' · esfuerzo ' + rnEsc(v.effort) : ''}${v.notes ? ' · ' + rnEsc(v.notes) : ''}`;
+    return `<div class="rn-cd"><div class="rn-row rn-sp" style="align-items:flex-start;"><div class="rn-fx"><div style="font-weight:700;font-size:17px;">${title}</div><div class="rn-sm rn-mu">${sub}</div></div>
+      ${isDone ? `<span class="rn-pill is-g">${icon('check', 14)}Hecha</span>` : '<span class="rn-pill is-n">Pendiente</span>'}</div>
+      ${run ? `<div class="rn-m rn-mu rn-xs" style="margin-top:8px;">${run.distance_km != null ? rnKm(run.distance_km) + ' km · ' : ''}${rnDayLabel(run.session_date)}${rnShoeName(run.shoe_id) ? ' · ' + rnEsc(rnShoeName(run.shoe_id)) : ''}</div>` : ''}
+      ${!isDone ? blocks : ''}
+      ${!isDone && !paused && !sug.rest ? `<button type="button" class="rn-bt is-o" style="min-height:44px;" onclick="rnRegOpen('plan','${s.id}')">Registrar corrida</button>` : ''}</div>`;
+  }).join('') || '<div class="rn-empty">Tu coach todavía no cargó sesiones para esta semana.</div>';
+  return `${ey}<h1 class="rn-h1">Mi semana</h1>
+    ${paused ? '<div class="rn-cd is-warm"><div style="font-weight:700;">Tu plan está en pausa</div><div class="rn-sm" style="margin-top:4px;">Podés registrar corridas libres mientras tanto.</div></div>' : ''}
+    ${sug.rest ? '' : `<div class="rn-chs">${verChips}</div><div class="rn-sm rn-mu" style="margin:6px 0 4px;">${why}</div>
+      <button type="button" class="rn-ch" style="font-size:13px;margin-bottom:10px;" onclick="rnCantMore()">Hoy no puedo con más</button>`}
+    <div class="rn-row rn-sp rn-sm" style="margin:6px 0;"><span class="rn-m">${done} de ${sess.length} sesiones</span><span class="rn-mu">Adherencia de la semana</span></div>
+    <div class="rn-bar" style="margin-bottom:12px;"><div style="width:${pct}%;"></div></div>
+    ${rnCheckinCard()}
+    ${cards}
+    <button type="button" class="rn-bt is-l" onclick="rnRegOpen('libre')">Registrar una corrida libre</button>`;
+}
+function rnPickVer(v) { rnClient.cantMore = false; rnSetManualVersion(v); rnRenderClient(); }
+function rnCantMore() { rnClient.cantMore = true; rnSetManualVersion(null); rnRenderClient(); showToast('Hoy va la versión mínima'); }
+function rnShoeName(id) { const z = rnShoes.find(x => x.id === id); return z ? z.name : ''; }
+
+// Pantalla 8: modo seguimiento (o plan completo sin plan activo)
+function rnFollowHtml() {
+  const mon = rnWeekMonday(todayCR());
+  const wkRuns = rnClient.runs.filter(r => r.session_date >= mon);
+  const km = wkRuns.reduce((a, r) => a + (Number(r.distance_km) || 0), 0);
+  const list = rnClient.runs.slice(0, 15).map(rnRunRowHtml).join('') || '<div class="rn-empty">Todavía no registraste corridas.</div>';
+  const planPending = rnProfile.mode === 'plan';
+  return `<div class="rn-ey">Run · ${planPending ? 'Plan en preparación' : 'Seguimiento'}</div><h1 class="rn-h1">Mis corridas</h1>
+    <div class="rn-cd is-warm"><div style="font-weight:700;font-size:15px;color:#A8410F;">${planPending ? 'Tu coach está armando tu plan' : 'Sin plan asignado'}</div><div class="rn-sm" style="margin-top:4px;">Registrá tus corridas y tu coach las ve para darte seguimiento.</div></div>
+    <div class="rn-row" style="gap:8px;margin-bottom:10px;"><div class="rn-tl"><div class="n">${rnKm(km)}</div><div class="t">km esta semana</div></div><div class="rn-tl"><div class="n">${wkRuns.length}</div><div class="t">${wkRuns.length === 1 ? 'corrida' : 'corridas'}</div></div></div>
+    ${rnCheckinCard()}
+    <h2 class="rn-h2">Últimas corridas</h2>${list}
+    <button type="button" class="rn-bt is-g" onclick="rnRegOpen('libre')">Registrar corrida</button>`;
+}
+function rnRunRowHtml(r) {
+  const shoe = rnShoeName(r.shoe_id);
+  return `<div class="rn-cd rn-row rn-sp"><div class="rn-fx"><div style="font-weight:700;font-size:15px;">${rnDayLabel(r.session_date)}${r.distance_km != null ? ' · ' + rnKm(r.distance_km) + ' km' : ''}</div>
+    <div class="rn-mu rn-m rn-xs" style="margin-top:2px;">${rnMinToClock(r.duration_min)}${r.effort ? ' · esfuerzo ' + r.effort : ''}${shoe ? ' · ' + rnEsc(shoe) : ''}</div></div>
+    <span class="rn-pill ${r.kind === 'plan' ? 'is-g' : 'is-n'}">${r.kind === 'plan' ? 'Plan' : 'Libre'}</span></div>`;
+}
+
+// Pantallas 4 y 9: registrar corrida
+let rnReg = null;
+function rnRegOpen(kind, plannedId) {
+  if (!rnClient) return;
+  const plan = rnHasPlan() && rnProfile.plan_status === 'active';
+  const pend = plan ? rnClient.planned.filter(s => s.status !== 'hecha' && s.week_number <= rnCurrentWeek(rnProfile)) : [];
+  const k = plan && pend.length && kind !== 'libre' ? 'plan' : 'libre';
+  const lastShoe = (rnClient.runs.find(r => r.shoe_id && rnShoes.some(z => z.id === r.shoe_id && !z.retired_at)) || {}).shoe_id || (rnShoes.find(z => !z.retired_at) || {}).id || null;
+  const sug = rnSuggested();
+  rnReg = { kind: k, canPlan: plan && pend.length > 0, pend, planned: plannedId || (pend[0] && pend[0].id) || null, version: sug.version || 'completa', date: todayCR(), type: 'facil', effort: null, terrain: 'calle', shoe: lastShoe, more: false, newShoe: false, f: {} };
+  if (kind === 'plan' && !plannedId && pend.length) rnReg.planned = pend[0].id;
+  rnOpenSheet('', () => { rnReg = null; });
+  rnRegRender();
+}
+function rnRegRead() {
+  if (!rnReg) return;
+  document.querySelectorAll('#rn-ov [data-reg]').forEach(el => { rnReg.f[el.dataset.reg] = el.value; });
+}
+function rnRegSet(k, v) { rnRegRead(); rnReg[k] = v; rnRegRender(); }
+function rnRegRender() {
+  const r = rnReg, f = r.f;
+  const val = k => rnEsc(f[k] != null ? f[k] : '');
+  const kindChips = `<div class="rn-chs">${rnChip('De mi plan', r.kind === 'plan', "rnRegSet('kind','plan')", r.canPlan ? '' : ' disabled')}${rnChip('Libre', r.kind === 'libre', "rnRegSet('kind','libre')")}</div>`;
+  const ps = r.pend.find(s => s.id === r.planned);
+  const planPart = r.kind === 'plan' ? `
+    <div style="margin-top:10px;"><label class="rn-fl" for="rn-reg-pl">Sesión planeada</label><select id="rn-reg-pl" class="rn-in is-txt" onchange="rnRegSet('planned',this.value)">${r.pend.map(s => `<option value="${s.id}"${s.id === r.planned ? ' selected' : ''}>${RN_TYPE_NAME[s.session_type]} · ${s.minutes} min · sem. ${s.week_number}</option>`).join('')}</select></div>
+    <div class="rn-cd" style="margin-top:10px;"><div class="rn-lb">Versión que hiciste</div><div class="rn-chs">${[['completa', 'Completa'], ['reducida', 'Reducida'], ['minima', 'Mínima']].map(([k, l]) => rnChip(l, r.version === k, `rnRegSet('version','${k}')`)).join('')}</div>
+      ${ps && ps.session_type === 'prueba_5k' && r.version !== 'completa' ? `<div class="rn-sm" style="margin-top:8px;color:#A8410F;">Hoy no es día para la prueba: hacé ${RUN_TEST_FALLBACK_MIN} min fácil y la repetimos otro día. La prueba sigue pendiente.</div>` : ''}</div>`
+    : `<div class="rn-xs rn-mu" style="margin-top:6px;">Una corrida que no estaba programada. Tu coach la ve igual.</div>
+    <div class="rn-cd" style="margin-top:10px;"><div class="rn-lb">Tipo</div><div class="rn-chs">${RN_FREE_TYPES.map(([k, l]) => rnChip(l, r.type === k, `rnRegSet('type','${k}')`)).join('')}</div></div>`;
+  const effort = n => rnChip(String(n), r.effort === n, `rnRegSet('effort',${n})`);
+  const shoes = rnShoes.filter(z => !z.retired_at);
+  const shoeChips = shoes.map(z => `<button type="button" class="rn-ch${r.shoe === z.id ? ' is-on' : ''}" aria-pressed="${r.shoe === z.id}" style="min-height:48px;flex-direction:column;gap:0;border-radius:14px;align-items:flex-start;" onclick="rnRegSet('shoe',${r.shoe === z.id ? 'null' : `'${z.id}'`})"><span>${rnEsc(z.name)}</span><span class="rn-m" style="font-size:11px;font-weight:500;">${rnKm(z.total_km, 0)} km</span></button>`).join('');
+  const newShoe = r.newShoe ? `<div class="rn-row" style="gap:6px;margin-top:8px;"><input class="rn-in is-txt" data-reg="ns_name" value="${val('ns_name')}" placeholder="Nombre" aria-label="Nombre del zapato"><input class="rn-in" style="max-width:110px;" data-reg="ns_km" inputmode="decimal" value="${val('ns_km')}" placeholder="km" aria-label="Km iniciales"><button type="button" class="rn-ch" onclick="rnRegAddShoe()">Agregar</button></div>` : '';
+  rnSheetBody(`${rnSheetHead('Run · registro manual', 'Registrar corrida')}
+    ${kindChips}${planPart}
+    <div class="rn-row" style="gap:8px;margin-top:10px;"><div class="rn-fx"><label class="rn-fl" for="rn-reg-date">Fecha</label><input id="rn-reg-date" class="rn-in" type="date" max="${todayCR()}" data-reg="date" value="${rnEsc(f.date || r.date)}"></div></div>
+    <div class="rn-row" style="gap:8px;margin-top:10px;"><div class="rn-fx"><label class="rn-fl" for="rn-reg-km">Distancia (km)</label><input id="rn-reg-km" class="rn-in" type="text" inputmode="decimal" data-reg="km" value="${val('km')}" placeholder="5,2"></div>
+      <div class="rn-fx"><label class="rn-fl" for="rn-reg-dur">Duración</label><input id="rn-reg-dur" class="rn-in" type="text" inputmode="numeric" data-reg="dur" value="${val('dur')}" placeholder="34:10"></div></div>
+    <div class="rn-cd" style="margin-top:10px;"><div class="rn-lb">Esfuerzo percibido <span class="rn-mu" style="font-weight:500;">· 1 muy suave, 10 máximo</span></div>
+      <div class="rn-chs" style="margin-bottom:6px;">${[1, 2, 3, 4, 5].map(effort).join('')}</div><div class="rn-chs">${[6, 7, 8, 9, 10].map(effort).join('')}</div></div>
+    <div class="rn-cd"><div class="rn-lb">¿Con qué zapatos corriste?</div><div class="rn-row rn-wrap" style="gap:6px;">${shoeChips}<button type="button" class="rn-ch" style="min-height:48px;border-radius:14px;color:#C24E18;" onclick="rnRegSet('newShoe',true)">+ Nuevo</button></div>${newShoe}</div>
+    <div class="rn-cd"><div class="rn-lb">Terreno</div><div class="rn-chs">${RN_TERRAINS.map(([k, l]) => rnChip(l, r.terrain === k, `rnRegSet('terrain','${k}')`)).join('')}</div></div>
+    ${r.more ? `<div class="rn-row" style="gap:8px;margin-bottom:10px;"><div class="rn-fx"><label class="rn-fl" for="rn-reg-hr">FC media</label><input id="rn-reg-hr" class="rn-in" inputmode="numeric" data-reg="hr" value="${val('hr')}"></div><div class="rn-fx"><label class="rn-fl" for="rn-reg-elev">Desnivel (m)</label><input id="rn-reg-elev" class="rn-in" inputmode="numeric" data-reg="elev" value="${val('elev')}"></div></div>` : `<button type="button" class="rn-ch" style="font-size:13px;margin-bottom:10px;" onclick="rnRegSet('more',true)">+ FC media y desnivel (opcional)</button>`}
+    <div><label class="rn-fl" for="rn-reg-notes">Notas (opcional)</label><input id="rn-reg-notes" class="rn-in is-txt" type="text" data-reg="notes" value="${val('notes')}"></div>
+    <button type="button" class="rn-bt is-g" onclick="rnRegSave()">Guardar corrida</button>`);
+}
+async function rnRegAddShoe() {
+  rnRegRead();
+  const name = (rnReg.f.ns_name || '').trim();
+  if (!name) { showToast('Poné el nombre del zapato'); return; }
+  const z = await rnShoeInsert({ name, initial_km: parseDecimal(rnReg.f.ns_km) || 0 });
+  if (!z) return;
+  rnReg.shoe = z.id; rnReg.newShoe = false; rnReg.f.ns_name = ''; rnReg.f.ns_km = '';
+  rnRegRender();
+}
+async function rnRegSave() {
+  rnRegRead();
+  const r = rnReg, f = r.f, cid = currentClient.id;
+  const km = parseDecimal(f.km), dur = rnParseDuration(f.dur), date = f.date || todayCR();
+  if (km == null && dur == null) { showToast('Poné la distancia o la duración'); return; }
+  if (km != null && (km <= 0 || km > 100)) { showToast('Revisá la distancia'); return; }
+  if (date > todayCR()) { showToast('La fecha no puede ser futura'); return; }
+  const ps = r.kind === 'plan' ? r.pend.find(s => s.id === r.planned) : null;
+  if (r.kind === 'plan' && !ps) { showToast('Elegí la sesión del plan'); return; }
+  const row = { client_id: cid, kind: r.kind, planned_session_id: ps ? ps.id : null, version_used: ps ? r.version : null, session_date: date,
+    session_type: ps ? ps.session_type : r.type, distance_km: km, duration_min: dur, effort: r.effort, avg_hr: parseInt(f.hr, 10) || null, elevation: parseInt(f.elev, 10) || null,
+    terrain: r.terrain, shoe_id: r.shoe || null, notes: (f.notes || '').trim() || null, source: 'manual' };
+  const { data: saved, error } = await sb.from('run_sessions').insert([row]).select().maybeSingle();
+  if (error) { showToast('No se pudo guardar: ' + error.message, 'error'); return; }
+  // Prueba 5K en reducida o mínima: la sesión planeada NO se marca como hecha
+  const postpone = ps && ps.session_type === 'prueba_5k' && r.version !== 'completa';
+  if (ps && !postpone && saved) {
+    const { error: e2 } = await sb.from('run_planned_sessions').update({ status: 'hecha', run_session_id: saved.id, updated_at: new Date().toISOString() }).eq('id', ps.id).eq('client_id', cid);
+    if (e2) showToast('La corrida se guardó, pero no se pudo marcar la sesión: ' + e2.message, 'error');
+  }
+  rnReg = null;
+  rnShoes = await rnLoadShoes(cid);
+  await rnLoadClientData();
+  if (typeof rnAfterRun === 'function') rnAfterRun(saved || row, ps); else { rnCloseSheet(); showToast('Corrida guardada', 'success'); }
+  rnRenderClient();
+}
+
+// Pantalla 10: mis zapatos (los maneja el cliente; sin umbrales ni avisos)
+function rnShoesHtml() {
+  const act = rnShoes.filter(z => !z.retired_at), ret = rnShoes.filter(z => z.retired_at);
+  const card = z => `<div class="rn-cd${z.retired_at ? ' is-ghost' : ''}"><div class="rn-row rn-sp"><div class="rn-fx"><div style="font-weight:700;font-size:16px;${z.retired_at ? 'color:#5E564B;' : ''}">${rnEsc(z.name)}</div>
+      <div class="rn-xs rn-mu" style="margin-top:2px;">${z.brand ? rnEsc(z.brand) + ' · ' : ''}${z.retired_at ? 'Retirado el ' + rnDayLabel(rnCRDate(z.retired_at)) : `Inició con ${rnKm(z.initial_km, 0)} km${z.start_date ? ' · desde ' + rnDayLabel(String(z.start_date).slice(0, 10)) : ''}`}</div></div>
+      <span class="rn-m" style="font-size:19px;${z.retired_at ? 'color:#5E564B;' : ''}">${rnKm(z.total_km)} km</span></div>
+      ${z.retired_at ? '' : `<div class="rn-row" style="gap:6px;margin-top:10px;"><button type="button" class="rn-ch" style="font-size:13px;" onclick="rnShoeForm('${z.id}')">Editar</button><button type="button" class="rn-ch" style="font-size:13px;" onclick="rnShoeRetire('${z.id}')">Retirar</button></div>`}</div>`;
+  return `<div class="rn-ey">Run · Zapatos</div><h1 class="rn-h1">Mis zapatos</h1>
+    <div class="rn-sm rn-mu" style="margin-bottom:10px;">Agregalos acá y elegilos con un toque al registrar cada corrida. Los km se suman solos.</div>
+    ${act.map(card).join('') || '<div class="rn-empty">Todavía no agregaste zapatos.</div>'}
+    ${ret.length ? `<div class="rn-ey" style="margin:12px 0 8px;">Retirados</div>${ret.map(card).join('')}` : ''}
+    <button type="button" class="rn-bt is-g" onclick="rnShoeForm()">+ Agregar zapato</button>`;
+}
+function rnShoeForm(id) {
+  const z = id ? rnShoes.find(x => x.id === id) : null;
+  rnOpenSheet(`<div class="rn-sheet-head"><h2 class="rn-h2" style="margin:0;">${z ? 'Editar zapato' : 'Agregar zapato'}</h2><button type="button" class="rn-x" aria-label="Cerrar" onclick="rnCloseSheet()">${icon('x', 20)}</button></div>
+    <div style="margin:10px 0;"><label class="rn-fl" for="rn-z-name">Nombre</label><input id="rn-z-name" class="rn-in is-txt" value="${rnEsc(z?.name || '')}"></div>
+    <div class="rn-row" style="gap:8px;margin-bottom:10px;"><div class="rn-fx"><label class="rn-fl" for="rn-z-brand">Marca</label><input id="rn-z-brand" class="rn-in is-txt" value="${rnEsc(z?.brand || '')}"></div>
+      <div class="rn-fx"><label class="rn-fl" for="rn-z-km">Km iniciales</label><input id="rn-z-km" class="rn-in" inputmode="decimal" value="${z ? String(z.initial_km ?? 0).replace('.', ',') : '0'}"></div></div>
+    <div style="margin-bottom:6px;"><label class="rn-fl" for="rn-z-date">Desde</label><input id="rn-z-date" class="rn-in" type="date" value="${z?.start_date ? String(z.start_date).slice(0, 10) : todayCR()}"></div>
+    <div class="rn-xs rn-mu">Si ya lo usaste antes, poné los km que lleva. Tu coach también lo ve.</div>
+    <button type="button" class="rn-bt is-g" onclick="rnShoeSave(${z ? `'${z.id}'` : 'null'})">Guardar zapato</button>`);
+}
+async function rnShoeInsert(o) {
+  const { data, error } = await sb.from('run_shoes').insert([{ client_id: currentClient.id, name: o.name, brand: o.brand || null, initial_km: o.initial_km || 0, start_date: o.start_date || todayCR() }]).select().maybeSingle();
+  if (error) { showToast('No se pudo guardar: ' + error.message, 'error'); return null; }
+  rnShoes = await rnLoadShoes(currentClient.id);
+  return data;
+}
+async function rnShoeSave(id) {
+  const g = x => document.getElementById(x).value.trim();
+  const o = { name: g('rn-z-name'), brand: g('rn-z-brand'), initial_km: parseDecimal(g('rn-z-km')) || 0, start_date: g('rn-z-date') || null };
+  if (!o.name) { showToast('Poné el nombre'); return; }
+  if (o.initial_km < 0) { showToast('Los km no pueden ser negativos'); return; }
+  if (id) {
+    const { error } = await sb.from('run_shoes').update({ name: o.name, brand: o.brand || null, initial_km: o.initial_km, start_date: o.start_date }).eq('id', id).eq('client_id', currentClient.id);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+    rnShoes = await rnLoadShoes(currentClient.id);
+  } else if (!(await rnShoeInsert(o))) return;
+  rnCloseSheet(); showToast('Zapato guardado', 'success'); rnRenderClient();
+}
+async function rnShoeRetire(id) {
+  const z = rnShoes.find(x => x.id === id);
+  if (!z || !confirm(`¿Retirar ${z.name}? Se conserva su historial.`)) return;
+  const { error } = await sb.from('run_shoes').update({ retired_at: new Date().toISOString() }).eq('id', id).eq('client_id', currentClient.id);
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  rnShoes = await rnLoadShoes(currentClient.id); showToast('Zapato retirado'); rnRenderClient();
+}
+
+// Pantalla 7: mi progreso
+function rnDashHtml(plan) {
+  const runs = rnClient.runs, today = todayCR(), mon = rnWeekMonday(today), p = rnProfile;
+  const weeks = [5, 4, 3, 2, 1, 0].map(o => { const a = tcAddDays(mon, -7 * o), b = tcAddDays(a, 6); return runs.filter(r => r.session_date >= a && r.session_date <= b).reduce((s, r) => s + (Number(r.distance_km) || 0), 0); });
+  const max = Math.max(...weeks, 1);
+  const bars = weeks.map((v, i) => { const h = Math.round(v / max * 56); return `<rect x="${8 + i * 55}" y="${80 - h}" width="34" height="${h}" rx="4" fill="${i === 5 ? RN_ORANGE : '#E3B79D'}"/>`; }).join('');
+  const labels = ['S-5', 'S-4', 'S-3', 'S-2', 'S-1', 'Esta'].map((l, i) => `<text x="${25 + i * 55}" y="94">${l}</text>`).join('');
+  // Adherencia: hechas contra planeadas de Run hasta la semana actual (solo con plan)
+  let adh = '—';
+  if (plan) { const wk = rnCurrentWeek(p); const upto = rnClient.planned.filter(s => s.week_number <= wk); if (upto.length) adh = Math.round(upto.filter(s => s.status === 'hecha').length / upto.length * 100) + '%'; }
+  const tests = runs.filter(r => r.session_type === 'prueba_5k' && r.duration_min && (!r.version_used || r.version_used === 'completa')).sort((a, b) => a.session_date.localeCompare(b.session_date));
+  const best = tests.length ? Math.min(...tests.map(t => Number(t.duration_min))) : null;
+  const testsHtml = tests.length ? `<div class="rn-row rn-wrap" style="gap:10px;">${tests.map((t, i) => `<div style="text-align:center;"><div class="rn-m" style="font-size:18px;${i === tests.length - 1 ? 'color:#17602F;font-weight:500;' : ''}">${rnMinToClock(t.duration_min)}</div><div class="rn-mu" style="font-size:11px;">${rnDayLabel(t.session_date)}</div></div>`).join('<div class="rn-mu" aria-hidden="true">→</div>')}</div>
+    ${tests.length > 1 ? `<div class="rn-xs rn-mu" style="margin-top:8px;">${rnMinToClock(Math.abs(tests[0].duration_min - tests[tests.length - 1].duration_min))} ${tests[tests.length - 1].duration_min <= tests[0].duration_min ? 'menos' : 'más'} que la primera prueba</div>` : ''}` : '<div class="rn-sm rn-mu">Todavía no hay pruebas de 5K registradas.</div>';
+  const shoes = rnShoes.filter(z => !z.retired_at), maxKm = Math.max(...shoes.map(z => z.total_km || 0), 1);
+  const shoesHtml = shoes.map(z => `<div class="rn-row rn-sp" style="font-size:14px;"><span style="font-weight:600;">${rnEsc(z.name)}</span><span class="rn-m">${rnKm(z.total_km)} km</span></div><div class="rn-bar" style="height:6px;margin:6px 0 10px;"><div style="height:6px;background:${RN_ORANGE};width:${Math.round((z.total_km || 0) / maxKm * 100)}%;"></div></div>`).join('') || '<div class="rn-sm rn-mu">Sin zapatos activos.</div>';
+  const wk = rnCurrentWeek(p);
+  return `<div class="rn-ey">Run${plan ? ` · Nivel ${p.level || '—'}${wk ? ` · Semana ${wk} de ${p.weeks_total}` : ''}` : ' · Seguimiento'}</div><h1 class="rn-h1">Mi progreso</h1>
+    <div class="rn-row" style="gap:8px;margin-bottom:8px;"><div class="rn-tl"><div class="n">${rnKm(weeks[5])}</div><div class="t">km esta semana</div></div>${plan ? `<div class="rn-tl"><div class="n">${adh}</div><div class="t">adherencia</div></div>` : `<div class="rn-tl"><div class="n">${runs.filter(r => r.session_date >= mon).length}</div><div class="t">corridas esta semana</div></div>`}</div>
+    <div class="rn-row" style="gap:8px;margin-bottom:10px;"><div class="rn-tl"><div class="n">${runs.length}</div><div class="t">corridas en 6 meses</div></div><div class="rn-tl"><div class="n">${best ? rnMinToClock(best) : '—'}</div><div class="t">mejor 5K</div></div></div>
+    <div class="rn-cd"><div class="rn-lb">Volumen semanal (km)</div>
+      <svg viewBox="0 0 322 96" width="100%" height="96" role="img" aria-label="Volumen semanal en kilómetros: ${weeks.map(v => rnKm(v)).join('; ')}"><line x1="0" y1="80" x2="322" y2="80" stroke="#E2D9CB"/>${bars}<g font-family="DM Mono,monospace" font-size="10" fill="#4F483E" text-anchor="middle">${labels}</g></svg></div>
+    <div class="rn-cd"><div class="rn-lb">Tiempo de 5K entre pruebas</div>${testsHtml}</div>
+    <div class="rn-cd"><div class="rn-lb">Km por zapato</div>${shoesHtml}</div>`;
 }
 // ===== FIN MÓDULO RUN =====
 </script>

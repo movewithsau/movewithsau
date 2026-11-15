@@ -91,7 +91,7 @@ create table if not exists run_sessions (
   session_date        date not null,
   session_type        text null,               -- plan: el de la sesión; libre: facil|larga|intervalos|otra
   distance_km         numeric(6,2) null,
-  duration_min        numeric(6,1) null,
+  duration_min        numeric(7,2) null,      -- minutos con decimales (34:10 = 34,17)
   effort              int  null check (effort between 1 and 10),
   avg_hr              int  null,
   elevation           int  null,
