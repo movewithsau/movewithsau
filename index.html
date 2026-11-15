@@ -276,6 +276,36 @@ body.lift-mode #strongflow-btn { display:none !important; }
 /* Chips de Tu Plan: el JS viejo pone colores inline al cambiar de pestaña; estos !important mandan */
 .client-plan-tab-chip { flex:0 0 auto; white-space:nowrap; display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:0 14px; border-radius:10px; font-size:14px; font-weight:500; cursor:pointer; transition:background 0.2s,color 0.2s; background:#F1ECE4 !important; color:var(--gray5) !important; }
 .client-plan-tab-chip.active { background:#FEEBE0 !important; color:var(--orange-text) !important; font-weight:700; }
+/* THE MOVE MENU (Mi Espacio): la tira de chips ya no se dibuja; su código y sus chips quedan en el DOM */
+#screen-client-plan .client-plan-tabs { display:none; }
+.mm-top { position:relative; margin-bottom:20px; }
+.mm-top.is-open { z-index:151; }
+.mm-ey { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.15em; color:#A63E10; text-transform:uppercase; margin-bottom:3px; }
+#screen-client-plan.progress-dark .mm-ey { color:#FF8A4C; }
+.mm-title { font-family:'Playfair Display',serif; font-size:26px; font-weight:900; }
+.mm-wrap { position:relative; margin-top:16px; }
+.mm-btn { display:flex; align-items:center; gap:14px; width:100%; height:60px; box-sizing:border-box; padding:0 16px 0 10px; border:0; border-radius:18px; background:#F6E6DB; text-align:left; font-family:'DM Sans',sans-serif; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.mm-tile { display:flex; align-items:center; justify-content:center; flex:none; width:42px; height:42px; border-radius:13px; background:#C24E18; color:#FFFFFF; }
+.mm-btn .mm-tile .ico { stroke-width:2.2; }
+.mm-i-close, .mm-btn.is-open .mm-i-open { display:none; }
+.mm-btn.is-open .mm-i-close { display:block; }
+.mm-txt { display:flex; flex-direction:column; flex:1; min-width:0; }
+.mm-lbl { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:#5E574E; line-height:14px; }
+.mm-cur { font-size:18px; font-weight:700; color:#A63E10; line-height:22px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mm-chev { color:#A63E10; stroke-width:2.2; transition:transform 0.2s; }
+.mm-btn.is-open .mm-chev { transform:rotate(180deg); }
+.mm-panel { position:absolute; left:0; right:0; top:68px; padding:8px; box-sizing:border-box; border-radius:22px; background:#FFFFFF; box-shadow:0 18px 40px rgba(27,23,18,0.22); }
+.mm-panel[hidden], .mm-scrim[hidden] { display:none; }
+.mm-row { display:flex; align-items:center; gap:14px; width:100%; min-height:64px; box-sizing:border-box; padding:0 12px 0 10px; border:0; border-radius:16px; background:#FFFFFF; text-align:left; font-family:'DM Sans',sans-serif; color:#1B1712; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.mm-row.is-on { background:#FBEEE5; }
+.mm-row .mm-tile { background:#F1ECE3; color:#1B1712; }
+.mm-row.is-on .mm-tile { background:#C24E18; color:#FFFFFF; }
+.mm-name { display:block; font-size:16px; font-weight:700; line-height:20px; color:#1B1712; }
+.mm-row.is-on .mm-name { color:#A63E10; }
+.mm-desc { display:block; font-size:13px; line-height:17px; color:#5E574E; }
+.mm-check { color:#A63E10; stroke-width:2.4; }
+.mm-scrim { position:fixed; inset:0; z-index:150; border:0; padding:0; margin:0; background:rgba(27,23,18,0.38); cursor:pointer; }
+@media (prefers-reduced-motion:reduce) { .mm-chev { transition:none; } }
 /* Botón solo-ícono: área táctil 44px */
 .icon-btn { display:inline-flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; padding:0; border:none; border-radius:10px; cursor:pointer; flex-shrink:0; }
 /* Píldoras de estado de evaluaciones */
@@ -1328,7 +1358,12 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 .ent-card-sub { margin-top:2px; font-size:13px; color:#6B6258; }
 .ent-chips span { background:#F3EEE5; }
 .ent-old-rate { font-size:12px; font-weight:600; color:#6B6258; border:1.5px solid #E4DED4; border-radius:10px; padding:3px 10px; }
-.ent-link { margin-top:10px; min-height:32px; border:0; background:none; padding:0; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; color:#C24E18; display:inline-flex; align-items:center; gap:2px; cursor:pointer; }</style>
+.ent-link { margin-top:10px; min-height:32px; border:0; background:none; padding:0; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; color:#C24E18; display:inline-flex; align-items:center; gap:2px; cursor:pointer; }/* Barra del cliente: el botón activo va en pastilla (fondo #F6E6DB, ícono y texto #A63E10). Va después de
+   las reglas de portada oscura (Hoy) y de Perfil naranja para ganarles. */
+#screen-client-home .bottom-nav .nav-item:nth-child(1), #screen-client-plan .bottom-nav .nav-item:nth-child(4), #screen-client-profile .bottom-nav .nav-item:nth-child(5), #screen-client-food .bottom-nav .nav-item:nth-child(2), #screen-client-coaching .bottom-nav .nav-item:nth-child(2) { background:#F6E6DB; border-radius:16px; margin:0 4px; }
+#screen-client-home .bottom-nav .nav-item:nth-child(1) .nav-icon, #screen-client-home .bottom-nav .nav-item:nth-child(1) .nav-label, #screen-client-home.cover-on .bottom-nav .nav-item:nth-child(1) .nav-icon, #screen-client-home.cover-on .bottom-nav .nav-item:nth-child(1) .nav-label, #screen-client-plan .bottom-nav .nav-item:nth-child(4) .nav-icon, #screen-client-plan .bottom-nav .nav-item:nth-child(4) .nav-label, #screen-client-profile .bottom-nav .nav-item:nth-child(5) .nav-icon, #screen-client-profile .bottom-nav .nav-item:nth-child(5) .nav-label, #screen-client-food .bottom-nav .nav-item:nth-child(2) .nav-icon, #screen-client-food .bottom-nav .nav-item:nth-child(2) .nav-label, #screen-client-coaching .bottom-nav .nav-item:nth-child(2) .nav-icon, #screen-client-coaching .bottom-nav .nav-item:nth-child(2) .nav-label { color:#A63E10; font-weight:700; }
+#screen-client-plan .bottom-nav .nav-item:nth-child(4) .ico { stroke-width:2.2; }
+</style>
 </head>
 <body>
 <!-- Sprite de íconos (estilo Lucide, ISC). Se usan con icon(nombre, tamaño). -->
@@ -1391,6 +1426,9 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
 <symbol id="i-timer" viewBox="0 0 24 24"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></symbol>
 <symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></symbol>
+<symbol id="i-hexagon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+<symbol id="i-layout-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></symbol>
 <symbol id="i-book-open" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol>
 <symbol id="i-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
 </svg>
@@ -1591,14 +1629,27 @@ button.exx-pill { cursor:pointer; min-height:28px; }
     <div class="nav-item active" onclick="clientNav('home',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-sun"/></svg></div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="clientNav('food',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-food"/></svg></div><div class="nav-label">Food</div><div class="nav-dot"></div></div>
     <div class="nav-item nav-hive" onclick="clientNav('hive',this)" role="button" tabindex="0" aria-label="MOVES Hive"><svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path class="hv-bg" d="M32 3L57 17.5V46.5L32 61L7 46.5V17.5Z" stroke-width="3" stroke-linejoin="round"/><g class="hv-fg" transform="translate(32 32) scale(1.5)" stroke-width="1.5" stroke-linejoin="round" fill="none"><path transform="translate(-5.2 -4.5)" d="M0 -6L5.2 -3V3L0 6L-5.2 3V-3Z"/><path transform="translate(5.2 -4.5)" d="M0 -6L5.2 -3V3L0 6L-5.2 3V-3Z"/><path class="hv-fill" transform="translate(0 4.5)" d="M0 -6L5.2 -3V3L0 6L-5.2 3V-3Z"/></g></svg></div>
-    <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-plan"/></svg></div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-hexagon"/></svg></div><div class="nav-label">Mi Espacio</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="clientNav('profile',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></div><div class="nav-label">Perfil</div><div class="nav-dot"></div></div>
   </div>
 </div>
 <div class="screen" id="screen-client-plan">
   <div class="topbar"><div class="topbar-logo">Move With Sau</div><div class="topbar-action" onclick="handleLogout()">Salir</div></div>
   <div class="scroll-body">
-    <div style="margin-bottom:18px;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Tu programa</div><div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;">Tu Plan MOVE</div></div>
+    <!-- THE MOVE MENU: reemplaza la tira de chips (los chips siguen abajo, ocultos; el menú usa switchClientPlanTab) -->
+    <div class="mm-top" id="mm-top">
+      <div class="mm-ey">Tu programa</div>
+      <div class="mm-title">The MOVE Menu</div>
+      <div class="mm-wrap">
+        <button type="button" class="mm-btn" id="mm-btn" aria-expanded="false" aria-controls="mm-panel" aria-label="Menú de secciones. Estás en Guías y recursos" onclick="mmToggle()">
+          <span class="mm-tile" aria-hidden="true"><svg class="ico mm-i-open" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-menu"/></svg><svg class="ico mm-i-close" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></span>
+          <span class="mm-txt"><span class="mm-lbl">Estás en</span><span class="mm-cur" id="mm-cur">Guías y recursos</span></span>
+          <svg class="ico mm-chev" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-chevron-down"/></svg>
+        </button>
+        <div class="mm-panel" id="mm-panel" hidden></div>
+      </div>
+    </div>
+    <button type="button" class="mm-scrim" id="mm-scrim" hidden aria-label="Cerrar el menú" onclick="mmClose()"></button>
     
     <!-- TAB NAVIGATION -->
     <div class="client-plan-tabs">
@@ -1662,7 +1713,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
     <div class="nav-item" onclick="clientNav('home',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-sun"/></svg></div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="clientNav('food',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-food"/></svg></div><div class="nav-label">Food</div><div class="nav-dot"></div></div>
     <div class="nav-item nav-hive" onclick="clientNav('hive',this)" role="button" tabindex="0" aria-label="MOVES Hive"><svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path class="hv-bg" d="M32 3L57 17.5V46.5L32 61L7 46.5V17.5Z" stroke-width="3" stroke-linejoin="round"/><g class="hv-fg" transform="translate(32 32) scale(1.5)" stroke-width="1.5" stroke-linejoin="round" fill="none"><path transform="translate(-5.2 -4.5)" d="M0 -6L5.2 -3V3L0 6L-5.2 3V-3Z"/><path transform="translate(5.2 -4.5)" d="M0 -6L5.2 -3V3L0 6L-5.2 3V-3Z"/><path class="hv-fill" transform="translate(0 4.5)" d="M0 -6L5.2 -3V3L0 6L-5.2 3V-3Z"/></g></svg></div>
-    <div class="nav-item active" onclick="clientNav('plan',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-plan"/></svg></div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
+    <div class="nav-item active" onclick="clientNav('plan',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-hexagon"/></svg></div><div class="nav-label">Mi Espacio</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="clientNav('profile',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></div><div class="nav-label">Perfil</div><div class="nav-dot"></div></div>
   </div>
 </div>
@@ -1745,7 +1796,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
     <div class="nav-item" onclick="clientNav('home',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-sun"/></svg></div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="clientNav('food',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-food"/></svg></div><div class="nav-label">Food</div><div class="nav-dot"></div></div>
     <div class="nav-item nav-hive" onclick="clientNav('hive',this)" role="button" tabindex="0" aria-label="MOVES Hive"><svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path class="hv-bg" d="M32 3L57 17.5V46.5L32 61L7 46.5V17.5Z" stroke-width="3" stroke-linejoin="round"/><g class="hv-fg" transform="translate(32 32) scale(1.5)" stroke-width="1.5" stroke-linejoin="round" fill="none"><path transform="translate(-5.2 -4.5)" d="M0 -6L5.2 -3V3L0 6L-5.2 3V-3Z"/><path transform="translate(5.2 -4.5)" d="M0 -6L5.2 -3V3L0 6L-5.2 3V-3Z"/><path class="hv-fill" transform="translate(0 4.5)" d="M0 -6L5.2 -3V3L0 6L-5.2 3V-3Z"/></g></svg></div>
-    <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-plan"/></svg></div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-hexagon"/></svg></div><div class="nav-label">Mi Espacio</div><div class="nav-dot"></div></div>
     <div class="nav-item active" onclick="clientNav('profile',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></div><div class="nav-label">Perfil</div><div class="nav-dot"></div></div>
   </div>
 </div>
@@ -1758,7 +1809,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
     <div class="nav-item" onclick="clientNav('home',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-sun"/></svg></div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="clientNav('food',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-food"/></svg></div><div class="nav-label">Food</div><div class="nav-dot"></div></div>
     <div class="nav-item nav-hive" onclick="clientNav('hive',this)" role="button" tabindex="0" aria-label="MOVES Hive"><svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path class="hv-bg" d="M32 3L57 17.5V46.5L32 61L7 46.5V17.5Z" stroke-width="3" stroke-linejoin="round"/><g class="hv-fg" transform="translate(32 32) scale(1.5)" stroke-width="1.5" stroke-linejoin="round" fill="none"><path transform="translate(-5.2 -4.5)" d="M0 -6L5.2 -3V3L0 6L-5.2 3V-3Z"/><path transform="translate(5.2 -4.5)" d="M0 -6L5.2 -3V3L0 6L-5.2 3V-3Z"/><path class="hv-fill" transform="translate(0 4.5)" d="M0 -6L5.2 -3V3L0 6L-5.2 3V-3Z"/></g></svg></div>
-    <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-plan"/></svg></div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-hexagon"/></svg></div><div class="nav-label">Mi Espacio</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="clientNav('profile',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></div><div class="nav-label">Perfil</div><div class="nav-dot"></div></div>
   </div>
 </div>
@@ -1774,7 +1825,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
     <div class="nav-item" onclick="clientNav('home',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-sun"/></svg></div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
     <div class="nav-item active" onclick="clientNav('food',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-food"/></svg></div><div class="nav-label">Food</div><div class="nav-dot"></div></div>
     <div class="nav-item nav-hive" onclick="clientNav('hive',this)" role="button" tabindex="0" aria-label="MOVES Hive"><svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path class="hv-bg" d="M32 3L57 17.5V46.5L32 61L7 46.5V17.5Z" stroke-width="3" stroke-linejoin="round"/><g class="hv-fg" transform="translate(32 32) scale(1.5)" stroke-width="1.5" stroke-linejoin="round" fill="none"><path transform="translate(-5.2 -4.5)" d="M0 -6L5.2 -3V3L0 6L-5.2 3V-3Z"/><path transform="translate(5.2 -4.5)" d="M0 -6L5.2 -3V3L0 6L-5.2 3V-3Z"/><path class="hv-fill" transform="translate(0 4.5)" d="M0 -6L5.2 -3V3L0 6L-5.2 3V-3Z"/></g></svg></div>
-    <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-plan"/></svg></div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-hexagon"/></svg></div><div class="nav-label">Mi Espacio</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="clientNav('profile',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></div><div class="nav-label">Perfil</div><div class="nav-dot"></div></div>
   </div>
 </div>
@@ -1799,7 +1850,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
     <div class="nav-item" onclick="clientNav('home',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-sun"/></svg></div><div class="nav-label">Hoy</div><div class="nav-dot"></div></div>
     <div class="nav-item active" onclick="clientNav('coaching',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-compass"/></svg></div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
     <div class="nav-item nav-hive" onclick="clientNav('hive',this)" role="button" tabindex="0" aria-label="MOVES Hive"><svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path class="hv-bg" d="M32 3L57 17.5V46.5L32 61L7 46.5V17.5Z" stroke-width="3" stroke-linejoin="round"/><g class="hv-fg" transform="translate(32 32) scale(1.5)" stroke-width="1.5" stroke-linejoin="round" fill="none"><path transform="translate(-5.2 -4.5)" d="M0 -6L5.2 -3V3L0 6L-5.2 3V-3Z"/><path transform="translate(5.2 -4.5)" d="M0 -6L5.2 -3V3L0 6L-5.2 3V-3Z"/><path class="hv-fill" transform="translate(0 4.5)" d="M0 -6L5.2 -3V3L0 6L-5.2 3V-3Z"/></g></svg></div>
-    <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-plan"/></svg></div><div class="nav-label">Tu Plan</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="clientNav('plan',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-hexagon"/></svg></div><div class="nav-label">Mi Espacio</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="clientNav('profile',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-user"/></svg></div><div class="nav-label">Perfil</div><div class="nav-dot"></div></div>
   </div>
 </div>
@@ -7796,6 +7847,67 @@ function switchClientPlanTab(tab, chipEl) {
     _rnTab.style.display = 'block';
     rnLoadClientTab();
   }
+}
+
+// ===== THE MOVE MENU (Mi Espacio) =====
+// Reemplaza la tira de chips. Los chips siguen en el DOM (ocultos) y switchClientPlanTab sigue siendo
+// quien cambia de sección: el menú le pasa el chip correspondiente. La sección activa se lee del chip .active.
+const MM_SECTIONS = [
+  { tab: 'plans', name: 'Guías y recursos', desc: 'Planes, guías y archivos de tu coach', icon: 'book-open' },
+  { tab: 'run', name: 'Run', desc: 'Tu plan de carrera y check-in diario', icon: 'timer' }, // solo con el módulo Run activo (rnApplyClientNav muestra #rn-plan-chip)
+  { tab: 'habits', name: 'Mi Diario', desc: 'Hábitos, sueño y sesiones', icon: 'notebook' },
+  { tab: 'progress', name: 'Tu Progreso', desc: 'Fotos, medidas y evolución', icon: 'trending-up' },
+  { tab: 'tests', name: 'Evaluaciones', desc: 'Tus pruebas y resultados', icon: 'bar-chart' },
+  { tab: 'extras', name: 'Extras', desc: 'Sesiones fuera de tu plan regular', icon: 'layout-grid' }
+];
+function mmChip(tab) {
+  return Array.from(document.querySelectorAll('#screen-client-plan .client-plan-tab-chip'))
+    .find(c => (c.getAttribute('onclick') || '').includes(`switchClientPlanTab('${tab}'`)) || null;
+}
+function mmCurrentTab() {
+  const on = document.querySelector('#screen-client-plan .client-plan-tab-chip.active');
+  const m = on && (on.getAttribute('onclick') || '').match(/switchClientPlanTab\('([a-z]+)'/);
+  return m ? m[1] : 'plans';
+}
+function mmSync() {
+  const cur = MM_SECTIONS.find(s => s.tab === mmCurrentTab()) || MM_SECTIONS[0];
+  const lbl = document.getElementById('mm-cur'), btn = document.getElementById('mm-btn');
+  if (lbl) lbl.textContent = cur.name;
+  if (btn) btn.setAttribute('aria-label', 'Menú de secciones. Estás en ' + cur.name);
+}
+function mmRender() {
+  const panel = document.getElementById('mm-panel');
+  if (!panel) return;
+  const curTab = mmCurrentTab();
+  // Una sección aparece si su chip existe y no está oculto (así Run sigue la misma regla que antes).
+  panel.innerHTML = MM_SECTIONS.filter(s => { const c = mmChip(s.tab); return c && c.style.display !== 'none'; }).map(s => {
+    const on = s.tab === curTab;
+    return `<button type="button" class="mm-row${on ? ' is-on' : ''}"${on ? ' aria-current="true"' : ''} onclick="mmPick('${s.tab}')">
+      <span class="mm-tile" aria-hidden="true">${icon(s.icon, 22)}</span>
+      <span style="flex:1;min-width:0;"><span class="mm-name">${s.name}</span><span class="mm-desc">${s.desc}</span></span>
+      ${on ? icon('check', 20, 'mm-check') : ''}
+    </button>`;
+  }).join('');
+}
+function mmSetOpen(open) {
+  const btn = document.getElementById('mm-btn'), panel = document.getElementById('mm-panel');
+  const scrim = document.getElementById('mm-scrim'), top = document.getElementById('mm-top');
+  if (!btn || !panel) return;
+  if (open) { mmSync(); mmRender(); }
+  panel.hidden = !open;
+  if (scrim) scrim.hidden = !open;
+  btn.classList.toggle('is-open', open);
+  if (top) top.classList.toggle('is-open', open);
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+function mmToggle() { mmSetOpen(document.getElementById('mm-panel')?.hidden !== false); }
+function mmClose() { mmSetOpen(false); document.getElementById('mm-btn')?.focus({ preventScroll: true }); }
+function mmPick(tab) {
+  const chip = mmChip(tab);
+  mmSetOpen(false);
+  if (chip) switchClientPlanTab(tab, chip);
+  mmSync();
+  document.getElementById('mm-btn')?.focus({ preventScroll: true });
 }
 
 async function loadClientTests() {
