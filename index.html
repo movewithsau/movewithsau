@@ -1607,6 +1607,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
       <div class="client-plan-tab-chip" onclick="switchClientPlanTab('tests', this)"><svg class="ico" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-bar-chart"/></svg>Evaluaciones</div>
       <div class="client-plan-tab-chip" onclick="switchClientPlanTab('habits', this)"><svg class="ico" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-notebook"/></svg>Mi diario</div>
       <div class="client-plan-tab-chip" onclick="switchClientPlanTab('extras', this)"><svg class="ico" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-zap"/></svg>Extras</div>
+      <div class="client-plan-tab-chip" id="rn-plan-chip" style="display:none;" onclick="switchClientPlanTab('run', this)"><svg class="ico" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-activity"/></svg>Run</div>
     </div>
 
     <!-- PLANES TAB -->
@@ -1639,6 +1640,9 @@ button.exx-pill { cursor:pointer; min-height:28px; }
     <div id="client-habits-tab" style="display:none;">
       <div id="c-diary-root"><div class="spinner"></div></div>
     </div>
+
+    <!-- RUN TAB (módulo Run, solo con run_module_enabled) -->
+    <div id="client-run-tab" style="display:none;"><div id="c-run-root"></div></div>
 
     <!-- EXTRAS TAB -->
     <div id="client-extras-tab" style="display:none;">
@@ -1872,6 +1876,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
     <div class="payment-card" id="coach-lift-card"></div>
     <div class="section-header"><div class="section-title">Información de pago</div><div class="section-action" onclick="showModal('modal-edit-payment')">Editar</div></div>
     <div class="payment-card" id="coach-payment-card"></div>
+    <div id="coach-run-section"></div>
     <div class="section-header"><div class="section-title">Días entrenados</div></div>
     <div class="stat-row"><div class="stat-card"><div class="stat-num" id="coach-c-days">0</div><div class="stat-label">Total</div></div><div class="stat-card"><div class="stat-num" id="coach-c-week-trained">0</div><div class="stat-label">Esta semana</div></div></div>
     <div style="display:flex;align-items:center;gap:8px;margin:6px 0 8px;">
@@ -3320,6 +3325,7 @@ async function initClient() {
   const {data:cd} = await sb.from('clients').select('*').eq('username',currentUser.username).single();
   currentClient = cd;
   clientWeek = 1;
+  rnApplyClientNav();
   // Show churn overlay if client is inactive
   if(cd?.is_churn) {
     document.getElementById('churn-overlay').classList.add('active');
@@ -7754,6 +7760,7 @@ function switchClientPlanTab(tab, chipEl) {
   document.getElementById('client-tests-tab').style.display = 'none';
   document.getElementById('client-habits-tab').style.display = 'none';
   document.getElementById('client-extras-tab').style.display = 'none';
+  const _rnTab = document.getElementById('client-run-tab'); if(_rnTab) _rnTab.style.display = 'none';
   if(tab === 'plans') {
     document.getElementById('client-plans-tab').style.display = 'block';
   } else if(tab === 'progress') {
@@ -7768,6 +7775,9 @@ function switchClientPlanTab(tab, chipEl) {
   } else if(tab === 'extras') {
     document.getElementById('client-extras-tab').style.display = 'block';
     loadClientExtras();
+  } else if(tab === 'run' && _rnTab) {
+    _rnTab.style.display = 'block';
+    rnLoadClientTab();
   }
 }
 
@@ -8703,6 +8713,7 @@ async function openCoachClient(clientId) {
     </div>
     <div class="payment-row"><span class="payment-key">Tiempo entrenado</span><span class="payment-val payment-val-time">${Math.floor((c.total_training_minutes||0)/60)}h ${(c.total_training_minutes||0)%60}min</span></div>
     ${ckCoachToggleHtml(c)}
+    ${rnCoachToggleHtml(c)}
     <div style="margin-top:14px;padding-top:12px;border-top:1.5px solid var(--gray2);display:flex;flex-direction:column;gap:8px;">
       ${c.is_churn ? `<button onclick="toggleChurnClient(false)" style="width:100%;padding:10px;background:var(--green-light);color:var(--green);border:1.5px solid var(--green);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Reactivar cliente</button>` : `<button onclick="toggleChurnClient(true)" style="width:100%;padding:10px;background:var(--red-light);color:var(--red);border:1.5px solid var(--red);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Marcar como Churn</button>`}
       ${c.hidden ? `<button onclick="toggleHiddenClient(false)" style="width:100%;padding:10px;background:var(--gray1);color:var(--black);border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Mostrar cliente</button>` : `<button onclick="toggleHiddenClient(true)" style="width:100%;padding:10px;background:var(--gray1);color:var(--black);border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Ocultar cliente</button>`}
@@ -8721,6 +8732,7 @@ async function openCoachClient(clientId) {
   renderCoachDaysTotal();
   loadWeekTrainedCount(c.id);
   loadCoachEntrenos(c);
+  rnLoadCoachSection(c);
   loadCoachClientDetail(clientId);
   loadCoachPlans();
   loadCoachTrainingPanel();
@@ -24026,6 +24038,210 @@ async function confirmNutritionImport() {
   }
 }
 
+</script>
+
+<!-- ===================================================================== -->
+<!-- MÓDULO RUN (v1). Todo lo del módulo vive en este bloque (CSS + JS).    -->
+<!-- Solo lee exercise_logs / exercises / monthly_plans / workout_completions -->
+<!-- y exercise_library; escribe únicamente en tablas run_* y en             -->
+<!-- clients.run_module_enabled. pendiente: endurecer RLS (datos de salud).  -->
+<!-- ===================================================================== -->
+<style id="rn-css">
+.rn { font-family:'DM Sans',sans-serif; color:#1F1B16; }
+.rn-ey { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#5E564B; }
+.rn-h1 { font-family:'Playfair Display',Georgia,serif; font-weight:900; font-size:26px; line-height:1.12; margin:2px 0 10px; }
+.rn-h2 { font-family:'Playfair Display',Georgia,serif; font-weight:700; font-size:19px; line-height:1.2; margin:16px 0 8px; }
+.rn-cd { background:#fff; border:1px solid #E7DFD2; border-radius:16px; padding:12px 14px; margin-bottom:10px; box-sizing:border-box; }
+.rn-cd.is-warm { background:#FCEEE4; border-color:#F0CDB8; }
+.rn-cd.is-red { background:#FBE9E6; border-color:#EBC1B9; }
+.rn-cd.is-ghost { background:transparent; }
+.rn-row { display:flex; align-items:center; gap:10px; }
+.rn-sp { justify-content:space-between; }
+.rn-wrap { flex-wrap:wrap; }
+.rn-fx { flex:1; min-width:0; }
+.rn-mu { color:#5E564B; }
+.rn-m { font-family:'DM Mono',monospace; }
+.rn-sm { font-size:13px; line-height:1.4; }
+.rn-xs { font-size:12px; line-height:1.4; }
+.rn-lb { font-size:14px; font-weight:700; margin-bottom:8px; }
+.rn-fl { display:block; font-size:12px; font-weight:700; color:#5E564B; margin-bottom:4px; }
+.rn-ch { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:44px; box-sizing:border-box; padding:0 12px; border-radius:999px; border:1px solid #D2C7B6; background:#fff; font-size:14px; font-weight:600; color:#1F1B16; cursor:pointer; font-family:'DM Sans',sans-serif; }
+.rn-ch.is-on { background:#C24E18; border-color:#C24E18; color:#fff; }
+.rn-ch[disabled] { opacity:.45; cursor:default; }
+.rn-chs { display:flex; gap:6px; }
+.rn-chs > .rn-ch { flex:1; padding:0 6px; }
+.rn-bt { display:flex; width:100%; align-items:center; justify-content:center; gap:8px; min-height:50px; border-radius:14px; font-weight:700; font-size:15px; box-sizing:border-box; border:0; cursor:pointer; font-family:'DM Sans',sans-serif; margin-top:8px; }
+.rn-bt.is-g { background:#1E7A3C; color:#fff; }
+.rn-bt.is-o { background:#C24E18; color:#fff; }
+.rn-bt.is-l { background:#fff; border:1px solid #D2C7B6; color:#1F1B16; }
+.rn-bt[disabled] { opacity:.5; cursor:default; }
+.rn-pill { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:999px; font-size:12px; font-weight:700; white-space:nowrap; }
+.rn-pill.is-g { background:#E6F2EA; color:#17602F; }
+.rn-pill.is-o { background:#FCEEE4; color:#A8410F; }
+.rn-pill.is-n { background:#EFE9DF; color:#4F483E; }
+.rn-pill.is-r { background:#FBE9E6; color:#8F2719; }
+.rn-in { height:48px; border:1px solid #D2C7B6; border-radius:12px; background:#fff; padding:0 12px; font-family:'DM Mono',monospace; font-size:17px; width:100%; box-sizing:border-box; color:#1F1B16; }
+.rn-in.is-txt { font-family:'DM Sans',sans-serif; font-size:15px; }
+textarea.rn-in { height:auto; min-height:72px; padding:10px 12px; font-family:'DM Sans',sans-serif; font-size:15px; resize:vertical; }
+.rn-disc { font-size:12px; color:#5E564B; text-align:center; margin:10px 0 4px; }
+.rn-x { width:44px; height:44px; border-radius:999px; border:1px solid #D2C7B6; background:#fff; display:flex; align-items:center; justify-content:center; color:#1F1B16; cursor:pointer; flex-shrink:0; }
+.rn-ov { position:fixed; inset:0; z-index:400; background:rgba(31,27,22,.45); display:flex; align-items:flex-end; justify-content:center; }
+.rn-sheet { width:100%; max-width:480px; max-height:94vh; overflow-y:auto; background:#FAF6F0; border-radius:24px 24px 0 0; padding:16px 20px 28px; box-sizing:border-box; }
+.rn-sheet-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px; }
+.rn-tl { background:#fff; border:1px solid #E7DFD2; border-radius:16px; padding:12px 14px; box-sizing:border-box; flex:1; }
+.rn-tl .n { font-family:'DM Mono',monospace; font-size:24px; font-weight:500; line-height:1.1; }
+.rn-tl .t { font-size:12px; color:#5E564B; margin-top:2px; }
+.rn-bar { height:8px; border-radius:99px; background:#E2D9CB; overflow:hidden; }
+.rn-bar > div { height:8px; background:#1E7A3C; }
+.rn-ib { width:40px; height:40px; border-radius:10px; border:1px solid #D2C7B6; background:#fff; display:inline-flex; align-items:center; justify-content:center; color:#1F1B16; cursor:pointer; flex-shrink:0; }
+.rn-ib[disabled] { opacity:.35; cursor:default; }
+.rn-empty { text-align:center; padding:28px 12px; color:#5E564B; font-size:14px; line-height:1.5; }
+</style>
+<script>
+// ===== MÓDULO RUN =====
+// Constantes visibles y editables
+const RN_GREEN = '#1E7A3C', RN_ORANGE = '#C24E18', RN_RED = '#8F2719';
+const RN_DISCLAIMER = 'Esta es una guía de entrenamiento, no un consejo médico.';
+
+let rnProfile = null;   // run_profiles del cliente abierto (coach) o del cliente logueado
+let rnShoes = [];       // run_shoes del mismo cliente
+
+function rnEsc(s) { return escHtml(s == null ? '' : String(s)); }
+function rnIsCoach() { return currentUser?.role === 'coach'; }
+// Mostrar con coma, guardar con punto
+function rnKm(n, d = 1) { const v = Number(n); return Number.isFinite(v) ? v.toLocaleString('es-CR', { minimumFractionDigits: d, maximumFractionDigits: d }) : '—'; }
+function rnDisc() { return `<div class="rn-disc">${RN_DISCLAIMER}</div>`; }
+function rnDayLabel(d) { return new Date(d + 'T12:00:00Z').toLocaleDateString('es-CR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }); }
+
+async function rnLoadProfile(cid) {
+  const { data, error } = await sb.from('run_profiles').select('*').eq('client_id', cid).maybeSingle();
+  if (error) return null;
+  return data || null;
+}
+// Crea el perfil la primera vez (upsert por cliente, sin pisar uno existente)
+async function rnEnsureProfile(cid) {
+  const cur = await rnLoadProfile(cid);
+  if (cur) return cur;
+  const { data, error } = await sb.from('run_profiles').upsert([{ client_id: cid }], { onConflict: 'client_id', ignoreDuplicates: true }).select().maybeSingle();
+  if (error) { showToast('No se pudo crear el perfil Run: ' + error.message, 'error'); return null; }
+  return data || await rnLoadProfile(cid);
+}
+async function rnUpdateProfile(patch) {
+  if (!rnProfile) return false;
+  const { data, error } = await sb.from('run_profiles').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', rnProfile.id).eq('client_id', rnProfile.client_id).select().maybeSingle();
+  if (error) { showToast('Error: ' + error.message, 'error'); return false; }
+  if (data) rnProfile = data;
+  return true;
+}
+async function rnLoadShoes(cid) {
+  const { data, error } = await sb.from('run_shoes').select('*').eq('client_id', cid).order('created_at', { ascending: true });
+  if (error) return [];
+  const shoes = data || [];
+  if (!shoes.length) return shoes;
+  // km = initial_km + suma de distance_km de sus corridas (se calcula, no se guarda)
+  const { data: ses } = await sb.from('run_sessions').select('shoe_id,distance_km').eq('client_id', cid).not('shoe_id', 'is', null);
+  const sum = {};
+  (ses || []).forEach(s => { sum[s.shoe_id] = (sum[s.shoe_id] || 0) + (Number(s.distance_km) || 0); });
+  shoes.forEach(z => { z.total_km = (Number(z.initial_km) || 0) + (sum[z.id] || 0); });
+  return shoes;
+}
+
+// Push por OneSignal (api/notify.js filtra por tag username). Nunca rompe el flujo.
+async function rnPush(username, title, message) {
+  try {
+    if (!username) return;
+    await fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, message, target: { username } }) });
+  } catch (e) { /* silencioso */ }
+}
+
+// ---------- COACH: interruptor en "Información de pago" ----------
+function rnCoachToggleHtml(c) {
+  const on = c.run_module_enabled === true;
+  return `<div class="payment-row" id="rn-toggle-row" style="align-items:center;flex-wrap:wrap;">
+      <span class="payment-key">Módulo Run</span>
+      <span class="payment-val">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <div onclick="rnToggleModule()" id="rn-toggle-btn" role="switch" aria-checked="${on}" aria-label="Módulo Run" style="width:44px;height:24px;border-radius:12px;background:${on ? 'var(--orange)' : 'var(--gray3)'};position:relative;transition:background 0.2s;cursor:pointer;flex-shrink:0;">
+            <div style="width:20px;height:20px;border-radius:50%;background:white;position:absolute;top:2px;${on ? 'left:22px' : 'left:2px'};transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
+          </div>
+          <span style="font-size:12px;color:${on ? 'var(--green)' : 'var(--gray4)'};">${on ? 'Activo' : 'Apagado'}</span>
+        </label>
+      </span>
+      <div style="flex-basis:100%;font-size:11px;line-height:1.4;color:var(--gray4);margin-top:4px;">El cliente ve la pestaña Run dentro de Tu Plan.</div>
+    </div>`;
+}
+async function rnToggleModule() {
+  if (!currentClient) return;
+  const c = currentClient;
+  const newVal = c.run_module_enabled !== true;
+  const { error } = await sb.from('clients').update({ run_module_enabled: newVal }).eq('id', c.id);
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  c.run_module_enabled = newVal;
+  if (newVal) rnProfile = await rnEnsureProfile(c.id);
+  const row = document.getElementById('rn-toggle-row');
+  if (row) row.outerHTML = rnCoachToggleHtml(c);
+  showToast(newVal ? 'Módulo Run activado' : 'Módulo Run apagado');
+  rnLoadCoachSection(c);
+}
+
+// ---------- COACH: sección Run del cliente (pantalla 14) ----------
+async function rnLoadCoachSection(c) {
+  const box = document.getElementById('coach-run-section');
+  if (!box) return;
+  if (!c || c.run_module_enabled !== true) { box.innerHTML = ''; return; }
+  const cid = c.id;
+  box.innerHTML = '<div class="section-header"><div class="section-title">Módulo Run</div></div><div class="payment-card"><div class="spinner"></div></div>';
+  const [p, shoes] = await Promise.all([rnEnsureProfile(cid), rnLoadShoes(cid)]);
+  if (currentClient?.id !== cid) return;
+  rnProfile = p; rnShoes = shoes;
+  rnRenderCoachSection();
+}
+function rnShoesReadOnlyHtml(shoes) {
+  const act = shoes.filter(z => !z.retired_at), ret = shoes.filter(z => z.retired_at);
+  if (!shoes.length) return '<div class="rn-xs rn-mu">Todavía no registró zapatos.</div>';
+  const row = z => `<div class="rn-row rn-sp" style="padding:6px 0;border-bottom:1px solid #EFE9DF;"><div class="rn-fx"><div style="font-weight:700;font-size:14px;${z.retired_at ? 'color:#5E564B;' : ''}">${rnEsc(z.name)}</div><div class="rn-xs rn-mu">${rnEsc(z.brand || '')}${z.retired_at ? ' · retirado' : ''}</div></div><span class="rn-m" style="font-size:15px;">${rnKm(z.total_km)} km</span></div>`;
+  return act.map(row).join('') + (ret.length ? `<div class="rn-ey" style="margin-top:10px;">Retirados</div>${ret.map(row).join('')}` : '');
+}
+function rnRenderCoachSection() {
+  const box = document.getElementById('coach-run-section');
+  if (!box || !rnProfile) return;
+  const p = rnProfile;
+  const modeChip = (m, label) => `<button type="button" class="rn-ch${p.mode === m ? ' is-on' : ''}" aria-pressed="${p.mode === m}" onclick="rnSetMode('${m}')">${label}</button>`;
+  box.innerHTML = `<div class="section-header"><div class="section-title">Módulo Run</div></div>
+    <div class="payment-card rn">
+      <div class="rn-lb">Modo</div>
+      <div class="rn-chs">${modeChip('plan', 'Plan completo')}${modeChip('seguimiento', 'Solo seguimiento')}</div>
+      <div class="rn-xs rn-mu" style="margin-top:6px;">En ambos modos el cliente puede registrar sesiones libres.</div>
+      <div id="rn-coach-extra"></div>
+      <div class="rn-row rn-sp" style="margin-top:14px;"><div class="rn-lb" style="margin:0;">Zapatos</div><span class="rn-xs rn-mu">Los maneja el cliente</span></div>
+      <div style="margin-top:4px;">${rnShoesReadOnlyHtml(rnShoes)}</div>
+    </div>`;
+  if (typeof rnRenderCoachExtra === 'function') rnRenderCoachExtra();
+}
+async function rnSetMode(mode) {
+  if (!rnProfile || rnProfile.mode === mode) return;
+  if (await rnUpdateProfile({ mode })) { showToast(mode === 'plan' ? 'Modo: Plan completo' : 'Modo: Solo seguimiento'); rnRenderCoachSection(); }
+}
+
+// ---------- CLIENTE: sub-pestaña Run dentro de Tu Plan ----------
+// Solo visible con clients.run_module_enabled. Apagado, el cliente ve exactamente lo de hoy.
+function rnApplyClientNav() {
+  const chip = document.getElementById('rn-plan-chip');
+  if (chip) chip.style.display = (currentClient?.run_module_enabled === true && !rnIsCoach()) ? '' : 'none';
+}
+async function rnLoadClientTab() {
+  const box = document.getElementById('c-run-root');
+  if (!box || !currentClient) return;
+  if (currentClient.run_module_enabled !== true) { box.innerHTML = ''; return; }
+  box.innerHTML = '<div class="spinner"></div>';
+  const cid = currentClient.id;
+  const [p, shoes] = await Promise.all([rnLoadProfile(cid), rnLoadShoes(cid)]);
+  if (currentClient?.id !== cid) return;
+  rnProfile = p; rnShoes = shoes;
+  if (typeof rnRenderClient === 'function') { rnRenderClient(); return; }
+  box.innerHTML = `<div class="rn"><div class="rn-ey">Run</div><h1 class="rn-h1">Run</h1><div class="rn-empty">Tu coach está preparando tu módulo de running.</div></div>`;
+}
+// ===== FIN MÓDULO RUN =====
 </script>
 
 <!-- Add/Edit Food Modal -->
