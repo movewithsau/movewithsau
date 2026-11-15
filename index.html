@@ -24111,12 +24111,15 @@ function rnIsCoach() { return currentUser?.role === 'coach'; }
 // Mostrar con coma, guardar con punto
 function rnKm(n, d = 1) { const v = Number(n); return Number.isFinite(v) ? v.toLocaleString('es-CR', { minimumFractionDigits: d, maximumFractionDigits: d }) : '—'; }
 function rnDisc() { return `<div class="rn-disc">${RN_DISCLAIMER}</div>`; }
+function rnCRDate(iso) { return iso ? new Date(iso).toLocaleDateString('en-CA', { timeZone: 'America/Costa_Rica' }) : ''; }
 function rnDayLabel(d) { return new Date(d + 'T12:00:00Z').toLocaleDateString('es-CR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }); }
 
 async function rnLoadProfile(cid) {
   const { data, error } = await sb.from('run_profiles').select('*').eq('client_id', cid).maybeSingle();
-  if (error) return null;
-  return data || null;
+  if (error || !data) return null;
+  if (!data.mode) data.mode = 'plan';
+  if (!data.plan_status) data.plan_status = 'none';
+  return data;
 }
 // Crea el perfil la primera vez (upsert por cliente, sin pisar uno existente)
 async function rnEnsureProfile(cid) {
@@ -24405,7 +24408,7 @@ async function rnRenderCoachExtra() {
   const alerts = al || [];
   const ALERT_NAMES = { alarma: 'Síntoma de alarma', dolor_3_dias: 'Dolor 3 días seguidos', dolor_fuerte: 'Dolor fuerte', onboarding_roja: 'Alerta roja del onboarding', onboarding_amarilla: 'Alerta amarilla del onboarding', sin_registro: 'Varios días sin registrar' };
   const alertsHtml = alerts.map(x => `<div class="rn-cd ${x.type === 'onboarding_amarilla' || x.type === 'sin_registro' ? 'is-warm' : 'is-red'}" style="margin:8px 0 0;">
-      <div class="rn-row rn-sp"><div class="rn-fx"><div style="font-weight:700;font-size:14px;">${ALERT_NAMES[x.type] || rnEsc(x.type)}</div><div class="rn-xs rn-mu" style="margin-top:2px;">${rnEsc(x.detail || '')} · ${rnDayLabel(String(x.created_at).slice(0, 10))}</div></div>
+      <div class="rn-row rn-sp"><div class="rn-fx"><div style="font-weight:700;font-size:14px;">${ALERT_NAMES[x.type] || rnEsc(x.type)}</div><div class="rn-xs rn-mu" style="margin-top:2px;">${rnEsc(x.detail || '')} · ${rnDayLabel(rnCRDate(x.created_at))}</div></div>
       <button type="button" class="rn-ch" style="font-size:13px;" onclick="rnResolveAlert('${x.id}')">Resolver</button></div></div>`).join('');
   const summary = p.level ? `<div class="rn-row rn-sp" style="margin-top:12px;"><div><div style="font-weight:700;font-size:15px;">Nivel ${p.level}${p.mode === 'plan' && typeof rnPlanSummary === 'function' ? rnPlanSummary() : ''}</div></div></div>` : '';
   box.innerHTML = `${summary}
@@ -24424,6 +24427,466 @@ async function rnResolveAlert(id) {
 async function rnHasOpenRed(cid) {
   const { data } = await sb.from('run_alerts').select('id').eq('client_id', cid).eq('status', 'open').eq('type', 'onboarding_roja').limit(1);
   return !!(data && data.length);
+}
+// ---------- R3: versiones de sesión (helpers PUROS, sin tablas) ----------
+// Se reusarán después en el entreno de fuerza: no dependen de nada del módulo Run
+// salvo los nombres de tipo de sesión. Constantes editables:
+const RUN_VERSION_FACTORS = { completa: 1, reducida: 0.7, minima: 0.5 };   // editable
+const RUN_QUALITY_TYPES = ['strides', 'umbral'];                           // se vuelven fácil al reducir
+const RUN_TEST_FALLBACK_MIN = 20;                                          // si hay prueba 5K y el día no da
+const RUN_MIN_FLOOR = 5;                                                   // piso de minutos al reducir
+
+// Devuelve una copia de la sesión ajustada a la versión. Aplica primero overrides[version]
+// (campos min, km, esfuerzo, notas, tipo); solo calcula lo que no está sobrescrito.
+function runApplyVersion(session, version) {
+  const s = session || {};
+  const v = RUN_VERSION_FACTORS[version] != null ? version : 'completa';
+  const out = { ...s, version: v, auto: {} };
+  if (v === 'completa') return out;
+  if (s.session_type === 'prueba_5k') {
+    // La prueba no se reduce: se pospone y se hace un fácil corto. No cuenta como hecha.
+    return { ...out, postponeTest: true, message: `Hoy no es día para la prueba: hacé ${RUN_TEST_FALLBACK_MIN} min fácil y la repetimos otro día`, fallback: { session_type: 'facil', minutes: RUN_TEST_FALLBACK_MIN } };
+  }
+  const f = RUN_VERSION_FACTORS[v];
+  const ov = (s.overrides && s.overrides[v]) || {};
+  const quality = RUN_QUALITY_TYPES.includes(s.session_type);
+  out.session_type = ov.tipo != null ? ov.tipo : (quality ? 'facil' : s.session_type);
+  if (ov.min != null) out.minutes = Number(ov.min);
+  else { out.minutes = Math.max(RUN_MIN_FLOOR, Math.round((Number(s.minutes) || 0) * f)); out.auto.minutes = true; }
+  if (ov.km != null) out.distance_km = Number(ov.km);
+  else if (s.distance_km != null && s.distance_km !== '') { out.distance_km = Math.round(Number(s.distance_km) * f * 10) / 10; out.auto.distance_km = true; }
+  if (ov.esfuerzo != null) out.effort = ov.esfuerzo;
+  out.notes = ov.notas != null ? ov.notas : (quality ? '' : s.notes); // en calidad no se copian los intervalos
+  return out;
+}
+// Elige la versión sugerida. checkin: {energy, sleep, pain, alarm_symptom} o null.
+// ctx: {manual, cantMore, lastTwoReduced, legHeavy, resumeCap}. La elección manual del cliente manda.
+function runPickVersion(checkin, ctx) {
+  const c = ctx || {}, k = checkin || null, reasons = [];
+  if (k && (k.alarm_symptom || k.pain === 'fuerte')) return { version: null, rest: true, reasons: [k.alarm_symptom ? 'Síntoma de alarma' : 'Dolor fuerte'] };
+  if (c.manual && RUN_VERSION_FACTORS[c.manual] != null) return { version: c.manual, reasons: ['Elegida por vos'] };
+  let version = 'completa';
+  if (c.cantMore) { version = 'minima'; reasons.push('Hoy no podés con más'); }
+  else if (c.lastTwoReduced) { version = 'minima'; reasons.push('Venís de 2 reducidas seguidas'); }
+  else if (c.legHeavy) { version = 'reducida'; reasons.push('Pierna pesada ayer u hoy'); }
+  else if (k && k.energy != null && k.energy <= 2 && k.sleep === 'mal') { version = 'reducida'; reasons.push('Energía baja y mal sueño'); }
+  else if (k && k.pain === 'moderado') { version = 'reducida'; reasons.push('Dolor moderado'); }
+  else if (k && k.energy >= 4 && (!k.pain || k.pain === 'ninguno')) reasons.push('Buena energía y sin dolor');
+  else if (!k) reasons.push('Sin check-in hoy');
+  if (c.resumeCap && version === 'completa') { version = 'reducida'; reasons.push('Primera semana tras la pausa'); }
+  return { version, reasons };
+}
+
+// ---------- R3: plan (pantallas 15 a 19) ----------
+const RN_TYPES = [['correr_caminar', 'Correr y caminar'], ['facil', 'Fácil'], ['larga_facil', 'Larga fácil'], ['strides', 'Strides'], ['umbral', 'Umbral e intervalos'], ['prueba_5k', 'Prueba 5K']];
+const RN_TYPE_NAME = Object.fromEntries(RN_TYPES);
+const RN_WEEK_TYPES = [['normal', 'Normal'], ['descarga', 'Descarga'], ['prueba_5k', 'Prueba 5K']];
+const RN_TYPE_ALIASES = { tempo: 'umbral', intervalos: 'umbral', intervals: 'umbral', threshold: 'umbral', series: 'umbral', easy: 'facil', 'fácil': 'facil', suave: 'facil', larga: 'larga_facil', long: 'larga_facil', 'larga fácil': 'larga_facil', run_walk: 'correr_caminar', 'correr y caminar': 'correr_caminar', caminar: 'correr_caminar', prueba: 'prueba_5k', test: 'prueba_5k', '5k': 'prueba_5k' };
+const RN_WEEK_ALIASES = { deload: 'descarga', prueba: 'prueba_5k', test: 'prueba_5k', '5k': 'prueba_5k' };
+const RN_PLAN_WEEKS_DEFAULT = 10, RN_PLAN_WEEKS_MIN = 4, RN_PLAN_WEEKS_MAX = 24;
+const RN_JSON_EXAMPLE = `{
+  "nivel": 2,
+  "semanas": [
+    {
+      "semana": 1,
+      "etiqueta": "normal",
+      "sesiones": [
+        { "tipo": "facil", "min": 30, "esfuerzo": "3-4" },
+        { "tipo": "strides", "min": 35, "notas": "6 x 20 s", "reducida": { "min": 25 } },
+        { "tipo": "larga_facil", "min": 45 }
+      ]
+    }
+  ]
+}`;
+let rnPlan = null;        // estado del editor
+let rnRoutines = [];      // run_routines (bloques pre y post)
+
+// Semana actual = floor((hoy - start_date) / 7) + 1, limitada a 1..weeks_total (0 si todavía no empieza)
+function rnCurrentWeek(p, today) {
+  if (!p || !p.start_date) return 0;
+  const t = today || todayCR();
+  const days = Math.round((Date.parse(t + 'T12:00:00Z') - Date.parse(String(p.start_date).slice(0, 10) + 'T12:00:00Z')) / 86400000);
+  if (days < 0) return 0;
+  return Math.min(Math.max(Math.floor(days / 7) + 1, 1), p.weeks_total || 1);
+}
+function rnPlanSummary() {
+  const p = rnProfile; if (!p) return '';
+  if (p.plan_status === 'draft') return ' · plan en borrador';
+  if (p.plan_status === 'paused') return ' · plan en pausa';
+  if (p.plan_status === 'active') { const w = rnCurrentWeek(p); return w ? ` · Semana ${w} de ${p.weeks_total}` : ` · empieza el ${rnDayLabel(String(p.start_date).slice(0, 10))}`; }
+  return '';
+}
+function rnPlanCoachButtonsHtml() {
+  const p = rnProfile; if (!p) return '';
+  if (!p.plan_status || p.plan_status === 'none') return `<button type="button" class="rn-bt is-g" onclick="rnPlanCreateStart()">Crear el plan</button>`;
+  if (p.plan_status === 'draft') return `<button type="button" class="rn-bt is-g" onclick="rnPlanOpenEditor()">Seguir armando el plan</button>`;
+  const pause = p.plan_status === 'paused'
+    ? `<button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="rnPlanResume()">Reanudar plan</button>`
+    : `<button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="rnPlanPause()">Pausar plan</button>`;
+  return `<button type="button" class="rn-bt is-l" onclick="rnPlanOpenEditor()">Modificar el plan</button>
+    <div class="rn-row" style="gap:6px;margin-top:8px;"><button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="rnPlanLevelSheet()">Cambiar nivel</button>${pause}</div>`;
+}
+
+// Pantalla 15: crear el plan
+function rnPlanCreateStart() {
+  if (!rnProfile) return;
+  const nextMonday = (() => { const t = todayCR(); const dow = (new Date(t + 'T12:00:00Z').getUTCDay() + 6) % 7; return tcAddDays(t, dow === 0 ? 0 : 7 - dow); })();
+  rnPlan = { create: { how: 'mano', start: rnProfile.start_date || nextMonday, weeks: rnProfile.weeks_total || RN_PLAN_WEEKS_DEFAULT } };
+  rnOpenSheet('');
+  rnPlanCreateRender();
+}
+function rnPlanCreateRender() {
+  const c = rnPlan.create, name = rnEsc((currentClient?.name || '').split(' ')[0]);
+  const opt = (k, t, d) => `<button type="button" class="rn-cd" style="display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;cursor:pointer;${c.how === k ? 'border-color:#C24E18;background:#FCEEE4;' : ''}" aria-pressed="${c.how === k}" onclick="rnPlan.create.how='${k}';rnPlanCreateRead();rnPlanCreateRender()"><span style="width:22px;height:22px;border-radius:99px;box-sizing:border-box;flex:none;margin-top:1px;background:#fff;border:${c.how === k ? '7px solid #C24E18' : '2px solid #8A8072'};"></span><span><span style="display:block;font-weight:700;font-size:15px;">${t}</span><span class="rn-xs rn-mu" style="display:block;margin-top:2px;">${d}</span></span></button>`;
+  rnSheetBody(`${rnSheetHead(`${name} · nivel ${rnProfile.level || '—'}`, 'Crear el plan')}
+    <div class="rn-sm rn-mu" style="margin-bottom:10px;">Elegí cómo querés armarlo. Después podés editarlo cuando quieras.</div>
+    ${opt('mano', 'Armar a mano', 'Semana por semana. Escribís la versión completa; la reducida (70%) y la mínima (50%) se calculan solas.')}
+    ${opt('json', 'Pegar JSON', 'Pegá un plan completo, por ejemplo uno que armaste con Claude. Lo validás antes de guardar.')}
+    <div class="rn-cd"><div class="rn-lb">Inicio y duración</div>
+      <div class="rn-row" style="gap:8px;"><div class="rn-fx"><label class="rn-fl" for="rn-pc-start">Fecha de inicio</label><input id="rn-pc-start" class="rn-in" type="date" value="${c.start}"></div>
+      <div class="rn-fx"><label class="rn-fl" for="rn-pc-weeks">Semanas (${RN_PLAN_WEEKS_MIN} a ${RN_PLAN_WEEKS_MAX})</label><input id="rn-pc-weeks" class="rn-in" type="text" inputmode="numeric" value="${c.weeks}"></div></div></div>
+    <button type="button" class="rn-bt is-g" onclick="rnPlanCreateNext()">Continuar</button>
+    <div class="rn-xs rn-mu" style="text-align:center;margin-top:6px;">No ve nada hasta que actives el plan.</div>`);
+}
+function rnPlanCreateRead() {
+  const c = rnPlan?.create; if (!c) return;
+  const s = document.getElementById('rn-pc-start'), w = document.getElementById('rn-pc-weeks');
+  if (s) c.start = s.value; if (w) c.weeks = w.value;
+}
+async function rnPlanCreateNext() {
+  rnPlanCreateRead();
+  const c = rnPlan.create, weeks = parseInt(c.weeks, 10);
+  if (!c.start) { showToast('Elegí la fecha de inicio'); return; }
+  if (!(weeks >= RN_PLAN_WEEKS_MIN && weeks <= RN_PLAN_WEEKS_MAX)) { showToast(`La duración va de ${RN_PLAN_WEEKS_MIN} a ${RN_PLAN_WEEKS_MAX} semanas`); return; }
+  if (!(await rnUpdateProfile({ start_date: c.start, weeks_total: weeks, plan_status: rnProfile.plan_status === 'active' || rnProfile.plan_status === 'paused' ? rnProfile.plan_status : 'draft' }))) return;
+  await rnPlanLoad();
+  if (c.how === 'json') rnJsonOpen(); else rnPlanRender();
+  rnRenderCoachSection();
+}
+
+// Carga el plan del cliente al editor
+async function rnPlanLoad() {
+  const cid = rnProfile.client_id;
+  const [{ data: rows, error }, { data: rts }] = await Promise.all([
+    sb.from('run_planned_sessions').select('*').eq('client_id', cid).order('week_number', { ascending: true }).order('position', { ascending: true }),
+    sb.from('run_routines').select('*').order('name', { ascending: true })
+  ]);
+  if (error) { showToast('No se pudo cargar el plan: ' + error.message, 'error'); return false; }
+  rnRoutines = rts || [];
+  const total = Math.max(rnProfile.weeks_total || 0, ...(rows || []).map(r => r.week_number), 1);
+  const weeks = [];
+  for (let n = 1; n <= total; n++) weeks.push({ n, type: 'normal', sessions: [] });
+  (rows || []).forEach(r => { const w = weeks[r.week_number - 1]; w.type = r.week_type || w.type; w.sessions.push({ ...r }); });
+  const cur = rnCurrentWeek(rnProfile);
+  rnPlan = { cid, weeks, sel: Math.max(cur, 1) - 1, view: 'completa', removed: [], dirty: false, edit: null };
+  return true;
+}
+async function rnPlanOpenEditor() { rnOpenSheet('<div class="spinner"></div>'); if (await rnPlanLoad()) rnPlanRender(); }
+
+function rnSessionLine(s, view) {
+  const v = runApplyVersion(s, view);
+  if (v.postponeTest) return { title: 'Prueba 5K', sub: `Se pospone: ${RUN_TEST_FALLBACK_MIN} min fácil` };
+  const km = v.distance_km != null && v.distance_km !== '' ? ` · ${rnKm(v.distance_km)} km` : '';
+  const auto = view !== 'completa' ? (v.auto.minutes ? ` · ${Math.round(RUN_VERSION_FACTORS[view] * 100)}%, automática` : ' · a mano') : '';
+  const pre = s.pre_routine_id ? rnRoutines.find(r => r.id === s.pre_routine_id) : null, post = s.post_routine_id ? rnRoutines.find(r => r.id === s.post_routine_id) : null;
+  const blocks = [pre ? 'Pre: ' + pre.name : '', post ? 'Post: ' + post.name : ''].filter(Boolean).join(' · ');
+  return { title: `${RN_TYPE_NAME[v.session_type] || v.session_type} · ${v.minutes} min${km}`, sub: [v.effort ? 'Esfuerzo ' + v.effort : '', v.notes || '', blocks].filter(Boolean).join(' · ') + auto };
+}
+// Pantallas 16 y 19: editor de semanas (borrador o plan activo)
+function rnPlanRender() {
+  if (!rnPlan || !rnPlan.weeks) return;
+  const p = rnProfile, st = p.plan_status, active = st === 'active' || st === 'paused';
+  const name = rnEsc((currentClient?.name || '').split(' ')[0]);
+  const w = rnPlan.weeks[rnPlan.sel], cur = rnCurrentWeek(p), view = rnPlan.view;
+  const weekChips = rnPlan.weeks.map((x, i) => {
+    const allDone = x.sessions.length && x.sessions.every(s => s.status === 'hecha');
+    return `<button type="button" class="rn-ch${i === rnPlan.sel ? ' is-on' : ''}" style="min-width:44px;padding:0 10px;" aria-pressed="${i === rnPlan.sel}" aria-label="Semana ${x.n}${x.n === cur && active ? ', actual' : ''}" onclick="rnPlan.sel=${i};rnPlanRender()">${x.n}${allDone ? ' ' + icon('check', 12) : ''}${x.n === cur && active ? '<span style="width:5px;height:5px;border-radius:9px;background:currentColor;display:inline-block;margin-left:4px;"></span>' : ''}</button>`;
+  }).join('');
+  const sessions = w.sessions.map((s, i) => {
+    const line = rnSessionLine(s, view), locked = s.status === 'hecha';
+    const badge = locked ? `<span class="rn-pill is-g">${icon('lock', 12)}Hecha</span>` : s.status === 'omitida' ? '<span class="rn-pill is-n">Omitida</span>' : (active ? '<span class="rn-pill is-n">Pendiente</span>' : '');
+    return `<div class="rn-cd${locked ? ' is-ghost' : ''}"><div class="rn-row" style="align-items:flex-start;">
+      ${locked ? '' : `<div style="display:flex;flex-direction:column;gap:4px;"><button type="button" class="rn-ib" aria-label="Subir" ${i === 0 ? 'disabled' : ''} onclick="rnPlanMove(${i},-1)">${icon('chevron-up', 16)}</button><button type="button" class="rn-ib" aria-label="Bajar" ${i === w.sessions.length - 1 ? 'disabled' : ''} onclick="rnPlanMove(${i},1)">${icon('chevron-down', 16)}</button></div>`}
+      <div class="rn-fx"><div style="font-weight:700;font-size:15px;">${rnEsc(line.title)}</div><div class="rn-xs rn-mu" style="margin-top:2px;">${rnEsc(line.sub)}</div>${badge ? `<div style="margin-top:6px;">${badge}</div>` : ''}</div>
+      ${locked ? `<span class="rn-ib" style="border:0;" aria-label="Bloqueada">${icon('lock', 16)}</span>` : `<button type="button" class="rn-ib" aria-label="Editar sesión" onclick="rnSessEdit(${i})">${icon('pencil', 16)}</button>`}
+    </div></div>`;
+  }).join('') || '<div class="rn-empty" style="padding:14px;">Sin sesiones esta semana.</div>';
+  rnSheetBody(`${rnSheetHead(`${name} · ${active ? 'plan ' + (st === 'paused' ? 'en pausa' : 'activo') : 'borrador'}`, active ? 'Plan' : 'Armar plan')}
+    ${active ? `<div class="rn-row rn-wrap" style="gap:6px;margin-bottom:8px;"><span class="rn-pill is-n">Nivel ${p.level || '—'}</span><span class="rn-pill is-n">Semana ${cur || '—'} de ${p.weeks_total}</span></div>` : ''}
+    <div class="rn-row" style="gap:6px;overflow-x:auto;padding-bottom:4px;">${weekChips}<button type="button" class="rn-ch" style="white-space:nowrap;color:#C24E18;" onclick="rnPlanAddWeek()">+ Semana</button></div>
+    <div class="rn-chs" style="margin-top:8px;">${RN_WEEK_TYPES.map(([k, l]) => rnChip(l, w.type === k, `rnPlanWeekType('${k}')`)).join('')}</div>
+    <div class="rn-chs" style="margin-top:8px;">${[['completa', 'Completa'], ['reducida', 'Reducida 70%'], ['minima', 'Mínima 50%']].map(([k, l]) => rnChip(l, view === k, `rnPlan.view='${k}';rnPlanRender()`)).join('')}</div>
+    <div class="rn-xs rn-mu" style="margin:6px 0 10px;">Editás la completa. Las otras dos se calculan solas; tocá el lápiz de una sesión para cambiarlas a mano.</div>
+    ${sessions}
+    <button type="button" class="rn-bt is-l" onclick="rnSessAdd()">+ Agregar sesión${active ? ' a esta semana' : ''}</button>
+    <div class="rn-row" style="gap:6px;margin-top:8px;">
+      <button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="rnPlanCopySheet()">Copiar semana a…</button>
+      <button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="rnJsonOpen()">Pegar JSON</button>
+      ${active ? `<button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="${st === 'paused' ? 'rnPlanResume()' : 'rnPlanPause()'}">${st === 'paused' ? 'Reanudar' : 'Pausar plan'}</button>` : ''}
+    </div>
+    ${active
+      ? `<button type="button" class="rn-bt is-g" onclick="rnPlanSave('keep')">Guardar cambios</button><div class="rn-xs rn-mu" style="text-align:center;margin-top:6px;">Los cambios solo afectan las sesiones pendientes.</div>`
+      : `<button type="button" class="rn-bt is-l" onclick="rnPlanSave('draft')">Guardar borrador</button><button type="button" class="rn-bt is-g" onclick="rnPlanSave('active')">Guardar y activar plan</button>`}
+    ${rnPlan.dirty ? '<div class="rn-xs" style="text-align:center;margin-top:6px;color:#A8410F;">Hay cambios sin guardar.</div>' : ''}`);
+}
+function rnPlanDirty() { rnPlan.dirty = true; }
+function rnPlanAddWeek() { rnPlan.weeks.push({ n: rnPlan.weeks.length + 1, type: 'normal', sessions: [] }); rnPlan.sel = rnPlan.weeks.length - 1; rnPlanDirty(); rnPlanRender(); }
+function rnPlanWeekType(t) { const w = rnPlan.weeks[rnPlan.sel]; w.type = t; rnPlanDirty(); rnPlanRender(); }
+function rnPlanMove(i, d) {
+  const arr = rnPlan.weeks[rnPlan.sel].sessions, j = i + d;
+  if (j < 0 || j >= arr.length || arr[i].status === 'hecha' || arr[j].status === 'hecha') return;
+  [arr[i], arr[j]] = [arr[j], arr[i]]; rnPlanDirty(); rnPlanRender();
+}
+function rnRemovePending(s) { if (s.id && s.status !== 'hecha') rnPlan.removed.push(s.id); }
+// Copiar semana a…: reemplaza las pendientes de la semana destino; las hechas no se tocan
+function rnPlanCopySheet() {
+  const src = rnPlan.weeks[rnPlan.sel];
+  if (!src.sessions.length) { showToast('Esta semana no tiene sesiones'); return; }
+  const chips = rnPlan.weeks.map((x, i) => i === rnPlan.sel ? '' : rnChip(String(x.n), false, `rnPlanCopyTo(${i})`, ` style="min-width:44px;" aria-label="Copiar a la semana ${x.n}"`)).join('');
+  rnSheetBody(`${rnSheetHead('Copiar semana ' + src.n, 'Copiar a…', 'rnPlanRender()')}<div class="rn-sm rn-mu" style="margin-bottom:10px;">Se reemplazan las sesiones pendientes de la semana elegida. Las hechas no se tocan.</div><div class="rn-row rn-wrap" style="gap:6px;">${chips}</div>`);
+}
+function rnPlanCopyTo(i) {
+  const src = rnPlan.weeks[rnPlan.sel], dst = rnPlan.weeks[i];
+  const done = dst.sessions.filter(s => s.status === 'hecha');
+  dst.sessions.filter(s => s.status !== 'hecha').forEach(rnRemovePending);
+  dst.sessions = done.concat(src.sessions.map(s => ({ session_type: s.session_type, minutes: s.minutes, distance_km: s.distance_km, effort: s.effort, notes: s.notes, pre_routine_id: s.pre_routine_id, post_routine_id: s.post_routine_id, overrides: JSON.parse(JSON.stringify(s.overrides || {})), status: 'planeada' })));
+  dst.type = src.type; rnPlan.sel = i; rnPlanDirty(); showToast(`Copiada a la semana ${dst.n}`); rnPlanRender();
+}
+
+// Pantalla 17: editar una sesión
+function rnSessAdd() { const w = rnPlan.weeks[rnPlan.sel]; rnPlan.edit = { idx: -1, s: { session_type: 'facil', minutes: 30, distance_km: null, effort: '', notes: '', overrides: {}, status: 'planeada' }, ovEdit: null }; rnSessRender(); }
+function rnSessEdit(i) { const s = rnPlan.weeks[rnPlan.sel].sessions[i]; if (s.status === 'hecha') return; rnPlan.edit = { idx: i, s: JSON.parse(JSON.stringify(s)), ovEdit: null }; rnSessRender(); }
+function rnSessRead() {
+  const e = rnPlan?.edit; if (!e) return;
+  const g = id => document.getElementById(id);
+  if (g('rn-se-min')) e.s.minutes = parseInt(g('rn-se-min').value, 10) || 0;
+  if (g('rn-se-km')) { const k = parseDecimal(g('rn-se-km').value); e.s.distance_km = k == null ? null : k; }
+  if (g('rn-se-eff')) e.s.effort = g('rn-se-eff').value.trim();
+  if (g('rn-se-notes')) e.s.notes = g('rn-se-notes').value.trim();
+  if (g('rn-se-pre')) e.s.pre_routine_id = g('rn-se-pre').value || null;
+  if (g('rn-se-post')) e.s.post_routine_id = g('rn-se-post').value || null;
+  ['reducida', 'minima'].forEach(v => {
+    const m = g('rn-se-ov-' + v), k = g('rn-se-ovkm-' + v);
+    if (m) { const o = e.s.overrides[v] || (e.s.overrides[v] = {}); const n = parseInt(m.value, 10); if (n) o.min = n; else delete o.min; if (k) { const kk = parseDecimal(k.value); if (kk != null) o.km = kk; else delete o.km; } if (!Object.keys(o).length) delete e.s.overrides[v]; }
+  });
+}
+function rnSessSet(k, v) { rnSessRead(); rnPlan.edit.s[k] = v; rnSessRender(); }
+function rnSessOv(v, mode) { rnSessRead(); const e = rnPlan.edit; if (mode === 'auto') { delete e.s.overrides[v]; e.ovEdit = null; } else e.ovEdit = v; rnSessRender(); }
+function rnRoutineSelect(id, block, type, val) {
+  const opts = rnRoutines.filter(r => r.block === block && (r.session_type === type || r.session_type === 'todas'));
+  return `<select id="${id}" class="rn-in is-txt" aria-label="Bloque ${block === 'pre' ? 'pre-run' : 'post-run'}"><option value="">${opts.length ? 'Sin bloque' : 'Todavía no hay bloques'}</option>${opts.map(r => `<option value="${r.id}"${r.id === val ? ' selected' : ''}>${rnEsc(r.name)}</option>`).join('')}</select>`;
+}
+function rnSessRender() {
+  const e = rnPlan.edit, s = e.s, w = rnPlan.weeks[rnPlan.sel];
+  const verRow = v => {
+    const x = runApplyVersion(s, v), pct = Math.round(RUN_VERSION_FACTORS[v] * 100), lab = v === 'reducida' ? 'Reducida' : 'Mínima';
+    if (x.postponeTest) return `<div class="rn-row rn-sp" style="padding:6px 0;"><div><b>${lab}</b> · no se reduce</div></div>`;
+    const manual = s.overrides && s.overrides[v];
+    const body = e.ovEdit === v
+      ? `<div class="rn-row" style="gap:6px;margin-top:6px;"><input id="rn-se-ov-${v}" class="rn-in" type="text" inputmode="numeric" placeholder="min" value="${manual && manual.min != null ? manual.min : x.minutes}" aria-label="Minutos ${lab}"><input id="rn-se-ovkm-${v}" class="rn-in" type="text" inputmode="decimal" placeholder="km (opcional)" value="${manual && manual.km != null ? String(manual.km).replace('.', ',') : ''}" aria-label="Km ${lab}"><button type="button" class="rn-ch" onclick="rnSessOv('${v}','auto')">Automática</button></div>`
+      : '';
+    return `<div style="padding:6px 0;border-bottom:1px solid #EFE9DF;"><div class="rn-row rn-sp"><div class="rn-sm"><b>${lab}</b> · ${RN_TYPE_NAME[x.session_type] || x.session_type} · ${x.minutes} min${x.distance_km != null && x.distance_km !== '' ? ' · ' + rnKm(x.distance_km) + ' km' : ''} <span class="rn-mu">· ${manual ? 'a mano' : pct + '%, automática'}</span></div>
+      ${e.ovEdit === v ? '' : `<button type="button" class="rn-ch" style="font-size:13px;" onclick="rnSessOv('${v}','edit')">Cambiar</button>`}</div>${body}</div>`;
+  };
+  rnSheetBody(`${rnSheetHead(`Semana ${w.n} · versión completa`, e.idx < 0 ? 'Nueva sesión' : 'Editar sesión', 'rnSessCancel()')}
+    <div class="rn-cd"><div class="rn-lb">Tipo</div><div class="rn-row rn-wrap" style="gap:6px;">${RN_TYPES.map(([k, l]) => rnChip(l, s.session_type === k, `rnSessSet('session_type','${k}')`)).join('')}</div></div>
+    <div class="rn-row" style="gap:8px;margin-bottom:10px;">
+      <div class="rn-fx"><label class="rn-fl" for="rn-se-min">Duración (min)</label><input id="rn-se-min" class="rn-in" type="text" inputmode="numeric" value="${s.minutes || ''}"></div>
+      <div class="rn-fx"><label class="rn-fl" for="rn-se-km">Distancia (km)</label><input id="rn-se-km" class="rn-in" type="text" inputmode="decimal" value="${s.distance_km != null ? String(s.distance_km).replace('.', ',') : ''}" placeholder="opcional"></div>
+      <div class="rn-fx"><label class="rn-fl" for="rn-se-eff">Esfuerzo</label><input id="rn-se-eff" class="rn-in" type="text" value="${rnEsc(s.effort || '')}" placeholder="3-4"></div></div>
+    <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-se-notes">Estructura o notas</label><textarea id="rn-se-notes" class="rn-in" rows="2">${rnEsc(s.notes || '')}</textarea></div>
+    <div class="rn-cd"><div class="rn-row" style="gap:8px;"><div class="rn-fx"><span class="rn-fl">Pre-run</span>${rnRoutineSelect('rn-se-pre', 'pre', s.session_type, s.pre_routine_id)}</div><div class="rn-fx"><span class="rn-fl">Post-run</span>${rnRoutineSelect('rn-se-post', 'post', s.session_type, s.post_routine_id)}</div></div></div>
+    <div class="rn-cd"><div class="rn-lb">Otras versiones</div>${verRow('reducida')}${verRow('minima')}
+      <div class="rn-xs rn-mu" style="margin-top:8px;">En intervalos, umbral y strides la reducida pasa a carrera fácil. La prueba 5K no se reduce.</div></div>
+    <button type="button" class="rn-bt is-g" onclick="rnSessSave()">Guardar sesión</button>
+    ${e.idx >= 0 ? `<button type="button" class="rn-bt is-l" style="color:#8F2719;" onclick="rnSessRemove()">Quitar esta sesión</button>` : ''}`);
+}
+function rnSessCancel() { rnPlan.edit = null; rnPlanRender(); }
+function rnSessSave() {
+  rnSessRead();
+  const e = rnPlan.edit, s = e.s;
+  if (!(s.minutes >= 5 && s.minutes <= 180)) { showToast('La duración va de 5 a 180 min'); return; }
+  const arr = rnPlan.weeks[rnPlan.sel].sessions;
+  if (e.idx < 0) arr.push(s); else arr[e.idx] = s;
+  rnPlan.edit = null; rnPlanDirty(); rnPlanRender();
+}
+function rnSessRemove() {
+  const e = rnPlan.edit, arr = rnPlan.weeks[rnPlan.sel].sessions, s = arr[e.idx];
+  if (!s || s.status === 'hecha') return;
+  rnRemovePending(s); arr.splice(e.idx, 1); rnPlan.edit = null; rnPlanDirty(); rnPlanRender();
+}
+
+// Guardar: status 'draft' | 'active' | 'keep' (plan activo o en pausa). Las sesiones hechas nunca se tocan.
+async function rnPlanSave(status) {
+  const p = rnProfile, cid = rnPlan.cid;
+  if (status === 'active') {
+    if (await rnHasOpenRed(cid)) { showToast('Hay una alerta roja abierta: resolvela antes de activar el plan', 'error'); return; }
+    if (!p.level) { showToast('Confirmá el nivel en el onboarding antes de activar'); return; }
+    if (!rnPlan.weeks.some(w => w.sessions.length)) { showToast('El plan no tiene sesiones'); return; }
+  }
+  const now = new Date().toISOString();
+  const removed = rnPlan.removed.filter(Boolean);
+  // Solo se borran filas planeadas sin corrida asociada (sesiones pendientes del plan, nunca registros del cliente)
+  if (removed.length) {
+    const { error } = await sb.from('run_planned_sessions').delete().in('id', removed).eq('client_id', cid).eq('status', 'planeada');
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  }
+  const inserts = [];
+  for (const w of rnPlan.weeks) {
+    for (let i = 0; i < w.sessions.length; i++) {
+      const s = w.sessions[i];
+      if (s.status === 'hecha') continue;
+      const row = { client_id: cid, week_number: w.n, week_type: w.type, position: i, session_type: s.session_type, minutes: s.minutes, distance_km: s.distance_km ?? null, effort: s.effort || null, notes: s.notes || null, pre_routine_id: s.pre_routine_id || null, post_routine_id: s.post_routine_id || null, overrides: s.overrides || {}, updated_at: now };
+      if (s.id) {
+        const { error } = await sb.from('run_planned_sessions').update(row).eq('id', s.id).eq('client_id', cid).neq('status', 'hecha');
+        if (error) { showToast('Error: ' + error.message, 'error'); return; }
+      } else inserts.push({ ...row, status: 'planeada' });
+    }
+  }
+  if (inserts.length) {
+    const { error } = await sb.from('run_planned_sessions').insert(inserts);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  }
+  const patch = { weeks_total: rnPlan.weeks.length };
+  if (status === 'draft') patch.plan_status = 'draft';
+  if (status === 'active') patch.plan_status = 'active';
+  if (!(await rnUpdateProfile(patch))) return;
+  if (status === 'active') {
+    if (currentClient && currentClient.run_module_enabled !== true) {
+      const { error } = await sb.from('clients').update({ run_module_enabled: true }).eq('id', cid);
+      if (!error) currentClient.run_module_enabled = true;
+    }
+    rnPush(currentClient?.username, 'Tu plan de running está listo', 'Entrá a Tu Plan › Run para ver tu semana.');
+    showToast('Plan activado', 'success');
+    rnCloseSheet();
+  } else {
+    showToast(status === 'draft' ? 'Borrador guardado' : 'Cambios guardados', 'success');
+    await rnPlanLoad(); rnPlanRender();
+  }
+  rnRenderCoachSection();
+}
+
+// Pausar y reanudar
+async function rnPlanPause() {
+  if (!(await rnUpdateProfile({ plan_status: 'paused', paused_at: new Date().toISOString() }))) return;
+  showToast('Plan en pausa'); rnRenderCoachSection(); if (rnPlan && rnPlan.weeks) rnPlanRender();
+}
+async function rnPlanResume() {
+  const p = rnProfile;
+  const from = p.paused_at ? new Date(p.paused_at).toLocaleDateString('en-CA', { timeZone: 'America/Costa_Rica' }) : todayCR();
+  const days = Math.max(0, Math.round((Date.parse(todayCR() + 'T12:00:00Z') - Date.parse(from + 'T12:00:00Z')) / 86400000));
+  const start = p.start_date ? tcAddDays(String(p.start_date).slice(0, 10), days) : todayCR();
+  const week = rnCurrentWeek({ ...p, start_date: start });
+  if (!(await rnUpdateProfile({ plan_status: 'active', paused_at: null, start_date: start, resume_reduced_week: week || 1 }))) return;
+  showToast(`Plan reanudado. La semana ${week || 1} va con tope en reducida.`); rnRenderCoachSection(); if (rnPlan && rnPlan.weeks) rnPlanRender();
+}
+// Cambiar nivel: solo cambia el nivel; si querés regenerar, el JSON reemplaza solo las semanas futuras
+function rnPlanLevelSheet() {
+  rnOpenSheet('');
+  rnSheetBody(`${rnSheetHead('Plan activo', 'Cambiar nivel')}
+    <div class="rn-chs">${[1, 2, 3].map(n => rnChip('Nivel ' + n, rnProfile.level === n, `rnPlanSetLevel(${n})`)).join('')}</div>
+    <div class="rn-sm rn-mu" style="margin-top:10px;">Cambiar el nivel no toca lo ya hecho. Para regenerar el plan, pegá el JSON del nuevo nivel: se reemplazan solo las semanas futuras.</div>
+    <button type="button" class="rn-bt is-l" onclick="rnPlanOpenEditor().then(()=>rnJsonOpen('futuro'))">Pegar JSON del nuevo nivel</button>`);
+}
+async function rnPlanSetLevel(n) { if (await rnUpdateProfile({ level: n })) { showToast('Nivel ' + n); rnPlanLevelSheet(); rnRenderCoachSection(); } }
+
+// Pantalla 18: pegar JSON. scope: 'todo' (todas las pendientes) | 'futuro' (semanas después de la actual)
+function rnJsonOpen(scope) {
+  if (!rnPlan || !rnPlan.weeks) return;
+  rnPlan.json = { text: rnPlan.json?.text || '', res: null, scope: scope || 'todo' };
+  rnJsonRender();
+}
+function rnJsonRender() {
+  const j = rnPlan.json, r = j.res, name = rnEsc((currentClient?.name || '').split(' ')[0]);
+  const box = r ? (r.errors.length
+    ? `<div class="rn-cd is-red"><div style="font-weight:700;color:#8F2719;">Hay errores</div>${r.errors.map(e => `<div class="rn-sm" style="margin-top:4px;">${rnEsc(e)}</div>`).join('')}</div>`
+    : `<div class="rn-cd" style="background:#E6F2EA;border-color:#BFDCC8;"><div style="font-weight:700;color:#17602F;">Plan válido · ${r.plan.weeks.length} semanas · ${r.count} sesiones</div></div>`) +
+    r.warnings.map(w => `<div class="rn-row" style="gap:8px;align-items:flex-start;margin-bottom:6px;"><span class="rn-pill is-o">Aviso</span><div class="rn-sm">${rnEsc(w)}</div></div>`).join('') : '';
+  rnSheetBody(`${rnSheetHead(`${name} · pegar JSON`, 'Pegar JSON', 'rnPlanRender()')}
+    <textarea id="rn-json" class="rn-in" rows="10" style="font-family:'DM Mono',monospace;font-size:13px;min-height:200px;" placeholder='{ "nivel": 2, "semanas": [ ... ] }' aria-label="JSON del plan">${rnEsc(j.text)}</textarea>
+    <button type="button" class="rn-bt is-l" onclick="rnJsonValidate()">Validar</button>
+    ${box}
+    <div class="rn-row" style="gap:8px;align-items:flex-start;margin:8px 0;"><span class="rn-pill is-n">Info</span><div class="rn-sm">Reducida (70%) y mínima (50%) se calculan solas. Solo agregá «reducida» o «minima» en una sesión si querés otro valor.</div></div>
+    <button type="button" class="rn-bt is-g" ${r && !r.errors.length ? '' : 'disabled'} onclick="rnJsonLoad()">Cargar al editor para revisar</button>
+    <button type="button" class="rn-bt is-l" onclick="rnCopyText(RN_JSON_EXAMPLE)">Copiar el formato de ejemplo</button>`);
+}
+function rnJsonValidate() {
+  const t = document.getElementById('rn-json'); rnPlan.json.text = t ? t.value : '';
+  rnPlan.json.res = rnParsePlanJson(rnPlan.json.text, rnRoutines);
+  rnJsonRender();
+}
+// Valida y normaliza el JSON (puro). Errores bloquean; avisos no.
+function rnParsePlanJson(text, routines) {
+  const errors = [], warnings = [];
+  let data;
+  try { data = JSON.parse(text); } catch (e) { return { errors: ['El JSON no es válido: ' + e.message], warnings, plan: null, count: 0 }; }
+  if (!data || !Array.isArray(data.semanas) || !data.semanas.length) return { errors: ['Falta la lista "semanas".'], warnings, plan: null, count: 0 };
+  const routineByName = n => (routines || []).find(r => r.name.toLowerCase() === String(n).toLowerCase());
+  const weeks = []; let count = 0, prev = null;
+  data.semanas.forEach((w, wi) => {
+    const n = Number(w.semana);
+    if (!Number.isInteger(n) || n < 1) { errors.push(`Semana en la posición ${wi + 1}: falta "semana" o no es un número.`); return; }
+    if (prev != null && n !== prev + 1) errors.push(`Las semanas no son consecutivas: después de la ${prev} viene la ${n}.`);
+    prev = n;
+    let type = String(w.etiqueta || 'normal').toLowerCase();
+    if (RN_WEEK_ALIASES[type]) type = RN_WEEK_ALIASES[type];
+    if (!RN_WEEK_TYPES.some(x => x[0] === type)) { warnings.push(`Semana ${n}: la etiqueta «${w.etiqueta}» no existe. Se usa «normal».`); type = 'normal'; }
+    const ss = Array.isArray(w.sesiones) ? w.sesiones : [];
+    if (ss.length > 7) warnings.push(`Semana ${n}: tiene ${ss.length} sesiones (más de 7).`);
+    const sessions = [];
+    ss.forEach((s, si) => {
+      const where = `Semana ${n}, sesión ${si + 1}`;
+      let tipo = String(s.tipo || '').toLowerCase().trim();
+      if (!RN_TYPE_NAME[tipo]) {
+        if (RN_TYPE_ALIASES[tipo]) { warnings.push(`${where}: el tipo «${s.tipo}» no existe. Se cambia a «${RN_TYPE_ALIASES[tipo]}».`); tipo = RN_TYPE_ALIASES[tipo]; }
+        else { errors.push(`${where}: el tipo «${s.tipo || ''}» no existe.`); return; }
+      }
+      const min = Number(s.min);
+      if (!(min >= 5 && min <= 180)) { errors.push(`${where}: «min» tiene que estar entre 5 y 180.`); return; }
+      const ov = {};
+      ['reducida', 'minima'].forEach(v => { if (s[v] && typeof s[v] === 'object') { const o = {}; ['min', 'km', 'esfuerzo', 'notas', 'tipo'].forEach(k => { if (s[v][k] != null) o[k] = s[v][k]; }); if (Object.keys(o).length) ov[v] = o; } });
+      let pre = null, post = null;
+      if (s.pre) { const r = routineByName(s.pre); if (r && r.block === 'pre') pre = r.id; else warnings.push(`${where}: el bloque pre «${s.pre}» no existe. Se ignora.`); }
+      if (s.post) { const r = routineByName(s.post); if (r && r.block === 'post') post = r.id; else warnings.push(`${where}: el bloque post «${s.post}» no existe. Se ignora.`); }
+      const km = s.km != null ? parseDecimal(s.km) : null;
+      sessions.push({ session_type: tipo, minutes: Math.round(min), distance_km: km, effort: s.esfuerzo != null ? String(s.esfuerzo) : '', notes: s.notas || '', pre_routine_id: pre, post_routine_id: post, overrides: ov, status: 'planeada' });
+      count++;
+    });
+    weeks.push({ n, type, sessions });
+  });
+  const nivel = Number(data.nivel);
+  return { errors, warnings, plan: { nivel: [1, 2, 3].includes(nivel) ? nivel : null, weeks }, count };
+}
+// Carga al editor como borrador (nada se activa). En un plan activo reemplaza solo lo pendiente.
+function rnJsonLoad() {
+  const r = rnPlan.json.res; if (!r || r.errors.length) return;
+  const p = rnProfile, active = p.plan_status === 'active' || p.plan_status === 'paused';
+  const cur = rnCurrentWeek(p), onlyFuture = rnPlan.json.scope === 'futuro';
+  const affected = w => !onlyFuture || w.n > cur;
+  const maxN = Math.max(rnPlan.weeks.length, ...r.plan.weeks.map(w => w.n));
+  while (rnPlan.weeks.length < maxN) rnPlan.weeks.push({ n: rnPlan.weeks.length + 1, type: 'normal', sessions: [] });
+  const pending = rnPlan.weeks.filter(affected).reduce((a, w) => a + w.sessions.filter(s => s.status !== 'hecha').length, 0);
+  if (active && !confirm(`Se reemplazan ${pending} sesiones pendientes${onlyFuture ? ' de las semanas futuras' : ''}; las hechas no se tocan. ¿Seguimos?`)) return;
+  const skipped = [];
+  rnPlan.weeks.forEach(w => {
+    if (!affected(w)) return;
+    const src = r.plan.weeks.find(x => x.n === w.n);
+    const done = w.sessions.filter(s => s.status === 'hecha');
+    if (done.length && done.length === w.sessions.length && src) { skipped.push(w.n); return; } // semana ya hecha completa: no cambia
+    if (!src && !active) return;
+    w.sessions.filter(s => s.status !== 'hecha').forEach(rnRemovePending);
+    w.sessions = done.concat(src ? src.sessions.map(s => JSON.parse(JSON.stringify(s))) : []);
+    if (src) w.type = src.type;
+  });
+  if (r.plan.nivel && !p.level) rnProfile.level = r.plan.nivel;
+  rnPlan.json = null; rnPlan.dirty = true; rnPlan.sel = Math.max(0, (onlyFuture ? cur : 1) - 1);
+  if (skipped.length) showToast(`Semanas ya hechas sin cambios: ${skipped.join(', ')}`);
+  else showToast('Plan cargado en el editor. Revisalo y guardá.');
+  rnPlanRender();
+}
+function rnCopyText(t) {
+  const fallback = () => { const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) {} ta.remove(); showToast(ok ? 'Formato copiado' : 'No se pudo copiar: seleccionalo a mano'); };
+  try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(() => showToast('Formato copiado', 'success'), fallback); else fallback(); } catch (e) { fallback(); }
 }
 // ===== FIN MÓDULO RUN =====
 </script>
