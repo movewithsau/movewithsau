@@ -24122,7 +24122,7 @@ async function rnLoadProfile(cid) {
 async function rnEnsureProfile(cid) {
   const cur = await rnLoadProfile(cid);
   if (cur) return cur;
-  const { data, error } = await sb.from('run_profiles').upsert([{ client_id: cid }], { onConflict: 'client_id', ignoreDuplicates: true }).select().maybeSingle();
+  const { data, error } = await sb.from('run_profiles').upsert([{ client_id: cid, mode: 'plan', plan_status: 'none' }], { onConflict: 'client_id', ignoreDuplicates: true }).select().maybeSingle();
   if (error) { showToast('No se pudo crear el perfil Run: ' + error.message, 'error'); return null; }
   return data || await rnLoadProfile(cid);
 }
@@ -24240,6 +24240,190 @@ async function rnLoadClientTab() {
   rnProfile = p; rnShoes = shoes;
   if (typeof rnRenderClient === 'function') { rnRenderClient(); return; }
   box.innerHTML = `<div class="rn"><div class="rn-ey">Run</div><h1 class="rn-h1">Run</h1><div class="rn-empty">Tu coach está preparando tu módulo de running.</div></div>`;
+}
+// ---------- Hoja genérica del módulo (bottom-sheet) ----------
+function rnOpenSheet(html, onClose) {
+  rnCloseSheet();
+  const ov = document.createElement('div');
+  ov.className = 'rn-ov rn'; ov.id = 'rn-ov';
+  ov.innerHTML = `<div class="rn-sheet" role="dialog" aria-modal="true">${html}</div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) rnCloseSheet(); });
+  ov._onClose = onClose || null;
+  document.body.appendChild(ov);
+  return ov;
+}
+function rnSheetBody(html) { const s = document.querySelector('#rn-ov .rn-sheet'); if (s) { s.innerHTML = html; s.scrollTop = 0; } }
+function rnCloseSheet() { const ov = document.getElementById('rn-ov'); if (ov) { const f = ov._onClose; ov.remove(); if (f) f(); } }
+function rnSheetHead(ey, title, backFn) {
+  const btn = backFn
+    ? `<button type="button" class="rn-x" aria-label="Volver" onclick="${backFn}">${icon('chevron-left', 20)}</button>`
+    : `<button type="button" class="rn-x" aria-label="Cerrar" onclick="rnCloseSheet()">${icon('x', 20)}</button>`;
+  return `<div class="rn-sheet-head"><span class="rn-ey">${ey}</span>${btn}</div><h1 class="rn-h1">${title}</h1>`;
+}
+
+// ---------- R2: onboarding del coach (pantallas 11, 12, 13) ----------
+// Formulario provisional: las respuestas van completas a run_profiles.onboarding_answers (json),
+// así se puede cambiar el formulario sin migrar datos.
+// Reglas visibles y editables:
+const RN_ONB_RULES = {
+  yellowAgeMin: 45, yellowAgeMax: 65,   // edad en este rango: alerta amarilla
+  yellowBmi: 30,                        // IMC mayor a esto: alerta amarilla
+  level1MaxMinutes: 15                  // menos de esto corriendo seguido: nivel 1
+};
+const RN_GOALS = [['bajar_5k', 'Bajar tiempo de 5K'], ['primer_5k', 'Primer 5K'], ['habito', 'Hábito'], ['otra', 'Otra']];
+const RN_SURFACES = [['calle', 'Calle'], ['pista', 'Pista'], ['trail', 'Trail'], ['cinta', 'Cinta']];
+const RN_DOW = [['L', 'Lunes'], ['K', 'Martes'], ['M', 'Miércoles'], ['J', 'Jueves'], ['V', 'Viernes'], ['S', 'Sábado'], ['D', 'Domingo']];
+let rnOnb = null; // { step, a }
+
+function rnOnbStart() {
+  if (!rnProfile || !currentClient) return;
+  rnOnb = { step: 1, a: { surfaces: [], days: [], ...(rnProfile.onboarding_answers || {}) } };
+  rnOpenSheet('', () => { rnOnb = null; });
+  rnOnbRender();
+}
+function rnOnbRead() {
+  if (!rnOnb) return;
+  document.querySelectorAll('#rn-ov [data-onb]').forEach(el => { rnOnb.a[el.dataset.onb] = el.value.trim(); });
+}
+function rnOnbSet(k, v) { rnOnbRead(); rnOnb.a[k] = v; rnOnbRender(); }
+function rnOnbToggle(k, v) { rnOnbRead(); const arr = rnOnb.a[k] || (rnOnb.a[k] = []); const i = arr.indexOf(v); if (i >= 0) arr.splice(i, 1); else arr.push(v); rnOnbRender(); }
+function rnOnbGo(step) { rnOnbRead(); rnOnb.step = step; rnOnbRender(); }
+function rnChip(label, on, onclick, extra = '') { return `<button type="button" class="rn-ch${on ? ' is-on' : ''}" aria-pressed="${!!on}" onclick="${onclick}"${extra}>${label}</button>`; }
+function rnInput(key, label, val, mode = 'text', ph = '') {
+  const im = mode === 'decimal' ? ' inputmode="decimal"' : mode === 'numeric' ? ' inputmode="numeric"' : '';
+  const cls = mode === 'text' ? 'rn-in is-txt' : 'rn-in';
+  return `<div class="rn-fx"><label class="rn-fl" for="rn-onb-${key}">${label}</label><input id="rn-onb-${key}" class="${cls}" type="text"${im} data-onb="${key}" value="${rnEsc(val || '')}" placeholder="${rnEsc(ph)}"></div>`;
+}
+function rnOnbRender() {
+  if (!rnOnb) return;
+  const a = rnOnb.a, name = rnEsc((currentClient?.name || '').split(' ')[0]);
+  if (rnOnb.step === 1) {
+    rnSheetBody(`${rnSheetHead(`${name} · onboarding 1 de 2`, 'Experiencia')}
+      <div class="rn-cd"><div class="rn-lb">Meta</div><div class="rn-row rn-wrap" style="gap:6px;">${RN_GOALS.map(([k, l]) => rnChip(l, a.goal === k, `rnOnbSet('goal','${k}')`)).join('')}</div></div>
+      <div class="rn-row" style="gap:8px;margin-bottom:10px;">${rnInput('run_minutes', 'Minutos seguidos hoy', a.run_minutes, 'numeric')}${rnInput('best5k', 'Mejor 5K reciente', a.best5k, 'numeric', '29:50')}</div>
+      <div class="rn-row" style="gap:8px;margin-bottom:10px;">${rnInput('best5k_date', 'Fecha de ese 5K', a.best5k_date, 'text', 'mes y año')}${rnInput('longest_km', 'Más larga en 8 semanas (km)', a.longest_km, 'decimal')}</div>
+      <div class="rn-cd"><div class="rn-lb">¿Ya corre 5K con regularidad?</div><div class="rn-chs">${rnChip('Sí', a.regular5k === 'si', "rnOnbSet('regular5k','si')")}${rnChip('No', a.regular5k === 'no', "rnOnbSet('regular5k','no')")}</div></div>
+      <div class="rn-cd"><div class="rn-lb">¿Ha seguido un plan de running antes? ¿Cómo le fue?</div><input class="rn-in is-txt" type="text" data-onb="prev_plan" value="${rnEsc(a.prev_plan || '')}" aria-label="Plan de running anterior"></div>
+      <div class="rn-cd"><div class="rn-lb">¿En qué superficie corre?</div><div class="rn-chs">${RN_SURFACES.map(([k, l]) => rnChip(l, (a.surfaces || []).includes(k), `rnOnbToggle('surfaces','${k}')`)).join('')}</div></div>
+      <div class="rn-cd"><div class="rn-lb">Días disponibles para correr</div><div class="rn-chs">${RN_DOW.map(([k, l]) => rnChip(k === 'K' ? 'M' : k, (a.days || []).includes(k), `rnOnbToggle('days','${k}')`, ` aria-label="${l}"`)).join('')}</div></div>
+      <button type="button" class="rn-bt is-g" onclick="rnOnbGo(2)">Siguiente</button>`);
+  } else if (rnOnb.step === 2) {
+    rnSheetBody(`${rnSheetHead(`${name} · onboarding 2 de 2`, 'Salud y equipo', 'rnOnbGo(1)')}
+      <div class="rn-cd"><div class="rn-lb" style="line-height:1.35;">¿Ha sentido dolor o presión en el pecho, mareo o desmayo, o falta de aire que no es normal para su nivel?</div><div class="rn-chs">${rnChip('No', a.effort_symptom === 'no', "rnOnbSet('effort_symptom','no')")}${rnChip('Sí', a.effort_symptom === 'si', "rnOnbSet('effort_symptom','si')")}</div></div>
+      <div class="rn-cd"><div class="rn-lb">¿Alguna cirugía musculoesquelética?</div><div class="rn-chs">${rnChip('No', a.surgery === 'no', "rnOnbSet('surgery','no')")}${rnChip('Sí', a.surgery === 'si', "rnOnbSet('surgery','si')")}</div>
+        ${a.surgery === 'si' ? `<input class="rn-in is-txt" style="margin-top:8px;" type="text" data-onb="surgery_detail" value="${rnEsc(a.surgery_detail || '')}" placeholder="Detalle" aria-label="Detalle de la cirugía">` : ''}</div>
+      <div class="rn-cd"><div class="rn-lb">Lesiones en los últimos 5 años</div><input class="rn-in is-txt" type="text" data-onb="injuries" value="${rnEsc(a.injuries || '')}" aria-label="Lesiones en los últimos 5 años">
+        <div class="rn-xs rn-mu" style="margin:8px 0 6px;">¿Alguna relacionada con correr?</div><div class="rn-chs">${rnChip('No', a.injuries_running === 'no', "rnOnbSet('injuries_running','no')")}${rnChip('Sí', a.injuries_running === 'si', "rnOnbSet('injuries_running','si')")}</div></div>
+      <div class="rn-row" style="gap:8px;margin-bottom:10px;">${rnInput('age', 'Edad', a.age, 'numeric')}${rnInput('weight', 'Peso (kg)', a.weight, 'decimal')}${rnInput('height', 'Talla (m)', a.height, 'decimal')}</div>
+      <div class="rn-row" style="gap:8px;margin-bottom:10px;">${rnInput('watch', 'Reloj o app', a.watch)}${rnInput('max_minutes', 'Máx. por sesión (min)', a.max_minutes, 'numeric')}</div>
+      <div class="rn-row" style="gap:8px;margin-bottom:10px;">${rnInput('altitude', 'Altitud donde corre', a.altitude)}${rnInput('home_equipment', 'Equipo en casa', a.home_equipment)}</div>
+      <div class="rn-xs rn-mu">Su fuerza actual y sus zapatos no se preguntan: salen de sus entrenos en MOVE y de lo que registra.</div>
+      <button type="button" class="rn-bt is-g" onclick="rnOnbFinish()">Calcular nivel sugerido</button>`);
+  } else {
+    rnOnbRenderResult();
+  }
+}
+// Nivel sugerido y alertas a partir de las respuestas (puro: no toca la base)
+function rnOnbEvaluate(a) {
+  const min = parseDecimal(a.run_minutes), age = parseDecimal(a.age), kg = parseDecimal(a.weight);
+  let m = parseDecimal(a.height); if (m && m > 3) m = m / 100; // aceptan talla en cm
+  const bmi = kg && m ? kg / (m * m) : null;
+  let level = 2, why = '';
+  if (a.regular5k === 'si') { level = 3; why = 'Ya corre 5K con regularidad.'; }
+  else if (min != null && min < RN_ONB_RULES.level1MaxMinutes) { level = 1; why = `Corre ${min} min seguidos, menos de ${RN_ONB_RULES.level1MaxMinutes}.`; }
+  else { level = 2; why = min != null ? `Corre ${min} min seguidos sin estructura.` : 'Sin minutos registrados: confirmá vos el nivel.'; }
+  const lk = parseDecimal(a.longest_km); if (lk) why += ` Su más larga: ${rnKm(lk)} km.`;
+  const red = a.effort_symptom === 'si';
+  const yellow = [];
+  if (age != null && age >= RN_ONB_RULES.yellowAgeMin && age <= RN_ONB_RULES.yellowAgeMax) yellow.push(`Edad entre ${RN_ONB_RULES.yellowAgeMin} y ${RN_ONB_RULES.yellowAgeMax}.`);
+  if (bmi != null && bmi > RN_ONB_RULES.yellowBmi) yellow.push(`IMC ${rnKm(bmi)}, mayor de ${RN_ONB_RULES.yellowBmi}.`);
+  if ((a.injuries || '').trim() && a.injuries_running === 'no') yellow.push('Lesiones previas no relacionadas con correr.');
+  return { level, why: why.trim(), red, yellow, bmi, surgery: a.surgery === 'si' ? (a.surgery_detail || 'Sí') : null };
+}
+async function rnOnbFinish() {
+  rnOnbRead();
+  if (!rnOnb.a.effort_symptom) { showToast('Respondé la pregunta de síntomas al esfuerzo'); return; }
+  const ev = rnOnbEvaluate(rnOnb.a);
+  rnOnb.ev = ev; rnOnb.level = rnProfile.level || ev.level;
+  const alerts = [];
+  if (ev.red) alerts.push({ type: 'onboarding_roja', detail: 'Síntoma al esfuerzo en el onboarding. Recomendar evaluación médica antes de intensidad.' });
+  if (ev.yellow.length) alerts.push({ type: 'onboarding_amarilla', detail: ev.yellow.join(' ') + ' Progresión más lenta.' });
+  const ok = await rnUpdateProfile({ onboarding_answers: rnOnb.a, goal: rnOnb.a.goal || null, alerts: alerts.map(x => ({ ...x, at: new Date().toISOString() })) });
+  if (!ok) return;
+  await rnCreateAlerts(rnProfile.client_id, alerts);
+  rnOnb.step = 3; rnOnbRender();
+}
+// Crea alertas sin duplicar: si ya hay una abierta del mismo tipo, no se crea otra
+async function rnCreateAlerts(cid, alerts) {
+  if (!alerts.length) return;
+  const { data: open, error } = await sb.from('run_alerts').select('type').eq('client_id', cid).eq('status', 'open').in('type', alerts.map(a => a.type));
+  if (error) { showToast('No se pudo guardar la alerta: ' + error.message, 'error'); return; }
+  const have = new Set((open || []).map(r => r.type));
+  const rows = alerts.filter(a => !have.has(a.type)).map(a => ({ client_id: cid, type: a.type, detail: a.detail, status: 'open' }));
+  if (!rows.length) return;
+  const { error: e2 } = await sb.from('run_alerts').insert(rows);
+  if (e2) showToast('No se pudo guardar la alerta: ' + e2.message, 'error');
+}
+function rnOnbRenderResult() {
+  const ev = rnOnb.ev, name = rnEsc((currentClient?.name || '').split(' ')[0]), lv = rnOnb.level, isPlan = rnProfile.mode === 'plan';
+  const alertsHtml = `${ev.red ? `<div class="rn-row" style="gap:10px;align-items:flex-start;margin-bottom:8px;"><span class="rn-pill is-r">Roja</span><div class="rn-sm">Síntoma al esfuerzo. No se activa intensidad hasta que resuelvas la alerta y se recomiende evaluación médica.</div></div>` : ''}
+    ${ev.yellow.map(y => `<div class="rn-row" style="gap:10px;align-items:flex-start;margin-bottom:8px;"><span class="rn-pill" style="background:#FBF0CF;color:#7A5500;">Amarilla</span><div class="rn-sm">${rnEsc(y)} Conviene una progresión más lenta.</div></div>`).join('')}
+    ${ev.surgery ? `<div class="rn-row" style="gap:10px;align-items:flex-start;margin-bottom:8px;"><span class="rn-pill is-n">Dato</span><div class="rn-sm">Cirugía musculoesquelética: ${rnEsc(ev.surgery)}. Decidís vos.</div></div>` : ''}
+    ${!ev.red ? '<div class="rn-xs rn-mu">Sin síntomas al esfuerzo: no hay alerta roja.</div>' : ''}`;
+  rnSheetBody(`${rnSheetHead(`${name} · revisión`, 'Nivel sugerido', 'rnOnbGo(2)')}
+    <div class="rn-cd">
+      <div class="rn-row rn-sp" style="align-items:flex-end;"><div><div class="rn-m" style="font-size:38px;font-weight:500;line-height:1;">Nivel ${ev.level}</div><div class="rn-sm rn-mu" style="margin-top:6px;">${rnEsc(ev.why)}</div></div><span class="rn-pill is-g">Sugerido</span></div>
+      <div class="rn-lb" style="margin:14px 0 8px;">Tu decisión</div>
+      <div class="rn-chs">${[1, 2, 3].map(n => rnChip('Nivel ' + n, lv === n, `rnOnbPickLevel(${n})`)).join('')}</div>
+    </div>
+    <div class="rn-cd"><div class="rn-lb">Alertas</div>${alertsHtml}</div>
+    <div class="rn-xs rn-mu" style="margin-bottom:4px;">Reglas: síntoma al esfuerzo = roja; edad ${RN_ONB_RULES.yellowAgeMin} a ${RN_ONB_RULES.yellowAgeMax}, IMC mayor de ${RN_ONB_RULES.yellowBmi} o lesiones no relacionadas con correr = amarilla; menos de ${RN_ONB_RULES.level1MaxMinutes} min seguidos = nivel 1; 5K regular = nivel 3.</div>
+    ${isPlan
+      ? `<div class="rn-cd"><div class="rn-lb">Siguiente paso: el plan</div><div class="rn-sm">Armá el plan a mano o pegando un JSON. Después podés editarlo cuando quieras.</div></div>
+         <button type="button" class="rn-bt is-g" onclick="rnOnbConfirm(true)">Crear el plan</button>
+         <div class="rn-xs rn-mu" style="text-align:center;margin-top:6px;">Todavía no se activa nada: no ve el plan hasta que lo actives.</div>`
+      : `<button type="button" class="rn-bt is-g" onclick="rnOnbConfirm(false)">Guardar y seguir en seguimiento</button>`}
+    ${rnDisc()}`);
+}
+function rnOnbPickLevel(n) { rnOnb.level = n; rnOnbRenderResult(); }
+async function rnOnbConfirm(goPlan) {
+  if (!(await rnUpdateProfile({ level: rnOnb.level }))) return;
+  rnOnb = null; rnCloseSheet();
+  showToast('Onboarding guardado', 'success');
+  rnRenderCoachSection();
+  if (goPlan && typeof rnPlanCreateStart === 'function') rnPlanCreateStart();
+}
+
+// Zona extra de la sección Run del coach (onboarding, nivel, alertas, plan)
+async function rnRenderCoachExtra() {
+  const box = document.getElementById('rn-coach-extra');
+  if (!box || !rnProfile) return;
+  const p = rnProfile, cid = p.client_id;
+  const done = p.onboarding_answers && Object.keys(p.onboarding_answers).length > 0;
+  const { data: al } = await sb.from('run_alerts').select('*').eq('client_id', cid).eq('status', 'open').order('created_at', { ascending: false });
+  if (currentClient?.id !== cid) return;
+  const alerts = al || [];
+  const ALERT_NAMES = { alarma: 'Síntoma de alarma', dolor_3_dias: 'Dolor 3 días seguidos', dolor_fuerte: 'Dolor fuerte', onboarding_roja: 'Alerta roja del onboarding', onboarding_amarilla: 'Alerta amarilla del onboarding', sin_registro: 'Varios días sin registrar' };
+  const alertsHtml = alerts.map(x => `<div class="rn-cd ${x.type === 'onboarding_amarilla' || x.type === 'sin_registro' ? 'is-warm' : 'is-red'}" style="margin:8px 0 0;">
+      <div class="rn-row rn-sp"><div class="rn-fx"><div style="font-weight:700;font-size:14px;">${ALERT_NAMES[x.type] || rnEsc(x.type)}</div><div class="rn-xs rn-mu" style="margin-top:2px;">${rnEsc(x.detail || '')} · ${rnDayLabel(String(x.created_at).slice(0, 10))}</div></div>
+      <button type="button" class="rn-ch" style="font-size:13px;" onclick="rnResolveAlert('${x.id}')">Resolver</button></div></div>`).join('');
+  const summary = p.level ? `<div class="rn-row rn-sp" style="margin-top:12px;"><div><div style="font-weight:700;font-size:15px;">Nivel ${p.level}${p.mode === 'plan' && typeof rnPlanSummary === 'function' ? rnPlanSummary() : ''}</div></div></div>` : '';
+  box.innerHTML = `${summary}
+    ${alertsHtml}
+    <button type="button" class="rn-bt is-l" onclick="rnOnbStart()">${done ? 'Ver o editar onboarding de running' : 'Onboarding de running'}</button>
+    ${p.mode === 'plan' && typeof rnPlanCoachButtonsHtml === 'function' ? rnPlanCoachButtonsHtml() : ''}`;
+}
+async function rnResolveAlert(id) {
+  const { error } = await sb.from('run_alerts').update({ status: 'resolved', resolved_at: new Date().toISOString() }).eq('id', id);
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  showToast('Alerta resuelta', 'success');
+  if (document.getElementById('rn-coach-extra')) rnRenderCoachExtra();
+  if (typeof rnAfterAlertResolved === 'function') rnAfterAlertResolved(id);
+}
+// ¿Hay alerta roja abierta? (bloquea activar el plan)
+async function rnHasOpenRed(cid) {
+  const { data } = await sb.from('run_alerts').select('id').eq('client_id', cid).eq('status', 'open').eq('type', 'onboarding_roja').limit(1);
+  return !!(data && data.length);
 }
 // ===== FIN MÓDULO RUN =====
 </script>
