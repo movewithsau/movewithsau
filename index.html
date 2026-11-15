@@ -2748,9 +2748,12 @@ const AW_MON = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov
 // (ej. programas de 5 semanas con el Deload en la 5) se arma con total_weeks y deload_weeks.
 function getProgramSequence(client) {
   const total = Number(client && client.total_weeks) || 0;
-  if (!total || total === PROGRAM_SEQUENCE.length) return PROGRAM_SEQUENCE;
-  const dl = Array.isArray(client.deload_weeks) ? client.deload_weeks : [];
-  return Array.from({ length: total }, (_, i) => dl.includes(i + 1) ? 'deload' : i + 1);
+  const hasDl = client && Array.isArray(client.deload_weeks);
+  // Sin deload_weeks guardado se usa la secuencia fija; con deload_weeks (lo marca el coach) manda lo marcado
+  if (!hasDl && (!total || total === PROGRAM_SEQUENCE.length)) return PROGRAM_SEQUENCE;
+  const len = total || PROGRAM_SEQUENCE.length;
+  const dl = hasDl ? client.deload_weeks.map(Number) : [];
+  return Array.from({ length: len }, (_, i) => dl.includes(i + 1) ? 'deload' : i + 1);
 }
 // Posición del programa para un instante. Pura: no usa la zona horaria del teléfono.
 // position = floor((now − week1Start) / 7 días) + 1; antes del inicio 'before', pasada la
@@ -3545,7 +3548,7 @@ async function saveGoal() {
 function getClientTotalWeeks() { return currentClient?.total_weeks || 5; }
 function getDeloadWeeks() {
   const d = currentClient?.deload_weeks;
-  return (Array.isArray(d) && d.length) ? d : [5];
+  return Array.isArray(d) ? d.map(Number) : [5]; // [] = el coach le quitó el deload a todas las semanas
 }
 function isDeloadWeek(w) { return getDeloadWeeks().includes(w); }
 function isRotationWeek(w) {
@@ -3554,7 +3557,7 @@ function isRotationWeek(w) {
 }
 function weekLabelFor(w) { return 'Semana ' + w; }
 function weekSubFor(w, base) {
-  return w===1 ? base : isDeloadWeek(w) ? 'Deload' : isRotationWeek(w) ? 'Rotación' : 'Progresión';
+  return w===1 ? base : isRotationWeek(w) ? 'Rotación' : 'Progresión';
 }
 
 function updateClientWeekUI() {
@@ -6461,7 +6464,7 @@ function tcProgressHtml(st) {
     ${p.compared ? `<button type="button" class="tcp-share" onclick="openProgressShare('${st.mountId}')">${icon('share', 16)}Compartir mi progreso</button>` : ''}
   </div>`;
 }
-function isDeloadWeekOf(client, w) { const d = client && Array.isArray(client.deload_weeks) && client.deload_weeks.length ? client.deload_weeks : [5]; return d.includes(w); }
+function isDeloadWeekOf(client, w) { const d = client && Array.isArray(client.deload_weeks) ? client.deload_weeks.map(Number) : [5]; return d.includes(w); }
 function openProgressShare(mountId) {
   const st = tcStates[mountId]; if (!st) return;
   const p = tcProgressOf(st); if (!p || p.empty) return;
@@ -9522,8 +9525,9 @@ function renderPlanOverview() {
         const border = isSel ? (isHid ? '#9e9e9e' : 'var(--orange)') : (isHid ? '#bdbdbd' : 'var(--gray2)');
         const color = isSel ? 'white' : (isHid ? '#9e9e9e' : 'var(--gray5)');
         const baseLabel = weekLabelFor(w) + (aw && aw.state === 'active' && awPos[w] === aw.position ? ' · hoy' : '');
+        const isDl = isDeloadWeek(w);
         const label = isHid ? `<span style="text-decoration:line-through;opacity:0.7;">${baseLabel}</span>` : baseLabel;
-        return `<button onclick="selectPlanOverviewWeek(${w})" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid ${border};background:${bg};color:${color};cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;">${label}</button>`;
+        return `<button onclick="selectPlanOverviewWeek(${w})"${isDl ? ' title="Semana de deload"' : ''} style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px ${isDl ? 'dashed' : 'solid'} ${border};background:${bg};color:${color};cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;">${label}</button>`;
       }).join('')}
       <button onclick="openBuilderForWeek(${planOverviewSelectedWeek})" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid var(--orange);background:var(--orange-light);color:var(--orange);cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:auto;">Editar</button>
     </div>
@@ -9531,6 +9535,7 @@ function renderPlanOverview() {
     <!-- Delete + visibility actions row -->
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
       <button onclick="deleteWeek(${planOverviewSelectedWeek})" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid #e53935;background:#fff0f0;color:#e53935;cursor:pointer;font-family:'DM Sans',sans-serif;">Borrar ${selectedWeekLabel}</button>
+      <button type="button" onclick="toggleDeloadWeek(${planOverviewSelectedWeek})" aria-pressed="${isDeloadWeek(planOverviewSelectedWeek)}" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px dashed #A63E10;background:${isDeloadWeek(planOverviewSelectedWeek) ? '#F6E6DB' : '#FFFFFF'};color:#A63E10;cursor:pointer;font-family:'DM Sans',sans-serif;">${isDeloadWeek(planOverviewSelectedWeek) ? 'Quitar deload' : 'Marcar como deload'}</button>
       <button onclick="deleteEntireProgram()" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid #b71c1c;background:#fff0f0;color:#b71c1c;cursor:pointer;font-family:'DM Sans',sans-serif;">Borrar programa completo</button>
       ${aw ? `<span title="En modo automático el cliente ve la semana según la fecha" style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px dashed #bdbdbd;background:#f5f5f5;color:#757575;font-family:'DM Sans',sans-serif;">${icon('lock', 12)}Mostrar al cliente · auto</span>` : `<button onclick="toggleHiddenWeek(${planOverviewSelectedWeek})" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${isSelectedHidden?'#43a047':'#757575'};background:${isSelectedHidden?'#f1f8e9':'#f5f5f5'};color:${isSelectedHidden?'#43a047':'#757575'};cursor:pointer;font-family:'DM Sans',sans-serif;">${isSelectedHidden?'Mostrar al cliente':'Ocultar al cliente'}</button>`}
       <button onclick="restartClientProgress()" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid #e65100;background:#fff3e0;color:#e65100;cursor:pointer;font-family:'DM Sans',sans-serif;">Reiniciar progreso</button>
@@ -9546,6 +9551,24 @@ function renderPlanOverview() {
           <div id="coach-day-exs-${d.id}"><div class="spinner" style="width:14px;height:14px;margin:6px auto;"></div></div>
         </div>`).join('')}
     </div>`;
+}
+
+// Marca o desmarca la semana como deload de este cliente (clients.deload_weeks). Solo coach.
+// El cliente sigue viendo "Semana N"; el deload cambia la comparación de progreso y el orden automático.
+async function toggleDeloadWeek(w) {
+  if (!currentClient || currentUser?.role !== 'coach') return;
+  const cur = getDeloadWeeks();
+  const was = cur.includes(w);
+  const next = was ? cur.filter(x => x !== w) : [...cur, w].sort((a, b) => a - b);
+  const cid = currentClient.id;
+  const { error } = await sb.from('clients').update({ deload_weeks: next }).eq('id', cid);
+  if (error) { showToast('No se pudo guardar: ' + error.message, 'error'); return; }
+  if (currentClient?.id !== cid) return;
+  currentClient.deload_weeks = next;
+  const cached = (window._cachedClients || []).find(c => c.id === cid);
+  if (cached) cached.deload_weeks = next;
+  showToast(was ? `La semana ${w} ya no es deload` : `Semana ${w} marcada como deload`, 'success');
+  renderPlanOverview();
 }
 
 function selectPlanOverviewWeek(w) {
