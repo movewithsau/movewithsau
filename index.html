@@ -2787,8 +2787,8 @@ function mapPositionToWeek(position, clientWeeks, seq, deloadWeeks) {
   }
   return {
     week, isDeload: entry === 'deload',
-    label: entry === 'deload' ? 'Deload' : 'Semana ' + entry,
-    short: entry === 'deload' ? 'DL' : 'S' + entry,
+    label: 'Semana ' + position,
+    short: 'S' + position,
     hasContent: (clientWeeks || []).map(Number).includes(Number(week))
   };
 }
@@ -3552,15 +3552,13 @@ function isRotationWeek(w) {
   const r = currentClient?.rotation_weeks;
   return Array.isArray(r) && r.includes(w);
 }
-function weekLabelFor(w) { return isDeloadWeek(w) ? 'Deload' : 'Semana ' + w; }
+function weekLabelFor(w) { return 'Semana ' + w; }
 function weekSubFor(w, base) {
   return w===1 ? base : isDeloadWeek(w) ? 'Deload' : isRotationWeek(w) ? 'Rotación' : 'Progresión';
 }
 
 function updateClientWeekUI() {
-  document.getElementById('c-greeting-week').textContent = isDeloadWeek(clientWeek)
-    ? 'Semana '+clientWeek+' · Deload'
-    : getClientTotalWeeks() > 5 ? 'Semana '+clientWeek+' de '+getClientTotalWeeks() : 'Semana '+clientWeek+' de tu plan mensual';
+  document.getElementById('c-greeting-week').textContent = getClientTotalWeeks() > 5 ? 'Semana '+clientWeek+' de '+getClientTotalWeeks() : 'Semana '+clientWeek+' de tu plan mensual';
   document.getElementById('c-week-num').textContent = clientWeek;
 }
 
@@ -6436,7 +6434,7 @@ function tcProgressHtml(st) {
       <span class="tcp-empty-chip">${n} DE 2 SEMANAS REGISTRADAS</span>
     </div>`;
   }
-  const wl = w => isDeloadWeekOf(st.client, w) ? 'Deload' : 'Semana ' + w;
+  const wl = w => 'Semana ' + w;
   const vals = p.bars.map(b => b.value), min = Math.min(...vals), max = Math.max(...vals);
   const bars = p.bars.slice(-6).map(b => {
     const h = max === min ? 30 : Math.round(16 + 30 * (b.value - min) / (max - min));
@@ -6467,7 +6465,7 @@ function isDeloadWeekOf(client, w) { const d = client && Array.isArray(client.de
 function openProgressShare(mountId) {
   const st = tcStates[mountId]; if (!st) return;
   const p = tcProgressOf(st); if (!p || p.empty) return;
-  const data = { p, name: st.client.name || '', since: isDeloadWeekOf(st.client, p.before) ? 'Deload' : 'Semana ' + p.before, prev: st.cmp === 'prev' };
+  const data = { p, name: st.client.name || '', since: 'Semana ' + p.before, prev: st.cmp === 'prev' };
   openMoveShare('Compartir mi progreso', 'move-mi-progreso.png', () => drawProgressCanvas(data));
 }
 async function drawProgressCanvas(d) {
@@ -9472,9 +9470,9 @@ async function adjustDaysTrained(delta) {
 let planOverviewSelectedWeek = null;
 let planOverviewAllPlans = null;
 
-// Orden de los chips de semana: numérico (1, 2 … 10, 11, 12) y las de Deload al final
+// Orden de los chips de semana: numérico (1, 2 … 10, 11, 12); el Deload va en su lugar como las demás
 function sortPlanWeeks(nums) {
-  return nums.sort((a, b) => (isDeloadWeek(a) - isDeloadWeek(b)) || a - b);
+  return nums.sort((a, b) => a - b);
 }
 
 async function loadCoachClientDetail(clientId) {
@@ -10789,7 +10787,7 @@ async function openQuickSeries() {
   const weekNums = [...new Set(planDays.map(p => p.week_number))].sort((a,b)=>a-b);
 
   // Header label
-  const weekLabel = w => isDeloadWeek(w) ? 'DL' : 'S' + w;
+  const weekLabel = w => 'S' + w;
 
   let html = `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
     <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif;">
@@ -10919,7 +10917,7 @@ async function openQuickRPE() {
   });
 
   const weekNums = [...new Set(planDays.map(p => p.week_number))].sort((a,b)=>a-b);
-  const weekLabel = w => isDeloadWeek(w) ? 'DL' : 'S' + w;
+  const weekLabel = w => 'S' + w;
 
   let html = '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">' +
     '<table style="width:100%;border-collapse:collapse;">' +
@@ -22990,7 +22988,7 @@ function renderTrainingPreview() {
   const allWeeks = [...new Set(
     day.exercises.flatMap(ex => Object.keys(ex.by_week).map(Number))
   )].sort((a,b)=>a-b);
-  const wLabel = _tImport.meta ? (w => _tImport.meta.deload_weeks.includes(w)?'DL':'S'+w) : (w => w===5?'DL':'S'+w);
+  const wLabel = w => 'S' + w;
   const allResolved = _tImport.days.every(d => d.exercises.every(ex => ex.status !== 'pending'));
 
   // Circuit validation
