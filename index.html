@@ -1943,6 +1943,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
         <div class="section-action" onclick="openQuickDayBuilder()" style="background:#f0fff4;color:#276749;border:1.5px solid #276749;padding:5px 10px;border-radius:6px;font-size:11px;">🚀 Rápido</div>
         <div class="section-action" onclick="openAssignTemplateModal()" style="background:var(--orange);color:white;padding:5px 10px;border-radius:6px;font-size:11px;">Desde Template</div>
         <div class="section-action" onclick="openTrainingImportModal()" style="background:#f0fff4;color:#276749;border:1.5px solid #276749;padding:5px 10px;border-radius:6px;font-size:11px;display:inline-flex;align-items:center;gap:4px;"><svg class="ico" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-download"/></svg>Pegar Plan</div>
+        <div class="section-action" onclick="exportClientPlan()" style="background:#fff;color:#A63E10;border:1.5px solid #A63E10;padding:5px 10px;border-radius:6px;font-size:11px;display:inline-flex;align-items:center;gap:4px;"><svg class="ico" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-download"/></svg>Exportar</div>
         <div class="section-action" onclick="showPlanBuilder()">+ Manual</div>
       </div>
     </div>
@@ -2748,9 +2749,12 @@ const AW_MON = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov
 // (ej. programas de 5 semanas con el Deload en la 5) se arma con total_weeks y deload_weeks.
 function getProgramSequence(client) {
   const total = Number(client && client.total_weeks) || 0;
-  if (!total || total === PROGRAM_SEQUENCE.length) return PROGRAM_SEQUENCE;
-  const dl = Array.isArray(client.deload_weeks) ? client.deload_weeks : [];
-  return Array.from({ length: total }, (_, i) => dl.includes(i + 1) ? 'deload' : i + 1);
+  const hasDl = client && Array.isArray(client.deload_weeks);
+  // Sin deload_weeks guardado se usa la secuencia fija; con deload_weeks (lo marca el coach) manda lo marcado
+  if (!hasDl && (!total || total === PROGRAM_SEQUENCE.length)) return PROGRAM_SEQUENCE;
+  const len = total || PROGRAM_SEQUENCE.length;
+  const dl = hasDl ? client.deload_weeks.map(Number) : [];
+  return Array.from({ length: len }, (_, i) => dl.includes(i + 1) ? 'deload' : i + 1);
 }
 // Posición del programa para un instante. Pura: no usa la zona horaria del teléfono.
 // position = floor((now − week1Start) / 7 días) + 1; antes del inicio 'before', pasada la
@@ -3545,7 +3549,7 @@ async function saveGoal() {
 function getClientTotalWeeks() { return currentClient?.total_weeks || 5; }
 function getDeloadWeeks() {
   const d = currentClient?.deload_weeks;
-  return (Array.isArray(d) && d.length) ? d : [5];
+  return Array.isArray(d) ? d.map(Number) : [5]; // [] = el coach le quitó el deload a todas las semanas
 }
 function isDeloadWeek(w) { return getDeloadWeeks().includes(w); }
 function isRotationWeek(w) {
@@ -3554,7 +3558,7 @@ function isRotationWeek(w) {
 }
 function weekLabelFor(w) { return 'Semana ' + w; }
 function weekSubFor(w, base) {
-  return w===1 ? base : isDeloadWeek(w) ? 'Deload' : isRotationWeek(w) ? 'Rotación' : 'Progresión';
+  return w===1 ? base : isRotationWeek(w) ? 'Rotación' : 'Progresión';
 }
 
 function updateClientWeekUI() {
@@ -4250,10 +4254,10 @@ function closeDaySwitcher() {
   if(modal) modal.style.display = 'none';
 }
 
-function switchWorkoutDay(day) {
+async function switchWorkoutDay(day) {
   if(day === clientDay) { closeDaySwitcher(); return; }
   if(workoutLock) { closeDaySwitcher(); showWorkoutLockToast(); return; }
-  if(hasUnsavedDayData() && !confirm('Tenés cambios sin guardar en este día, ¿querés continuar y cambiar de día de todos modos?')) return;
+  if(hasUnsavedDayData() && !(await appConfirm('Tenés cambios sin guardar en este día, ¿querés continuar y cambiar de día de todos modos?'))) return;
   closeDaySwitcher();
   clientDay = day;
   // loadClientDayStrip() re-pinta la card de la Hoy y al final llama a
@@ -6461,7 +6465,7 @@ function tcProgressHtml(st) {
     ${p.compared ? `<button type="button" class="tcp-share" onclick="openProgressShare('${st.mountId}')">${icon('share', 16)}Compartir mi progreso</button>` : ''}
   </div>`;
 }
-function isDeloadWeekOf(client, w) { const d = client && Array.isArray(client.deload_weeks) && client.deload_weeks.length ? client.deload_weeks : [5]; return d.includes(w); }
+function isDeloadWeekOf(client, w) { const d = client && Array.isArray(client.deload_weeks) ? client.deload_weeks.map(Number) : [5]; return d.includes(w); }
 function openProgressShare(mountId) {
   const st = tcStates[mountId]; if (!st) return;
   const p = tcProgressOf(st); if (!p || p.empty) return;
@@ -8032,7 +8036,7 @@ async function submitTestResults(testId, exerciseIds) {
     document.body.appendChild(msg);
     setTimeout(() => msg.remove(), 3000);
   } catch(err) {
-    alert('Error guardando resultados: ' + err.message);
+    appAlert('Error guardando resultados: ' + err.message);
   }
 }
 
@@ -8119,12 +8123,12 @@ async function saveClientTest() {
   const contextNotes = document.getElementById('test-context-notes').value.trim();
   
   if(!testName || !testDate) {
-    alert('Por favor completa el nombre y la fecha del test');
+    appAlert('Por favor completa el nombre y la fecha del test');
     return;
   }
   
   if(!currentClient) {
-    alert('Error: No hay cliente seleccionado');
+    appAlert('Error: No hay cliente seleccionado');
     return;
   }
   
@@ -8145,7 +8149,7 @@ async function saveClientTest() {
   });
   
   if(exercises.length === 0) {
-    alert('Por favor agrega al menos un ejercicio al test');
+    appAlert('Por favor agrega al menos un ejercicio al test');
     return;
   }
   
@@ -8161,7 +8165,7 @@ async function saveClientTest() {
   }).select();
   
   if(testError) {
-    alert('Error al guardar el test: ' + testError.message);
+    appAlert('Error al guardar el test: ' + testError.message);
     return;
   }
   
@@ -8180,7 +8184,7 @@ async function saveClientTest() {
   const {error: exError} = await sb.from('test_exercises').insert(exercisesToInsert);
   
   if(exError) {
-    alert('Error al guardar ejercicios: ' + exError.message);
+    appAlert('Error al guardar ejercicios: ' + exError.message);
     return;
   }
   
@@ -8188,7 +8192,7 @@ async function saveClientTest() {
   closeModal('modal-create-test');
   resetTestForm();
   loadClientTests();
-  alert('¡Evaluación creada exitosamente!');
+  appAlert('¡Evaluación creada exitosamente!');
 }
 
 function showCoachEvaluaciones() {
@@ -8341,7 +8345,7 @@ function toggleTestCard(testId) {
 
 async function openEditTestModal(testId) {
   const {data: test, error} = await sb.from('tests').select('*').eq('id', testId).single();
-  if (error || !test) { alert('Error al cargar la evaluación'); return; }
+  if (error || !test) { appAlert('Error al cargar la evaluación'); return; }
   document.getElementById('edit-test-id').value = testId;
   document.getElementById('edit-test-name').value = test.test_name || '';
   document.getElementById('edit-test-date').value = test.test_date || '';
@@ -8393,12 +8397,12 @@ async function saveEditTest() {
   const testDate = document.getElementById('edit-test-date').value;
   const contextNotes = document.getElementById('edit-test-notes').value.trim();
   const status = document.getElementById('edit-test-status').value;
-  if (!testName) { alert('El nombre no puede estar vacío'); return; }
-  if (!testDate) { alert('Selecciona una fecha'); return; }
+  if (!testName) { appAlert('El nombre no puede estar vacío'); return; }
+  if (!testDate) { appAlert('Selecciona una fecha'); return; }
 
   // Save test header
   const {error} = await sb.from('tests').update({ test_name: testName, test_date: testDate, context_notes: contextNotes, status }).eq('id', testId);
-  if (error) { alert('Error: ' + error.message); return; }
+  if (error) { appAlert('Error: ' + error.message); return; }
 
   // Save exercises
   const exItems = document.querySelectorAll('#edit-test-exercises-container .edit-ex-item');
@@ -8449,8 +8453,8 @@ async function executeCopyTest() {
   const testId = document.getElementById('copy-test-id').value;
   const clientId = document.getElementById('copy-test-client-select').value;
   const newDate = document.getElementById('copy-test-date').value;
-  if (!clientId) { alert('Selecciona un cliente destino'); return; }
-  if (!newDate) { alert('Selecciona una fecha para la copia'); return; }
+  if (!clientId) { appAlert('Selecciona un cliente destino'); return; }
+  if (!newDate) { appAlert('Selecciona una fecha para la copia'); return; }
 
   const btn = document.getElementById('copy-test-confirm-btn');
   btn.disabled = true;
@@ -8492,9 +8496,9 @@ async function executeCopyTest() {
 
     closeModal('modal-copy-test');
     if (currentClient) loadCoachClientTests(currentClient.id);
-    alert('¡Evaluación copiada exitosamente!');
+    appAlert('¡Evaluación copiada exitosamente!');
   } catch(err) {
-    alert('Error: ' + err.message);
+    appAlert('Error: ' + err.message);
   } finally {
     btn.disabled = false;
     btn.textContent = 'Copiar Evaluación';
@@ -8502,10 +8506,10 @@ async function executeCopyTest() {
 }
 
 async function confirmDeleteTest(testId, testName) {
-  if (!confirm('¿Eliminar "' + testName + '"?\n\nEsta acción no se puede deshacer.')) return;
+  if (!(await appConfirm('¿Eliminar "' + testName + '"?\n\nEsta acción no se puede deshacer.'))) return;
   await sb.from('test_exercises').delete().eq('test_id', testId);
   const {error} = await sb.from('tests').delete().eq('id', testId);
-  if (error) { alert('Error: ' + error.message); return; }
+  if (error) { appAlert('Error: ' + error.message); return; }
   if (currentClient) loadCoachClientTests(currentClient.id);
 }
 
@@ -8541,9 +8545,9 @@ async function saveCoachTest() {
   const testDate = document.getElementById('test-date-input').value;
   const contextNotes = document.getElementById('test-context-notes').value.trim();
 
-  if(!clientId) { alert('Selecciona un cliente'); return; }
-  if(!testName) { alert('Ingresa un nombre para la evaluación'); return; }
-  if(!testDate) { alert('Selecciona una fecha'); return; }
+  if(!clientId) { appAlert('Selecciona un cliente'); return; }
+  if(!testName) { appAlert('Ingresa un nombre para la evaluación'); return; }
+  if(!testDate) { appAlert('Selecciona una fecha'); return; }
 
   const exercises = [];
   document.querySelectorAll('.test-exercise-item').forEach(item => {
@@ -8555,7 +8559,7 @@ async function saveCoachTest() {
     if(name) exercises.push({ name, result, unit, videoUrl, notes });
   });
 
-  if(exercises.length === 0) { alert('Agrega al menos un ejercicio'); return; }
+  if(exercises.length === 0) { appAlert('Agrega al menos un ejercicio'); return; }
 
   const {data: newTest, error: testError} = await sb.from('tests').insert({
     client_id: clientId,
@@ -8567,7 +8571,7 @@ async function saveCoachTest() {
     created_at: new Date().toISOString()
   }).select();
 
-  if(testError) { alert('Error: ' + testError.message); return; }
+  if(testError) { appAlert('Error: ' + testError.message); return; }
 
   const testId = newTest[0].id;
   const exercisesToInsert = exercises.map(ex => ({
@@ -8580,12 +8584,12 @@ async function saveCoachTest() {
   }));
 
   const {error: exError} = await sb.from('test_exercises').insert(exercisesToInsert);
-  if(exError) { alert('Error guardando ejercicios: ' + exError.message); return; }
+  if(exError) { appAlert('Error guardando ejercicios: ' + exError.message); return; }
 
   closeModal('modal-create-test');
   resetTestForm();
   if (currentClient) loadCoachClientTests(currentClient.id);
-  alert('¡Evaluación creada!');
+  appAlert('¡Evaluación creada!');
 }
 
 // Bloqueo del módulo Entreno (espejo de food_access), no aplica a clientes LIFT.
@@ -8969,7 +8973,7 @@ async function loadCoachLiftDocuments(clientId) {
 async function deleteLiftDocument(i, clientId) {
   const doc = window._coachLiftDocsCache?.[i];
   if (!doc) return;
-  if (!confirm('¿Eliminar este documento?')) return;
+  if (!(await appConfirm('¿Eliminar este documento?'))) return;
   try { await sb.storage.from('client-documents').remove([doc.file_path]); } catch (e) { console.warn('Storage delete failed:', e); }
   const { error } = await sb.from('client_documents').delete().eq('id', doc.id);
   if (error) { showToast('❌ ' + error.message); return; }
@@ -9522,8 +9526,9 @@ function renderPlanOverview() {
         const border = isSel ? (isHid ? '#9e9e9e' : 'var(--orange)') : (isHid ? '#bdbdbd' : 'var(--gray2)');
         const color = isSel ? 'white' : (isHid ? '#9e9e9e' : 'var(--gray5)');
         const baseLabel = weekLabelFor(w) + (aw && aw.state === 'active' && awPos[w] === aw.position ? ' · hoy' : '');
+        const isDl = isDeloadWeek(w);
         const label = isHid ? `<span style="text-decoration:line-through;opacity:0.7;">${baseLabel}</span>` : baseLabel;
-        return `<button onclick="selectPlanOverviewWeek(${w})" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid ${border};background:${bg};color:${color};cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;">${label}</button>`;
+        return `<button onclick="selectPlanOverviewWeek(${w})"${isDl ? ' title="Semana de deload"' : ''} style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px ${isDl ? 'dashed' : 'solid'} ${border};background:${bg};color:${color};cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;">${label}</button>`;
       }).join('')}
       <button onclick="openBuilderForWeek(${planOverviewSelectedWeek})" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid var(--orange);background:var(--orange-light);color:var(--orange);cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:auto;">Editar</button>
     </div>
@@ -9531,6 +9536,7 @@ function renderPlanOverview() {
     <!-- Delete + visibility actions row -->
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
       <button onclick="deleteWeek(${planOverviewSelectedWeek})" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid #e53935;background:#fff0f0;color:#e53935;cursor:pointer;font-family:'DM Sans',sans-serif;">Borrar ${selectedWeekLabel}</button>
+      <button type="button" onclick="toggleDeloadWeek(${planOverviewSelectedWeek})" aria-pressed="${isDeloadWeek(planOverviewSelectedWeek)}" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px dashed #A63E10;background:${isDeloadWeek(planOverviewSelectedWeek) ? '#F6E6DB' : '#FFFFFF'};color:#A63E10;cursor:pointer;font-family:'DM Sans',sans-serif;">${isDeloadWeek(planOverviewSelectedWeek) ? 'Quitar deload' : 'Marcar como deload'}</button>
       <button onclick="deleteEntireProgram()" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid #b71c1c;background:#fff0f0;color:#b71c1c;cursor:pointer;font-family:'DM Sans',sans-serif;">Borrar programa completo</button>
       ${aw ? `<span title="En modo automático el cliente ve la semana según la fecha" style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px dashed #bdbdbd;background:#f5f5f5;color:#757575;font-family:'DM Sans',sans-serif;">${icon('lock', 12)}Mostrar al cliente · auto</span>` : `<button onclick="toggleHiddenWeek(${planOverviewSelectedWeek})" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${isSelectedHidden?'#43a047':'#757575'};background:${isSelectedHidden?'#f1f8e9':'#f5f5f5'};color:${isSelectedHidden?'#43a047':'#757575'};cursor:pointer;font-family:'DM Sans',sans-serif;">${isSelectedHidden?'Mostrar al cliente':'Ocultar al cliente'}</button>`}
       <button onclick="restartClientProgress()" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid #e65100;background:#fff3e0;color:#e65100;cursor:pointer;font-family:'DM Sans',sans-serif;">Reiniciar progreso</button>
@@ -9546,6 +9552,24 @@ function renderPlanOverview() {
           <div id="coach-day-exs-${d.id}"><div class="spinner" style="width:14px;height:14px;margin:6px auto;"></div></div>
         </div>`).join('')}
     </div>`;
+}
+
+// Marca o desmarca la semana como deload de este cliente (clients.deload_weeks). Solo coach.
+// El cliente sigue viendo "Semana N"; el deload cambia la comparación de progreso y el orden automático.
+async function toggleDeloadWeek(w) {
+  if (!currentClient || currentUser?.role !== 'coach') return;
+  const cur = getDeloadWeeks();
+  const was = cur.includes(w);
+  const next = was ? cur.filter(x => x !== w) : [...cur, w].sort((a, b) => a - b);
+  const cid = currentClient.id;
+  const { error } = await sb.from('clients').update({ deload_weeks: next }).eq('id', cid);
+  if (error) { showToast('No se pudo guardar: ' + error.message, 'error'); return; }
+  if (currentClient?.id !== cid) return;
+  currentClient.deload_weeks = next;
+  const cached = (window._cachedClients || []).find(c => c.id === cid);
+  if (cached) cached.deload_weeks = next;
+  showToast(was ? `La semana ${w} ya no es deload` : `Semana ${w} marcada como deload`, 'success');
+  renderPlanOverview();
 }
 
 function selectPlanOverviewWeek(w) {
@@ -9792,7 +9816,7 @@ function renderDayExercises(exList, exs, planDayId) {
 }
 
 async function deleteOrphanPlanDay(planDayId) {
-  if(!confirm('¿Borrar esta entrada vacía del plan?')) return;
+  if(!(await appConfirm('¿Borrar esta entrada vacía del plan?'))) return;
   await sb.from('exercises').delete().eq('plan_day_id', planDayId);
   const {error} = await sb.from('monthly_plans').delete().eq('id', planDayId);
   if(error){showToast('\u274C '+error.message);return;}
@@ -10647,7 +10671,7 @@ async function moveDayExercise(exId, planDayId, direction) {
 }
 
 async function deleteExercise(exId, planDayId) {
-  if(!confirm('¿Borrar este ejercicio?')) return;
+  if(!(await appConfirm('¿Borrar este ejercicio?'))) return;
   const {error} = await sb.from('exercises').delete().eq('id', exId);
   if(error){showToast('❌ '+error.message);return;}
   showToast('🗑 Ejercicio eliminado');
@@ -10655,7 +10679,7 @@ async function deleteExercise(exId, planDayId) {
 }
 
 async function deleteAllExercises(planDayId) {
-  if(!confirm('¿Borrar TODOS los ejercicios de esta rutina? Esto no se puede deshacer.')) return;
+  if(!(await appConfirm('¿Borrar TODOS los ejercicios de esta rutina? Esto no se puede deshacer.'))) return;
   const {error} = await sb.from('exercises').delete().eq('plan_day_id', planDayId);
   if(error){showToast('❌ '+error.message);return;}
   showToast('🗑 Rutina completa eliminada');
@@ -10664,7 +10688,7 @@ async function deleteAllExercises(planDayId) {
 
 async function deleteWeek(weekNum) {
   const weekLabel = weekLabelFor(weekNum);
-  if (!confirm(`¿Borrar ${weekLabel} completa? Se eliminarán todos sus días y ejercicios. Esto no se puede deshacer.`)) return;
+  if (!(await appConfirm(`¿Borrar ${weekLabel} completa? Se eliminarán todos sus días y ejercicios. Esto no se puede deshacer.`))) return;
   const {data: planDays} = await sb.from('monthly_plans').select('id').eq('client_id', currentClient.id).eq('week_number', weekNum);
   if (planDays && planDays.length > 0) {
     for (const pd of planDays) {
@@ -10678,7 +10702,7 @@ async function deleteWeek(weekNum) {
 }
 
 async function deleteEntireProgram() {
-  if (!confirm('¿Borrar el programa COMPLETO de este cliente? Se eliminarán todas las semanas y ejercicios. Esto no se puede deshacer.')) return;
+  if (!(await appConfirm('¿Borrar el programa COMPLETO de este cliente? Se eliminarán todas las semanas y ejercicios. Esto no se puede deshacer.'))) return;
   const {data: planDays} = await sb.from('monthly_plans').select('id').eq('client_id', currentClient.id);
   if (planDays && planDays.length > 0) {
     for (const pd of planDays) {
@@ -11197,10 +11221,10 @@ async function buildDayStrip() {
   }
 }
 
-function openAddTrainingDayModal() {
+async function openAddTrainingDayModal() {
   const existingDays = parseInt(document.querySelectorAll('#builder-day-strip .day-chip.has-workout').length)||0;
   const suggested = 'Día ' + (existingDays + 1);
-  const name = prompt('Nombre del día de entrenamiento:', suggested);
+  const name = await appDialog({ title: 'Nombre del día de entrenamiento', input: suggested, okLabel: 'Crear día' });
   if(!name || !name.trim()) return;
   addNewTrainingDay(name.trim());
 }
@@ -11242,12 +11266,53 @@ function openDayOptionsMenu(dayValue, label, anchorEl) {
     </div>`;
   pop.querySelector('#pop-move-left').onclick = () => { pop.remove(); moveDayOrder(dayValue, -1); };
   pop.querySelector('#pop-move-right').onclick = () => { pop.remove(); moveDayOrder(dayValue, 1); };
-  pop.querySelector('#pop-rename').onclick = () => { pop.remove(); const n=prompt('Nuevo nombre:',label); if(n&&n.trim()&&n.trim()!==label) renameTrainingDay(dayValue,n.trim()); };
+  pop.querySelector('#pop-rename').onclick = async () => { pop.remove(); const n = await appDialog({ title: 'Renombrar día', input: label, okLabel: 'Guardar' }); if(n&&n.trim()&&n.trim()!==label) renameTrainingDay(dayValue,n.trim()); };
   pop.querySelector('#pop-save-workout').onclick = () => { pop.remove(); saveDayAsWorkout(dayValue, label); };
   pop.querySelector('#pop-delete').onclick = () => { pop.remove(); deleteTrainingDay(dayValue, label); };
   pop.querySelector('#pop-cancel').onclick = () => pop.remove();
   pop.onclick = (e) => { if(e.target===pop) pop.remove(); };
   document.body.appendChild(pop);
+}
+
+// Hoja de diálogo del app: reemplaza prompt()/confirm() (algunos navegadores embebidos no los soportan).
+// opts: { title, text, input (valor inicial; si viene, pide texto), okLabel, cancelLabel }. Devuelve string | true | null.
+// Reemplazo de confirm(): misma pregunta en una hoja del app. Devuelve Promise<boolean>.
+function appConfirm(msg) {
+  const txt = String(msg ?? '');
+  const cut = txt.indexOf('\n\n');
+  const title = cut >= 0 ? txt.slice(0, cut) : txt;
+  const text = cut >= 0 ? txt.slice(cut + 2) : '';
+  const verb = /^¿?\s*(borrar|eliminar|limpiar|retirar)/i.exec(title);
+  const okLabel = verb ? verb[1][0].toUpperCase() + verb[1].slice(1).toLowerCase() : 'Sí, seguir';
+  return appDialog({ title, text, okLabel }).then(v => !!v);
+}
+// Reemplazo de alert(): aviso breve (toast), no bloquea.
+function appAlert(msg) {
+  const txt = String(msg ?? '');
+  showToast(txt, /^¡/.test(txt) ? 'success' : 'error', 4000);
+}
+function appDialog(opts) {
+  return new Promise(resolve => {
+    const esc = t => String(t ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+    const pop = document.createElement('div');
+    pop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10000;display:flex;align-items:flex-end;justify-content:center;';
+    const hasInput = opts.input != null;
+    pop.innerHTML = `
+      <div role="dialog" aria-modal="true" aria-labelledby="app-dlg-ttl" style="background:var(--white);border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;max-width:480px;box-sizing:border-box;">
+        <div id="app-dlg-ttl" style="font-size:16px;font-weight:700;margin-bottom:6px;">${esc(opts.title)}</div>
+        ${opts.text ? `<div style="font-size:13px;color:var(--gray5);line-height:1.5;margin-bottom:14px;white-space:pre-line;">${esc(opts.text)}</div>` : ''}
+        ${hasInput ? `<input id="app-dlg-in" class="form-input" type="text" value="${esc(opts.input)}" aria-label="${esc(opts.title)}" style="width:100%;box-sizing:border-box;margin-bottom:14px;">` : ''}
+        <button type="button" id="app-dlg-ok" style="width:100%;padding:12px;border-radius:12px;background:#C24E18;border:0;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:10px;">${esc(opts.okLabel || 'Aceptar')}</button>
+        <button type="button" id="app-dlg-no" style="width:100%;padding:12px;border-radius:12px;background:var(--gray1);border:1.5px solid var(--gray2);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">${esc(opts.cancelLabel || 'Cancelar')}</button>
+      </div>`;
+    const done = v => { pop.remove(); resolve(v); };
+    const inp = () => pop.querySelector('#app-dlg-in');
+    pop.querySelector('#app-dlg-ok').onclick = () => done(hasInput ? inp().value : true);
+    pop.querySelector('#app-dlg-no').onclick = () => done(null);
+    pop.onclick = e => { if (e.target === pop) done(null); };
+    document.body.appendChild(pop);
+    if (hasInput) { const i = inp(); i.addEventListener('keydown', e => { if (e.key === 'Enter') done(i.value); }); setTimeout(() => { i.focus(); i.select(); }, 30); }
+  });
 }
 
 async function moveDayOrder(dayValue, direction) {
@@ -11273,7 +11338,7 @@ async function moveDayOrder(dayValue, direction) {
 
 
 async function deleteTrainingDay(dayValue, label) {
-  if(!confirm('¿Borrar el día "'+label+'" y todos sus ejercicios?')) return;
+  if(!(await appConfirm('¿Borrar el día "'+label+'" y todos sus ejercicios?'))) return;
   const {data:pd} = await sb.from('monthly_plans').select('id').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',dayValue).maybeSingle();
   if(pd) {
     await sb.from('exercises').delete().eq('plan_day_id',pd.id);
@@ -11287,10 +11352,39 @@ async function deleteTrainingDay(dayValue, label) {
 }
 
 async function renameTrainingDay(dayValue, newName) {
-  await sb.from('monthly_plans').update({day_of_week:newName}).eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',dayValue);
+  const cid = currentClient.id, wk = builderWeek;
+  await sb.from('monthly_plans').update({day_of_week:newName}).eq('client_id',cid).eq('week_number',wk).eq('day_of_week',dayValue);
   if(builderDay===dayValue) builderDay=newName;
   showToast('Renombrado a "'+newName+'"', 'success');
   await buildDayStrip();
+  // ¿El mismo día existe en las semanas siguientes? Ofrecer cambiarlo ahí también
+  const {data: later} = await sb.from('monthly_plans').select('id,week_number,day_of_week').eq('client_id',cid).gt('week_number',wk);
+  const same = (later||[]).filter(d => d.day_of_week === dayValue);
+  if (!same.length || currentClient?.id !== cid) return;
+  const clash = new Set((later||[]).filter(d => d.day_of_week === newName).map(d => d.week_number));
+  const target = same.filter(d => !clash.has(d.week_number));
+  const weeks = [...new Set(target.map(d => d.week_number))].sort((a,b)=>a-b);
+  const skipped = [...new Set(same.filter(d => clash.has(d.week_number)).map(d => d.week_number))].sort((a,b)=>a-b);
+  if (!weeks.length) return;
+  const esc = t => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const pop = document.createElement('div');
+  pop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:500;display:flex;align-items:flex-end;justify-content:center;';
+  pop.innerHTML = `
+    <div role="dialog" aria-modal="true" aria-labelledby="rn-day-ttl" style="background:var(--white);border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;max-width:480px;">
+      <div id="rn-day-ttl" style="font-size:16px;font-weight:700;margin-bottom:6px;">¿Cambiar el nombre en las semanas siguientes?</div>
+      <div style="font-size:13px;color:var(--gray5);line-height:1.5;margin-bottom:18px;">«${esc(dayValue)}» también está en ${weeks.length === 1 ? 'la semana ' + weeks[0] : 'las semanas ' + weeks.join(', ')}. ¿Lo pasamos a «${esc(newName)}» ahí también?${skipped.length ? `<br><span style="color:var(--gray4);">En ${skipped.length === 1 ? 'la semana ' + skipped[0] : 'las semanas ' + skipped.join(', ')} ya hay un día con ese nombre; esa no se toca.</span>` : ''}</div>
+      <button type="button" id="rn-day-all" style="width:100%;padding:12px;border-radius:12px;background:#C24E18;border:0;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:10px;">Sí, cambiarlo en ${weeks.length === 1 ? 'la semana ' + weeks[0] : weeks.length + ' semanas'}</button>
+      <button type="button" id="rn-day-one" style="width:100%;padding:12px;border-radius:12px;background:var(--gray1);border:1.5px solid var(--gray2);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Solo en esta semana</button>
+    </div>`;
+  pop.querySelector('#rn-day-one').onclick = () => pop.remove();
+  pop.onclick = (e) => { if (e.target === pop) pop.remove(); };
+  pop.querySelector('#rn-day-all').onclick = async () => {
+    pop.remove();
+    const {error} = await sb.from('monthly_plans').update({day_of_week:newName}).in('id', target.map(d => d.id));
+    if (error) { showToast('No se pudo cambiar: ' + error.message, 'error'); return; }
+    showToast(`Cambiado en ${weeks.length === 1 ? 'la semana ' + weeks[0] : weeks.length + ' semanas más'}`, 'success');
+  };
+  document.body.appendChild(pop);
 }
 
 async function switchBuilderDay(day) {
@@ -11965,7 +12059,7 @@ async function tplDuplicateDay(templateId, dayId) {
 
 // Delete a single day
 async function tplDeleteDay(templateId, dayId, dayName) {
-  if (!confirm(`¿Borrar "${dayName}"? Se eliminarán todos sus ejercicios.`)) return;
+  if (!(await appConfirm(`¿Borrar "${dayName}"? Se eliminarán todos sus ejercicios.`))) return;
   await sb.from('template_exercises').delete().eq('template_day_id', dayId);
   await sb.from('template_days').delete().eq('id', dayId);
   showToast('🗑️ Día eliminado');
@@ -12412,7 +12506,7 @@ async function saveTemplate() {
 }
 
 async function deleteTemplate(id, name) {
-  if (!confirm(`¿Borrar el machote "${name}"?`)) return;
+  if (!(await appConfirm(`¿Borrar el machote "${name}"?`))) return;
   const { data: days } = await sb.from('template_days').select('id').eq('template_id', id);
   if (days) { for (const d of days) { await sb.from('template_exercises').delete().eq('template_day_id', d.id); } }
   await sb.from('template_days').delete().eq('template_id', id);
@@ -12624,7 +12718,7 @@ async function createNewWorkout() {
 }
 
 async function deleteWorkout(workoutId, name) {
-  if (!confirm('¿Borrar el workout "' + name + '"?')) return;
+  if (!(await appConfirm('¿Borrar el workout "' + name + '"?'))) return;
   await sb.from('workout_exercises').delete().eq('workout_id', workoutId);
   await sb.from('workout_templates').delete().eq('id', workoutId);
   showToast('🗑️ Workout eliminado');
@@ -12716,7 +12810,7 @@ async function confirmAssignProgramaToClient() {
   const clientId = document.getElementById('assign-prog-client-select').value;
   if (!clientId) { showToast('⚠️ Selecciona un cliente'); return; }
   if (!_assignProgLibTemplateId) return;
-  if (!confirm('¿Asignar este programa? Reemplazará el plan actual del cliente.')) return;
+  if (!(await appConfirm('¿Asignar este programa? Reemplazará el plan actual del cliente.'))) return;
   closeModal('modal-assign-programa-to-client');
   showToast('⏳ Generando plan...');
   // Reuse existing assignTemplateToClient logic — temporarily set the selects
@@ -12790,7 +12884,7 @@ async function confirmPasteWorkoutToClient() {
   const checkedWeeks = [1,2,3,4].filter(w => document.getElementById('pwc-wk'+w)?.checked);
   const weeksToApply = checkedWeeks.length > 0 ? checkedWeeks : [1,2,3,4];
   const weekLabel = checkedWeeks.length > 0 ? 'S' + checkedWeeks.join(', S') : 'todas las semanas';
-  if (!confirm(`¿Pegar workout en "${day}" (${weekLabel}) de este cliente? Reemplazará los ejercicios existentes.`)) return;
+  if (!(await appConfirm(`¿Pegar workout en "${day}" (${weekLabel}) de este cliente? Reemplazará los ejercicios existentes.`))) return;
   closeModal('modal-paste-workout-to-client');
   showToast('⏳ Pegando workout...');
   const { data: exs } = await sb.from('workout_exercises').select('*').eq('workout_id', _pasteWktLibWorkoutId).order('exercise_order');
@@ -12891,7 +12985,7 @@ function toggleBloqueCard(id) {
 }
 
 async function deleteBloque(id, name) {
-  if (!confirm('¿Borrar el bloque "' + name + '"?')) return;
+  if (!(await appConfirm('¿Borrar el bloque "' + name + '"?'))) return;
   await sb.from('block_exercises').delete().eq('block_id', id);
   await sb.from('block_templates').delete().eq('id', id);
   showToast('🗑️ Bloque eliminado');
@@ -13152,7 +13246,7 @@ async function confirmPasteWorkout() {
   const checkedWeeks = [1,2,3,4].filter(w => document.getElementById('paste-wk'+w)?.checked);
   const weeksToApply = checkedWeeks.length > 0 ? checkedWeeks : [1,2,3,4];
   const weekLabel = checkedWeeks.length > 0 ? 'S' + checkedWeeks.join(', S') : 'todas las semanas';
-  if (!confirm(`¿Pegar workout en "${builderDay}" (${weekLabel})? Esto reemplazará los ejercicios de ese día en las semanas seleccionadas.`)) return;
+  if (!(await appConfirm(`¿Pegar workout en "${builderDay}" (${weekLabel})? Esto reemplazará los ejercicios de ese día en las semanas seleccionadas.`))) return;
   closeModal('modal-paste-workout');
   showToast('⏳ Pegando workout...');
   const { data: exs } = await sb.from('workout_exercises').select('*').eq('workout_id', workoutId).order('exercise_order');
@@ -13780,7 +13874,7 @@ async function addCustomKpiFromPicker(mesoId) {
 }
 
 async function deleteMesocycle(mesoId) {
-  if (!confirm('¿Eliminar este mesociclo? No se puede deshacer.')) return;
+  if (!(await appConfirm('¿Eliminar este mesociclo? No se puede deshacer.'))) return;
   await sb.from('mesocycle_kpis').delete().eq('mesocycle_id', mesoId);
   await sb.from('mesocycles').delete().eq('id', mesoId);
   document.getElementById('mesocycle-drawer')?.remove();
@@ -13846,7 +13940,7 @@ async function toggleChurnClient(makeChurn) {
   const msg = makeChurn
     ? '¿Marcar este cliente como Churn? Se moverá al tab de clientes inactivos.'
     : '¿Reactivar este cliente? Volverá al listado de clientes activos.';
-  if (!confirm(msg)) return;
+  if (!(await appConfirm(msg))) return;
   const { error } = await sb.from('clients').update({ is_churn: makeChurn }).eq('id', currentClient.id);
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
   currentClient.is_churn = makeChurn;
@@ -13860,7 +13954,7 @@ async function toggleHiddenClient(makeHidden) {
   const msg = makeHidden
     ? `¿Ocultar a ${currentClient.name} de tu lista principal? Vas a poder verlo bajo el tab "Ocultos". Su acceso a la app no se ve afectado.`
     : `¿Mostrar a ${currentClient.name} de nuevo en tu lista principal?`;
-  if (!confirm(msg)) return;
+  if (!(await appConfirm(msg))) return;
   const { error } = await sb.from('clients').update({ hidden: makeHidden }).eq('id', currentClient.id);
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
   currentClient.hidden = makeHidden;
@@ -13918,7 +14012,7 @@ async function loadCoachPlans() {
 }
 
 async function deletePdf(planId, pdfUrl) {
-  if(!confirm('¿Eliminar este PDF?')) return;
+  if(!(await appConfirm('¿Eliminar este PDF?'))) return;
   try {
     const urlParts = pdfUrl.split('/plans/');
     if(urlParts.length > 1) {
@@ -14027,7 +14121,7 @@ async function editPaymentSettings(clientId) {
 }
 
 async function deleteClient(clientId,clientName) {
-  if(!confirm('¿Eliminar a '+clientName+'? No se puede deshacer.'))return;
+  if(!(await appConfirm('¿Eliminar a '+clientName+'? No se puede deshacer.')))return;
   const {data:pds} = await sb.from('monthly_plans').select('id').eq('client_id',clientId);
   if(pds){ for(const pd of pds){ await sb.from('exercises').delete().eq('plan_day_id',pd.id); } }
   await sb.from('monthly_plans').delete().eq('client_id',clientId);
@@ -14386,7 +14480,7 @@ async function markDayTrained(planDayId, clientId, week) {
 // no le queda ninguna otra sesión ese mismo día.
 async function deleteDayRecord(planDayId, clientId, week, label) {
   const weekLabel = weekLabelFor(week);
-  if(!confirm(`¿Seguro que querés borrar el registro de ${label} — ${weekLabel}? Esto eliminará la sesión y todos los logs de ejercicios guardados para este día. Esta acción no se puede deshacer.`)) return;
+  if(!(await appConfirm(`¿Seguro que querés borrar el registro de ${label} — ${weekLabel}? Esto eliminará la sesión y todos los logs de ejercicios guardados para este día. Esta acción no se puede deshacer.`))) return;
 
   let deletedLogs = 0, deletedSessions = 0;
 
@@ -15407,7 +15501,7 @@ ${currentClient.macros_notas ? `Notas del coach: ${currentClient.macros_notas}` 
 
 async function clearFoodChat() {
   if(!currentClient) return;
-  if(!confirm('¿Limpiar el historial del chat de NutriFlex?')) return;
+  if(!(await appConfirm('¿Limpiar el historial del chat de NutriFlex?'))) return;
   await sb.from('nutrition_chats').delete().eq('client_id', currentClient.id);
   foodChatHistory = [];
   const msgs = document.getElementById('food-chat-messages');
@@ -16325,7 +16419,7 @@ async function renameNutritionDay(oldName, newName) {
 }
 
 async function deleteNutritionDay(dayValue) {
-  if (!confirm('¿Borrar el día "' + dayValue + '" y todas sus comidas?')) return;
+  if (!(await appConfirm('¿Borrar el día "' + dayValue + '" y todas sus comidas?'))) return;
   const {data: pd} = await sb.from('nutrition_plans').select('id').eq('client_id', currentClient.id).eq('day_of_week', dayValue).maybeSingle();
   if (pd) {
     const {data: meals} = await sb.from('nutrition_meals').select('id').eq('nutrition_plan_id', pd.id);
@@ -17069,7 +17163,7 @@ async function addExxNote() {
 
 // Soft delete: la nota queda en la base con deleted_at
 async function deleteExxNote(noteId) {
-  if(!confirm('¿Eliminar esta nota?')) return;
+  if(!(await appConfirm('¿Eliminar esta nota?'))) return;
   const {error} = await sb.from('exercise_notes').update({deleted_at: new Date().toISOString()}).eq('id', noteId).eq('client_id', currentClient.id);
   if(error) { showToast('No se pudo eliminar la nota', 'error'); return; }
   showToast('Nota eliminada');
@@ -18047,7 +18141,7 @@ function closeStrongFlow() {
 
 async function clearStrongFlowChat() {
   if(!currentClient) return;
-  if(!confirm('¿Limpiar el historial de StrongFlow?')) return;
+  if(!(await appConfirm('¿Limpiar el historial de StrongFlow?'))) return;
   await sb.from('training_chats').delete().eq('client_id', currentClient.id);
   sfChatHistory = [];
   const msgs = document.getElementById('sf-messages');
@@ -18288,7 +18382,7 @@ async function saveLibraryEdit(id) {
 }
 
 async function deleteLibraryEx(id) {
-  if(!confirm('¿Eliminar este ejercicio de la biblioteca?'))return;
+  if(!(await appConfirm('¿Eliminar este ejercicio de la biblioteca?')))return;
   await sb.from('exercise_library').delete().eq('id',id);
   showToast('🗑️ Eliminado');
   loadLibrary();
@@ -18907,7 +19001,7 @@ async function saveContract() {
 
 async function deleteContract() {
   if (!currentContractId) return;
-  if (!confirm('¿Eliminar este contrato? Esta acción no se puede deshacer.')) return;
+  if (!(await appConfirm('¿Eliminar este contrato? Esta acción no se puede deshacer.'))) return;
   await sb.from('contracts').delete().eq('id', currentContractId);
   closeModal('modal-contract-editor');
   showToast('🗑️ Contrato eliminado');
@@ -19209,7 +19303,7 @@ async function saveFoodItem() {
 }
 
 async function deleteFoodItem(id) {
-  if(!confirm('Eliminar este alimento de la libreria?')) return;
+  if(!(await appConfirm('Eliminar este alimento de la libreria?'))) return;
   await sb.from('food_library').delete().eq('id', id);
   showToast('🗑️ Alimento eliminado');
   loadFoodLibrary();
@@ -19315,7 +19409,7 @@ async function saveExCoaching(id) {
 }
 
 async function deleteExCoaching(id) {
-  if(!confirm('¿Eliminar este ejercicio de la biblioteca?')) return;
+  if(!(await appConfirm('¿Eliminar este ejercicio de la biblioteca?'))) return;
   await sb.from('exercise_library').delete().eq('id',id);
   showToast('🗑️ Eliminado');
   loadExCoaching();
@@ -19390,7 +19484,7 @@ function renumberForms() {
 
 // ===== DELETE DAY =====
 async function deleteBuilderDay() {
-  if(!confirm(`¿Borrar todos los ejercicios del ${builderDay} Semana ${builderWeek}? Esto no se puede deshacer.`)) return;
+  if(!(await appConfirm(`¿Borrar todos los ejercicios del ${builderDay} Semana ${builderWeek}? Esto no se puede deshacer.`))) return;
   const {data:pd} = await sb.from('monthly_plans').select('id').eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',builderDay).maybeSingle();
   if(!pd) { showToast('⚠️ Este día no tiene ejercicios guardados'); return; }
   await sb.from('exercises').delete().eq('plan_day_id', pd.id);
@@ -19697,7 +19791,7 @@ async function saveRenameExtraSession(sessionId) {
 }
 
 async function deleteExtraSession(sessionId) {
-  if (!confirm('¿Borrar esta sesión y todos sus ejercicios?')) return;
+  if (!(await appConfirm('¿Borrar esta sesión y todos sus ejercicios?'))) return;
   await sb.from('extra_exercises').delete().eq('extra_session_id', sessionId);
   await sb.from('extra_sessions').delete().eq('id', sessionId);
   showToast('✅ Sesión eliminada');
@@ -20040,7 +20134,7 @@ async function saveNewHabit() {
 }
 
 async function deleteHabit(habitId, clientId) {
-  if(!confirm('¿Borrar este hábito? Se perderá el historial de este hábito.')) return;
+  if(!(await appConfirm('¿Borrar este hábito? Se perderá el historial de este hábito.'))) return;
   await sb.from('habit_logs').delete().eq('habit_id', habitId);
   await sb.from('habits').delete().eq('id', habitId);
   showToast('🗑️ Hábito eliminado');
@@ -21098,7 +21192,7 @@ async function saveSleepEntry(id) {
 
 // Soft delete: el evento queda en la base con deleted_at
 async function deleteSleepEntry(id, night) {
-  if(!confirm('¿Eliminar esta entrada?')) return;
+  if(!(await appConfirm('¿Eliminar esta entrada?'))) return;
   const {error} = await sb.from('diary_sleep_events').update({ deleted_at: new Date().toISOString() }).eq('id', id).eq('client_id', currentClient.id);
   if(error) { showToast('No se pudo eliminar', 'error'); return; }
   showToast('Entrada eliminada');
@@ -21354,7 +21448,7 @@ async function renameDiaryOption(optionId) {
   const f = diaryForm;
   const o = f?.options.find(x => x.option_id === optionId && x.source === 'own');
   if(!o) return;
-  const name = (prompt('Nuevo nombre', o.name) || '').trim();
+  const name = ((await appDialog({ title: 'Nuevo nombre', input: o.name, okLabel: 'Guardar' })) || '').trim();
   if(!name || name === o.name) return;
   const {error} = await sb.from('diary_options').update({name}).eq('id', optionId).eq('client_id', currentClient.id);
   if(error) { showToast(error.code === '23505' ? 'Ya tenés una actividad con ese nombre' : '' + error.message); return; }
@@ -21368,7 +21462,7 @@ async function deleteDiaryOption(optionId) {
   const f = diaryForm;
   const o = f?.options.find(x => x.option_id === optionId && x.source === 'own');
   if(!o) return;
-  if(!confirm(`¿Borrar "${o.name}" de tus actividades?\n\nTus registros anteriores se quedan como están.`)) return;
+  if(!(await appConfirm(`¿Borrar "${o.name}" de tus actividades?\n\nTus registros anteriores se quedan como están.`))) return;
   const {error} = await sb.from('diary_options').delete().eq('id', optionId).eq('client_id', currentClient.id);
   if(error) { showToast('❌ ' + error.message); return; }
   f.options = f.options.filter(x => x !== o);
@@ -21679,7 +21773,7 @@ async function deleteDiaryEntry(id) {
   const e = diaryState.entriesById[id];
   if(!e || !currentClient) return;
   const when = e.entry_date ? `del ${diaryFmtDay(e.entry_date)}` : `(un registro ${diaryWhenLabel(e)})`;
-  if(!confirm(`¿Borrar "${e.activity_name}" ${when}?\n\nEsta acción no se puede deshacer.`)) return;
+  if(!(await appConfirm(`¿Borrar "${e.activity_name}" ${when}?\n\nEsta acción no se puede deshacer.`))) return;
   const {error} = await sb.from('diary_entries').delete().eq('id', id).eq('client_id', currentClient.id);
   if(error) { showToast('❌ ' + error.message); return; }
   if(e.photo_path) await sb.storage.from('diary-photos').remove([e.photo_path]);
@@ -22810,6 +22904,93 @@ function _esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ─── EXPORTAR PLAN / SUBIR DESDE LA SEMANA N ──────────────────────────
+// Semana por defecto del selector: la semana en que va el cliente (modo automático); si no, todo el plan.
+function tiDefaultFromWeek() {
+  const aw = currentClient ? getAutoWeekInfo(currentClient, []) : null;
+  return aw && aw.state === 'active' && aw.mapped ? aw.mapped.week : null;
+}
+// Semanas >= fromWeek que ya tienen registros del cliente (series, sesiones o check-ins ligados a sus días).
+// Esas semanas no se reemplazan para no perder ni dejar huérfano nada de lo que el cliente hizo.
+async function planWeeksWithRecords(clientId, fromWeek) {
+  const {data: days} = await sb.from('monthly_plans').select('id,week_number').eq('client_id', clientId).gte('week_number', fromWeek);
+  if (!days || !days.length) return [];
+  const weekOf = {}; days.forEach(d => { weekOf[d.id] = d.week_number; });
+  const dayIds = days.map(d => d.id);
+  const locked = new Set();
+  const chunks = (arr, n) => Array.from({length: Math.ceil(arr.length / n)}, (_, i) => arr.slice(i * n, i * n + n));
+  for (const ch of chunks(dayIds, 100)) {
+    const [{data: exs}, {data: ses}, {data: cks}] = await Promise.all([
+      sb.from('exercises').select('id,plan_day_id').in('plan_day_id', ch),
+      sb.from('workout_sessions').select('plan_day_id').in('plan_day_id', ch),
+      sb.from('workout_completions').select('plan_day_id').in('plan_day_id', ch)
+    ]);
+    (ses || []).forEach(r => locked.add(weekOf[r.plan_day_id]));
+    (cks || []).forEach(r => locked.add(weekOf[r.plan_day_id]));
+    const exDay = {}; (exs || []).forEach(e => { exDay[e.id] = e.plan_day_id; });
+    for (const ec of chunks(Object.keys(exDay), 200)) {
+      const {data: logs} = await sb.from('exercise_logs').select('exercise_id').in('exercise_id', ec).limit(5000);
+      (logs || []).forEach(l => locked.add(weekOf[exDay[l.exercise_id]]));
+    }
+  }
+  return [...locked].filter(w => w != null).sort((a, b) => a - b);
+}
+// Exporta el plan del cliente en el formato de "Importar JSON" (v2, una fase por semana para no perder
+// diferencias entre semanas). Copia al portapapeles y descarga el archivo. Solo lectura.
+async function exportClientPlan() {
+  if (!currentClient) return;
+  const cid = currentClient.id;
+  const {data: days, error} = await sb.from('monthly_plans').select('id,week_number,day_of_week,day_order')
+    .eq('client_id', cid).order('week_number', {ascending: true}).order('day_order', {ascending: true, nullsFirst: false}).order('id', {ascending: true});
+  if (error) { showToast(error.message, 'error'); return; }
+  if (!days || !days.length) { showToast('Este cliente todavía no tiene plan cargado'); return; }
+  const byDay = {};
+  const ids = days.map(d => d.id);
+  for (let i = 0; i < ids.length; i += 100) {
+    const {data: exs, error: exErr} = await sb.from('exercises')
+      .select('plan_day_id,name,sets,reps_range,rpe,rest_seconds,notes,circuit_notes,superset_group,circuit_rounds,order_index')
+      .in('plan_day_id', ids.slice(i, i + 100));
+    if (exErr) { showToast(exErr.message, 'error'); return; }
+    (exs || []).forEach(e => { (byDay[e.plan_day_id] = byDay[e.plan_day_id] || []).push(e); });
+  }
+  const weeks = [...new Set(days.map(d => Number(d.week_number)))].filter(w => w >= 1).sort((a, b) => a - b);
+  const total = Math.min(12, Math.max(Number(currentClient.total_weeks) || 0, weeks[weeks.length - 1] || 1));
+  const inRange = arr => (Array.isArray(arr) ? arr : []).map(Number).filter(w => w >= 1 && w <= total);
+  const phases = weeks.filter(w => w <= total).map((w, pi) => ({
+    phase: pi + 1, name: 'Semana ' + w, weeks: [w],
+    days: days.filter(d => Number(d.week_number) === w).map((d, k) => ({
+      day_name: d.day_of_week, day_order: k + 1,
+      exercises: (byDay[d.id] || []).sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)).map((e, j) => {
+        const o = { name: e.name, reps_range: e.reps_range || '', order_index: j };
+        if (e.superset_group) { o.circuit_group = e.superset_group; if (e.circuit_rounds != null) o.circuit_rounds = e.circuit_rounds; }
+        if (e.rest_seconds != null) o.rest_seconds = e.rest_seconds;
+        if (e.notes) o.notes = e.notes;
+        if (e.circuit_notes) o.circuit_notes = e.circuit_notes;
+        const bw = { sets: e.sets ?? 3 };
+        if (e.rpe != null) bw.rpe = e.rpe;
+        if (e.superset_group && e.circuit_rounds != null) bw.rounds = e.circuit_rounds;
+        o.by_week = { [String(w)]: bw };
+        return o;
+      })
+    }))
+  }));
+  const aw = getAutoWeekInfo(currentClient, weeks);
+  const out = {
+    type: 'training', version: 2,
+    client: currentClient.name || '', exported_at: todayCR(),
+    current_week: aw && aw.state === 'active' && aw.mapped ? aw.mapped.week : null,
+    total_weeks: total, deload_weeks: inRange(getDeloadWeeks()), rotation_weeks: inRange(currentClient.rotation_weeks),
+    phases
+  };
+  const json = JSON.stringify(out, null, 2);
+  try { await navigator.clipboard.writeText(json); showToast('Plan copiado y descargado', 'success'); }
+  catch (e) { showToast('Plan descargado', 'success'); }
+  const slug = (currentClient.name || 'cliente').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const url = URL.createObjectURL(new Blob([json], {type: 'application/json'}));
+  const a = document.createElement('a'); a.href = url; a.download = `plan-${slug}-${todayCR()}.json`; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 // ─── TRAINING IMPORT ──────────────────────────────────────────────────
 
 function openTrainingImportModal() {
@@ -22819,6 +23000,12 @@ function openTrainingImportModal() {
     <textarea id="ti-json" class="form-textarea" rows="12"
       style="width:100%;box-sizing:border-box;font-family:monospace;font-size:11px;resize:vertical;"
       placeholder='{"type":"training","days":[...]}'></textarea>
+    <label for="ti-from" style="display:block;font-size:12px;font-weight:700;color:var(--gray5);margin-top:12px;">Aplicar desde la semana</label>
+    <select id="ti-from" class="form-input" style="width:100%;margin-top:4px;">
+      <option value="">Todo el plan (como siempre)</option>
+      ${Array.from({length:12},(_,i)=>i+1).map(w=>`<option value="${w}"${w===tiDefaultFromWeek()?' selected':''}>Semana ${w} en adelante</option>`).join('')}
+    </select>
+    <div style="font-size:11px;color:var(--gray4);margin-top:4px;line-height:1.4;">Con una semana elegida, las anteriores quedan como están y desde esa semana se reemplaza todo con el JSON. Las semanas con registros del cliente no se pueden reemplazar.</div>
     <div style="display:flex;gap:8px;margin-top:12px;">
       <button onclick="analyzeTrainingJSON()" class="btn-primary" style="flex:1;">Analizar</button>
       <button onclick="closeModal('modal-training-import')" class="btn-secondary" style="flex:0.4;">Cancelar</button>
@@ -22831,6 +23018,15 @@ async function analyzeTrainingJSON() {
   let parsed;
   try { parsed = JSON.parse(raw); } catch(e) {
     showToast('JSON inválido: '+e.message, 'error', 4000); return;
+  }
+  const fromWeek = Number(document.getElementById('ti-from')?.value) || null;
+  if (fromWeek) {
+    const locked = await planWeeksWithRecords(currentClient.id, fromWeek);
+    if (locked.length) {
+      const next = Math.max(...locked) + 1;
+      showToast(`La semana ${locked.join(', ')} ya tiene registros del cliente y no se puede reemplazar. Elegí desde la semana ${next}.`, 'error', 6000);
+      return;
+    }
   }
   const isV2 = parsed && parsed.type === 'training' && parsed.version === 2 && Array.isArray(parsed.phases);
   let v2 = null;
@@ -22857,6 +23053,9 @@ async function analyzeTrainingJSON() {
       by_week: ex.by_week || {},
       circuit_group: ex.circuit_group || null,
       circuit_rounds: ex.circuit_group ? (ex.circuit_rounds || null) : null,
+      rest_seconds: Number.isFinite(Number(ex.rest_seconds)) && ex.rest_seconds !== null && ex.rest_seconds !== '' ? Number(ex.rest_seconds) : null,
+      notes: ex.notes || null,
+      circuit_notes: ex.circuit_notes || null,
       status: m ? 'match' : 'pending',
       resolvedType: m ? 'library' : null,
       resolvedData: m ? {name:m.name, muscle_group:m.muscle_group, video_url:m.video_url, tag:m.tag} : null
@@ -22892,8 +23091,17 @@ async function analyzeTrainingJSON() {
     }));
   }
 
+  if (fromWeek) {
+    // Desde la semana N: lo anterior del JSON se ignora (ni se revisa ni hay que resolver sus ejercicios)
+    processedDays = processedDays.map(d => ({ ...d, exercises: d.exercises.map(ex => {
+      const bw = {}; Object.keys(ex.by_week || {}).forEach(k => { if (Number(k) >= fromWeek) bw[k] = ex.by_week[k]; });
+      return { ...ex, by_week: bw };
+    }).filter(ex => Object.keys(ex.by_week).length) })).filter(d => d.exercises.length);
+    if (phases) phases = phases.filter(ph => processedDays.some(d => d.phase === ph.phase));
+    if (!processedDays.length) { showToast(`El JSON no trae nada desde la semana ${fromWeek}`, 'error', 4000); return; }
+  }
   _tImport = { days: processedDays, library, activeDay: 0, searchActive: null, searchQuery: '', newFormActive: null, renamingDay: false,
-    meta, phases, activePhase: phases ? phases[0].phase : null };
+    meta, phases, activePhase: phases ? phases[0].phase : null, fromWeek };
   renderTrainingPreview();
 }
 
@@ -22915,7 +23123,7 @@ function _validateTrainingV2(p) {
   if (!p.phases.length) return fail('phases está vacío');
 
   const seenWeeks = {};
-  let refDays = null; // day_order → day_name de la primera fase
+
   for (let pi = 0; pi < p.phases.length; pi++) {
     const ph = p.phases[pi];
     const tag = `Fase ${ph && ph.phase != null ? ph.phase : pi+1}`;
@@ -22940,13 +23148,7 @@ function _validateTrainingV2(p) {
         }
       }
     }
-    if (!refDays) { refDays = cur; continue; }
-    const orders = new Set([...Object.keys(refDays), ...Object.keys(cur)]);
-    for (const o of orders) {
-      if (refDays[o] !== cur[o]) {
-        return fail(`Día inconsistente entre fases: day_order ${o} es "${refDays[o] ?? '(no existe)'}" en la fase ${p.phases[0].phase ?? 1} y "${cur[o] ?? '(no existe)'}" en la fase ${ph.phase}`);
-      }
-    }
+    // Los días pueden variar entre fases (el export trae una fase por semana): ya no se exige que coincidan.
   }
   return { total_weeks: total, deload_weeks: deload, rotation_weeks: rotation, phases: p.phases };
 }
@@ -23242,6 +23444,23 @@ async function confirmTrainingImport() {
   const anyPending = _tImport.days.some(d=>d.exercises.some(ex=>ex.status==='pending'));
   if (anyPending) { showToast('⚠️ Resolvé todos los ejercicios sin match primero', 3000); return; }
 
+  const fromWeek = _tImport.fromWeek || null;
+  if (fromWeek) {
+    const cid = currentClient.id;
+    const locked = await planWeeksWithRecords(cid, fromWeek);
+    if (locked.length) { showToast(`La semana ${locked.join(', ')} ya tiene registros del cliente. Elegí desde la semana ${Math.max(...locked) + 1}.`, 'error', 6000); return; }
+    const jsonWeeks = [...new Set(_tImport.days.flatMap(d => d.exercises.flatMap(ex => Object.keys(ex.by_week).map(Number))))].filter(w => w >= fromWeek).sort((a, b) => a - b);
+    const nDays = _tImport.days.filter(d => d.exercises.some(ex => Object.keys(ex.by_week).some(k => Number(k) >= fromWeek))).length;
+    const {data: curDays} = await sb.from('monthly_plans').select('week_number').eq('client_id', cid).gte('week_number', fromWeek);
+    const curWeeks = [...new Set((curDays || []).map(d => d.week_number))].sort((a, b) => a - b);
+    const emptied = curWeeks.filter(w => !jsonWeeks.includes(w));
+    const msg = (fromWeek > 1 ? `Se mantienen las semanas 1 a ${fromWeek - 1} como están.\n` : '')
+      + `Se reemplaza desde la semana ${fromWeek}: ${jsonWeeks.length ? 'semanas ' + jsonWeeks.join(', ') : 'ninguna semana en el JSON'} (${nDays} días del JSON).`
+      + (emptied.length ? `\nOjo: las semanas ${emptied.join(', ')} no vienen en el JSON y quedan vacías.` : '')
+      ;
+    if (!(await appDialog({ title: 'Subir plan desde la semana ' + fromWeek, text: msg, okLabel: 'Sí, reemplazar', cancelLabel: 'Cancelar' }))) return;
+  }
+
   showToast('⏳ Importando plan...', 60000);
   const stats = {newDays:0, exercises:0};
 
@@ -23268,11 +23487,22 @@ async function confirmTrainingImport() {
       }
     }
 
+    // Step 1b — desde la semana N: se vacían esas semanas (días y ejercicios) para cargarlas de cero.
+    // Ya se verificó que no tengan registros del cliente; las semanas anteriores no se tocan.
+    if (fromWeek) {
+      const {data: oldDays, error: odErr} = await sb.from('monthly_plans').select('id').eq('client_id', currentClient.id).gte('week_number', fromWeek);
+      if (odErr) throw odErr;
+      for (const pd of (oldDays || [])) {
+        const {error: e1} = await sb.from('exercises').delete().eq('plan_day_id', pd.id); if (e1) throw e1;
+        const {error: e2} = await sb.from('monthly_plans').delete().eq('id', pd.id); if (e2) throw e2;
+      }
+    }
+
     // Step 2 — iterate days → weeks → exercises
     for (const day of _tImport.days) {
       const allWeeks = [...new Set(
         day.exercises.flatMap(ex=>Object.keys(ex.by_week).map(Number))
-      )].sort((a,b)=>a-b);
+      )].filter(w => !fromWeek || w >= fromWeek).sort((a,b)=>a-b);
 
       for (const weekNum of allWeeks) {
         const {data:existing} = await sb.from('monthly_plans')
@@ -23316,7 +23546,9 @@ async function confirmTrainingImport() {
             tag: ex.resolvedData?.tag||'Peso Libre',
             muscle_group: ex.resolvedData?.muscle_group||null,
             video_url: ex.resolvedData?.video_url||null,
-            rest_seconds: 60,
+            rest_seconds: ex.rest_seconds != null ? ex.rest_seconds : 60,
+            notes: ex.notes || null,
+            circuit_notes: ex.circuit_notes || null,
             superset_group: isCircuit ? ex.circuit_group : null,
             circuit_rounds: isCircuit ? (bw.rounds ?? ex.circuit_rounds) : null
           };
@@ -23347,7 +23579,14 @@ async function confirmTrainingImport() {
 
     // v2: persistir la configuración de semanas del cliente (el camino legacy no toca estas columnas)
     if (_tImport.meta) {
-      const m = _tImport.meta;
+      const m = { ..._tImport.meta };
+      if (fromWeek) {
+        // Desde la semana N: deload/rotación de las semanas anteriores quedan como estaban
+        const keep = (arr) => (Array.isArray(arr) ? arr : []).map(Number).filter(w => w < fromWeek);
+        const from = (arr) => (arr || []).map(Number).filter(w => w >= fromWeek);
+        m.deload_weeks = [...new Set([...keep(getDeloadWeeks()), ...from(m.deload_weeks)])].sort((a, b) => a - b);
+        m.rotation_weeks = [...new Set([...keep(currentClient.rotation_weeks), ...from(m.rotation_weeks)])].sort((a, b) => a - b);
+      }
       const {error:cErr} = await sb.from('clients')
         .update({total_weeks: m.total_weeks, deload_weeks: m.deload_weeks, rotation_weeks: m.rotation_weeks})
         .eq('id', currentClient.id);
@@ -23975,7 +24214,7 @@ async function loadTestTemplate(templateId, templateName) {
 }
 
 async function deleteTestTemplate(templateId) {
-  if (!confirm('¿Eliminar esta plantilla?')) return;
+  if (!(await appConfirm('¿Eliminar esta plantilla?'))) return;
   await sb.from('test_template_exercises').delete().eq('template_id', templateId);
   const {error} = await sb.from('test_templates').delete().eq('id', templateId);
   if (error) { showToast('❌ '+error.message); return; }
@@ -24994,7 +25233,7 @@ function rnParsePlanJson(text, routines) {
   return { errors, warnings, plan: { nivel: [1, 2, 3].includes(nivel) ? nivel : null, weeks }, count };
 }
 // Carga al editor como borrador (nada se activa). En un plan activo reemplaza solo lo pendiente.
-function rnJsonLoad() {
+async function rnJsonLoad() {
   const r = rnPlan.json.res; if (!r || r.errors.length) return;
   const p = rnProfile, active = p.plan_status === 'active' || p.plan_status === 'paused';
   const cur = rnCurrentWeek(p), onlyFuture = rnPlan.json.scope === 'futuro';
@@ -25002,7 +25241,7 @@ function rnJsonLoad() {
   const maxN = Math.max(rnPlan.weeks.length, ...r.plan.weeks.map(w => w.n));
   while (rnPlan.weeks.length < maxN) rnPlan.weeks.push({ n: rnPlan.weeks.length + 1, type: 'normal', sessions: [] });
   const pending = rnPlan.weeks.filter(affected).reduce((a, w) => a + w.sessions.filter(s => s.status !== 'hecha').length, 0);
-  if (active && !confirm(`Se reemplazan ${pending} sesiones pendientes${onlyFuture ? ' de las semanas futuras' : ''}; las hechas no se tocan. ¿Seguimos?`)) return;
+  if (active && !(await appConfirm(`Se reemplazan ${pending} sesiones pendientes${onlyFuture ? ' de las semanas futuras' : ''}; las hechas no se tocan. ¿Seguimos?`))) return;
   const skipped = [];
   rnPlan.weeks.forEach(w => {
     if (!affected(w)) return;
@@ -25275,7 +25514,7 @@ async function rnShoeSave(id) {
 }
 async function rnShoeRetire(id) {
   const z = rnShoes.find(x => x.id === id);
-  if (!z || !confirm(`¿Retirar ${z.name}? Se conserva su historial.`)) return;
+  if (!z || !(await appConfirm(`¿Retirar ${z.name}? Se conserva su historial.`))) return;
   const { error } = await sb.from('run_shoes').update({ retired_at: new Date().toISOString() }).eq('id', id).eq('client_id', currentClient.id);
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
   rnShoes = await rnLoadShoes(currentClient.id); showToast('Zapato retirado'); rnRenderClient();
@@ -25810,7 +26049,7 @@ async function rnExDelete(id) {
   const e = rnLib.ex.find(x => x.id === id); if (!e) return;
   const used = rnLib.routines.filter(r => (r.exercise_ids || []).map(String).includes(String(id)));
   const msg = used.length ? `«${e.name}» se usa en ${used.length} ${used.length === 1 ? 'bloque' : 'bloques'} (${used.map(r => r.name).join(', ')}). Si lo borrás, se quita de ${used.length === 1 ? 'ese bloque' : 'esos bloques'}. ¿Borrarlo igual?` : `¿Borrar «${e.name}»?`;
-  if (!confirm(msg)) return;
+  if (!(await appConfirm(msg))) return;
   for (const r of used) {
     const { error } = await sb.from('run_routines').update({ exercise_ids: (r.exercise_ids || []).filter(x => String(x) !== String(id)) }).eq('id', r.id);
     if (error) { showToast(error.message, 'error'); return; }
