@@ -1847,12 +1847,8 @@ button.exx-pill { cursor:pointer; min-height:28px; }
       <div id="ctab-churn" onclick="setClientTab('churn')" style="flex:1;text-align:center;padding:13px 8px 11px;font-size:13px;font-weight:700;color:var(--gray4);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;">Churn <span id="coach-count-churn" style="font-size:11px;font-weight:600;color:var(--gray4);"></span></div>
       <div id="ctab-hidden" onclick="setClientTab('hidden')" style="flex:1;text-align:center;padding:13px 8px 11px;font-size:13px;font-weight:700;color:var(--gray4);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;">Ocultos <span id="coach-count-hidden" style="font-size:11px;font-weight:600;color:var(--gray4);"></span></div>
     </div>
-    <div id="client-sort-bar" class="sort-bar" style="margin-top:12px;">
-      <div class="sort-chip active" onclick="setSortClients('name',this)">A–Z</div>
-      <div class="sort-chip" onclick="setSortClients('payment_asc',this)">Pago próximo ↑</div>
-      <div class="sort-chip" onclick="setSortClients('start_date',this)">Fecha inicio</div>
-      <div class="sort-chip" onclick="setSortClients('last_active',this)">Última sesión</div>
-    </div>
+    <!-- Chips de orden quitados (módulo Run, R7). setSortClients y clientSortMode siguen en el código; orden por defecto A–Z. -->
+    <div style="height:12px;"></div>
     <div id="exx-assist-banner"></div>
     <div id="coach-clients-list"><div class="spinner"></div></div>
   </div>
@@ -8604,7 +8600,7 @@ function renderCoachClients(clients) {
     // Programa terminado (semana automática): tarjeta negra. Se calcula acá, no se guarda nada.
     const progEnd = !exxReqs.length ? clientProgramEndMs(c) : null;
     return `<div class="client-card fade-up${exxReqs.length?' exx-assist-card':''}${progEnd?' prog-done-card':''}" onclick="openCoachClient('${c.id}')" style="${!exxReqs.length&&!progEnd&&hasOverdueReminder?'background:var(--orange-light);border:1.5px solid var(--orange);':''}">
-      <div class="client-avatar" style="${c.is_churn ? 'opacity:0.5;' : ''}">${getInitials(c.name)}</div>
+      ${rnHomeBadgeHtml(c)}
       <div class="client-info">
         <div class="client-name" style="display:flex;align-items:center;gap:6px;${c.is_churn ? 'color:var(--gray4);' : ''}">${c.name}${typeTag}${evolutionBadge}${liftBadge}${(window._clientsWithReminder||new Set()).has(c.id)?'<div style="width:22px;height:22px;border-radius:5px;background:#fff3e0;display:flex;align-items:center;justify-content:center;font-size:12px;"><svg class="ico" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-bell"/></svg></div>':''}</div>
         <div class="client-meta">@${c.username} · ${(c.days_trained||0)+(c.days_trained_adjustment||0)} días${startDateStr?` · Inicio: ${startDateStr}`:''}${endDateStr?` · Fin: ${endDateStr}`:''}${clientSortMode==='last_active'?(()=>{const t=(window._lastTrainedMap||{})[c.id];return t?` · ${new Date(t).toLocaleDateString('es-CR',{weekday:'short',day:'numeric',month:'short'})}`:' · Sin entreno';})():''}</div>
@@ -8671,6 +8667,8 @@ async function loadCoachClients() {
   // Solicitudes de asistencia abiertas (tarjeta naranja + banner); si falla, la lista se ve como antes
   try { await exxLoadOpenAssist(clientIds); } catch(e) { console.warn('exx assist load failed:', e); }
   exxStartAssistPolling();
+  // Días con registro esta semana (círculo de la tarjeta); si falla, se ve 0 y la lista sigue
+  try { await rnLoadHomeWeek((clients||[]).map(c => c.id)); } catch(e) { console.warn('rn home week failed:', e); }
   renderCoachClients(clients||[]);
 }
 
@@ -24117,6 +24115,8 @@ textarea.rn-in { height:auto; min-height:72px; padding:10px 12px; font-family:'D
 .rn-ib { width:40px; height:40px; border-radius:10px; border:1px solid #D2C7B6; background:#fff; display:inline-flex; align-items:center; justify-content:center; color:#1F1B16; cursor:pointer; flex-shrink:0; }
 .rn-ib[disabled] { opacity:.35; cursor:default; }
 button.rn-cd { font-family:'DM Sans',sans-serif; color:#1F1B16; }
+.client-avatar.rn-wk { font-family:'DM Mono',monospace; font-size:17px; font-weight:500; background:#EFE9DF; color:#4F483E; }
+.client-avatar.rn-wk.is-on { background:#C24E18; color:#fff; }
 .rn-empty { text-align:center; padding:28px 12px; color:#5E564B; font-size:14px; line-height:1.5; }
 </style>
 <script>
@@ -25583,6 +25583,35 @@ async function rnCoachResolve(id) {
   showToast('Alerta resuelta', 'success');
   rnCoach.detail.al = rnCoach.detail.al.filter(a => a.id !== id);
   rnCoachDetailRender();
+}
+// ---------- R7: home del coach (pantalla 20) ----------
+// En lugar de las iniciales: cuántos días de esta semana (lunes a domingo, hora de CR) tienen
+// algún registro de entreno: series (exercise_logs), sesión marcada (workout_sessions),
+// check-in de entreno (workout_completions), sesión de Mi diario (diary_entries kind 'session')
+// o corrida de Run (run_sessions). Un día con varias cosas cuenta 1. Gris si es 0. Solo lectura.
+let rnHomeWeek = new Map(); // client_id → Set de fechas
+async function rnLoadHomeWeek(ids) {
+  rnHomeWeek = new Map();
+  if (!ids || !ids.length) return;
+  const today = todayCR(), mon = rnWeekMonday(today);
+  const safe = q => Promise.resolve(q).then(r => (r && !r.error && r.data) || [], () => []);
+  const [logs, sess, cks, diary, runs] = await Promise.all([
+    safe(sb.from('exercise_logs').select('client_id,logged_at').in('client_id', ids).gte('logged_at', crDayRange(mon).start).lt('logged_at', crDayRange(today).end).limit(10000)),
+    safe(sb.from('workout_sessions').select('client_id,session_date').in('client_id', ids).gte('session_date', mon).lte('session_date', today)),
+    safe(sb.from('workout_completions').select('client_id,completed_date').in('client_id', ids).gte('completed_date', mon).lte('completed_date', today)),
+    safe(sb.from('diary_entries').select('client_id,entry_date,kind').in('client_id', ids).eq('kind', 'session').gte('entry_date', mon).lte('entry_date', today)),
+    safe(sb.from('run_sessions').select('client_id,session_date').in('client_id', ids).gte('session_date', mon).lte('session_date', today))
+  ]);
+  const add = (cid, d) => { if (!d || d < mon || d > today) return; if (!rnHomeWeek.has(cid)) rnHomeWeek.set(cid, new Set()); rnHomeWeek.get(cid).add(d); };
+  logs.forEach(l => add(l.client_id, pgCRDate(l.logged_at)));
+  sess.forEach(s => add(s.client_id, String(s.session_date || '').slice(0, 10)));
+  cks.forEach(c => add(c.client_id, String(c.completed_date || '').slice(0, 10)));
+  diary.forEach(e => add(e.client_id, String(e.entry_date || '').slice(0, 10)));
+  runs.forEach(r => add(r.client_id, String(r.session_date || '').slice(0, 10)));
+}
+function rnHomeBadgeHtml(c) {
+  const n = (rnHomeWeek.get(c.id) || new Set()).size;
+  return `<div class="client-avatar rn-wk${n ? ' is-on' : ''}" role="img" aria-label="${n} ${n === 1 ? 'día' : 'días'} con registro esta semana" style="${c.is_churn ? 'opacity:0.5;' : ''}">${n}</div>`;
 }
 // ===== FIN MÓDULO RUN =====
 </script>
