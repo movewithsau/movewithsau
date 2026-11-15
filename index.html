@@ -11301,7 +11301,7 @@ function appDialog(opts) {
       <div role="dialog" aria-modal="true" aria-labelledby="app-dlg-ttl" style="background:var(--white);border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;max-width:480px;box-sizing:border-box;">
         <div id="app-dlg-ttl" style="font-size:16px;font-weight:700;margin-bottom:6px;">${esc(opts.title)}</div>
         ${opts.text ? `<div style="font-size:13px;color:var(--gray5);line-height:1.5;margin-bottom:14px;white-space:pre-line;">${esc(opts.text)}</div>` : ''}
-        ${hasInput ? `<input id="app-dlg-in" class="form-input" type="text" value="${esc(opts.input)}" aria-label="${esc(opts.title)}" style="width:100%;box-sizing:border-box;margin-bottom:14px;">` : ''}
+        ${hasInput ? `<input id="app-dlg-in" class="form-input" type="${opts.inputType === 'date' ? 'date' : 'text'}" value="${esc(opts.input)}" aria-label="${esc(opts.title)}" style="width:100%;box-sizing:border-box;margin-bottom:14px;">` : ''}
         <button type="button" id="app-dlg-ok" style="width:100%;padding:12px;border-radius:12px;background:#C24E18;border:0;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:10px;">${esc(opts.okLabel || 'Aceptar')}</button>
         <button type="button" id="app-dlg-no" style="width:100%;padding:12px;border-radius:12px;background:var(--gray1);border:1.5px solid var(--gray2);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">${esc(opts.cancelLabel || 'Cancelar')}</button>
       </div>`;
@@ -11311,7 +11311,7 @@ function appDialog(opts) {
     pop.querySelector('#app-dlg-no').onclick = () => done(null);
     pop.onclick = e => { if (e.target === pop) done(null); };
     document.body.appendChild(pop);
-    if (hasInput) { const i = inp(); i.addEventListener('keydown', e => { if (e.key === 'Enter') done(i.value); }); setTimeout(() => { i.focus(); i.select(); }, 30); }
+    if (hasInput) { const i = inp(); i.addEventListener('keydown', e => { if (e.key === 'Enter') done(i.value); }); setTimeout(() => { i.focus(); if (i.type === 'text') i.select(); }, 30); }
   });
 }
 
@@ -24894,12 +24894,13 @@ function rnPlanSummary() {
 function rnPlanCoachButtonsHtml() {
   const p = rnProfile; if (!p) return '';
   if (!p.plan_status || p.plan_status === 'none') return `<button type="button" class="rn-bt is-g" onclick="rnPlanCreateStart()">Crear el plan</button>`;
-  if (p.plan_status === 'draft') return `<button type="button" class="rn-bt is-g" onclick="rnPlanOpenEditor()">Seguir armando el plan</button>`;
+  const manage = `<div class="rn-row" style="gap:6px;margin-top:8px;"><button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="rnPlanDateChange()">Cambiar fecha</button><button type="button" class="rn-ch rn-fx" style="font-size:13px;color:#B3261E;" onclick="rnPlanDelete()">Eliminar plan</button></div>`;
+  if (p.plan_status === 'draft') return `<button type="button" class="rn-bt is-g" onclick="rnPlanOpenEditor()">Seguir armando el plan</button>${manage}`;
   const pause = p.plan_status === 'paused'
     ? `<button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="rnPlanResume()">Reanudar plan</button>`
     : `<button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="rnPlanPause()">Pausar plan</button>`;
   return `<button type="button" class="rn-bt is-l" onclick="rnPlanOpenEditor()">Modificar el plan</button>
-    <div class="rn-row" style="gap:6px;margin-top:8px;"><button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="rnPlanLevelSheet()">Cambiar nivel</button>${pause}</div>`;
+    <div class="rn-row" style="gap:6px;margin-top:8px;"><button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="rnPlanLevelSheet()">Cambiar nivel</button>${pause}</div>${manage}`;
 }
 
 // Pantalla 15: crear el plan
@@ -24998,6 +24999,10 @@ function rnPlanRender() {
       <button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="rnPlanCopySheet()">Copiar semana a…</button>
       <button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="rnJsonOpen()">Pegar JSON</button>
       ${active ? `<button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="${st === 'paused' ? 'rnPlanResume()' : 'rnPlanPause()'}">${st === 'paused' ? 'Reanudar' : 'Pausar plan'}</button>` : ''}
+    </div>
+    <div class="rn-row" style="gap:6px;margin-top:6px;">
+      <button type="button" class="rn-ch rn-fx" style="font-size:13px;" onclick="rnPlanDateChange()">Cambiar fecha${p.start_date ? ' · ' + rnDayLabel(String(p.start_date).slice(0, 10)) : ''}</button>
+      <button type="button" class="rn-ch rn-fx" style="font-size:13px;color:#B3261E;" onclick="rnPlanDelete()">Eliminar plan</button>
     </div>
     ${active
       ? `<button type="button" class="rn-bt is-g" onclick="rnPlanSave('keep')">Guardar cambios</button><div class="rn-xs rn-mu" style="text-align:center;margin-top:6px;">Los cambios solo afectan las sesiones pendientes.</div>`
@@ -25138,6 +25143,36 @@ async function rnPlanSave(status) {
     showToast(status === 'draft' ? 'Borrador guardado' : 'Cambios guardados', 'success');
     await rnPlanLoad(); rnPlanRender();
   }
+  rnRenderCoachSection();
+}
+
+// Cambiar la fecha de inicio: mueve en qué semana va el cliente. Las corridas hechas no se tocan.
+async function rnPlanDateChange() {
+  const p = rnProfile; if (!p) return;
+  const cur = p.start_date ? String(p.start_date).slice(0, 10) : todayCR();
+  const w = rnCurrentWeek(p);
+  const v = await appDialog({
+    title: 'Fecha de inicio del plan',
+    text: (p.start_date ? (w ? `Hoy va en la semana ${w} de ${p.weeks_total}. ` : `Empieza el ${rnDayLabel(cur)}. `) : '') + 'Cambiar la fecha cambia en qué semana va el cliente. Las corridas que ya registró no se tocan.',
+    input: cur, inputType: 'date', okLabel: 'Guardar fecha'
+  });
+  if (!v || v === cur) return;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) { showToast('Fecha inválida', 'error'); return; }
+  if (!(await rnUpdateProfile({ start_date: v }))) return;
+  const nw = rnCurrentWeek(rnProfile);
+  showToast(nw ? `Listo: ahora va en la semana ${nw}` : `Listo: el plan empieza el ${rnDayLabel(v)}`, 'success');
+  rnRenderCoachSection(); if (rnPlan && rnPlan.weeks) rnPlanRender();
+}
+// Eliminar el plan: borra las semanas y sesiones del plan (run_planned_sessions) y deja el perfil sin plan.
+// Las corridas registradas (run_sessions), check-ins, zapatos y alertas del cliente no se tocan.
+async function rnPlanDelete() {
+  const p = rnProfile, cid = p && p.client_id; if (!p || !cid) return;
+  if (!(await appConfirm('¿Eliminar el plan de running?\n\nSe borran todas sus semanas y sesiones. Las corridas que ya registró el cliente se quedan en su historial. Después podés crear un plan nuevo.'))) return;
+  const { error } = await sb.from('run_planned_sessions').delete().eq('client_id', cid);
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  if (!(await rnUpdateProfile({ plan_status: 'none', start_date: null, weeks_total: null, paused_at: null, resume_reduced_week: null }))) return;
+  rnPlan = null; rnCloseSheet();
+  showToast('Plan eliminado', 'success');
   rnRenderCoachSection();
 }
 
