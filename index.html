@@ -1943,6 +1943,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
         <div class="section-action" onclick="openQuickDayBuilder()" style="background:#f0fff4;color:#276749;border:1.5px solid #276749;padding:5px 10px;border-radius:6px;font-size:11px;">🚀 Rápido</div>
         <div class="section-action" onclick="openAssignTemplateModal()" style="background:var(--orange);color:white;padding:5px 10px;border-radius:6px;font-size:11px;">Desde Template</div>
         <div class="section-action" onclick="openTrainingImportModal()" style="background:#f0fff4;color:#276749;border:1.5px solid #276749;padding:5px 10px;border-radius:6px;font-size:11px;display:inline-flex;align-items:center;gap:4px;"><svg class="ico" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-download"/></svg>Pegar Plan</div>
+        <div class="section-action" onclick="exportClientPlan()" style="background:#fff;color:#A63E10;border:1.5px solid #A63E10;padding:5px 10px;border-radius:6px;font-size:11px;display:inline-flex;align-items:center;gap:4px;"><svg class="ico" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-download"/></svg>Exportar</div>
         <div class="section-action" onclick="showPlanBuilder()">+ Manual</div>
       </div>
     </div>
@@ -11265,12 +11266,38 @@ function openDayOptionsMenu(dayValue, label, anchorEl) {
     </div>`;
   pop.querySelector('#pop-move-left').onclick = () => { pop.remove(); moveDayOrder(dayValue, -1); };
   pop.querySelector('#pop-move-right').onclick = () => { pop.remove(); moveDayOrder(dayValue, 1); };
-  pop.querySelector('#pop-rename').onclick = () => { pop.remove(); const n=prompt('Nuevo nombre:',label); if(n&&n.trim()&&n.trim()!==label) renameTrainingDay(dayValue,n.trim()); };
+  pop.querySelector('#pop-rename').onclick = async () => { pop.remove(); const n = await appDialog({ title: 'Renombrar día', input: label, okLabel: 'Guardar' }); if(n&&n.trim()&&n.trim()!==label) renameTrainingDay(dayValue,n.trim()); };
   pop.querySelector('#pop-save-workout').onclick = () => { pop.remove(); saveDayAsWorkout(dayValue, label); };
   pop.querySelector('#pop-delete').onclick = () => { pop.remove(); deleteTrainingDay(dayValue, label); };
   pop.querySelector('#pop-cancel').onclick = () => pop.remove();
   pop.onclick = (e) => { if(e.target===pop) pop.remove(); };
   document.body.appendChild(pop);
+}
+
+// Hoja de diálogo del app: reemplaza prompt()/confirm() (algunos navegadores embebidos no los soportan).
+// opts: { title, text, input (valor inicial; si viene, pide texto), okLabel, cancelLabel }. Devuelve string | true | null.
+function appDialog(opts) {
+  return new Promise(resolve => {
+    const esc = t => String(t ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+    const pop = document.createElement('div');
+    pop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:600;display:flex;align-items:flex-end;justify-content:center;';
+    const hasInput = opts.input != null;
+    pop.innerHTML = `
+      <div role="dialog" aria-modal="true" aria-labelledby="app-dlg-ttl" style="background:var(--white);border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;max-width:480px;box-sizing:border-box;">
+        <div id="app-dlg-ttl" style="font-size:16px;font-weight:700;margin-bottom:6px;">${esc(opts.title)}</div>
+        ${opts.text ? `<div style="font-size:13px;color:var(--gray5);line-height:1.5;margin-bottom:14px;white-space:pre-line;">${esc(opts.text)}</div>` : ''}
+        ${hasInput ? `<input id="app-dlg-in" class="form-input" type="text" value="${esc(opts.input)}" aria-label="${esc(opts.title)}" style="width:100%;box-sizing:border-box;margin-bottom:14px;">` : ''}
+        <button type="button" id="app-dlg-ok" style="width:100%;padding:12px;border-radius:12px;background:#C24E18;border:0;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:10px;">${esc(opts.okLabel || 'Aceptar')}</button>
+        <button type="button" id="app-dlg-no" style="width:100%;padding:12px;border-radius:12px;background:var(--gray1);border:1.5px solid var(--gray2);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">${esc(opts.cancelLabel || 'Cancelar')}</button>
+      </div>`;
+    const done = v => { pop.remove(); resolve(v); };
+    const inp = () => pop.querySelector('#app-dlg-in');
+    pop.querySelector('#app-dlg-ok').onclick = () => done(hasInput ? inp().value : true);
+    pop.querySelector('#app-dlg-no').onclick = () => done(null);
+    pop.onclick = e => { if (e.target === pop) done(null); };
+    document.body.appendChild(pop);
+    if (hasInput) { const i = inp(); i.addEventListener('keydown', e => { if (e.key === 'Enter') done(i.value); }); setTimeout(() => { i.focus(); i.select(); }, 30); }
+  });
 }
 
 async function moveDayOrder(dayValue, direction) {
@@ -11310,10 +11337,39 @@ async function deleteTrainingDay(dayValue, label) {
 }
 
 async function renameTrainingDay(dayValue, newName) {
-  await sb.from('monthly_plans').update({day_of_week:newName}).eq('client_id',currentClient.id).eq('week_number',builderWeek).eq('day_of_week',dayValue);
+  const cid = currentClient.id, wk = builderWeek;
+  await sb.from('monthly_plans').update({day_of_week:newName}).eq('client_id',cid).eq('week_number',wk).eq('day_of_week',dayValue);
   if(builderDay===dayValue) builderDay=newName;
   showToast('Renombrado a "'+newName+'"', 'success');
   await buildDayStrip();
+  // ¿El mismo día existe en las semanas siguientes? Ofrecer cambiarlo ahí también
+  const {data: later} = await sb.from('monthly_plans').select('id,week_number,day_of_week').eq('client_id',cid).gt('week_number',wk);
+  const same = (later||[]).filter(d => d.day_of_week === dayValue);
+  if (!same.length || currentClient?.id !== cid) return;
+  const clash = new Set((later||[]).filter(d => d.day_of_week === newName).map(d => d.week_number));
+  const target = same.filter(d => !clash.has(d.week_number));
+  const weeks = [...new Set(target.map(d => d.week_number))].sort((a,b)=>a-b);
+  const skipped = [...new Set(same.filter(d => clash.has(d.week_number)).map(d => d.week_number))].sort((a,b)=>a-b);
+  if (!weeks.length) return;
+  const esc = t => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const pop = document.createElement('div');
+  pop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:500;display:flex;align-items:flex-end;justify-content:center;';
+  pop.innerHTML = `
+    <div role="dialog" aria-modal="true" aria-labelledby="rn-day-ttl" style="background:var(--white);border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;max-width:480px;">
+      <div id="rn-day-ttl" style="font-size:16px;font-weight:700;margin-bottom:6px;">¿Cambiar el nombre en las semanas siguientes?</div>
+      <div style="font-size:13px;color:var(--gray5);line-height:1.5;margin-bottom:18px;">«${esc(dayValue)}» también está en ${weeks.length === 1 ? 'la semana ' + weeks[0] : 'las semanas ' + weeks.join(', ')}. ¿Lo pasamos a «${esc(newName)}» ahí también?${skipped.length ? `<br><span style="color:var(--gray4);">En ${skipped.length === 1 ? 'la semana ' + skipped[0] : 'las semanas ' + skipped.join(', ')} ya hay un día con ese nombre; esa no se toca.</span>` : ''}</div>
+      <button type="button" id="rn-day-all" style="width:100%;padding:12px;border-radius:12px;background:#C24E18;border:0;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:10px;">Sí, cambiarlo en ${weeks.length === 1 ? 'la semana ' + weeks[0] : weeks.length + ' semanas'}</button>
+      <button type="button" id="rn-day-one" style="width:100%;padding:12px;border-radius:12px;background:var(--gray1);border:1.5px solid var(--gray2);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Solo en esta semana</button>
+    </div>`;
+  pop.querySelector('#rn-day-one').onclick = () => pop.remove();
+  pop.onclick = (e) => { if (e.target === pop) pop.remove(); };
+  pop.querySelector('#rn-day-all').onclick = async () => {
+    pop.remove();
+    const {error} = await sb.from('monthly_plans').update({day_of_week:newName}).in('id', target.map(d => d.id));
+    if (error) { showToast('No se pudo cambiar: ' + error.message, 'error'); return; }
+    showToast(`Cambiado en ${weeks.length === 1 ? 'la semana ' + weeks[0] : weeks.length + ' semanas más'}`, 'success');
+  };
+  document.body.appendChild(pop);
 }
 
 async function switchBuilderDay(day) {
@@ -22833,6 +22889,93 @@ function _esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ─── EXPORTAR PLAN / SUBIR DESDE LA SEMANA N ──────────────────────────
+// Semana por defecto del selector: la semana en que va el cliente (modo automático); si no, todo el plan.
+function tiDefaultFromWeek() {
+  const aw = currentClient ? getAutoWeekInfo(currentClient, []) : null;
+  return aw && aw.state === 'active' && aw.mapped ? aw.mapped.week : null;
+}
+// Semanas >= fromWeek que ya tienen registros del cliente (series, sesiones o check-ins ligados a sus días).
+// Esas semanas no se reemplazan para no perder ni dejar huérfano nada de lo que el cliente hizo.
+async function planWeeksWithRecords(clientId, fromWeek) {
+  const {data: days} = await sb.from('monthly_plans').select('id,week_number').eq('client_id', clientId).gte('week_number', fromWeek);
+  if (!days || !days.length) return [];
+  const weekOf = {}; days.forEach(d => { weekOf[d.id] = d.week_number; });
+  const dayIds = days.map(d => d.id);
+  const locked = new Set();
+  const chunks = (arr, n) => Array.from({length: Math.ceil(arr.length / n)}, (_, i) => arr.slice(i * n, i * n + n));
+  for (const ch of chunks(dayIds, 100)) {
+    const [{data: exs}, {data: ses}, {data: cks}] = await Promise.all([
+      sb.from('exercises').select('id,plan_day_id').in('plan_day_id', ch),
+      sb.from('workout_sessions').select('plan_day_id').in('plan_day_id', ch),
+      sb.from('workout_completions').select('plan_day_id').in('plan_day_id', ch)
+    ]);
+    (ses || []).forEach(r => locked.add(weekOf[r.plan_day_id]));
+    (cks || []).forEach(r => locked.add(weekOf[r.plan_day_id]));
+    const exDay = {}; (exs || []).forEach(e => { exDay[e.id] = e.plan_day_id; });
+    for (const ec of chunks(Object.keys(exDay), 200)) {
+      const {data: logs} = await sb.from('exercise_logs').select('exercise_id').in('exercise_id', ec).limit(5000);
+      (logs || []).forEach(l => locked.add(weekOf[exDay[l.exercise_id]]));
+    }
+  }
+  return [...locked].filter(w => w != null).sort((a, b) => a - b);
+}
+// Exporta el plan del cliente en el formato de "Importar JSON" (v2, una fase por semana para no perder
+// diferencias entre semanas). Copia al portapapeles y descarga el archivo. Solo lectura.
+async function exportClientPlan() {
+  if (!currentClient) return;
+  const cid = currentClient.id;
+  const {data: days, error} = await sb.from('monthly_plans').select('id,week_number,day_of_week,day_order')
+    .eq('client_id', cid).order('week_number', {ascending: true}).order('day_order', {ascending: true, nullsFirst: false}).order('id', {ascending: true});
+  if (error) { showToast(error.message, 'error'); return; }
+  if (!days || !days.length) { showToast('Este cliente todavía no tiene plan cargado'); return; }
+  const byDay = {};
+  const ids = days.map(d => d.id);
+  for (let i = 0; i < ids.length; i += 100) {
+    const {data: exs, error: exErr} = await sb.from('exercises')
+      .select('plan_day_id,name,sets,reps_range,rpe,rest_seconds,notes,circuit_notes,superset_group,circuit_rounds,order_index')
+      .in('plan_day_id', ids.slice(i, i + 100));
+    if (exErr) { showToast(exErr.message, 'error'); return; }
+    (exs || []).forEach(e => { (byDay[e.plan_day_id] = byDay[e.plan_day_id] || []).push(e); });
+  }
+  const weeks = [...new Set(days.map(d => Number(d.week_number)))].filter(w => w >= 1).sort((a, b) => a - b);
+  const total = Math.min(12, Math.max(Number(currentClient.total_weeks) || 0, weeks[weeks.length - 1] || 1));
+  const inRange = arr => (Array.isArray(arr) ? arr : []).map(Number).filter(w => w >= 1 && w <= total);
+  const phases = weeks.filter(w => w <= total).map((w, pi) => ({
+    phase: pi + 1, name: 'Semana ' + w, weeks: [w],
+    days: days.filter(d => Number(d.week_number) === w).map((d, k) => ({
+      day_name: d.day_of_week, day_order: k + 1,
+      exercises: (byDay[d.id] || []).sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)).map((e, j) => {
+        const o = { name: e.name, reps_range: e.reps_range || '', order_index: j };
+        if (e.superset_group) { o.circuit_group = e.superset_group; if (e.circuit_rounds != null) o.circuit_rounds = e.circuit_rounds; }
+        if (e.rest_seconds != null) o.rest_seconds = e.rest_seconds;
+        if (e.notes) o.notes = e.notes;
+        if (e.circuit_notes) o.circuit_notes = e.circuit_notes;
+        const bw = { sets: e.sets ?? 3 };
+        if (e.rpe != null) bw.rpe = e.rpe;
+        if (e.superset_group && e.circuit_rounds != null) bw.rounds = e.circuit_rounds;
+        o.by_week = { [String(w)]: bw };
+        return o;
+      })
+    }))
+  }));
+  const aw = getAutoWeekInfo(currentClient, weeks);
+  const out = {
+    type: 'training', version: 2,
+    client: currentClient.name || '', exported_at: todayCR(),
+    current_week: aw && aw.state === 'active' && aw.mapped ? aw.mapped.week : null,
+    total_weeks: total, deload_weeks: inRange(getDeloadWeeks()), rotation_weeks: inRange(currentClient.rotation_weeks),
+    phases
+  };
+  const json = JSON.stringify(out, null, 2);
+  try { await navigator.clipboard.writeText(json); showToast('Plan copiado y descargado', 'success'); }
+  catch (e) { showToast('Plan descargado', 'success'); }
+  const slug = (currentClient.name || 'cliente').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const url = URL.createObjectURL(new Blob([json], {type: 'application/json'}));
+  const a = document.createElement('a'); a.href = url; a.download = `plan-${slug}-${todayCR()}.json`; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 // ─── TRAINING IMPORT ──────────────────────────────────────────────────
 
 function openTrainingImportModal() {
@@ -22842,6 +22985,12 @@ function openTrainingImportModal() {
     <textarea id="ti-json" class="form-textarea" rows="12"
       style="width:100%;box-sizing:border-box;font-family:monospace;font-size:11px;resize:vertical;"
       placeholder='{"type":"training","days":[...]}'></textarea>
+    <label for="ti-from" style="display:block;font-size:12px;font-weight:700;color:var(--gray5);margin-top:12px;">Aplicar desde la semana</label>
+    <select id="ti-from" class="form-input" style="width:100%;margin-top:4px;">
+      <option value="">Todo el plan (como siempre)</option>
+      ${Array.from({length:12},(_,i)=>i+1).map(w=>`<option value="${w}"${w===tiDefaultFromWeek()?' selected':''}>Semana ${w} en adelante</option>`).join('')}
+    </select>
+    <div style="font-size:11px;color:var(--gray4);margin-top:4px;line-height:1.4;">Con una semana elegida, las anteriores quedan como están y desde esa semana se reemplaza todo con el JSON. Las semanas con registros del cliente no se pueden reemplazar.</div>
     <div style="display:flex;gap:8px;margin-top:12px;">
       <button onclick="analyzeTrainingJSON()" class="btn-primary" style="flex:1;">Analizar</button>
       <button onclick="closeModal('modal-training-import')" class="btn-secondary" style="flex:0.4;">Cancelar</button>
@@ -22854,6 +23003,15 @@ async function analyzeTrainingJSON() {
   let parsed;
   try { parsed = JSON.parse(raw); } catch(e) {
     showToast('JSON inválido: '+e.message, 'error', 4000); return;
+  }
+  const fromWeek = Number(document.getElementById('ti-from')?.value) || null;
+  if (fromWeek) {
+    const locked = await planWeeksWithRecords(currentClient.id, fromWeek);
+    if (locked.length) {
+      const next = Math.max(...locked) + 1;
+      showToast(`La semana ${locked.join(', ')} ya tiene registros del cliente y no se puede reemplazar. Elegí desde la semana ${next}.`, 'error', 6000);
+      return;
+    }
   }
   const isV2 = parsed && parsed.type === 'training' && parsed.version === 2 && Array.isArray(parsed.phases);
   let v2 = null;
@@ -22880,6 +23038,9 @@ async function analyzeTrainingJSON() {
       by_week: ex.by_week || {},
       circuit_group: ex.circuit_group || null,
       circuit_rounds: ex.circuit_group ? (ex.circuit_rounds || null) : null,
+      rest_seconds: Number.isFinite(Number(ex.rest_seconds)) && ex.rest_seconds !== null && ex.rest_seconds !== '' ? Number(ex.rest_seconds) : null,
+      notes: ex.notes || null,
+      circuit_notes: ex.circuit_notes || null,
       status: m ? 'match' : 'pending',
       resolvedType: m ? 'library' : null,
       resolvedData: m ? {name:m.name, muscle_group:m.muscle_group, video_url:m.video_url, tag:m.tag} : null
@@ -22915,8 +23076,17 @@ async function analyzeTrainingJSON() {
     }));
   }
 
+  if (fromWeek) {
+    // Desde la semana N: lo anterior del JSON se ignora (ni se revisa ni hay que resolver sus ejercicios)
+    processedDays = processedDays.map(d => ({ ...d, exercises: d.exercises.map(ex => {
+      const bw = {}; Object.keys(ex.by_week || {}).forEach(k => { if (Number(k) >= fromWeek) bw[k] = ex.by_week[k]; });
+      return { ...ex, by_week: bw };
+    }).filter(ex => Object.keys(ex.by_week).length) })).filter(d => d.exercises.length);
+    if (phases) phases = phases.filter(ph => processedDays.some(d => d.phase === ph.phase));
+    if (!processedDays.length) { showToast(`El JSON no trae nada desde la semana ${fromWeek}`, 'error', 4000); return; }
+  }
   _tImport = { days: processedDays, library, activeDay: 0, searchActive: null, searchQuery: '', newFormActive: null, renamingDay: false,
-    meta, phases, activePhase: phases ? phases[0].phase : null };
+    meta, phases, activePhase: phases ? phases[0].phase : null, fromWeek };
   renderTrainingPreview();
 }
 
@@ -22938,7 +23108,7 @@ function _validateTrainingV2(p) {
   if (!p.phases.length) return fail('phases está vacío');
 
   const seenWeeks = {};
-  let refDays = null; // day_order → day_name de la primera fase
+
   for (let pi = 0; pi < p.phases.length; pi++) {
     const ph = p.phases[pi];
     const tag = `Fase ${ph && ph.phase != null ? ph.phase : pi+1}`;
@@ -22963,13 +23133,7 @@ function _validateTrainingV2(p) {
         }
       }
     }
-    if (!refDays) { refDays = cur; continue; }
-    const orders = new Set([...Object.keys(refDays), ...Object.keys(cur)]);
-    for (const o of orders) {
-      if (refDays[o] !== cur[o]) {
-        return fail(`Día inconsistente entre fases: day_order ${o} es "${refDays[o] ?? '(no existe)'}" en la fase ${p.phases[0].phase ?? 1} y "${cur[o] ?? '(no existe)'}" en la fase ${ph.phase}`);
-      }
-    }
+    // Los días pueden variar entre fases (el export trae una fase por semana): ya no se exige que coincidan.
   }
   return { total_weeks: total, deload_weeks: deload, rotation_weeks: rotation, phases: p.phases };
 }
@@ -23265,6 +23429,23 @@ async function confirmTrainingImport() {
   const anyPending = _tImport.days.some(d=>d.exercises.some(ex=>ex.status==='pending'));
   if (anyPending) { showToast('⚠️ Resolvé todos los ejercicios sin match primero', 3000); return; }
 
+  const fromWeek = _tImport.fromWeek || null;
+  if (fromWeek) {
+    const cid = currentClient.id;
+    const locked = await planWeeksWithRecords(cid, fromWeek);
+    if (locked.length) { showToast(`La semana ${locked.join(', ')} ya tiene registros del cliente. Elegí desde la semana ${Math.max(...locked) + 1}.`, 'error', 6000); return; }
+    const jsonWeeks = [...new Set(_tImport.days.flatMap(d => d.exercises.flatMap(ex => Object.keys(ex.by_week).map(Number))))].filter(w => w >= fromWeek).sort((a, b) => a - b);
+    const nDays = _tImport.days.filter(d => d.exercises.some(ex => Object.keys(ex.by_week).some(k => Number(k) >= fromWeek))).length;
+    const {data: curDays} = await sb.from('monthly_plans').select('week_number').eq('client_id', cid).gte('week_number', fromWeek);
+    const curWeeks = [...new Set((curDays || []).map(d => d.week_number))].sort((a, b) => a - b);
+    const emptied = curWeeks.filter(w => !jsonWeeks.includes(w));
+    const msg = (fromWeek > 1 ? `Se mantienen las semanas 1 a ${fromWeek - 1} como están.\n` : '')
+      + `Se reemplaza desde la semana ${fromWeek}: ${jsonWeeks.length ? 'semanas ' + jsonWeeks.join(', ') : 'ninguna semana en el JSON'} (${nDays} días del JSON).`
+      + (emptied.length ? `\nOjo: las semanas ${emptied.join(', ')} no vienen en el JSON y quedan vacías.` : '')
+      ;
+    if (!(await appDialog({ title: 'Subir plan desde la semana ' + fromWeek, text: msg, okLabel: 'Sí, reemplazar', cancelLabel: 'Cancelar' }))) return;
+  }
+
   showToast('⏳ Importando plan...', 60000);
   const stats = {newDays:0, exercises:0};
 
@@ -23291,11 +23472,22 @@ async function confirmTrainingImport() {
       }
     }
 
+    // Step 1b — desde la semana N: se vacían esas semanas (días y ejercicios) para cargarlas de cero.
+    // Ya se verificó que no tengan registros del cliente; las semanas anteriores no se tocan.
+    if (fromWeek) {
+      const {data: oldDays, error: odErr} = await sb.from('monthly_plans').select('id').eq('client_id', currentClient.id).gte('week_number', fromWeek);
+      if (odErr) throw odErr;
+      for (const pd of (oldDays || [])) {
+        const {error: e1} = await sb.from('exercises').delete().eq('plan_day_id', pd.id); if (e1) throw e1;
+        const {error: e2} = await sb.from('monthly_plans').delete().eq('id', pd.id); if (e2) throw e2;
+      }
+    }
+
     // Step 2 — iterate days → weeks → exercises
     for (const day of _tImport.days) {
       const allWeeks = [...new Set(
         day.exercises.flatMap(ex=>Object.keys(ex.by_week).map(Number))
-      )].sort((a,b)=>a-b);
+      )].filter(w => !fromWeek || w >= fromWeek).sort((a,b)=>a-b);
 
       for (const weekNum of allWeeks) {
         const {data:existing} = await sb.from('monthly_plans')
@@ -23339,7 +23531,9 @@ async function confirmTrainingImport() {
             tag: ex.resolvedData?.tag||'Peso Libre',
             muscle_group: ex.resolvedData?.muscle_group||null,
             video_url: ex.resolvedData?.video_url||null,
-            rest_seconds: 60,
+            rest_seconds: ex.rest_seconds != null ? ex.rest_seconds : 60,
+            notes: ex.notes || null,
+            circuit_notes: ex.circuit_notes || null,
             superset_group: isCircuit ? ex.circuit_group : null,
             circuit_rounds: isCircuit ? (bw.rounds ?? ex.circuit_rounds) : null
           };
@@ -23370,7 +23564,14 @@ async function confirmTrainingImport() {
 
     // v2: persistir la configuración de semanas del cliente (el camino legacy no toca estas columnas)
     if (_tImport.meta) {
-      const m = _tImport.meta;
+      const m = { ..._tImport.meta };
+      if (fromWeek) {
+        // Desde la semana N: deload/rotación de las semanas anteriores quedan como estaban
+        const keep = (arr) => (Array.isArray(arr) ? arr : []).map(Number).filter(w => w < fromWeek);
+        const from = (arr) => (arr || []).map(Number).filter(w => w >= fromWeek);
+        m.deload_weeks = [...new Set([...keep(getDeloadWeeks()), ...from(m.deload_weeks)])].sort((a, b) => a - b);
+        m.rotation_weeks = [...new Set([...keep(currentClient.rotation_weeks), ...from(m.rotation_weeks)])].sort((a, b) => a - b);
+      }
       const {error:cErr} = await sb.from('clients')
         .update({total_weeks: m.total_weeks, deload_weeks: m.deload_weeks, rotation_weeks: m.rotation_weeks})
         .eq('id', currentClient.id);
