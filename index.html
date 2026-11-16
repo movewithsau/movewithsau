@@ -1490,6 +1490,54 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 .ecs-push-note { display:flex; align-items:center; gap:8px; font-size:14px; }
 .ecs-push-note[hidden] { display:none; }
 @media (prefers-reduced-motion:reduce) { .ecs-switch span { transition:none; } }
+/* ===== BIENVENIDA: la abeja (una sola pasada, ~4,2 s) y el resumen del día ===== */
+.wl { background:#14110E; color:#FBF6EF; }
+.wl-stage { position:absolute; inset:0; overflow:hidden; }
+.wl-bg { position:absolute; top:0; left:50%; width:480px; height:844px; margin-left:-240px; }
+.wl-box { position:absolute; top:0; left:50%; width:390px; height:844px; margin-left:-195px; }
+.wl-top { position:absolute; left:0; right:0; top:0; padding:36px 24px 0; display:flex; justify-content:space-between; align-items:center; z-index:2; }
+.wl-skip { min-height:44px; padding:0 18px; border:0; border-radius:999px; background:rgba(251,246,239,0.12); color:#FBF6EF; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:700; cursor:pointer; }
+.wl-bee { position:absolute; left:0; top:0; width:96px; height:64px; animation:wl-fly 4.2s ease-in-out forwards; }
+.wl-wing { transform-box:fill-box; transform-origin:50% 100%; animation:wl-wing 0.14s linear infinite; }
+.wl-honey { transform-box:fill-box; transform-origin:50% 50%; animation:wl-honey 4.2s ease-out forwards; }
+.wl-rise { position:absolute; left:0; right:0; top:440px; padding:0 28px; text-align:center; animation:wl-rise 4.2s ease-out forwards; }
+.wl-name { margin-top:14px; font-family:'Dela Gothic One',sans-serif; font-weight:400; font-size:46px; line-height:1.05; text-transform:uppercase; color:#FBF6EF; white-space:normal; overflow-wrap:normal; word-break:normal; }
+.wl-bottom { position:absolute; left:0; right:0; bottom:0; padding:0 24px 38px; display:flex; flex-direction:column; align-items:center; gap:12px; z-index:2; }
+.wl-dots { display:flex; gap:8px; }
+.wl-dots span { width:6px; height:6px; border-radius:3px; background:rgba(251,246,239,0.3); }
+.wl-dots span.on { width:22px; background:#F5B83D; }
+@keyframes wl-fly {
+  0%   { transform:translate(-120px,90px) scaleX(1) rotate(6deg); opacity:0; }
+  6%   { opacity:1; }
+  20%  { transform:translate(60px,40px) scaleX(1) rotate(-5deg); }
+  36%  { transform:translate(270px,130px) scaleX(1) rotate(10deg); }
+  43%  { transform:translate(290px,200px) scaleX(-1) rotate(-8deg); }
+  57%  { transform:translate(70px,270px) scaleX(-1) rotate(6deg); }
+  66%  { transform:translate(100px,250px) scaleX(1) rotate(-6deg); }
+  78%, 100% { transform:translate(160px,296px) scaleX(1) rotate(0deg); opacity:1; }
+}
+@keyframes wl-wing { 0% { transform:scaleY(1); } 50% { transform:scaleY(0.3); } 100% { transform:scaleY(1); } }
+@keyframes wl-honey { 0%, 74% { fill-opacity:0; transform:scale(0.85); } 84% { fill-opacity:0.95; transform:scale(1.06); } 90%, 100% { fill-opacity:0.95; transform:scale(1); } }
+@keyframes wl-rise { 0%, 78% { opacity:0; transform:translateY(16px); } 92%, 100% { opacity:1; transform:translateY(0); } }
+/* Resumen */
+.wl-sum { display:flex; flex-direction:column; flex:1; min-height:0; }
+.wl-head { flex:none; background:#1E1812; padding:36px 24px 22px; position:relative; overflow:hidden; border-radius:0 0 28px 28px; border-bottom:1px solid #2E261F; }
+.wl-head-row { position:relative; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.wl-sum-name { position:relative; margin:14px 0 0; font-family:'Dela Gothic One',sans-serif; font-weight:400; font-size:44px; line-height:1.05; text-transform:uppercase; white-space:normal; overflow-wrap:normal; word-break:normal; }
+.wl-chips { position:relative; margin-top:14px; display:flex; gap:8px; flex-wrap:wrap; }
+.wl-chips span { background:rgba(251,246,239,0.14); color:#FBF6EF; font-size:13px; padding:6px 12px; border-radius:999px; }
+.wl-list { flex:1; min-height:0; overflow-y:auto; padding:18px 24px 8px; }
+.wl-items { margin:10px 0 0; padding:0; list-style:none; display:flex; flex-direction:column; gap:8px; }
+.wl-item { background:#26201A; border:1px solid #3A3027; border-radius:16px; padding:11px 14px; display:flex; align-items:center; gap:12px; }
+.wl-num { flex:none; width:30px; height:30px; border-radius:50%; background:rgba(245,184,61,0.16); color:#F5B83D; font-family:'DM Mono',monospace; font-size:13px; font-weight:500; display:inline-flex; align-items:center; justify-content:center; }
+.wl-iname { flex:1; min-width:0; font-size:16px; font-weight:700; overflow-wrap:anywhere; }
+.wl-isub { display:block; font-size:13px; font-weight:400; color:#B8AD9E; margin-top:1px; }
+.wl-dose { flex:none; font-family:'DM Mono',monospace; font-size:13px; color:#B8AD9E; }
+.wl-item.is-circuit { background:#2B1D14; border:1.5px solid #C24E18; }
+.wl-item.is-circuit .wl-num { background:#C24E18; color:#FFFFFF; }
+.wl-item.is-circuit .wl-dose { color:#F08A4B; }
+.wl-cta { flex:none; padding:12px 24px 34px; }
+@media (prefers-reduced-motion:reduce) { .wl-bee, .wl-wing, .wl-honey, .wl-rise { animation:none; } }
 </style>
 </head>
 <body>
@@ -2081,6 +2129,9 @@ button.exx-pill { cursor:pointer; min-height:28px; }
     <button type="button" class="ecs-btn ecs-btn-orange" id="ecs-post-go" onclick="ecsStartFromPost()">Entrenar como Sau<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
   </div>
 </div>
+
+<!-- ===== BIENVENIDA (primera vez del día): la abeja y el resumen. Lo arma welcomeOpen() ===== -->
+<div class="ecs-ov wl" id="wl" role="dialog" aria-modal="true" aria-label="Bienvenida a tu entreno de hoy" hidden></div>
 
 <!-- ===== ENTRENA COMO SAU: editor y vista previa (coach) ===== -->
 <div class="ecs-ov ecs-coach" id="ecs-coach" role="dialog" aria-modal="true" aria-labelledby="ecs-c-title" hidden>
@@ -7431,8 +7482,165 @@ function hhPaint() {
   // Solo se reemplaza si cambió: así no se pierde el foco del teclado en cada repintado
   if (html !== hhCardsHtml) { $('hh-cards').innerHTML = html; hhCardsHtml = html; }
 }
-// "Ir a mi entrenamiento": hoy entra directo (con la abeja corta). La bienvenida se suma en H3.
-function hhGoTrain() { enterTraining(); }
+// "Ir a mi entrenamiento": la primera vez del día pasa por la bienvenida; después, directo
+// (con el vuelo corto de siempre). La pantalla de ejercicios no cambia.
+let hhGoBusy = false;
+async function hhGoTrain() {
+  if (hhGoBusy) return;
+  hhGoBusy = true;
+  try {
+    if (await welcomeShouldShow()) welcomeOpen();
+    else enterTraining();
+  } catch (e) {
+    console.warn('bienvenida:', e);
+    enterTraining();
+  } finally { hhGoBusy = false; }
+}
+
+// ===== BIENVENIDA (primera vez del día, fecha de Costa Rica) =====
+// Se marca vista apenas se muestra: client_welcome_seen (UNIQUE client_id+seen_date) y
+// localStorage de respaldo. "Saltar" no necesita nada más. Solo lectura del entreno.
+const WL_FLY_MS = 4200;      // vuelo de una sola pasada
+const WL_TO_SUMMARY_MS = 4800; // después pasa sola al resumen
+let wlTimer = null;
+function welcomeLocalKey() { return currentClient ? `mws_welcome_${currentClient.id}_${todayCR()}` : null; }
+async function welcomeShouldShow() {
+  if (!currentClient || currentUser?.role === 'coach') return false;
+  // A mitad de un entreno o con el Modo Timer andando no sale
+  if (isWorkoutStarted() || workoutLock || localStorage.getItem('mws_timer_running') === '1') return false;
+  try { const k = circuitTimerStoreKey(); if (k && localStorage.getItem(k)) return false; } catch {}
+  try { if (localStorage.getItem(welcomeLocalKey()) === '1') return false; } catch {}
+  // Necesita el día con ejercicios para tener qué resumir
+  const day = await hhLoadDay();
+  if (!day || !day.items.length) return false;
+  const { data, error } = await sb.from('client_welcome_seen').select('id')
+    .eq('client_id', currentClient.id).eq('seen_date', todayCR()).maybeSingle();
+  if (!error && data) { try { localStorage.setItem(welcomeLocalKey(), '1'); } catch {} return false; }
+  return true; // sin fila (o sin red / sin tabla): se muestra y el respaldo local evita repetirla
+}
+function welcomeMarkSeen() {
+  try { localStorage.setItem(welcomeLocalKey(), '1'); } catch {}
+  const row = { client_id: currentClient.id, seen_date: todayCR() };
+  Promise.resolve(sb.from('client_welcome_seen').upsert([row], { onConflict: 'client_id,seen_date', ignoreDuplicates: true }))
+    .then(r => { if (r && r.error) console.warn('bienvenida: no se guardó en la base', r.error.message); }, () => {});
+}
+// Achica un título de Dela Gothic One hasta que la palabra más larga entre (no se corta a 390 px)
+function wlFit(el, max, min) {
+  if (!el) return;
+  let size = max;
+  el.style.fontSize = size + 'px';
+  while (size > min && el.scrollWidth > el.clientWidth + 1) { size -= 2; el.style.fontSize = size + 'px'; }
+}
+function wlFitAll() {
+  wlFit(document.getElementById('wl-name'), 46, 22);
+  wlFit(document.getElementById('wl-sum-name'), 44, 22);
+}
+function wlTitle(d) { return d.name || ('Día ' + d.n); }
+function wlCountText(d) { const c = d.items.length; return `${c} ${c === 1 ? 'ejercicio' : 'ejercicios'}`; }
+const WL_BEE_SVG = `<svg width="96" height="64" viewBox="0 0 96 64" aria-hidden="true" focusable="false">
+  <defs><clipPath id="wl-abd"><ellipse cx="28" cy="34" rx="24" ry="10.5"/></clipPath>
+  <radialGradient id="wl-fuzz" cx="45%" cy="38%" r="68%"><stop offset="0" stop-color="#F2CB6B"/><stop offset="1" stop-color="#C98F2E"/></radialGradient></defs>
+  <g stroke="#8A4A2A" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M52 44 L45 56 L38 61"/><path d="M58 45 L59 57 L53 62"/><path d="M48 43 L36 52 L28 54"/></g>
+  <g class="wl-wing"><ellipse cx="46" cy="14" rx="22" ry="7" transform="rotate(-24 46 14)" fill="#FBF6EF" fill-opacity="0.5" stroke="#FBF6EF" stroke-opacity="0.6" stroke-width="0.8"/></g>
+  <g class="wl-wing" style="animation-delay:0.05s"><ellipse cx="58" cy="13" rx="17" ry="6" transform="rotate(-6 58 13)" fill="#FBF6EF" fill-opacity="0.38" stroke="#FBF6EF" stroke-opacity="0.5" stroke-width="0.8"/></g>
+  <ellipse cx="28" cy="34" rx="24" ry="10.5" fill="#3B2C20"/>
+  <g clip-path="url(#wl-abd)" stroke="#F5B83D" stroke-width="4.2" fill="none"><path d="M14 20 q-3 14 0 28"/><path d="M22 20 q-3 14 0 28"/><path d="M30 20 q-3 14 0 28"/><path d="M38 20 q-3 14 0 28"/></g>
+  <path d="M4 34 l-4 1 l4 2 z" fill="#3B2C20"/>
+  <ellipse cx="54" cy="31" rx="13" ry="12" fill="url(#wl-fuzz)"/>
+  <ellipse cx="71" cy="29" rx="8.5" ry="9" fill="#1E1A17"/><ellipse cx="73" cy="27" rx="4.2" ry="5.2" fill="#2F4250"/>
+  <circle cx="74.5" cy="25.2" r="1.3" fill="#FBF6EF" fill-opacity="0.8"/>
+  <path d="M72 21 Q78 12 87 10" stroke="#8A4A2A" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M76 36 q3 3 1 6" stroke="#8A4A2A" stroke-width="2" fill="none" stroke-linecap="round"/>
+</svg>`;
+function welcomeOpen() {
+  const d = hhDay, ov = document.getElementById('wl');
+  if (!d || !ov) { enterTraining(); return; }
+  ensureDelaFont();
+  welcomeMarkSeen();
+  ov.hidden = false;
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) { welcomeSummary(); return; }
+  // Panal (hexágonos de lado 60) alineado con el hexágono donde se posa la abeja, centrado a 390 px
+  ov.innerHTML = `<div class="wl-stage">
+    <svg class="wl-bg" viewBox="-45 0 480 844" aria-hidden="true" focusable="false">
+      <defs>
+        <pattern id="wl-hx" width="103.92" height="180" patternUnits="userSpaceOnUse">
+          <g fill="none" stroke="#F5B83D" stroke-opacity="0.2" stroke-width="1.6">
+            <polygon points="51.96,0 103.92,30 103.92,90 51.96,120 0,90 0,30"/>
+            <polygon points="0,90 51.96,120 51.96,180 0,210 -51.96,180 -51.96,120"/>
+            <polygon points="103.92,90 155.88,120 155.88,180 103.92,210 51.96,180 51.96,120"/>
+            <polygon points="0,-90 51.96,-60 51.96,0 0,30 -51.96,0 -51.96,-60"/>
+            <polygon points="103.92,-90 155.88,-60 155.88,0 103.92,30 51.96,0 51.96,-60"/>
+          </g>
+        </pattern>
+        <radialGradient id="wl-fade" cx="50%" cy="40%" r="75%"><stop offset="40%" stop-color="#14110E" stop-opacity="0"/><stop offset="100%" stop-color="#14110E" stop-opacity="1"/></radialGradient>
+      </defs>
+      <rect x="-45" width="480" height="844" fill="url(#wl-hx)"/>
+      <polygon class="wl-honey" points="207.84,270 259.8,300 259.8,360 207.84,390 155.88,360 155.88,300" fill="#C24E18" fill-opacity="0" stroke="#F5B83D" stroke-width="2"/>
+      <rect x="-45" width="480" height="844" fill="url(#wl-fade)"/>
+    </svg>
+    <div class="wl-box">
+      <div class="wl-bee">${WL_BEE_SVG}</div>
+      <div class="wl-rise">
+        <div class="ecs-mono" style="font-size:13px;letter-spacing:2px;color:#F5B83D;">HOY TOCA · DÍA ${d.n}</div>
+        <div class="wl-name" id="wl-name">${escHtml(wlTitle(d))}</div>
+        <div style="margin-top:16px;font-size:17px;color:#E4DBCF;">${wlCountText(d)}</div>
+      </div>
+    </div>
+    <div class="wl-top"><span class="ecs-mono" style="letter-spacing:1.4px;color:#F5B83D;">MOVE</span><button type="button" class="wl-skip" id="wl-skip" onclick="welcomeDone()">Saltar</button></div>
+    <div class="wl-bottom">
+      <div class="wl-dots" aria-hidden="true"><span class="on"></span><span></span></div>
+      <div class="ecs-mono" style="color:#CFC6BA;">SOLO LA VES LA PRIMERA VEZ DEL DÍA</div>
+    </div>
+  </div>`;
+  wlFitAll();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(wlFitAll);
+  document.getElementById('wl-skip').focus();
+  clearTimeout(wlTimer);
+  wlTimer = setTimeout(welcomeSummary, WL_TO_SUMMARY_MS);
+}
+function welcomeSummary() {
+  clearTimeout(wlTimer); wlTimer = null;
+  const d = hhDay, ov = document.getElementById('wl');
+  if (!d || !ov || ov.hidden) return;
+  const last = d.items.length - 1;
+  let num = 0;
+  const rows = d.items.map((it, i) => {
+    if (it.kind === 'circuit') {
+      return `<li class="wl-item is-circuit">
+        <span class="wl-num" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" focusable="false"><path d="M12 2.5l8.5 4.9v9.2L12 21.5l-8.5-4.9V7.4z"/></svg></span>
+        <span class="wl-iname">${i === last ? 'Circuito final' : 'Circuito ' + escHtml(String(it.group))}<span class="wl-isub">${escHtml(it.members.join(' · '))}</span></span>
+        <span class="wl-dose">${Number(it.rounds) || 1} ${Number(it.rounds) === 1 ? 'ronda' : 'rondas'}</span>
+      </li>`;
+    }
+    num++;
+    const dose = it.sets && it.reps ? `${it.sets}×${it.reps}` : it.reps || (it.sets ? it.sets + ' series' : '');
+    return `<li class="wl-item"><span class="wl-num" aria-hidden="true">${num}</span><span class="wl-iname">${escHtml(it.name)}</span><span class="wl-dose">${escHtml(dose)}</span></li>`;
+  }).join('');
+  ov.innerHTML = `<div class="wl-sum">
+    <div class="wl-head">
+      <svg class="ecs-deco" width="170" height="170" viewBox="0 0 100 100" style="right:-50px;top:-50px;opacity:0.2" aria-hidden="true" focusable="false"><polygon points="50,4 90,27 90,73 50,96 10,73 10,27" fill="none" stroke="#F5B83D" stroke-width="3"/></svg>
+      <div class="wl-head-row"><span class="ecs-mono" style="letter-spacing:1.4px;color:#F5B83D;">HOY TOCA · DÍA ${d.n}</span><button type="button" class="wl-skip" style="font-size:14px;padding:0 16px;" onclick="welcomeDone()">Saltar</button></div>
+      <h1 class="wl-sum-name" id="wl-sum-name">${escHtml(wlTitle(d))}</h1>
+      <div class="wl-chips"><span>${wlCountText(d)}</span></div>
+    </div>
+    <div class="wl-list">
+      <div class="ecs-mono" style="letter-spacing:1.2px;color:#A89C8D;" id="wl-list-lbl">LO QUE VAS A HACER</div>
+      <ol class="wl-items" aria-labelledby="wl-list-lbl">${rows}</ol>
+    </div>
+    <div class="wl-cta"><button type="button" class="ecs-btn ecs-btn-green" id="wl-go" style="min-height:58px;font-size:18px;" onclick="welcomeDone()">Empezar<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+  </div>`;
+  wlFitAll();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(wlFitAll);
+  document.getElementById('wl-go').focus();
+}
+// "Saltar" y "Empezar": a la pantalla normal de ejercicios (la de siempre)
+function welcomeDone() {
+  clearTimeout(wlTimer); wlTimer = null;
+  const ov = document.getElementById('wl');
+  if (ov) { ov.hidden = true; ov.innerHTML = ''; }
+  setHoyCover(false);
+}
 function hhGoLocked() { applyTrainingAccessGate(); setHoyCover(false); }
 function hhOpenSession() { /* se activa en H4 */ }
 document.addEventListener('visibilitychange', () => {
