@@ -1015,6 +1015,7 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 .workout-action-btn { width:100%; padding:14px; border:none; border-radius:var(--radius-sm); font-size:14px; font-weight:700; font-family:'DM Sans',sans-serif; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:12px; transition:all 0.2s; }
 .workout-start-btn { background:var(--orange); color:white; }
 .workout-finish-btn { background:#111; color:white; }
+.workout-goto-run-btn { background:var(--orange-light); color:var(--orange); }
   .ai-builder-input{width:100%;padding:14px;border:1.5px solid var(--gray2);border-radius:var(--radius-sm);font-size:13px;font-family:'DM Sans',sans-serif;color:var(--black);background:var(--white);outline:none;resize:vertical;line-height:1.65;min-height:190px;}
 .ai-builder-input:focus{border-color:var(--orange);}
 .ai-builder-input::placeholder{color:var(--gray4);}
@@ -4956,10 +4957,15 @@ async function loadClientExercises() {
   // clientes no-LIFT — pero LIFT no tiene esa barra (ver guard más abajo), así que
   // ahí sí hay que mantener el pill viejo o el cliente se queda sin ningún indicador
   // de que el entreno sigue activo.
+  const gotoRunBtnHtml = currentClient.run_module_enabled === true
+    ? `<button class="workout-action-btn workout-goto-run-btn fade-up" onclick="rnGoToClientTab()">
+        ${icon('timer', 18)} Ir a Run
+      </button>`
+    : '';
   const startBtnHtml = !workoutStarted
     ? `<button class="workout-action-btn workout-start-btn fade-up" onclick="handleStartWorkout()">
         ${icon('play', 18)} Iniciar entreno
-      </button>`
+      </button>${gotoRunBtnHtml}`
     : (currentClient.program_type === 'lift'
       ? `<div class="fade-up" style="background:var(--green-light);border:1.5px solid var(--green);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
           <span aria-hidden="true" style="width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0;"></span>
@@ -24969,6 +24975,13 @@ function rnApplyClientNav() {
   const chip = document.getElementById('rn-plan-chip');
   if (chip) chip.style.display = (currentClient?.run_module_enabled === true && !rnIsCoach()) ? '' : 'none';
 }
+// Desde el botón "Ir a Run" de la home de entreno: lleva a Tu Plan y abre el sub-tab Run.
+function rnGoToClientTab() {
+  const navItem = document.querySelector('#screen-client-home .bottom-nav .nav-item[onclick*="clientNav(\'plan\'"]');
+  if (navItem) clientNav('plan', navItem);
+  const chip = document.getElementById('rn-plan-chip');
+  if (chip) switchClientPlanTab('run', chip);
+}
 async function rnLoadClientTab() {
   const box = document.getElementById('c-run-root');
   if (!box || !currentClient) return;
@@ -26373,33 +26386,47 @@ function rnHomeBadgeHtml(c) {
 // Lee y escribe run_exercises y run_routines. exercise_library no se toca.
 const RN_EX_CATS = [['pre', 'Pre-run'], ['post', 'Post-run'], ['apoyo', 'Apoyo']];
 const RN_EX_CAT_NAME = Object.fromEntries(RN_EX_CATS);
-let rnLib = { cat: '', ex: [], lib: [], routines: [], loaded: false };
+// Un ejercicio de Run puede tener varias tags (pre/post/apoyo) para no duplicarlo por categoría.
+function rnExCatLabel(e) { return (e.categories && e.categories.length ? e.categories : [e.category]).map(c => RN_EX_CAT_NAME[c] || c).join(', '); }
+let rnLib = { cat: '', ex: [], lib: [], libTags: [], routines: [], loaded: false };
 
 async function rnLoadLibrary() {
   const uid = currentUser?.id;
-  const [ex, rt, lib] = await Promise.all([
+  const [ex, rt, lib, ltags] = await Promise.all([
     sb.from('run_exercises').select('*').or(`coach_id.eq.${uid},coach_id.is.null`).order('name', { ascending: true }),
     sb.from('run_routines').select('*').order('session_type', { ascending: true }),
-    sb.from('exercise_library').select('id,name,muscle_group,tag,video_url').eq('coach_id', uid).order('name', { ascending: true })
+    sb.from('exercise_library').select('id,name,muscle_group,tag,video_url').eq('coach_id', uid).order('name', { ascending: true }),
+    sb.from('run_library_tags').select('*').eq('coach_id', uid)
   ]);
   if (ex.error) { showToast('No se pudo cargar Run: ' + ex.error.message, 'error'); }
-  rnLib.ex = ex.data || []; rnLib.lib = lib.data || []; rnLib.routines = rt.data || []; rnLib.loaded = true;
+  rnLib.ex = ex.data || []; rnLib.lib = lib.data || []; rnLib.libTags = ltags.data || []; rnLib.routines = rt.data || []; rnLib.loaded = true;
+}
+// Ejercicios de tu biblioteca general taggeados para Run: se muestran mezclados con
+// run_exercises en esta pantalla, pero la fila original en exercise_library no se toca.
+function rnLibTagDisplayItems() {
+  return (rnLib.libTags || []).map(t => {
+    const l = (rnLib.lib || []).find(x => String(x.id) === String(t.lib_exercise_id));
+    if (!l) return null;
+    return { id: 'libtag:' + t.id, tagId: t.id, libId: l.id, name: l.name, categories: t.categories, muscle_group: l.muscle_group, video_url: l.video_url, isLibTag: true };
+  }).filter(Boolean);
 }
 async function rnRenderLibrary(reload) {
   const list = document.getElementById('ex-coaching-list');
   if (!list) return;
   if (!rnLib.loaded || reload) { list.innerHTML = '<div class="spinner"></div>'; await rnLoadLibrary(); if (exCoachingFilter !== '__run') return; }
   const q = (document.getElementById('ex-coaching-search')?.value || '').toLowerCase();
-  let items = rnLib.ex.filter(e => !rnLib.cat || e.category === rnLib.cat);
+  let items = [...rnLib.ex, ...rnLibTagDisplayItems()].filter(e => !rnLib.cat || (e.categories || []).includes(rnLib.cat));
   if (q) items = items.filter(e => (e.name || '').toLowerCase().includes(q));
-  const sub = `<div class="rn-row" style="gap:6px;margin:4px 0 10px;overflow-x:auto;">${[['', 'Todos'], ...RN_EX_CATS].map(([k, l]) => `<div class="filter-chip${rnLib.cat === k ? ' active' : ''}" onclick="rnLib.cat='${k}';rnRenderLibrary()">${l}</div>`).join('')}</div>`;
+  items.sort((a, b) => String(a.name).localeCompare(String(b.name), 'es'));
+  const sub = `<div class="rn-row" style="gap:6px;margin:4px 0 10px;overflow-x:auto;">${[['', 'Todos'], ...RN_EX_CATS].map(([k, l]) => `<div class="filter-chip${rnLib.cat === k ? ' active' : ''}" onclick="rnLib.cat='${k}';rnRenderLibrary()">${l}</div>`).join('')}</div>
+    <button type="button" class="rn-ch" style="width:100%;min-height:40px;margin-bottom:10px;" onclick="rnLibTagPicker()">${icon('plus', 16)} Agregar de tu biblioteca</button>`;
   const rows = items.map(e => `<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--gray2);">
       <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;margin-bottom:3px;">${rnEsc(e.name)}</div>
-        <div style="display:flex;gap:5px;flex-wrap:wrap;"><span class="muscle-tag" style="font-size:8px;">Run · ${RN_EX_CAT_NAME[e.category] || e.category}</span>${e.dose ? `<span class="muscle-tag" style="font-size:8px;">${rnEsc(e.dose)}</span>` : ''}${(e.levels || []).length && (e.levels || []).length < 3 ? `<span class="muscle-tag" style="font-size:8px;">Niv. ${(e.levels || []).join(', ')}</span>` : ''}${e.is_example ? '<span class="muscle-tag" style="font-size:8px;">ejemplo</span>' : ''}</div></div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;"><span class="muscle-tag" style="font-size:8px;">Run · ${rnExCatLabel(e)}</span>${e.dose ? `<span class="muscle-tag" style="font-size:8px;">${rnEsc(e.dose)}</span>` : ''}${(e.levels || []).length && (e.levels || []).length < 3 ? `<span class="muscle-tag" style="font-size:8px;">Niv. ${(e.levels || []).join(', ')}</span>` : ''}${e.is_example ? '<span class="muscle-tag" style="font-size:8px;">ejemplo</span>' : ''}${e.isLibTag ? '<span class="muscle-tag" style="font-size:8px;">tu biblioteca</span>' : ''}</div></div>
       <div style="display:flex;gap:4px;flex-shrink:0;">
         ${e.video_url ? `<a href="${rnEsc(e.video_url)}" target="_blank" rel="noopener" style="background:var(--blue-light);color:var(--blue);border:none;border-radius:6px;padding:6px 9px;" aria-label="Ver video">${icon('play', 18)}</a>` : ''}
-        <button class="icon-btn" onclick="rnExForm('${e.id}')" style="background:var(--orange-light);color:var(--orange);border:none;border-radius:6px;padding:6px 9px;cursor:pointer;" aria-label="Editar ejercicio">${icon('pencil', 18)}</button>
-        <button class="icon-btn" onclick="rnExDelete('${e.id}')" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:6px 9px;cursor:pointer;" aria-label="Borrar ejercicio">${icon('x', 18)}</button>
+        <button class="icon-btn" onclick="${e.isLibTag ? `rnLibTagForm('${e.libId}')` : `rnExForm('${e.id}')`}" style="background:var(--orange-light);color:var(--orange);border:none;border-radius:6px;padding:6px 9px;cursor:pointer;" aria-label="Editar ejercicio">${icon('pencil', 18)}</button>
+        <button class="icon-btn" onclick="${e.isLibTag ? `rnLibTagRemove('${e.tagId}')` : `rnExDelete('${e.id}')`}" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:6px 9px;cursor:pointer;" aria-label="${e.isLibTag ? 'Quitar de Run' : 'Borrar ejercicio'}">${icon('x', 18)}</button>
       </div></div>`).join('') || '<div class="empty-state"><div class="empty-text">Sin ejercicios de Run en esta categoría.</div></div>';
   const blocks = RN_TYPES.map(([t, l]) => {
     const pre = rnLib.routines.find(r => r.session_type === t && r.block === 'pre' && r.is_default), post = rnLib.routines.find(r => r.session_type === t && r.block === 'post' && r.is_default);
@@ -26420,9 +26447,9 @@ async function rnRenderLibrary(reload) {
 // Pantalla 24: + Ejercicio de Run
 function rnExFieldsHtml(e, p) {
   p = p || {};
-  const cat = e?.category || p.category || rnLib.cat || 'pre', lv = e?.levels || [1, 2, 3];
+  const cats = (e?.categories && e.categories.length) ? e.categories : (e?.category ? [e.category] : (p.category ? [p.category] : (rnLib.cat ? [rnLib.cat] : ['pre']))), lv = e?.levels || [1, 2, 3];
   return `<div style="margin-bottom:10px;"><label class="rn-fl" for="rn-ex-name">Nombre</label><input id="rn-ex-name" class="rn-in is-txt" value="${rnEsc(e?.name || p.name || '')}"></div>
-    <div class="rn-cd"><div class="rn-lb">Categoría: Run · tipo</div><div class="rn-chs" id="rn-ex-cat">${RN_EX_CATS.map(([k, l]) => `<button type="button" class="rn-ch${cat === k ? ' is-on' : ''}" data-v="${k}" aria-pressed="${cat === k}" onclick="rnExPick(this,'rn-ex-cat',true)">${l}</button>`).join('')}</div></div>
+    <div class="rn-cd"><div class="rn-lb">Tags: Run · cuándo se usa</div><div class="rn-chs" id="rn-ex-cat">${RN_EX_CATS.map(([k, l]) => `<button type="button" class="rn-ch${cats.includes(k) ? ' is-on' : ''}" data-v="${k}" aria-pressed="${cats.includes(k)}" onclick="rnExPick(this,'rn-ex-cat',false)">${l}</button>`).join('')}</div><div class="rn-xs rn-mu" style="margin-top:4px;">Podés marcar más de una: el mismo ejercicio sirve, por ejemplo, de pre-run y de apoyo sin crearlo dos veces.</div></div>
     <div class="rn-cd"><div class="rn-lb">Aplica a los niveles</div><div class="rn-chs" id="rn-ex-lv">${[1, 2, 3].map(n => `<button type="button" class="rn-ch${lv.includes(n) ? ' is-on' : ''}" data-v="${n}" aria-pressed="${lv.includes(n)}" onclick="rnExPick(this,'rn-ex-lv',false)">${n}</button>`).join('')}</div></div>
     <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-ex-dose">Duración o repeticiones</label><input id="rn-ex-dose" class="rn-in is-txt" value="${rnEsc(e?.dose || '')}" placeholder="30 s, 2 x 10…"></div>
     <div style="margin-bottom:10px;"><label class="rn-fl" for="rn-ex-desc">Descripción</label><textarea id="rn-ex-desc" class="rn-in" rows="2">${rnEsc(e?.description || '')}</textarea></div>
@@ -26440,11 +26467,11 @@ function rnExForm(id, pre) {
 // Lee el formulario de ejercicio; avisa y devuelve null si falta algo
 function rnExReadForm() {
   const g = x => (document.getElementById(x)?.value || '').trim();
-  const cat = document.querySelector('#rn-ex-cat .rn-ch.is-on')?.dataset.v;
+  const categories = [...document.querySelectorAll('#rn-ex-cat .rn-ch.is-on')].map(b => b.dataset.v);
   const levels = [...document.querySelectorAll('#rn-ex-lv .rn-ch.is-on')].map(b => Number(b.dataset.v));
-  const row = { name: g('rn-ex-name'), category: cat, levels, dose: g('rn-ex-dose') || null, description: g('rn-ex-desc') || null, cues: g('rn-ex-cues') || null, video_url: g('rn-ex-video') || null, contraindications: g('rn-ex-contra') || null };
+  const row = { name: g('rn-ex-name'), category: categories[0], categories, levels, dose: g('rn-ex-dose') || null, description: g('rn-ex-desc') || null, cues: g('rn-ex-cues') || null, video_url: g('rn-ex-video') || null, contraindications: g('rn-ex-contra') || null };
   if (!row.name) { showToast('El nombre es obligatorio', 'error'); return null; }
-  if (!cat) { showToast('Elegí el tipo de Run'); return null; }
+  if (!categories.length) { showToast('Elegí al menos un tag de Run'); return null; }
   if (!levels.length) { showToast('Elegí al menos un nivel'); return null; }
   return row;
 }
@@ -26472,6 +26499,56 @@ async function rnExDelete(id) {
   const { error } = await sb.from('run_exercises').delete().eq('id', id);
   if (error) { showToast(error.message, 'error'); return; }
   showToast('Ejercicio borrado'); rnRenderLibrary(true);
+}
+// ---------- Agregar a Run un ejercicio YA existente en la biblioteca general ----------
+// Guarda solo la referencia + las categorías en run_library_tags. exercise_library no se toca.
+let rnLt = null;
+function rnLibTagPicker() {
+  rnOpenSheet('', () => { rnLt = null; });
+  rnLt = { q: '' };
+  rnLibTagPickerRender();
+}
+function rnLibTagPickerRender() {
+  rnSheetBody(`${rnSheetHead('Biblioteca · agregar a Run', 'Elegí un ejercicio de tu biblioteca')}
+    <div class="rn-cd"><input id="rn-lt-q" class="rn-in is-txt" type="search" value="${rnEsc(rnLt.q)}" placeholder="Buscar en tu biblioteca…" autocomplete="off" oninput="rnLt.q=this.value;rnLibTagResults()"></div>
+    <div id="rn-lt-results" style="margin-top:8px;"></div>`);
+  rnLibTagResults();
+}
+function rnLibTagResults() {
+  const box = document.getElementById('rn-lt-results'); if (!box || !rnLt) return;
+  const q = _normStr(rnLt.q || '');
+  const pool = (rnLib.lib || []).filter(l => !q || _normStr(l.name).includes(q)).slice(0, q ? 30 : 12);
+  box.innerHTML = pool.map(l => {
+    const t = (rnLib.libTags || []).find(x => String(x.lib_exercise_id) === String(l.id));
+    return `<button type="button" class="rn-row" style="width:100%;gap:8px;padding:8px 4px;border:0;border-bottom:1px solid #EFE9DF;background:none;text-align:left;cursor:pointer;font-family:inherit;" onclick="rnLibTagForm('${l.id}')">
+      <span class="rn-fx"><span style="display:block;font-size:14px;font-weight:600;color:var(--black);">${rnEsc(l.name)}</span><span class="rn-xs rn-mu">${l.muscle_group ? rnEsc(l.muscle_group) + ' · ' : ''}${t ? 'Ya en Run: ' + t.categories.map(c => RN_EX_CAT_NAME[c] || c).join(', ') : 'Tocá para agregar a Run'}</span></span>
+    </button>`;
+  }).join('') || '<div class="rn-sm rn-mu" style="padding:6px 0;">No hay ejercicios con ese nombre.</div>';
+}
+function rnLibTagForm(libId) {
+  const l = (rnLib.lib || []).find(x => String(x.id) === String(libId)); if (!l) return;
+  const existing = (rnLib.libTags || []).find(t => String(t.lib_exercise_id) === String(libId));
+  rnSheetBody(`${rnSheetHead('Biblioteca · tags de Run', rnEsc(l.name), 'rnLibTagPickerRender()')}
+    <div class="rn-cd"><div class="rn-lb">Tags: Run · cuándo se usa</div><div class="rn-chs" id="rn-lt-cat">${RN_EX_CATS.map(([k, lb]) => `<button type="button" class="rn-ch${(existing?.categories || []).includes(k) ? ' is-on' : ''}" data-v="${k}" aria-pressed="${(existing?.categories || []).includes(k)}" onclick="rnExPick(this,'rn-lt-cat',false)">${lb}</button>`).join('')}</div>
+      <div class="rn-xs rn-mu" style="margin-top:4px;">El ejercicio sigue intacto en tu biblioteca general; esto solo lo suma a Run con estos tags.</div></div>
+    <button type="button" class="rn-bt is-g" onclick="rnLibTagSave('${libId}')">Guardar</button>
+    ${existing ? `<button type="button" class="rn-bt is-l" style="color:#B3261E;" onclick="rnLibTagRemove('${existing.id}')">Quitar de Run</button>` : ''}`);
+}
+async function rnLibTagSave(libId) {
+  const categories = [...document.querySelectorAll('#rn-lt-cat .rn-ch.is-on')].map(b => b.dataset.v);
+  if (!categories.length) { showToast('Elegí al menos un tag', 'error'); return; }
+  const existing = (rnLib.libTags || []).find(t => String(t.lib_exercise_id) === String(libId));
+  const res = existing
+    ? await sb.from('run_library_tags').update({ categories }).eq('id', existing.id)
+    : await sb.from('run_library_tags').insert([{ lib_exercise_id: libId, categories, coach_id: currentUser.id }]);
+  if (res.error) { showToast(res.error.message, 'error'); return; }
+  rnCloseSheet(); showToast('Guardado', 'success'); rnLib.loaded = false; rnRenderLibrary(true);
+}
+async function rnLibTagRemove(tagId) {
+  if (!(await appConfirm('¿Quitar este ejercicio de Run? Sigue en tu biblioteca general.'))) return;
+  const { error } = await sb.from('run_library_tags').delete().eq('id', tagId);
+  if (error) { showToast(error.message, 'error'); return; }
+  rnCloseSheet(); showToast('Quitado de Run'); rnLib.loaded = false; rnRenderLibrary(true);
 }
 // ---------- Bloques (run_routines): editor único para bloques con nombre y bloques por defecto ----------
 // exercise_ids guarda REFERENCIAS a run_exercises, en orden. Cada item es el id (texto) o {id, dose}
@@ -26554,7 +26631,7 @@ function rnBkResults() {
   const pool = all.filter(e => !chosen.has(String(e.id)) && (!q || _normStr(e.name).includes(q)));
   const shown = pool.slice(0, q ? 30 : 8);
   box.innerHTML = shown.map(e => `<button type="button" class="rn-row" style="width:100%;gap:8px;padding:8px 4px;border:0;border-bottom:1px solid #EFE9DF;background:none;text-align:left;cursor:pointer;font-family:inherit;" onclick="rnBkAdd('${e.id}')">
-      <span style="color:#C24E18;">${icon('plus', 16)}</span><span class="rn-fx"><span style="display:block;font-size:14px;font-weight:600;color:var(--black);">${rnEsc(e.name)}</span><span class="rn-xs rn-mu">${e.category === 'lib' ? 'Tu biblioteca' + (e.muscle_group ? ' · ' + rnEsc(e.muscle_group) : '') : 'Run · ' + (RN_EX_CAT_NAME[e.category] || e.category)}${e.dose ? ' · ' + rnEsc(e.dose) : ''}</span></span></button>`).join('')
+      <span style="color:#C24E18;">${icon('plus', 16)}</span><span class="rn-fx"><span style="display:block;font-size:14px;font-weight:600;color:var(--black);">${rnEsc(e.name)}</span><span class="rn-xs rn-mu">${e.category === 'lib' ? 'Tu biblioteca' + (e.muscle_group ? ' · ' + rnEsc(e.muscle_group) : '') : 'Run · ' + rnExCatLabel(e)}${e.dose ? ' · ' + rnEsc(e.dose) : ''}</span></span></button>`).join('')
     + (pool.length > shown.length ? `<div class="rn-xs rn-mu" style="padding:6px 4px;">${pool.length - shown.length} más. Escribí para filtrar.</div>` : '')
     + (!pool.length ? `<div class="rn-sm rn-mu" style="padding:6px 0;">${q ? 'No hay ejercicios con ese nombre.' : 'No quedan ejercicios por agregar.'}</div>` : '');
 }
