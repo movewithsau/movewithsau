@@ -1429,6 +1429,67 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 #screen-client-home.home-dark.cover-on .hv-fg { stroke:#14110E; }
 #screen-client-home.home-dark.cover-on .hv-fill { fill:#14110E; }
 @media (prefers-reduced-motion:reduce) { .hh-chip-dot { animation:none; } }
+/* ===== ENTRENA COMO SAU: pantallas a pantalla completa (cliente oscuro, coach crema) ===== */
+.ecs-ov { position:fixed; top:0; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px; z-index:300; box-sizing:border-box; display:flex; flex-direction:column; overflow:hidden; font-family:'DM Sans',sans-serif; }
+.ecs-ov[hidden] { display:none; }
+.ecs-scroll { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+.ecs-back { flex:none; width:44px; height:44px; border:0; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
+.ecs-mono { font-family:'DM Mono',monospace; font-size:12px; letter-spacing:1px; }
+.ecs-btn { width:100%; min-height:56px; border:0; border-radius:16px; display:flex; align-items:center; justify-content:center; gap:10px; font-family:'DM Sans',sans-serif; font-size:17px; font-weight:700; cursor:pointer; }
+.ecs-btn:disabled { opacity:0.45; cursor:default; }
+.ecs-btn-orange { background:#C24E18; color:#FFFFFF; }
+.ecs-btn-green { background:#1E7A3C; color:#FFFFFF; }
+.ecs-btn-ghost { background:transparent; border:1.5px solid #D8CDBE; color:#1F1B16; min-height:52px; font-size:16px; }
+/* Publicación (cliente) */
+.ecs-post { background:#14110E; color:#FBF6EF; }
+.ecs-deco { position:absolute; pointer-events:none; }
+.ecs-post .ecs-back { background:rgba(251,246,239,0.1); color:#FBF6EF; }
+.ecs-post-top { position:relative; padding:36px 24px 0; }
+.ecs-post-main { position:relative; padding:30px 24px 0; display:flex; flex-direction:column; min-height:100%; box-sizing:border-box; }
+.ecs-kicker { display:flex; align-items:center; gap:8px; color:#F5B83D; }
+.ecs-kicker .dot { flex:none; width:8px; height:8px; border-radius:50%; background:#F5B83D; }
+.ecs-big { margin:16px 0 0; font-family:'Dela Gothic One',sans-serif; font-weight:400; font-size:44px; line-height:1.08; text-transform:uppercase; color:#FBF6EF; }
+.ecs-big em { font-style:normal; color:#F5B83D; }
+.ecs-line { margin-top:28px; height:3px; width:56px; border-radius:2px; background:#F5B83D; }
+.ecs-body { margin-top:22px; font-size:18px; line-height:1.55; color:#F1E9DE; white-space:pre-line; overflow-wrap:anywhere; }
+.ecs-left { margin-top:auto; padding:24px 0 14px; color:#CFC6BA; }
+.ecs-post-cta { position:relative; padding:0 24px 34px; display:flex; flex-direction:column; gap:10px; }
+.ecs-expired { padding:12px 14px; border-radius:14px; background:rgba(240,138,75,0.12); border:1px solid rgba(240,138,75,0.45); color:#F08A4B; font-size:15px; font-weight:700; text-align:center; }
+.ecs-expired[hidden] { display:none; }
+/* Coach: tarjeta de acceso arriba de Clientes */
+.ecs-ccard { width:100%; box-sizing:border-box; margin:0 0 16px; display:flex; align-items:center; gap:12px; padding:14px 14px 14px 16px; border-radius:18px; background:#FFFFFF; border:1.5px solid #E8DFD3; font-family:'DM Sans',sans-serif; text-align:left; color:#1F1B16; cursor:pointer; }
+.ecs-ccard-ico { flex:none; width:44px; height:44px; border-radius:50%; background:#14110E; color:#F5B83D; display:flex; align-items:center; justify-content:center; }
+.ecs-ccard-txt { flex:1; min-width:0; }
+.ecs-ccard-title { display:block; font-size:16px; font-weight:700; }
+.ecs-ccard-sub { display:block; margin-top:2px; font-size:13px; color:#6B6258; }
+.ecs-pill { flex:none; padding:5px 10px; border-radius:999px; font-size:12px; font-weight:700; background:#F3EBDF; color:#6B6258; }
+.ecs-pill.on { background:#1E7A3C; color:#FFFFFF; }
+/* Coach: editor y vista previa */
+.ecs-coach { background:#FBF6EF; color:#1F1B16; }
+.ecs-coach .ecs-back { background:#F3EBDF; color:#1F1B16; }
+.ecs-c-head { padding:36px 24px 8px; display:flex; align-items:center; gap:12px; }
+.ecs-c-pad { padding:10px 24px 0; }
+.ecs-c-h1 { margin:0; font-family:'Playfair Display',serif; font-weight:700; font-size:30px; line-height:1.15; }
+.ecs-c-lead { margin-top:6px; font-size:15px; line-height:1.45; color:#6B6258; }
+.ecs-c-lbl { display:block; margin-top:18px; color:#6B6258; }
+.ecs-ta { margin-top:8px; box-sizing:border-box; width:100%; min-height:230px; border:1.5px solid #D8CDBE; border-radius:18px; background:#FFFFFF; padding:16px; font-family:'DM Sans',sans-serif; font-size:17px; line-height:1.5; color:#1F1B16; resize:vertical; }
+.ecs-ta:focus { outline:3px solid rgba(194,78,24,0.35); border-color:#C24E18; }
+.ecs-c-meta { margin-top:8px; display:flex; justify-content:space-between; gap:12px; font-size:13px; color:#6B6258; }
+.ecs-c-meta .over { color:#B42318; font-weight:700; }
+.ecs-switch-row { margin-top:18px; background:#FFFFFF; border:1px solid #E8DFD3; border-radius:18px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.ecs-switch { flex:none; position:relative; width:52px; height:30px; border:0; border-radius:999px; background:#B8AD9E; cursor:pointer; padding:0; }
+.ecs-switch[aria-checked="true"] { background:#1E7A3C; }
+.ecs-switch span { position:absolute; left:3px; top:3px; width:24px; height:24px; border-radius:50%; background:#FFFFFF; transition:left 0.15s; }
+.ecs-switch[aria-checked="true"] span { left:25px; }
+.ecs-c-foot { padding:16px 24px 34px; display:flex; flex-direction:column; gap:10px; }
+.ecs-c-note { text-align:center; font-size:13px; color:#6B6258; }
+.ecs-prev-card { margin:0 24px; border-radius:26px; background:#14110E; color:#FBF6EF; padding:22px 20px 26px; position:relative; overflow:hidden; }
+.ecs-prev-card .ecs-big { font-size:38px; margin-top:12px; }
+.ecs-prev-card .ecs-line { margin-top:18px; width:48px; }
+.ecs-prev-card .ecs-body { font-size:16px; line-height:1.5; margin-top:16px; }
+.ecs-push-note { display:flex; align-items:center; gap:8px; font-size:14px; }
+.ecs-push-note[hidden] { display:none; }
+@media (prefers-reduced-motion:reduce) { .ecs-switch span { transition:none; } }
 </style>
 </head>
 <body>
@@ -1978,6 +2039,8 @@ button.exx-pill { cursor:pointer; min-height:28px; }
       <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Coach</div>
       <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;" id="coach-name-display">—</div>
     </div>
+    <!-- Entrena como Sau: estado de la publicación de hoy; abre el editor -->
+    <div id="ecs-coach-card"></div>
     <!-- Client tabs: Activos / Churn -->
     <div style="display:flex;margin:0 -20px 0;border-bottom:2px solid var(--gray2);background:var(--white);position:sticky;top:0;z-index:10;margin-bottom:0;">
       <div id="ctab-active" onclick="setClientTab('active')" style="flex:1;text-align:center;padding:13px 8px 11px;font-size:13px;font-weight:700;color:var(--orange);border-bottom:2px solid var(--orange);margin-bottom:-2px;cursor:pointer;">Activos <span id="coach-count-active" style="font-size:11px;font-weight:600;color:var(--orange);"></span></div>
@@ -1996,6 +2059,73 @@ button.exx-pill { cursor:pointer; min-height:28px; }
     <div class="nav-item" onclick="coachNav('coaching',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-flask-conical"/></svg></div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('run',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-activity"/></svg></div><div class="nav-label">Run</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-settings"/></svg></div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
+  </div>
+</div>
+
+<!-- ===== ENTRENA COMO SAU: publicación (cliente) ===== -->
+<div class="ecs-ov ecs-post" id="ecs-post" role="dialog" aria-modal="true" aria-labelledby="ecs-post-title" hidden>
+  <svg class="ecs-deco" width="300" height="300" viewBox="0 0 100 100" style="right:-110px;top:-70px;opacity:0.18" aria-hidden="true" focusable="false"><polygon points="50,4 90,27 90,73 50,96 10,73 10,27" fill="none" stroke="#F5B83D" stroke-width="2.5"/></svg>
+  <svg class="ecs-deco" width="220" height="220" viewBox="0 0 100 100" style="left:-90px;bottom:120px;opacity:0.12" aria-hidden="true" focusable="false"><polygon points="50,4 90,27 90,73 50,96 10,73 10,27" fill="none" stroke="#F5B83D" stroke-width="2.5"/></svg>
+  <div class="ecs-post-top"><button type="button" class="ecs-back" id="ecs-post-back" aria-label="Volver al inicio" onclick="ecsClosePost()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button></div>
+  <div class="ecs-scroll">
+    <div class="ecs-post-main">
+      <div class="ecs-kicker ecs-mono"><span class="dot" aria-hidden="true"></span><span id="ecs-post-when"></span></div>
+      <h1 class="ecs-big" id="ecs-post-title">Entrena<br><em>como Sau</em></h1>
+      <div class="ecs-line" aria-hidden="true"></div>
+      <div class="ecs-body" id="ecs-post-body"></div>
+      <div class="ecs-left ecs-mono" id="ecs-post-left"></div>
+    </div>
+  </div>
+  <div class="ecs-post-cta">
+    <div class="ecs-expired" id="ecs-post-expired" role="status" hidden>Esta publicación ya venció.</div>
+    <button type="button" class="ecs-btn ecs-btn-orange" id="ecs-post-go" onclick="ecsStartFromPost()">Entrenar como Sau<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+  </div>
+</div>
+
+<!-- ===== ENTRENA COMO SAU: editor y vista previa (coach) ===== -->
+<div class="ecs-ov ecs-coach" id="ecs-coach" role="dialog" aria-modal="true" aria-labelledby="ecs-c-title" hidden>
+  <div id="ecs-edit" style="display:flex;flex-direction:column;flex:1;min-height:0;">
+    <div class="ecs-scroll">
+      <div class="ecs-c-head">
+        <button type="button" class="ecs-back" aria-label="Volver" onclick="ecsCloseEditor()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+        <span class="ecs-mono" style="color:#6B6258;letter-spacing:1.2px;">VISTA COACH</span>
+      </div>
+      <div class="ecs-c-pad">
+        <h1 class="ecs-c-h1" id="ecs-c-title">Entrena como Sau</h1>
+        <div class="ecs-c-lead">Lo que escribas lo ven todos tus clientes en su home. Se borra solo a las 24 horas.</div>
+        <label for="ecs-text" class="ecs-c-lbl ecs-mono">TU ENTRENO DE HOY</label>
+        <textarea id="ecs-text" class="ecs-ta" maxlength="500" placeholder="Qué entrenaste hoy, cómo te fue y el reto para tus clientes." oninput="ecsCount()"></textarea>
+        <div class="ecs-c-meta"><span id="ecs-active-note"></span><span class="ecs-mono" id="ecs-count" aria-live="polite">0 / 500</span></div>
+        <div class="ecs-switch-row">
+          <div><div id="ecs-push-lbl" style="font-size:16px;font-weight:700;">Avisar a los clientes</div><div style="margin-top:2px;font-size:13px;color:#6B6258;">Mandar notificación push al publicar</div></div>
+          <button type="button" class="ecs-switch" id="ecs-push" role="switch" aria-checked="true" aria-labelledby="ecs-push-lbl" onclick="ecsTogglePush()"><span></span></button>
+        </div>
+      </div>
+    </div>
+    <div class="ecs-c-foot">
+      <button type="button" class="ecs-btn ecs-btn-orange" id="ecs-to-prev" onclick="ecsShowPreview()">Ver vista previa<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <div class="ecs-c-note">Todavía no se publica nada.</div>
+    </div>
+  </div>
+  <div id="ecs-prev" style="display:none;flex-direction:column;flex:1;min-height:0;">
+    <div class="ecs-scroll">
+      <div class="ecs-c-head" style="padding-bottom:12px;">
+        <button type="button" class="ecs-back" aria-label="Volver a editar" onclick="ecsBackToEdit()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+        <div><div class="ecs-mono" style="color:#A63E10;letter-spacing:1.2px;">VISTA PREVIA</div><div style="font-size:15px;font-weight:700;">Así lo van a ver tus clientes</div></div>
+      </div>
+      <div class="ecs-prev-card">
+        <svg class="ecs-deco" width="220" height="220" viewBox="0 0 100 100" style="right:-80px;top:-60px;opacity:0.18" aria-hidden="true" focusable="false"><polygon points="50,4 90,27 90,73 50,96 10,73 10,27" fill="none" stroke="#F5B83D" stroke-width="2.5"/></svg>
+        <div class="ecs-kicker ecs-mono" style="position:relative;"><span class="dot" aria-hidden="true"></span>PUBLICADO HOY</div>
+        <div class="ecs-big" style="position:relative;">Entrena<br><em>como Sau</em></div>
+        <div class="ecs-line" aria-hidden="true"></div>
+        <div class="ecs-body" id="ecs-prev-body" style="position:relative;"></div>
+      </div>
+    </div>
+    <div class="ecs-c-foot">
+      <div class="ecs-push-note" id="ecs-push-note"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1E7A3C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8M10 21a2 2 0 004 0"/></svg><span>Se enviará un push a todos tus clientes.</span></div>
+      <button type="button" class="ecs-btn ecs-btn-green" id="ecs-publish" onclick="ecsPublish()">Publicar ahora<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5L20 7"/></svg></button>
+      <button type="button" class="ecs-btn ecs-btn-ghost" onclick="ecsBackToEdit()">Volver a editar</button>
+    </div>
   </div>
 </div>
 
@@ -7017,10 +7147,158 @@ async function ecsLoadActivePost(force) {
   if (!error) { hhPost = data || null; hhPostAt = Date.now(); }
   return hhPost;
 }
+// ---- Publicación abierta (cliente) ----
+// El texto entra siempre como nodo de texto (textContent), nunca como HTML.
+let ecsPostOpen = null, ecsPostTimer = null;
 function ecsOpenPost() {
   if (!ecsIsActive(hhPost)) return;
   ecsMarkSeen(hhPost);
   hhPaint();
+  ensureDelaFont();
+  const p = ecsPostOpen = hhPost;
+  document.getElementById('ecs-post-when').textContent = 'PUBLICADO ' + ecsWhen(Date.parse(p.published_at));
+  document.getElementById('ecs-post-body').textContent = p.body || '';
+  ecsPostTick();
+  const ov = document.getElementById('ecs-post');
+  ov.hidden = false;
+  ov.querySelector('.ecs-scroll').scrollTop = 0;
+  clearInterval(ecsPostTimer);
+  ecsPostTimer = setInterval(ecsPostTick, 30000);
+  document.getElementById('ecs-post-back').focus();
+}
+// Si vence con la pantalla abierta: aviso y botón desactivado
+function ecsPostTick() {
+  const p = ecsPostOpen;
+  if (!p) return;
+  const alive = ecsIsActive(p);
+  document.getElementById('ecs-post-left').textContent = alive ? 'SE BORRA SOLO EN ' + ecsLeftText(p).toUpperCase() : '';
+  document.getElementById('ecs-post-expired').hidden = alive;
+  document.getElementById('ecs-post-go').disabled = !alive;
+}
+function ecsClosePost() {
+  document.getElementById('ecs-post').hidden = true;
+  clearInterval(ecsPostTimer); ecsPostTimer = null;
+  ecsPostOpen = null;
+  if (hhIsOn()) { hhRender(); document.querySelector('#hh-cards button')?.focus(); }
+}
+function ecsStartFromPost() {
+  ecsPostTick();
+  if (!ecsIsActive(ecsPostOpen)) return;
+  /* la sesión arranca en H4 */
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && ecsPostOpen) ecsPostTick();
+});
+
+// ---- Coach: tarjeta, editor, vista previa y publicar ----
+// Solo Sau publica. Nada se guarda hasta "Publicar ahora". Publicar otra marca la anterior
+// con replaced_at (nunca se borra). El push va aparte y nunca frena la publicación.
+const ECS_MAX = 500;
+const ECS_HEX_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 2.5l8.5 4.9v9.2L12 21.5l-8.5-4.9V7.4z"/></svg>';
+let ecsBusy = false, ecsEditorActive = null;
+function ecsLen(s) { return Array.from(s || '').length; }
+async function ecsCoachCardRender() {
+  const el = document.getElementById('ecs-coach-card');
+  if (!el || currentUser?.role !== 'coach') return;
+  const p = await ecsLoadActivePost(true).catch(() => null);
+  const on = ecsIsActive(p);
+  const today = on && crDateKey(Date.parse(p.published_at)) === todayCR();
+  const sub = on ? `${ecsWhen(Date.parse(p.published_at)).toLowerCase()} · vence en ${ecsLeftText(p)}` : 'Escribí lo que entrenaste hoy';
+  el.innerHTML = `<button type="button" class="ecs-ccard" onclick="ecsOpenEditor()">
+      <span class="ecs-ccard-ico">${ECS_HEX_ICON}</span>
+      <span class="ecs-ccard-txt"><span class="ecs-ccard-title">Entrena como Sau</span><span class="ecs-ccard-sub">${escHtml(sub)}</span></span>
+      <span class="ecs-pill${on ? ' on' : ''}">${on ? (today ? 'Publicado hoy' : 'Publicado') : 'Sin publicar'}</span>
+    </button>`;
+}
+async function ecsOpenEditor() {
+  const ov = document.getElementById('ecs-coach');
+  const ta = document.getElementById('ecs-text');
+  ecsBackToEdit();
+  ov.hidden = false;
+  const p = await ecsLoadActivePost(true).catch(() => null);
+  ecsEditorActive = ecsIsActive(p) ? p : null;
+  // Si ya hay una activa, el editor la carga (solo si todavía no se escribió nada)
+  if (ecsEditorActive && !ta.value.trim()) ta.value = ecsEditorActive.body || '';
+  document.getElementById('ecs-active-note').textContent = ecsEditorActive ? 'Si publicás otra, reemplaza esta.' : '';
+  ecsCount();
+  ta.focus();
+}
+function ecsCloseEditor() { document.getElementById('ecs-coach').hidden = true; }
+function ecsCount() {
+  const n = ecsLen(document.getElementById('ecs-text').value);
+  const c = document.getElementById('ecs-count');
+  c.textContent = `${n} / ${ECS_MAX}`;
+  c.classList.toggle('over', n > ECS_MAX);
+  document.getElementById('ecs-to-prev').disabled = !document.getElementById('ecs-text').value.trim() || n > ECS_MAX;
+}
+function ecsTogglePush() {
+  const sw = document.getElementById('ecs-push');
+  sw.setAttribute('aria-checked', sw.getAttribute('aria-checked') === 'true' ? 'false' : 'true');
+}
+function ecsShowPreview() {
+  const body = document.getElementById('ecs-text').value.trim();
+  if (!body || ecsLen(body) > ECS_MAX) return;
+  ensureDelaFont();
+  document.getElementById('ecs-prev-body').textContent = body;
+  document.getElementById('ecs-push-note').hidden = document.getElementById('ecs-push').getAttribute('aria-checked') !== 'true';
+  document.getElementById('ecs-edit').style.display = 'none';
+  const prev = document.getElementById('ecs-prev');
+  prev.style.display = 'flex';
+  prev.querySelector('.ecs-scroll').scrollTop = 0;
+  document.getElementById('ecs-publish').focus();
+}
+function ecsBackToEdit() {
+  document.getElementById('ecs-prev').style.display = 'none';
+  document.getElementById('ecs-edit').style.display = 'flex';
+}
+async function ecsPublish() {
+  if (ecsBusy) return;
+  const body = document.getElementById('ecs-text').value.trim();
+  if (!body || ecsLen(body) > ECS_MAX) return;
+  const push = document.getElementById('ecs-push').getAttribute('aria-checked') === 'true';
+  const btn = document.getElementById('ecs-publish');
+  ecsBusy = true; btn.disabled = true;
+  const now = new Date(), nowIso = now.toISOString();
+  const { data: row, error } = await sb.from('coach_daily_posts')
+    .insert([{ body, published_at: nowIso, expires_at: new Date(now.getTime() + 24 * 3600e3).toISOString() }])
+    .select('id,body,published_at,expires_at,replaced_at').single();
+  if (error || !row) {
+    ecsBusy = false; btn.disabled = false;
+    showToast('No se pudo publicar. Revisá tu conexión e intentá de nuevo.', 'error', 4500);
+    return;
+  }
+  // La que estaba activa queda reemplazada (no se borra). Si esto falla, igual manda la más nueva.
+  const { error: repErr } = await sb.from('coach_daily_posts').update({ replaced_at: nowIso })
+    .is('replaced_at', null).gt('expires_at', nowIso).neq('id', row.id);
+  if (repErr) console.warn('Entrena como Sau: no se pudo marcar la anterior', repErr);
+  hhPost = row; hhPostAt = Date.now();
+  ecsBusy = false; btn.disabled = false;
+  document.getElementById('ecs-text').value = '';
+  ecsCloseEditor();
+  showToast('Publicado. Tus clientes ya lo ven en su home.', 'success', 3500);
+  ecsCoachCardRender();
+  if (push) ecsSendPush(row.id);
+}
+// Un push por cliente activo (sin churn, sin ocultos, sin LIFT: no tienen este home), reusando
+// api/notify.js con target.username. Silencioso: si falla, la publicación ya quedó hecha.
+async function ecsSendPush(postId) {
+  try {
+    let list = window._cachedClientsAll;
+    if (!list || !list.length) {
+      const { data } = await sb.from('clients').select('username,is_churn,hidden,program_type').eq('coach_id', currentUser.id);
+      list = data || [];
+    }
+    const users = [...new Set(list.filter(c => !c.is_churn && !c.hidden && c.program_type !== 'lift' && c.username).map(c => c.username))];
+    let ok = 0;
+    for (let i = 0; i < users.length; i += 5) {
+      const res = await Promise.allSettled(users.slice(i, i + 5).map(username =>
+        fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: 'Entrena como Sau', message: 'Sau publicó lo que entrenó hoy. Entrá a verlo.', target: { username } }) })
+          .then(r => r.ok)));
+      ok += res.filter(r => r.status === 'fulfilled' && r.value).length;
+    }
+    if (ok) await sb.from('coach_daily_posts').update({ push_sent: true }).eq('id', postId);
+  } catch (e) { console.warn('Entrena como Sau: push no enviado', e); }
 }
 
 // "Día 3 - Hombros" → { n: 3, name: 'Hombros' }; "Lunes" → { n: posición en la semana, name: 'Lunes' }
@@ -9043,6 +9321,7 @@ function setClientTab(tab) {
 }
 
 async function loadCoachClients() {
+  ecsCoachCardRender().catch(e => console.warn('ecs coach card:', e));
   const {data:clients} = await sb.from('clients').select('*').eq('coach_id',currentUser.id);
   window._cachedClientsAll = clients || [];
   const notHidden = (clients||[]).filter(c => !c.hidden);
