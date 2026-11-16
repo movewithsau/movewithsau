@@ -1795,6 +1795,38 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 #screen-client-home.tr-cfab .hoy-fab { bottom:160px !important; }
 #screen-client-home.tr-cfab.ck-on .hoy-fab { bottom:226px !important; }
 @media (prefers-reduced-motion:reduce) { .tr-knob { transition:none; } }
+/* Modo Timer en oscuro (pantallas 17 y 18) */
+.tr-tpanel { margin-top:14px; }
+.tr-rest { background:#1B1713; border:1px solid #3A3027; border-radius:18px; padding:18px 16px; text-align:center; }
+.tr-rest-k { font-family:'DM Mono',monospace; font-size:12px; letter-spacing:1.4px; color:#A89C8D; }
+.tr-rest-h { margin-top:4px; font-size:18px; font-weight:700; color:#FBF6EF; overflow-wrap:anywhere; }
+.tr-rest-sub { margin-top:2px; font-size:13px; color:#CFC6BA; }
+.tr-count { margin-top:2px; font-family:'Dela Gothic One',sans-serif; font-size:84px; line-height:1.1; color:#F5B83D; font-variant-numeric:tabular-nums; }
+.tr-bar { margin:8px auto 0; width:70%; height:6px; border-radius:999px; background:#3A3027; overflow:hidden; }
+.tr-bar-fill { height:100%; background:#F5B83D; }
+.tr-rest-btns { margin-top:16px; display:flex; gap:10px; }
+.tr-rest-btn { flex:1; height:52px; border-radius:14px; background:#26201A; border:1px solid #3A3027; color:#FBF6EF; font:700 16px 'DM Sans',sans-serif; cursor:pointer; }
+.tr-done-ico { display:flex; justify-content:center; }
+.tr-next-k { margin-top:16px; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:1.2px; color:#F5B83D; }
+.tr-next { margin-top:4px; }
+.tr-next-row { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:32px; }
+.tr-next-name { appearance:none; -webkit-appearance:none; margin:0; padding:0; border:0; background:none; display:inline-flex; align-items:center; gap:8px; min-height:32px; color:#CFC6BA; font:500 14px 'DM Sans',sans-serif; text-align:left; cursor:pointer; }
+span.tr-next-name { cursor:default; }
+.tr-play-xs { width:18px; height:18px; }
+.tr-play-xs svg { width:8px; height:8px; }
+.tr-next-goal { flex:none; font-family:'DM Mono',monospace; font-size:11px; color:#A89C8D; }
+.tr-mix { display:flex; flex-direction:column; gap:8px; }
+.tr-tpanel .mix-card { background:#1B1713; border:1px solid #3A3027; }
+.tr-tpanel .mix-card.is-running { border:1.5px solid #F5B83D; }
+.tr-tpanel .mix-name { color:#FBF6EF; }
+.tr-tpanel .mix-presc, .tr-tpanel .mix-meta, .tr-tpanel .mix-secs { color:#A89C8D; }
+.tr-tpanel .mix-saved { color:#7FD19A; }
+.tr-tpanel .mix-tag { background:#26201A; color:#A89C8D; }
+.tr-tpanel .mix-secs input { background:#14110E; border:1px solid #3A3027; color:#FBF6EF; }
+.tr-tpanel .mix-num { color:#FBF6EF; }
+.tr-tpanel .mix-side { color:#F5B83D; }
+.tr-tpanel .mix-ring circle:first-child { stroke:#3A3027; }
+.tr-tpanel .mix-ring circle + circle { stroke:#F5B83D; }
 </style>
 </head>
 <body>
@@ -5246,8 +5278,8 @@ function finishMixTimer(group, secs) {
   if (input) {
     input.value = String(secs);
     saveCircuitLog(run.exId, round, data.logsKey); // borrador local, igual que si lo escribiera a mano
-    if (input.classList.contains('tr-in')) input.classList.add('is-filled'); else
-    input.style.borderColor = 'var(--green)'; input.style.background = 'var(--green-light)'; input.style.color = '#1E7A3C'; input.style.fontWeight = '700';
+    if (input.classList.contains('tr-in')) input.classList.add('is-filled'); // entreno oscuro: solo clase
+    else { input.style.borderColor = 'var(--green)'; input.style.background = 'var(--green-light)'; input.style.color = '#1E7A3C'; input.style.fontWeight = '700'; }
   }
   (state.mixSaved = state.mixSaved || {})[`${round}:${run.exId}`] = secs;
   renderCircuitTimerUI(group);
@@ -5255,6 +5287,18 @@ function finishMixTimer(group, secs) {
 const MIX_PLAY_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
 const MIX_STOP_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>';
 function mixRepsHtml(group, state, data, roundLabel) {
+  const run = state.mixRun;
+  const cards = mixCardsHtml(group, state, data);
+  return `<div class="mix-panel">
+    <div class="mix-round">${roundLabel.toUpperCase()}</div>
+    ${cards}
+    <div class="mix-sep"></div>
+    <div class="mix-rest${run ? ' is-dim' : ''}"><label for="rest-input-${group}">Descanso entre rondas</label><span class="mix-secs"><input type="number" id="rest-input-${group}" value="${state.customRest}" min="1" onchange="setCircuitCustomRest('${group}', this.value)"${run ? ' disabled' : ''}><span>seg</span></span></div>
+    <button type="button" class="mix-done" onclick="finishCircuitRoundManual('${group}')"${run ? ' disabled' : ''}>Terminé la ronda</button>
+  </div>`;
+}
+// Tarjetas de los ejercicios de tiempo del circuito mixto (las usa también el entreno oscuro)
+function mixCardsHtml(group, state, data) {
   const run = state.mixRun;
   const cards = data.exercises.map(ex => {
     const presc = `${escHtml(ex.presc)} ${prescriptionIsTime(ex.presc) ? 'tiempo' : 'reps'}`;
@@ -5279,13 +5323,7 @@ function mixRepsHtml(group, state, data, roundLabel) {
     </div>`;
   }).join('');
   setTimeout(() => updateMixRunDom(group), 0);
-  return `<div class="mix-panel">
-    <div class="mix-round">${roundLabel.toUpperCase()}</div>
-    ${cards}
-    <div class="mix-sep"></div>
-    <div class="mix-rest${run ? ' is-dim' : ''}"><label for="rest-input-${group}">Descanso entre rondas</label><span class="mix-secs"><input type="number" id="rest-input-${group}" value="${state.customRest}" min="1" onchange="setCircuitCustomRest('${group}', this.value)"${run ? ' disabled' : ''}><span>seg</span></span></div>
-    <button type="button" class="mix-done" onclick="finishCircuitRoundManual('${group}')"${run ? ' disabled' : ''}>Terminé la ronda</button>
-  </div>`;
+  return cards;
 }
 function mixRestHtml(group, state, data) {
   const next = state.round + 1 <= data.rounds;
@@ -5320,10 +5358,18 @@ function renderCircuitTimerUI(group) {
     container.style.display = 'none';
     container.innerHTML = '';
     saveCircuitTimers(); // al apagar el Modo Timer se borra lo guardado
+    container.dataset.key = '';
     if (trDarkOn()) { const rr = document.getElementById('tr-restrow-' + group); if (rr) { rr.hidden = true; rr.innerHTML = ''; } trRefreshCircuit(group); }
     return;
   }
   container.style.display = 'block';
+  // Entreno oscuro: misma lógica, otra forma de dibujarlo (pantallas 17 y 18)
+  if (trDarkOn() && document.getElementById('tr-tbox-' + group)) {
+    const changed = trRenderTimerDark(group, container, state, data);
+    saveCircuitTimers();
+    if (changed || state.phase === 'reps') trRefreshCircuit(group); // en reps también: el botón se apaga con el timer mixto andando
+    return;
+  }
 
   const roundLabel = `Ronda ${state.round}/${data.rounds}`;
   let inner = '';
@@ -7762,6 +7808,105 @@ function trCircuitBody(g, group, rounds, restText, circuitLogs, logsKey, prevByE
     </div>
     <div class="tr-actions"><button type="button" class="tr-act" onclick="trOpenCircuitNotes('${ref}')"><span class="tr-act-ico-miel">${icon('pencil', 16)}</span><span>Notas</span></button><span class="tr-act-sep" aria-hidden="true"></span><span id="exx-cassist-${ref}" class="tr-act-slot">${exxCircuitAssistBtnHtml(ref)}</span></div>
     <div class="tr-sticky" id="tr-cbtn-wrap-${group}"><button type="button" class="tr-cbtn" id="tr-cbtn-${group}" onclick="trCircuitMain('${group}')"></button></div>`;
+}
+// ---- Modo Timer en oscuro: solo apariencia. Lee circuitTimerState/Data y llama a las mismas funciones. ----
+const trTimerLabel = {};
+// Duración del tramo actual, para la barra (la misma que usan advanceCircuitPhase / finishCircuitRoundManual)
+function trTimerTotal(state, data) {
+  if (state.phase === 'work') return data.exercises[state.exIndex]?.seconds || state.remaining || 1;
+  if (state.phase === 'buffer') return 15;
+  if (state.phase === 'rest') return data.allTimeBased ? data.restSecs : (state.customRest || data.restSecs);
+  return state.remaining || 1;
+}
+// Devuelve true si cambió de fase/ronda (para repintar selector y botón solo entonces)
+function trRenderTimerDark(group, container, state, data) {
+  const run = state.mixRun;
+  const rr = document.getElementById('tr-restrow-' + group);
+  const showRest = !data.allTimeBased && state.phase === 'reps';
+  if (rr) {
+    rr.hidden = !showRest;
+    if (!showRest) rr.innerHTML = '';
+    else if (!rr.querySelector('input')) rr.innerHTML = `<label for="rest-input-${group}">Descanso entre rondas</label><span class="tr-restrow-in"><input type="text" inputmode="numeric" autocomplete="off" id="rest-input-${group}" value="${escHtml(String(state.customRest))}" onchange="setCircuitCustomRest('${group}', this.value)"><span>seg</span></span>`;
+    const inp = rr.querySelector('input');
+    if (inp) inp.disabled = !!run;
+  }
+  const key = `${state.phase}|${state.round}|${state.exIndex}`;
+  const changed = container.dataset.key !== key;
+  const timed = ['work', 'buffer', 'rest'].includes(state.phase);
+  // Al cambiar de fase, el selector sigue al timer (en descanso queda marcada la siguiente)
+  if (changed && trCircuitMeta[group] && state.phase !== 'done') {
+    const st = trRS(group);
+    st.sel = state.phase === 'rest' ? Math.min(state.round + 1, data.rounds) : state.round;
+    trRSSave(group);
+  }
+  if (timed && !changed) {
+    // Mismo tramo: solo el número, la barra y Pausar/Reanudar (no se pierde el foco)
+    trTimerTick(group, container, state, data);
+    return false;
+  }
+  container.dataset.key = key;
+  if (state.phase === 'reps') {
+    if (data.mixed) container.innerHTML = `<div class="tr-mix">${mixCardsHtml(group, state, data)}</div>`;
+    else { container.innerHTML = ''; container.style.display = 'none'; }
+    return changed;
+  }
+  if (state.phase === 'idle') {
+    container.innerHTML = `<div class="tr-rest">
+      <div class="tr-rest-k">RONDA ${state.round}/${data.rounds}</div>
+      <div class="tr-rest-h">Listo para arrancar</div>
+      <button type="button" class="tr-cbtn" style="margin-top:14px;" onclick="startCircuitTimerFlow('${group}')">${TR_PLAY_SVG}Iniciar circuito</button>
+    </div>`;
+    return changed;
+  }
+  if (state.phase === 'done') {
+    container.innerHTML = `<div class="tr-rest">
+      <div class="tr-done-ico" aria-hidden="true">${trHexBox('done', 44)}</div>
+      <div class="tr-rest-h">Circuito completo</div>
+      <div class="tr-rest-sub">Revisá las rondas y guardá el circuito.</div>
+    </div>`;
+    return changed;
+  }
+  // Trabajo, transición o descanso
+  const label = state.phase === 'work' ? (data.exercises[state.exIndex]?.name || '') : state.phase === 'buffer' ? 'Transición' : 'Descanso';
+  const sub = state.phase === 'buffer' ? `Siguiente: ${data.exercises[state.exIndex]?.name || ''}` : '';
+  let after = '';
+  if (state.phase === 'rest') {
+    if (state.round < data.rounds) {
+      after = `<div class="tr-next-k">SIGUE · RONDA ${state.round + 1}</div><div class="tr-next">${data.exercises.map(ex => {
+        const se = trExMap[ex.id];
+        const name = se?.video_url
+          ? `<button type="button" class="tr-next-name" onclick="trOpenInfo('${ex.id}')"><span class="tr-play tr-play-xs" aria-hidden="true">${TR_PLAY_SVG}</span><span>${escHtml(ex.name)}</span></button>`
+          : `<span class="tr-next-name">${escHtml(ex.name)}</span>`;
+        return `<div class="tr-next-row">${name}<span class="tr-next-goal">${escHtml(trRepsText(ex.presc))}</span></div>`;
+      }).join('')}</div>`;
+    } else after = '<div class="tr-next-k">ÚLTIMA RONDA TERMINADA</div>';
+  }
+  trTimerLabel[group] = state.remaining;
+  container.innerHTML = `<div class="tr-rest">
+      <div class="tr-rest-k">RONDA ${state.round}/${data.rounds}</div>
+      <div class="tr-rest-h">${escHtml(label)}</div>
+      ${sub ? `<div class="tr-rest-sub">${escHtml(sub)}</div>` : ''}
+      <div class="tr-count" id="tr-count-${group}" role="timer" aria-label="${state.remaining} segundos">${trCountText(state.remaining)}</div>
+      <div class="tr-bar" aria-hidden="true"><div class="tr-bar-fill" id="tr-bar-${group}" style="width:${trBarPct(state, data)}%"></div></div>
+      <div class="tr-rest-btns">
+        <button type="button" class="tr-rest-btn" id="tr-pause-${group}" onclick="pauseResumeCircuitTimer('${group}')">${state.paused ? 'Reanudar' : 'Pausar'}</button>
+        <button type="button" class="tr-rest-btn" onclick="skipCircuitInterval('${group}')">Saltar</button>
+      </div>
+    </div>${after}`;
+  return changed;
+}
+function trCountText(sec) { return sec >= 60 ? fmtMinSec(sec) : String(Math.max(0, sec)); }
+function trBarPct(state, data) { const t = trTimerTotal(state, data); return Math.max(0, Math.min(100, Math.round((t - state.remaining) / t * 100))); }
+function trTimerTick(group, container, state, data) {
+  const c = document.getElementById('tr-count-' + group);
+  if (!c) return;
+  c.textContent = trCountText(state.remaining);
+  // El lector de pantalla no recibe cada segundo: la etiqueta cambia en múltiplos de 10 y en 0
+  if (state.remaining === 0 || state.remaining % 10 === 0) { trTimerLabel[group] = state.remaining; c.setAttribute('aria-label', `${state.remaining} segundos`); }
+  const bar = document.getElementById('tr-bar-' + group);
+  if (bar) bar.style.width = trBarPct(state, data) + '%';
+  const p = document.getElementById('tr-pause-' + group);
+  if (p) p.textContent = state.paused ? 'Reanudar' : 'Pausar';
 }
 const TR_PLAY_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="#FFFFFF" aria-hidden="true" focusable="false"><path d="M7 4l13 8-13 8z"/></svg>';
 const TR_CHECK_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5L20 7"/></svg>';
