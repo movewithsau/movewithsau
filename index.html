@@ -1364,6 +1364,257 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 #screen-client-home .bottom-nav .nav-item:nth-child(1), #screen-client-plan .bottom-nav .nav-item:nth-child(4), #screen-client-profile .bottom-nav .nav-item:nth-child(5), #screen-client-food .bottom-nav .nav-item:nth-child(2), #screen-client-coaching .bottom-nav .nav-item:nth-child(2) { background:#F6E6DB; border-radius:16px; margin:0 4px; }
 #screen-client-home .bottom-nav .nav-item:nth-child(1) .nav-icon, #screen-client-home .bottom-nav .nav-item:nth-child(1) .nav-label, #screen-client-home.cover-on .bottom-nav .nav-item:nth-child(1) .nav-icon, #screen-client-home.cover-on .bottom-nav .nav-item:nth-child(1) .nav-label, #screen-client-plan .bottom-nav .nav-item:nth-child(4) .nav-icon, #screen-client-plan .bottom-nav .nav-item:nth-child(4) .nav-label, #screen-client-profile .bottom-nav .nav-item:nth-child(5) .nav-icon, #screen-client-profile .bottom-nav .nav-item:nth-child(5) .nav-label, #screen-client-food .bottom-nav .nav-item:nth-child(2) .nav-icon, #screen-client-food .bottom-nav .nav-item:nth-child(2) .nav-label, #screen-client-coaching .bottom-nav .nav-item:nth-child(2) .nav-icon, #screen-client-coaching .bottom-nav .nav-item:nth-child(2) .nav-label { color:#A63E10; font-weight:700; }
 #screen-client-plan .bottom-nav .nav-item:nth-child(4) .ico { stroke-width:2.2; }
+/* ===== HOY: home oscuro (Entrena como Sau + Ir a mi entrenamiento) =====
+   Vive dentro de #hoy-cover. Con recordatorio de pago la portada sigue naranja como siempre;
+   sin pago (o después de cerrarlo) la portada pasa a .is-home y muestra solo este home. */
+.hh { display:none; }
+.hoy-cover.is-home { background:#14110E; justify-content:flex-start; align-items:stretch; padding:0 0 96px; text-align:left; overflow-y:auto; color:#FBF6EF; }
+.hoy-cover.is-home::before { display:none; }
+.hoy-cover.is-home > :not(.hh):not(.bee-flight) { display:none !important; }
+.hoy-cover.is-home .hh { display:flex; flex-direction:column; flex:1 0 auto; font-family:'DM Sans',sans-serif; }
+.hh-head { padding:36px 24px 18px; }
+.hh-date { font-family:'DM Mono',monospace; font-size:12px; letter-spacing:1.2px; color:#A89C8D; }
+.hh-hello { margin:6px 0 0; font-family:'Playfair Display',serif; font-weight:700; font-size:34px; line-height:1.1; color:#FBF6EF; overflow-wrap:anywhere; }
+.hh-sub { margin-top:6px; font-size:15px; color:#CFC6BA; }
+.hh-contract { margin:0 24px 14px; background:#26201A; border:1px solid #3A3027; border-radius:20px; padding:14px 16px; display:flex; flex-direction:column; gap:12px; }
+.hh-contract[hidden] { display:none; }
+.hh-contract-row { display:flex; align-items:center; gap:12px; }
+.hh-contract-ico { flex:none; width:40px; height:40px; border-radius:50%; background:rgba(245,184,61,0.16); color:#F5B83D; display:flex; align-items:center; justify-content:center; }
+.hh-contract-title { font-size:15px; font-weight:700; color:#FBF6EF; line-height:1.3; }
+.hh-contract-text { font-size:13px; line-height:1.4; color:#CFC6BA; margin-top:2px; }
+.hh-contract-btn { width:100%; min-height:46px; border:0; border-radius:14px; background:#C24E18; color:#FFFFFF; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:700; cursor:pointer; }
+.hh-body { flex:1 0 auto; display:flex; flex-direction:column; gap:14px; padding:0 24px 18px; }
+.hh-chip { display:flex; align-items:center; gap:10px; width:100%; min-height:48px; box-sizing:border-box; padding:0 16px; border-radius:999px; border:1px solid rgba(127,209,154,0.45); background:rgba(127,209,154,0.12); color:#7FD19A; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; text-align:left; cursor:pointer; }
+.hh-chip[hidden] { display:none; }
+.hh-chip-dot { flex:none; width:9px; height:9px; border-radius:50%; background:#7FD19A; animation:hhPulse 1.6s ease-in-out infinite; }
+.hh-chip-time { margin-left:auto; font-family:'DM Mono',monospace; font-weight:500; }
+@keyframes hhPulse { 0%,100% { opacity:1; } 50% { opacity:0.35; } }
+.hh-cards { flex:1 0 auto; display:flex; flex-direction:column; gap:14px; }
+/* Las dos tarjetas: misma altura (flex 1 cada una) */
+.hh-card { appearance:none; -webkit-appearance:none; margin:0; font:inherit; text-align:left; width:100%; box-sizing:border-box; flex:1 1 0; min-height:208px; position:relative; overflow:hidden; border:1.5px solid transparent; border-radius:24px; padding:22px; display:flex; flex-direction:column; justify-content:space-between; gap:12px; cursor:pointer; text-decoration:none; -webkit-tap-highlight-color:transparent; }
+.hh-card:focus-visible { outline:3px solid #F5B83D; outline-offset:3px; }
+.hh-hex { position:absolute; right:-44px; bottom:-44px; opacity:0.2; pointer-events:none; }
+.hh-kicker { position:relative; display:flex; align-items:center; gap:8px; font-family:'DM Mono',monospace; font-size:12px; letter-spacing:1px; }
+.hh-dot { flex:none; width:8px; height:8px; border-radius:50%; background:currentColor; }
+.hh-display { position:relative; display:block; font-family:'Dela Gothic One',sans-serif; font-weight:400; font-size:36px; line-height:1.1; text-transform:uppercase; }
+.hh-display em { font-style:normal; color:#F5B83D; }
+.hh-title { position:relative; display:block; font-family:'Playfair Display',serif; font-weight:700; font-size:36px; line-height:1.1; }
+.hh-title.is-long { font-size:26px; line-height:1.15; }
+.hh-foot { position:relative; display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:14px; line-height:1.4; }
+.hh-go { flex:none; width:38px; height:38px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; }
+.hh-a { background:#26201A; border:1.5px solid rgba(245,184,61,0.5); color:#FBF6EF; }
+.hh-a .hh-kicker { color:#F5B83D; }
+.hh-a .hh-foot { color:#D9D0C4; }
+.hh-a .hh-go { background:#F5B83D; color:#14110E; }
+.hh-off { background:#1B1713; border:1.5px dashed #5A4E41; color:#8F8373; cursor:default; }
+.hh-off .hh-kicker { color:#A89C8D; }
+.hh-off .hh-dot { background:#7A6D5E; }
+.hh-off .hh-display, .hh-off .hh-display em, .hh-off .hh-title { color:#8F8373; }
+.hh-off .hh-foot { color:#B8AD9E; }
+.hh-b { background:#C24E18; color:#FFFFFF; }
+.hh-b .hh-kicker { color:#FFFFFF; letter-spacing:1.2px; }
+.hh-b .hh-foot { color:#FFFFFF; }
+.hh-b .hh-go { background:#FFFFFF; color:#A63E10; }
+.hh-evo { background:#26201A; border:1.5px solid #3A3027; color:#FBF6EF; cursor:default; justify-content:flex-start; }
+.hh-evo .hh-kicker { color:#F5B83D; }
+.hh-evo .hh-foot { color:#CFC6BA; display:block; }
+.hh-wa { position:relative; margin-top:auto; min-height:52px; border-radius:16px; background:#1E7A3C; color:#FFFFFF; display:flex; align-items:center; justify-content:center; gap:10px; font-size:16px; font-weight:700; text-decoration:none; }
+/* Barra inferior real, oscura solo mientras se ve este home (el resto del app sigue crema) */
+#screen-client-home.home-dark .bottom-nav { background:#1B1713; border-top:1px solid #2E261F; }
+#screen-client-home.home-dark .bottom-nav::before { display:none; }
+#screen-client-home.home-dark.cover-on .bottom-nav .nav-item .nav-icon, #screen-client-home.home-dark.cover-on .bottom-nav .nav-item .nav-label { color:#A89C8D; }
+#screen-client-home.home-dark.cover-on .bottom-nav .nav-item:nth-child(1) { background:rgba(245,184,61,0.14); }
+#screen-client-home.home-dark.cover-on .bottom-nav .nav-item:nth-child(1) .nav-icon, #screen-client-home.home-dark.cover-on .bottom-nav .nav-item:nth-child(1) .nav-label { color:#F5B83D; font-weight:700; }
+#screen-client-home.home-dark.cover-on .hv-bg { fill:#F5B83D; stroke:#1B1713; }
+#screen-client-home.home-dark.cover-on .hv-fg { stroke:#14110E; }
+#screen-client-home.home-dark.cover-on .hv-fill { fill:#14110E; }
+@media (prefers-reduced-motion:reduce) { .hh-chip-dot { animation:none; } }
+/* ===== ENTRENA COMO SAU: pantallas a pantalla completa (cliente oscuro, coach crema) ===== */
+.ecs-ov { position:fixed; top:0; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px; z-index:300; box-sizing:border-box; display:flex; flex-direction:column; overflow:hidden; font-family:'DM Sans',sans-serif; }
+.ecs-ov[hidden] { display:none; }
+.ecs-scroll { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+.ecs-back { flex:none; width:44px; height:44px; border:0; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
+.ecs-mono { font-family:'DM Mono',monospace; font-size:12px; letter-spacing:1px; }
+.ecs-btn { width:100%; min-height:56px; border:0; border-radius:16px; display:flex; align-items:center; justify-content:center; gap:10px; font-family:'DM Sans',sans-serif; font-size:17px; font-weight:700; cursor:pointer; }
+.ecs-btn:disabled { opacity:0.45; cursor:default; }
+.ecs-btn-orange { background:#C24E18; color:#FFFFFF; }
+.ecs-btn-green { background:#1E7A3C; color:#FFFFFF; }
+.ecs-btn-ghost { background:transparent; border:1.5px solid #D8CDBE; color:#1F1B16; min-height:52px; font-size:16px; }
+/* Publicación (cliente) */
+.ecs-post { background:#14110E; color:#FBF6EF; }
+.ecs-deco { position:absolute; pointer-events:none; }
+.ecs-post .ecs-back { background:rgba(251,246,239,0.1); color:#FBF6EF; }
+.ecs-post-top { position:relative; padding:36px 24px 0; }
+.ecs-post-main { position:relative; padding:30px 24px 0; display:flex; flex-direction:column; min-height:100%; box-sizing:border-box; }
+.ecs-kicker { display:flex; align-items:center; gap:8px; color:#F5B83D; }
+.ecs-kicker .dot { flex:none; width:8px; height:8px; border-radius:50%; background:#F5B83D; }
+.ecs-big { margin:16px 0 0; font-family:'Dela Gothic One',sans-serif; font-weight:400; font-size:44px; line-height:1.08; text-transform:uppercase; color:#FBF6EF; }
+.ecs-big em { font-style:normal; color:#F5B83D; }
+.ecs-line { margin-top:28px; height:3px; width:56px; border-radius:2px; background:#F5B83D; }
+.ecs-body { margin-top:22px; font-size:18px; line-height:1.55; color:#F1E9DE; white-space:pre-line; overflow-wrap:anywhere; }
+.ecs-left { margin-top:auto; padding:24px 0 14px; color:#CFC6BA; }
+.ecs-post-cta { position:relative; padding:0 24px 34px; display:flex; flex-direction:column; gap:10px; }
+.ecs-expired { padding:12px 14px; border-radius:14px; background:rgba(240,138,75,0.12); border:1px solid rgba(240,138,75,0.45); color:#F08A4B; font-size:15px; font-weight:700; text-align:center; }
+.ecs-expired[hidden] { display:none; }
+/* Coach: tarjeta de acceso arriba de Clientes */
+.ecs-ccard { width:100%; box-sizing:border-box; margin:0 0 16px; display:flex; align-items:center; gap:12px; padding:14px 14px 14px 16px; border-radius:18px; background:#FFFFFF; border:1.5px solid #E8DFD3; font-family:'DM Sans',sans-serif; text-align:left; color:#1F1B16; cursor:pointer; }
+.ecs-ccard-ico { flex:none; width:44px; height:44px; border-radius:50%; background:#14110E; color:#F5B83D; display:flex; align-items:center; justify-content:center; }
+.ecs-ccard-txt { flex:1; min-width:0; }
+.ecs-ccard-title { display:block; font-size:16px; font-weight:700; }
+.ecs-ccard-sub { display:block; margin-top:2px; font-size:13px; color:#6B6258; }
+.ecs-pill { flex:none; padding:5px 10px; border-radius:999px; font-size:12px; font-weight:700; background:#F3EBDF; color:#6B6258; }
+.ecs-pill.on { background:#1E7A3C; color:#FFFFFF; }
+/* Coach: editor y vista previa */
+.ecs-coach { background:#FBF6EF; color:#1F1B16; }
+.ecs-coach .ecs-back { background:#F3EBDF; color:#1F1B16; }
+.ecs-c-head { padding:36px 24px 8px; display:flex; align-items:center; gap:12px; }
+.ecs-c-pad { padding:10px 24px 0; }
+.ecs-c-h1 { margin:0; font-family:'Playfair Display',serif; font-weight:700; font-size:30px; line-height:1.15; }
+.ecs-c-lead { margin-top:6px; font-size:15px; line-height:1.45; color:#6B6258; }
+.ecs-c-lbl { display:block; margin-top:18px; color:#6B6258; }
+.ecs-ta { margin-top:8px; box-sizing:border-box; width:100%; min-height:230px; border:1.5px solid #D8CDBE; border-radius:18px; background:#FFFFFF; padding:16px; font-family:'DM Sans',sans-serif; font-size:17px; line-height:1.5; color:#1F1B16; resize:vertical; }
+.ecs-ta:focus { outline:3px solid rgba(194,78,24,0.35); border-color:#C24E18; }
+.ecs-c-meta { margin-top:8px; display:flex; justify-content:space-between; gap:12px; font-size:13px; color:#6B6258; }
+.ecs-c-meta .over { color:#B42318; font-weight:700; }
+.ecs-switch-row { margin-top:18px; background:#FFFFFF; border:1px solid #E8DFD3; border-radius:18px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.ecs-switch { flex:none; position:relative; width:52px; height:30px; border:0; border-radius:999px; background:#B8AD9E; cursor:pointer; padding:0; }
+.ecs-switch[aria-checked="true"] { background:#1E7A3C; }
+.ecs-switch span { position:absolute; left:3px; top:3px; width:24px; height:24px; border-radius:50%; background:#FFFFFF; transition:left 0.15s; }
+.ecs-switch[aria-checked="true"] span { left:25px; }
+.ecs-c-foot { padding:16px 24px 34px; display:flex; flex-direction:column; gap:10px; }
+.ecs-c-note { text-align:center; font-size:13px; color:#6B6258; }
+.ecs-prev-card { margin:0 24px; border-radius:26px; background:#14110E; color:#FBF6EF; padding:22px 20px 26px; position:relative; overflow:hidden; }
+.ecs-prev-card .ecs-big { font-size:38px; margin-top:12px; }
+.ecs-prev-card .ecs-line { margin-top:18px; width:48px; }
+.ecs-prev-card .ecs-body { font-size:16px; line-height:1.5; margin-top:16px; }
+.ecs-push-note { display:flex; align-items:center; gap:8px; font-size:14px; }
+.ecs-push-note[hidden] { display:none; }
+@media (prefers-reduced-motion:reduce) { .ecs-switch span { transition:none; } }
+/* ===== BIENVENIDA: la abeja (una sola pasada, ~4,2 s) y el resumen del día ===== */
+.wl { background:#14110E; color:#FBF6EF; }
+.wl-stage { position:absolute; inset:0; overflow:hidden; }
+.wl-bg { position:absolute; top:0; left:50%; width:480px; height:844px; margin-left:-240px; }
+.wl-box { position:absolute; top:0; left:50%; width:390px; height:844px; margin-left:-195px; }
+.wl-top { position:absolute; left:0; right:0; top:0; padding:36px 24px 0; display:flex; justify-content:space-between; align-items:center; z-index:2; }
+.wl-skip { min-height:44px; padding:0 18px; border:0; border-radius:999px; background:rgba(251,246,239,0.12); color:#FBF6EF; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:700; cursor:pointer; }
+.wl-bee { position:absolute; left:0; top:0; width:96px; height:64px; animation:wl-fly 4.2s ease-in-out forwards; }
+.wl-wing { transform-box:fill-box; transform-origin:50% 100%; animation:wl-wing 0.14s linear infinite; }
+.wl-honey { transform-box:fill-box; transform-origin:50% 50%; animation:wl-honey 4.2s ease-out forwards; }
+.wl-rise { position:absolute; left:0; right:0; top:440px; padding:0 28px; text-align:center; animation:wl-rise 4.2s ease-out forwards; }
+.wl-name { margin-top:14px; font-family:'Dela Gothic One',sans-serif; font-weight:400; font-size:46px; line-height:1.05; text-transform:uppercase; color:#FBF6EF; white-space:normal; overflow-wrap:normal; word-break:normal; }
+.wl-bottom { position:absolute; left:0; right:0; bottom:0; padding:0 24px 38px; display:flex; flex-direction:column; align-items:center; gap:12px; z-index:2; }
+.wl-dots { display:flex; gap:8px; }
+.wl-dots span { width:6px; height:6px; border-radius:3px; background:rgba(251,246,239,0.3); }
+.wl-dots span.on { width:22px; background:#F5B83D; }
+@keyframes wl-fly {
+  0%   { transform:translate(-120px,90px) scaleX(1) rotate(6deg); opacity:0; }
+  6%   { opacity:1; }
+  20%  { transform:translate(60px,40px) scaleX(1) rotate(-5deg); }
+  36%  { transform:translate(270px,130px) scaleX(1) rotate(10deg); }
+  43%  { transform:translate(290px,200px) scaleX(-1) rotate(-8deg); }
+  57%  { transform:translate(70px,270px) scaleX(-1) rotate(6deg); }
+  66%  { transform:translate(100px,250px) scaleX(1) rotate(-6deg); }
+  78%, 100% { transform:translate(160px,296px) scaleX(1) rotate(0deg); opacity:1; }
+}
+@keyframes wl-wing { 0% { transform:scaleY(1); } 50% { transform:scaleY(0.3); } 100% { transform:scaleY(1); } }
+@keyframes wl-honey { 0%, 74% { fill-opacity:0; transform:scale(0.85); } 84% { fill-opacity:0.95; transform:scale(1.06); } 90%, 100% { fill-opacity:0.95; transform:scale(1); } }
+@keyframes wl-rise { 0%, 78% { opacity:0; transform:translateY(16px); } 92%, 100% { opacity:1; transform:translateY(0); } }
+/* Resumen */
+.wl-sum { display:flex; flex-direction:column; flex:1; min-height:0; }
+.wl-head { flex:none; background:#1E1812; padding:36px 24px 22px; position:relative; overflow:hidden; border-radius:0 0 28px 28px; border-bottom:1px solid #2E261F; }
+.wl-head-row { position:relative; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.wl-sum-name { position:relative; margin:14px 0 0; font-family:'Dela Gothic One',sans-serif; font-weight:400; font-size:44px; line-height:1.05; text-transform:uppercase; white-space:normal; overflow-wrap:normal; word-break:normal; }
+.wl-chips { position:relative; margin-top:14px; display:flex; gap:8px; flex-wrap:wrap; }
+.wl-chips span { background:rgba(251,246,239,0.14); color:#FBF6EF; font-size:13px; padding:6px 12px; border-radius:999px; }
+.wl-list { flex:1; min-height:0; overflow-y:auto; padding:18px 24px 8px; }
+.wl-items { margin:10px 0 0; padding:0; list-style:none; display:flex; flex-direction:column; gap:8px; }
+.wl-item { background:#26201A; border:1px solid #3A3027; border-radius:16px; padding:11px 14px; display:flex; align-items:center; gap:12px; }
+.wl-num { flex:none; width:30px; height:30px; border-radius:50%; background:rgba(245,184,61,0.16); color:#F5B83D; font-family:'DM Mono',monospace; font-size:13px; font-weight:500; display:inline-flex; align-items:center; justify-content:center; }
+.wl-iname { flex:1; min-width:0; font-size:16px; font-weight:700; overflow-wrap:anywhere; }
+.wl-isub { display:block; font-size:13px; font-weight:400; color:#B8AD9E; margin-top:1px; }
+.wl-dose { flex:none; font-family:'DM Mono',monospace; font-size:13px; color:#B8AD9E; }
+.wl-item.is-circuit { background:#2B1D14; border:1.5px solid #C24E18; }
+.wl-item.is-circuit .wl-num { background:#C24E18; color:#FFFFFF; }
+.wl-item.is-circuit .wl-dose { color:#F08A4B; }
+.wl-cta { flex:none; padding:12px 24px 34px; }
+@media (prefers-reduced-motion:reduce) { .wl-bee, .wl-wing, .wl-honey, .wl-rise { animation:none; } }
+/* ===== SESIÓN "ENTRENAR COMO SAU" (cliente) ===== */
+.sau { background:#14110E; color:#FBF6EF; }
+.sau-top { flex:none; padding:36px 24px 0; display:flex; align-items:center; justify-content:space-between; }
+.sau .ecs-back { background:rgba(251,246,239,0.1); color:#FBF6EF; }
+.sau-clock-wrap { flex:none; position:relative; height:180px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.sau-clock-wrap.is-small { height:130px; }
+.sau-clock-hex { position:absolute; opacity:0.22; pointer-events:none; }
+.sau-clock-wrap.is-small .sau-clock-hex { display:none; }
+.sau-clock { position:relative; font-family:'Dela Gothic One',sans-serif; font-weight:400; font-size:46px; line-height:1; color:#FBF6EF; font-variant-numeric:tabular-nums; }
+.sau-clock.is-stopped { color:#8F8373; }
+.sau-state { position:relative; margin-top:12px; display:flex; align-items:center; gap:8px; color:#CFC6BA; }
+.sau-state .dot { width:8px; height:8px; border-radius:50%; background:#F5B83D; }
+.sau-state.is-running .dot { animation:hhPulse 1.4s ease-in-out infinite; }
+.sau-state.is-paused .dot, .sau-state.is-stopped .dot { background:#A89C8D; }
+.sau-mid { flex:1; min-height:0; display:flex; flex-direction:column; padding:0 24px; gap:14px; overflow-y:auto; }
+.sau-note { flex:none; background:#26201A; border:1.5px solid rgba(245,184,61,0.5); border-radius:18px; overflow:hidden; }
+.sau-note-btn { width:100%; box-sizing:border-box; border:0; background:transparent; color:inherit; padding:14px 16px; display:flex; align-items:center; gap:12px; text-align:left; font-family:'DM Sans',sans-serif; cursor:pointer; min-height:64px; }
+.sau-note-ico { flex:none; width:36px; height:36px; border-radius:50%; background:rgba(245,184,61,0.16); color:#F5B83D; display:inline-flex; align-items:center; justify-content:center; }
+.sau-note-btn[aria-expanded="true"] .sau-note-ico { background:#F5B83D; color:#14110E; }
+.sau-note-lbl { display:block; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:1px; color:#F5B83D; }
+.sau-note-first { display:block; margin-top:3px; font-size:14px; color:#D9D0C4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sau-note-btn[aria-expanded="true"] .sau-note-first { display:none; }
+.sau-note-chev { flex:none; transition:transform 0.2s; }
+.sau-note-btn[aria-expanded="true"] .sau-note-chev { transform:rotate(180deg); }
+.sau-note-body { padding:0 16px 16px; font-size:15px; line-height:1.55; color:#F1E9DE; white-space:pre-line; overflow-wrap:anywhere; max-height:38vh; overflow-y:auto; }
+.sau-note-body[hidden] { display:none; }
+.sau-auto { flex:none; background:#2B1D14; border:1.5px solid #C24E18; border-radius:18px; padding:14px 16px; display:flex; gap:12px; align-items:flex-start; }
+.sau-auto[hidden] { display:none; }
+.sau-notes { flex:1 0 180px; background:#1B1713; border:1px solid #3A3027; border-radius:18px; padding:14px 16px; display:flex; flex-direction:column; }
+.sau-notes-head { display:flex; justify-content:space-between; align-items:center; gap:8px; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:1px; }
+.sau-notes-head label { color:#A89C8D; }
+.sau-save { color:#7FD19A; letter-spacing:0; }
+.sau-save.is-off { color:#F08A4B; }
+.sau-save.is-busy { color:#A89C8D; }
+.sau-ta { margin-top:8px; flex:1; min-height:120px; width:100%; box-sizing:border-box; background:transparent; border:0; outline:none; resize:none; font-family:'DM Sans',sans-serif; font-size:16px; line-height:1.55; color:#FBF6EF; }
+.sau-ta::placeholder { color:#7A6D5E; }
+.sau-notes:focus-within { border-color:#F5B83D; }
+.sau-bottom { flex:none; padding:14px 24px 34px; display:flex; gap:12px; }
+.sau-pause { flex:none; width:58px; height:58px; border-radius:16px; border:1.5px solid rgba(251,246,239,0.35); background:transparent; color:#FBF6EF; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
+.sau-pause[hidden] { display:none; }
+.sau-done { flex:1; min-height:58px; font-size:18px; }
+/* Hojas inferiores (finalizar / salir / ajustar) */
+.sau-scrim { position:absolute; inset:0; z-index:5; background:rgba(0,0,0,0.55); border:0; padding:0; margin:0; cursor:pointer; }
+.sau-sheet { position:absolute; left:0; right:0; bottom:0; z-index:6; background:#1E1812; border-radius:28px 28px 0 0; border-top:1.5px solid rgba(245,184,61,0.4); padding:12px 24px 34px; max-height:90%; overflow-y:auto; box-sizing:border-box; }
+.sau-grab { width:44px; height:5px; border-radius:3px; background:rgba(251,246,239,0.25); margin:0 auto 20px; }
+.sau-sheet-h { margin:10px 0 0; font-family:'Dela Gothic One',sans-serif; font-weight:400; font-size:30px; line-height:1.1; text-transform:uppercase; }
+.sau-time-box { margin-top:20px; background:#26201A; border:1px solid #3A3027; border-radius:18px; padding:16px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.sau-time-val { font-family:'Dela Gothic One',sans-serif; font-size:28px; color:#F5B83D; }
+.sau-check { display:flex; align-items:center; gap:10px; font-size:14px; color:#D9D0C4; margin-top:10px; }
+.sau-ghost-dark { background:transparent; border:1.5px solid rgba(251,246,239,0.3); color:#FBF6EF; min-height:52px; font-size:16px; margin-top:10px; }
+/* Coach: tarjeta de sesión en Mi diario y hoja de ajustar tiempo */
+.sau-cc { background:#FFFFFF; border:1.5px solid #C24E18; border-radius:22px; padding:16px; margin-bottom:10px; color:#1F1B16; font-family:'DM Sans',sans-serif; }
+.sau-cc-top { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
+.sau-cc-tag { background:#1F1B16; color:#F5B83D; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.8px; padding:5px 10px; border-radius:999px; }
+.sau-cc-time { margin-top:2px; font-family:'Dela Gothic One',sans-serif; font-size:30px; line-height:1.1; }
+.sau-cc-adj { display:inline-flex; align-items:center; gap:8px; min-height:44px; border:1.5px solid #C24E18; background:#FFFFFF; color:#A63E10; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; padding:0 14px; border-radius:14px; cursor:pointer; }
+.sau-cc-badge { display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:700; padding:7px 12px; border-radius:999px; margin:12px 8px 0 0; }
+.sau-cc-badge.auto { background:#FDEBDD; color:#8F3A12; }
+.sau-cc-badge.adj { background:#E7F3EA; color:#1E5C31; }
+.sau-cc-badge.live { background:#E7F3EA; color:#1E5C31; }
+.sau-cc-notes { margin-top:16px; border-top:1px solid #E8DFD3; padding-top:14px; }
+.sau-cc-notes-body { margin-top:8px; font-size:15px; line-height:1.6; white-space:pre-line; overflow-wrap:anywhere; }
+.sau-cc-acc { margin-top:14px; width:100%; box-sizing:border-box; border:0; background:#F3EBDF; border-radius:14px; padding:12px 14px; min-height:44px; display:flex; align-items:center; justify-content:space-between; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; color:#1F1B16; cursor:pointer; }
+.sau-cc-acc[aria-expanded="true"] svg { transform:rotate(180deg); }
+.sau-cc-acc-body { padding:12px 4px 0; font-size:14px; line-height:1.55; color:#3D352D; white-space:pre-line; overflow-wrap:anywhere; }
+.sau-cc-acc-body[hidden] { display:none; }
+.sau-adj-ov { position:fixed; inset:0; z-index:320; }
+.sau-adj-ov[hidden] { display:none; }
+.sau-adj-ov .sau-scrim { position:fixed; background:rgba(20,17,14,0.55); }
+.sau-adj { position:fixed; left:50%; transform:translateX(-50%); bottom:0; width:100%; max-width:480px; box-sizing:border-box; z-index:6; background:#FBF6EF; color:#1F1B16; border-radius:28px 28px 0 0; padding:12px 24px 34px; font-family:'DM Sans',sans-serif; max-height:92vh; overflow-y:auto; }
+.sau-adj .sau-grab { background:#D8CDBE; }
+.sau-adj-in { margin-top:6px; box-sizing:border-box; width:100%; height:58px; border:1.5px solid #C24E18; border-radius:14px; background:#FFFFFF; text-align:center; font-family:'Dela Gothic One',sans-serif; font-size:26px; color:#1F1B16; }
+.sau-adj-in[aria-invalid="true"] { border-color:#B42318; background:#FEF3F2; }
+.sau-adj-cmp { margin-top:14px; background:#F3EBDF; border-radius:14px; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:14px; color:#6B6258; }
+.sau-adj-err { margin-top:10px; font-size:14px; font-weight:700; color:#B42318; }
+.sau-adj-err:empty { display:none; }
+@media (prefers-reduced-motion:reduce) { .sau-state .dot { animation:none !important; } .sau-note-chev { transition:none; } }
 </style>
 </head>
 <body>
@@ -1610,6 +1861,26 @@ button.exx-pill { cursor:pointer; min-height:28px; }
       <h1 class="hoy-evo-title">¡Felicidades por lograr tu primera etapa!</h1>
       <p class="hoy-evo-text">Hablá con Sau para tu evolución.</p>
       <a class="hoy-evo-btn" id="hoy-evo-btn" href="#" target="_blank" rel="noopener"><svg class="ico" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-message-circle"/></svg>Escribirle a Sau</a>
+    </div>
+    <!-- Home oscuro (dos opciones). Sale cuando no hay recordatorio de pago: el pago va primero, naranja como siempre -->
+    <div class="hh" id="hh">
+      <div class="hh-head">
+        <div class="hh-date" id="hh-date"></div>
+        <h1 class="hh-hello" id="hh-hello">Hola</h1>
+        <div class="hh-sub">¿Qué toca hoy?</div>
+      </div>
+      <div class="hh-contract" id="hh-contract" role="status" hidden>
+        <div class="hh-contract-row">
+          <span class="hh-contract-ico"><svg class="ico" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-file-text"/></svg></span>
+          <div><div class="hh-contract-title">Tu contrato sigue sin firmar</div><div class="hh-contract-text">Leelo y confirmalo en tu perfil para seguir al día.</div></div>
+        </div>
+        <button type="button" class="hh-contract-btn" onclick="goToClientContract()">Ver mi contrato</button>
+      </div>
+      <div class="hh-body">
+        <!-- Sesión "Entrenar como Sau" en curso, en pausa o detenida sola sin finalizar: la retoma -->
+        <button type="button" class="hh-chip" id="hh-chip" hidden onclick="hhOpenSession()"><span class="hh-chip-dot" aria-hidden="true"></span><span id="hh-chip-txt">Entreno con Sau en curso</span><span class="hh-chip-time" id="hh-chip-time"></span></button>
+        <div class="hh-cards" id="hh-cards"></div>
+      </div>
     </div>
     <div class="hoy-cover-note" id="hoy-cover-note" hidden><span class="hoy-cover-note-ico"><svg class="ico" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-check"/></svg></span><span>Tu diario, tus hábitos y tus registros siguen disponibles.</span></div>
     <div class="bee-flight" id="bee-flight" aria-hidden="true">
@@ -1893,6 +2164,8 @@ button.exx-pill { cursor:pointer; min-height:28px; }
       <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Coach</div>
       <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;" id="coach-name-display">—</div>
     </div>
+    <!-- Entrena como Sau: estado de la publicación de hoy; abre el editor -->
+    <div id="ecs-coach-card"></div>
     <!-- Client tabs: Activos / Churn -->
     <div style="display:flex;margin:0 -20px 0;border-bottom:2px solid var(--gray2);background:var(--white);position:sticky;top:0;z-index:10;margin-bottom:0;">
       <div id="ctab-active" onclick="setClientTab('active')" style="flex:1;text-align:center;padding:13px 8px 11px;font-size:13px;font-weight:700;color:var(--orange);border-bottom:2px solid var(--orange);margin-bottom:-2px;cursor:pointer;">Activos <span id="coach-count-active" style="font-size:11px;font-weight:600;color:var(--orange);"></span></div>
@@ -1911,6 +2184,132 @@ button.exx-pill { cursor:pointer; min-height:28px; }
     <div class="nav-item" onclick="coachNav('coaching',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-flask-conical"/></svg></div><div class="nav-label">Coaching</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('run',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-activity"/></svg></div><div class="nav-label">Run</div><div class="nav-dot"></div></div>
     <div class="nav-item" onclick="coachNav('settings',this)"><div class="nav-icon"><svg class="ico" width="22" height="22" aria-hidden="true" focusable="false"><use href="#i-settings"/></svg></div><div class="nav-label">Ajustes</div><div class="nav-dot"></div></div>
+  </div>
+</div>
+
+<!-- ===== ENTRENA COMO SAU: publicación (cliente) ===== -->
+<div class="ecs-ov ecs-post" id="ecs-post" role="dialog" aria-modal="true" aria-labelledby="ecs-post-title" hidden>
+  <svg class="ecs-deco" width="300" height="300" viewBox="0 0 100 100" style="right:-110px;top:-70px;opacity:0.18" aria-hidden="true" focusable="false"><polygon points="50,4 90,27 90,73 50,96 10,73 10,27" fill="none" stroke="#F5B83D" stroke-width="2.5"/></svg>
+  <svg class="ecs-deco" width="220" height="220" viewBox="0 0 100 100" style="left:-90px;bottom:120px;opacity:0.12" aria-hidden="true" focusable="false"><polygon points="50,4 90,27 90,73 50,96 10,73 10,27" fill="none" stroke="#F5B83D" stroke-width="2.5"/></svg>
+  <div class="ecs-post-top"><button type="button" class="ecs-back" id="ecs-post-back" aria-label="Volver al inicio" onclick="ecsClosePost()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button></div>
+  <div class="ecs-scroll">
+    <div class="ecs-post-main">
+      <div class="ecs-kicker ecs-mono"><span class="dot" aria-hidden="true"></span><span id="ecs-post-when"></span></div>
+      <h1 class="ecs-big" id="ecs-post-title">Entrena<br><em>como Sau</em></h1>
+      <div class="ecs-line" aria-hidden="true"></div>
+      <div class="ecs-body" id="ecs-post-body"></div>
+      <div class="ecs-left ecs-mono" id="ecs-post-left"></div>
+    </div>
+  </div>
+  <div class="ecs-post-cta">
+    <div class="ecs-expired" id="ecs-post-expired" role="status" hidden>Esta publicación ya venció.</div>
+    <button type="button" class="ecs-btn ecs-btn-orange" id="ecs-post-go" onclick="ecsStartFromPost()">Entrenar como Sau<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+  </div>
+</div>
+
+<!-- ===== SESIÓN "ENTRENAR COMO SAU" (cliente): cronómetro, nota de Sau y notas. La pinta sauPaint() ===== -->
+<div class="ecs-ov sau" id="sau" role="dialog" aria-modal="true" aria-labelledby="sau-title" hidden>
+  <div class="sau-top">
+    <button type="button" class="ecs-back" aria-label="Salir de la sesión" onclick="sauAskExit()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <span class="ecs-mono" id="sau-title" style="letter-spacing:1.2px;color:#F5B83D;">ENTRENANDO COMO SAU</span>
+    <span style="width:44px;" aria-hidden="true"></span>
+  </div>
+  <div class="sau-clock-wrap" id="sau-clock-wrap">
+    <svg class="sau-clock-hex" width="200" height="200" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><polygon points="50,4 90,27 90,73 50,96 10,73 10,27" fill="none" stroke="#F5B83D" stroke-width="1.6"/></svg>
+    <div class="sau-clock" id="sau-clock" role="timer" aria-live="off">00:00:00</div>
+    <div class="sau-state ecs-mono is-running" id="sau-state"><span class="dot" aria-hidden="true"></span><span id="sau-state-txt">EN MARCHA</span></div>
+  </div>
+  <div class="sau-mid">
+    <div class="sau-auto" id="sau-auto" role="status" hidden>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F08A4B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex:none;margin-top:1px;"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <div><div style="font-size:15px;font-weight:700;">Pasaron 2 horas y el cronómetro se detuvo solo.</div><div style="margin-top:4px;font-size:14px;line-height:1.45;color:#D9D0C4;">Si terminaste antes, no pasa nada: Sau puede ajustar tu tiempo.</div></div>
+    </div>
+    <div class="sau-note" id="sau-note">
+      <button type="button" class="sau-note-btn" id="sau-note-btn" aria-expanded="false" aria-controls="sau-note-body" onclick="sauToggleNote()">
+        <span class="sau-note-ico" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" focusable="false"><path d="M12 2.5l8.5 4.9v9.2L12 21.5l-8.5-4.9V7.4z"/></svg></span>
+        <span style="flex:1;min-width:0;"><span class="sau-note-lbl">LO QUE HIZO SAU HOY</span><span class="sau-note-first" id="sau-note-first"></span></span>
+        <svg class="sau-note-chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="sau-note-body" id="sau-note-body" hidden></div>
+    </div>
+    <div class="sau-notes">
+      <div class="sau-notes-head"><label for="sau-ta">TUS NOTAS</label><span class="sau-save" id="sau-save" aria-live="polite"></span></div>
+      <textarea class="sau-ta" id="sau-ta" placeholder="Pesos, series, cómo te sentiste…" oninput="sauNotesInput()"></textarea>
+    </div>
+  </div>
+  <div class="sau-bottom">
+    <button type="button" class="sau-pause" id="sau-pause" aria-label="Pausar" onclick="sauTogglePause()"></button>
+    <button type="button" class="ecs-btn ecs-btn-green sau-done" onclick="sauAskFinish()">Finalizado<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5L20 7"/></svg></button>
+  </div>
+  <div id="sau-sheet-host"></div>
+</div>
+
+<!-- ===== COACH: ajustar el tiempo de una sesión "Entrena como Sau" ===== -->
+<div class="sau-adj-ov" id="sau-adj-ov" hidden>
+  <button type="button" class="sau-scrim" aria-label="Cancelar" onclick="sauAdjClose()"></button>
+  <div class="sau-adj" role="dialog" aria-modal="true" aria-labelledby="sau-adj-h">
+    <div class="sau-grab" aria-hidden="true"></div>
+    <div class="ecs-mono" id="sau-adj-kicker" style="letter-spacing:1.2px;color:#A63E10;"></div>
+    <h2 id="sau-adj-h" style="margin:8px 0 0;font-family:'Playfair Display',serif;font-weight:700;font-size:28px;">Ajustar tiempo</h2>
+    <div id="sau-adj-lead" style="margin-top:6px;font-size:15px;line-height:1.45;color:#6B6258;"></div>
+    <div style="margin-top:18px;display:flex;gap:12px;">
+      <div style="flex:1;"><label for="sau-adj-h-in" class="ecs-mono" style="font-size:11px;color:#6B6258;">HORAS</label><input id="sau-adj-h-in" class="sau-adj-in" type="text" inputmode="numeric" autocomplete="off" maxlength="2" oninput="sauAdjPreview()"></div>
+      <div style="flex:1;"><label for="sau-adj-m-in" class="ecs-mono" style="font-size:11px;color:#6B6258;">MINUTOS</label><input id="sau-adj-m-in" class="sau-adj-in" type="text" inputmode="numeric" autocomplete="off" maxlength="2" oninput="sauAdjPreview()"></div>
+    </div>
+    <div class="sau-adj-cmp"><span>Antes <b id="sau-adj-before" style="color:#1F1B16;"></b></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Ahora <b id="sau-adj-after" style="color:#1E7A3C;"></b></span></div>
+    <div class="sau-adj-err" id="sau-adj-err" role="alert"></div>
+    <button type="button" class="ecs-btn ecs-btn-green" id="sau-adj-save" style="margin-top:20px;" onclick="sauAdjSave()">Guardar</button>
+    <button type="button" class="ecs-btn ecs-btn-ghost" style="margin-top:10px;" onclick="sauAdjClose()">Cancelar</button>
+  </div>
+</div>
+
+<!-- ===== BIENVENIDA (primera vez del día): la abeja y el resumen. Lo arma welcomeOpen() ===== -->
+<div class="ecs-ov wl" id="wl" role="dialog" aria-modal="true" aria-label="Bienvenida a tu entreno de hoy" hidden></div>
+
+<!-- ===== ENTRENA COMO SAU: editor y vista previa (coach) ===== -->
+<div class="ecs-ov ecs-coach" id="ecs-coach" role="dialog" aria-modal="true" aria-labelledby="ecs-c-title" hidden>
+  <div id="ecs-edit" style="display:flex;flex-direction:column;flex:1;min-height:0;">
+    <div class="ecs-scroll">
+      <div class="ecs-c-head">
+        <button type="button" class="ecs-back" aria-label="Volver" onclick="ecsCloseEditor()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+        <span class="ecs-mono" style="color:#6B6258;letter-spacing:1.2px;">VISTA COACH</span>
+      </div>
+      <div class="ecs-c-pad">
+        <h1 class="ecs-c-h1" id="ecs-c-title">Entrena como Sau</h1>
+        <div class="ecs-c-lead">Lo que escribas lo ven todos tus clientes en su home. Se borra solo a las 24 horas.</div>
+        <label for="ecs-text" class="ecs-c-lbl ecs-mono">TU ENTRENO DE HOY</label>
+        <textarea id="ecs-text" class="ecs-ta" maxlength="500" placeholder="Qué entrenaste hoy, cómo te fue y el reto para tus clientes." oninput="ecsCount()"></textarea>
+        <div class="ecs-c-meta"><span id="ecs-active-note"></span><span class="ecs-mono" id="ecs-count" aria-live="polite">0 / 500</span></div>
+        <div class="ecs-switch-row">
+          <div><div id="ecs-push-lbl" style="font-size:16px;font-weight:700;">Avisar a los clientes</div><div style="margin-top:2px;font-size:13px;color:#6B6258;">Mandar notificación push al publicar</div></div>
+          <button type="button" class="ecs-switch" id="ecs-push" role="switch" aria-checked="true" aria-labelledby="ecs-push-lbl" onclick="ecsTogglePush()"><span></span></button>
+        </div>
+      </div>
+    </div>
+    <div class="ecs-c-foot">
+      <button type="button" class="ecs-btn ecs-btn-orange" id="ecs-to-prev" onclick="ecsShowPreview()">Ver vista previa<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <div class="ecs-c-note">Todavía no se publica nada.</div>
+    </div>
+  </div>
+  <div id="ecs-prev" style="display:none;flex-direction:column;flex:1;min-height:0;">
+    <div class="ecs-scroll">
+      <div class="ecs-c-head" style="padding-bottom:12px;">
+        <button type="button" class="ecs-back" aria-label="Volver a editar" onclick="ecsBackToEdit()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+        <div><div class="ecs-mono" style="color:#A63E10;letter-spacing:1.2px;">VISTA PREVIA</div><div style="font-size:15px;font-weight:700;">Así lo van a ver tus clientes</div></div>
+      </div>
+      <div class="ecs-prev-card">
+        <svg class="ecs-deco" width="220" height="220" viewBox="0 0 100 100" style="right:-80px;top:-60px;opacity:0.18" aria-hidden="true" focusable="false"><polygon points="50,4 90,27 90,73 50,96 10,73 10,27" fill="none" stroke="#F5B83D" stroke-width="2.5"/></svg>
+        <div class="ecs-kicker ecs-mono" style="position:relative;"><span class="dot" aria-hidden="true"></span>PUBLICADO HOY</div>
+        <div class="ecs-big" style="position:relative;">Entrena<br><em>como Sau</em></div>
+        <div class="ecs-line" aria-hidden="true"></div>
+        <div class="ecs-body" id="ecs-prev-body" style="position:relative;"></div>
+      </div>
+    </div>
+    <div class="ecs-c-foot">
+      <div class="ecs-push-note" id="ecs-push-note"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1E7A3C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8M10 21a2 2 0 004 0"/></svg><span>Se enviará un push a todos tus clientes.</span></div>
+      <button type="button" class="ecs-btn ecs-btn-green" id="ecs-publish" onclick="ecsPublish()">Publicar ahora<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5L20 7"/></svg></button>
+      <button type="button" class="ecs-btn ecs-btn-ghost" onclick="ecsBackToEdit()">Volver a editar</button>
+    </div>
   </div>
 </div>
 
@@ -3604,6 +4003,7 @@ function clientAutoWeekInfo() {
 // se resuelven antes (no llegan acá). Prioridad: terminado > en construcción > entrenar.
 function getClientHoyMode() {
   if (!currentClient || currentUser?.role === 'coach' || currentClient.program_type === 'lift') return 'train';
+  if (currentClient.training_access === false) return 'train'; // sin módulo de entreno: el home muestra "Módulo exclusivo"
   const auto = clientAutoWeekInfo();
   if (auto && auto.state === 'finished') return 'finished';
   return getVisibleWeeks().length ? 'train' : 'construction';
@@ -6742,7 +7142,7 @@ function tlNode(state) {
 // El Hoy de siempre sigue cargando detrás; "Entrenar" solo lo descubre.
 function hoyCoverAllowed() {
   if (!currentClient || currentClient.program_type === 'lift' || currentClient.is_churn) return false;
-  if (currentClient.training_access === false) return false;
+  // training_access=false también ve el home (decisión de Sau): la tarjeta de entreno lleva a "Módulo exclusivo"
   if (isWorkoutStarted() || workoutLock) return false;
   return true;
 }
@@ -6753,6 +7153,7 @@ function setHoyCover(on) {
   cover.hidden = !on;
   screen.classList.toggle('cover-on', on);
   ckRefresh();
+  hhSync();
 }
 function updateHoyCoverPill() {
   const pill = document.getElementById('hoy-cover-pill');
@@ -6793,7 +7194,7 @@ function payReminderDays() {
 function payReminderDismiss() {
   payReminderClosed = true;
   applyHoyCoverMode();
-  document.getElementById('hoy-cover-btn')?.focus();
+  (hhIsOn() ? document.querySelector('#hh-cards button') : document.getElementById('hoy-cover-btn'))?.focus();
 }
 function payReminderPay() {
   const url = PAYMENT_LINK || `https://wa.me/${EXX_WA_NUMBER}?text=${encodeURIComponent(PAYMENT_WA_TEXT)}`;
@@ -6860,6 +7261,10 @@ function applyHoyCoverMode() {
     const logo = $('hoy-evo-logo');
     if (logo && !logo.getAttribute('src')) logo.src = logo.dataset.src;
   }
+  // Home oscuro: sin recordatorio de pago la portada pasa a ser el home de dos opciones.
+  // Con pago, todo lo de arriba queda igual que siempre (naranja) hasta "Pagar" o "Dale, gracias".
+  cover.classList.toggle('is-home', pay == null);
+  hhSync();
 }
 let hoyCoverFlying = false;
 function enterTraining() {
@@ -6879,6 +7284,981 @@ function enterTraining() {
     setHoyCover(false);
   }, 850);
 }
+
+// ===== HOY: HOME OSCURO (Entrena como Sau + Ir a mi entrenamiento) =====
+// Es la portada (#hoy-cover) en modo .is-home: sale cuando no hay recordatorio de pago.
+// Solo lee: la publicación activa (coach_daily_posts, la misma para todos los clientes) y el
+// día de hoy del plan (monthly_plans/exercises del cliente). No escribe nada en la base.
+const ECS_TZ = 'America/Costa_Rica';
+let hhPost = null, hhPostAt = 0, hhPostReq = 0;
+// Día de hoy ya armado; lo reusa el resumen de la bienvenida. items: ejercicio suelto o circuito (cuenta 1).
+let hhDay = null, hhDayReq = 0;
+let hhCardsHtml = '';
+
+function ensureDelaFont() {
+  if (document.getElementById('dela-font')) return;
+  const l = document.createElement('link');
+  l.id = 'dela-font'; l.rel = 'stylesheet';
+  l.href = 'https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap';
+  document.head.appendChild(l);
+}
+// "6:12 A. M." en hora de Costa Rica
+function ecsTime(ms) {
+  return new Intl.DateTimeFormat('es-CR', { timeZone: ECS_TZ, hour: 'numeric', minute: '2-digit', hour12: true }).format(ms).toUpperCase();
+}
+// "HOY 6:12 A. M." / "AYER 9:40 P. M." (fecha de Costa Rica)
+function ecsWhen(ms) {
+  const d = crDateKey(ms), t = todayCR();
+  const day = d === t ? 'HOY' : d === tcAddDays(t, -1) ? 'AYER' : fmtCRDay(ms).toUpperCase();
+  return day + ' ' + ecsTime(ms);
+}
+function ecsIsActive(p) { return !!p && !p.replaced_at && Date.parse(p.expires_at) > Date.now(); }
+function ecsLeftText(p) {
+  const h = Math.floor((Date.parse(p.expires_at) - Date.now()) / 3600000);
+  return h < 1 ? 'menos de 1 h' : h + ' h';
+}
+function ecsSeenKey() { return currentClient ? 'mws_ecs_seen_' + currentClient.id : null; }
+function ecsIsSeen(p) { try { return !!p && localStorage.getItem(ecsSeenKey()) === p.id; } catch { return false; } }
+function ecsMarkSeen(p) { try { if (p) localStorage.setItem(ecsSeenKey(), p.id); } catch {} }
+// Publicación activa más reciente. Sin la tabla (SQL pendiente) o sin red: se queda con lo último que tenía.
+async function ecsLoadActivePost(force) {
+  if (!force && hhPostAt && Date.now() - hhPostAt < 60000) return hhPost;
+  const req = ++hhPostReq;
+  const { data, error } = await sb.from('coach_daily_posts').select('id,body,published_at,expires_at,replaced_at')
+    .is('replaced_at', null).gt('expires_at', new Date().toISOString())
+    .order('published_at', { ascending: false }).limit(1).maybeSingle();
+  if (req !== hhPostReq) return hhPost;
+  if (!error) { hhPost = data || null; hhPostAt = Date.now(); }
+  return hhPost;
+}
+// ---- Publicación abierta (cliente) ----
+// El texto entra siempre como nodo de texto (textContent), nunca como HTML.
+let ecsPostOpen = null, ecsPostTimer = null;
+function ecsOpenPost() {
+  if (!ecsIsActive(hhPost)) return;
+  ecsMarkSeen(hhPost);
+  hhPaint();
+  ensureDelaFont();
+  const p = ecsPostOpen = hhPost;
+  document.getElementById('ecs-post-when').textContent = 'PUBLICADO ' + ecsWhen(Date.parse(p.published_at));
+  document.getElementById('ecs-post-body').textContent = p.body || '';
+  ecsPostTick();
+  const ov = document.getElementById('ecs-post');
+  ov.hidden = false;
+  ov.querySelector('.ecs-scroll').scrollTop = 0;
+  clearInterval(ecsPostTimer);
+  ecsPostTimer = setInterval(ecsPostTick, 30000);
+  document.getElementById('ecs-post-back').focus();
+}
+// Si vence con la pantalla abierta: aviso y botón desactivado
+function ecsPostTick() {
+  const p = ecsPostOpen;
+  if (!p) return;
+  const alive = ecsIsActive(p);
+  document.getElementById('ecs-post-left').textContent = alive ? 'SE BORRA SOLO EN ' + ecsLeftText(p).toUpperCase() : '';
+  document.getElementById('ecs-post-expired').hidden = alive;
+  document.getElementById('ecs-post-go').disabled = !alive;
+}
+function ecsClosePost() {
+  document.getElementById('ecs-post').hidden = true;
+  clearInterval(ecsPostTimer); ecsPostTimer = null;
+  ecsPostOpen = null;
+  if (hhIsOn()) { hhRender(); document.querySelector('#hh-cards button')?.focus(); }
+}
+function ecsStartFromPost() {
+  ecsPostTick();
+  if (!ecsIsActive(ecsPostOpen)) return;
+  sauStart(ecsPostOpen);
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && ecsPostOpen) ecsPostTick();
+});
+
+// ---- Coach: tarjeta, editor, vista previa y publicar ----
+// Solo Sau publica. Nada se guarda hasta "Publicar ahora". Publicar otra marca la anterior
+// con replaced_at (nunca se borra). El push va aparte y nunca frena la publicación.
+const ECS_MAX = 500;
+const ECS_HEX_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 2.5l8.5 4.9v9.2L12 21.5l-8.5-4.9V7.4z"/></svg>';
+let ecsBusy = false, ecsEditorActive = null;
+function ecsLen(s) { return Array.from(s || '').length; }
+async function ecsCoachCardRender() {
+  const el = document.getElementById('ecs-coach-card');
+  if (!el || currentUser?.role !== 'coach') return;
+  const p = await ecsLoadActivePost(true).catch(() => null);
+  const on = ecsIsActive(p);
+  const today = on && crDateKey(Date.parse(p.published_at)) === todayCR();
+  const sub = on ? `${ecsWhen(Date.parse(p.published_at)).toLowerCase()} · vence en ${ecsLeftText(p)}` : 'Escribí lo que entrenaste hoy';
+  el.innerHTML = `<button type="button" class="ecs-ccard" onclick="ecsOpenEditor()">
+      <span class="ecs-ccard-ico">${ECS_HEX_ICON}</span>
+      <span class="ecs-ccard-txt"><span class="ecs-ccard-title">Entrena como Sau</span><span class="ecs-ccard-sub">${escHtml(sub)}</span></span>
+      <span class="ecs-pill${on ? ' on' : ''}">${on ? (today ? 'Publicado hoy' : 'Publicado') : 'Sin publicar'}</span>
+    </button>`;
+}
+async function ecsOpenEditor() {
+  const ov = document.getElementById('ecs-coach');
+  const ta = document.getElementById('ecs-text');
+  ecsBackToEdit();
+  ov.hidden = false;
+  const p = await ecsLoadActivePost(true).catch(() => null);
+  ecsEditorActive = ecsIsActive(p) ? p : null;
+  // Si ya hay una activa, el editor la carga (solo si todavía no se escribió nada)
+  if (ecsEditorActive && !ta.value.trim()) ta.value = ecsEditorActive.body || '';
+  document.getElementById('ecs-active-note').textContent = ecsEditorActive ? 'Si publicás otra, reemplaza esta.' : '';
+  ecsCount();
+  ta.focus();
+}
+function ecsCloseEditor() { document.getElementById('ecs-coach').hidden = true; }
+function ecsCount() {
+  const n = ecsLen(document.getElementById('ecs-text').value);
+  const c = document.getElementById('ecs-count');
+  c.textContent = `${n} / ${ECS_MAX}`;
+  c.classList.toggle('over', n > ECS_MAX);
+  document.getElementById('ecs-to-prev').disabled = !document.getElementById('ecs-text').value.trim() || n > ECS_MAX;
+}
+function ecsTogglePush() {
+  const sw = document.getElementById('ecs-push');
+  sw.setAttribute('aria-checked', sw.getAttribute('aria-checked') === 'true' ? 'false' : 'true');
+}
+function ecsShowPreview() {
+  const body = document.getElementById('ecs-text').value.trim();
+  if (!body || ecsLen(body) > ECS_MAX) return;
+  ensureDelaFont();
+  document.getElementById('ecs-prev-body').textContent = body;
+  document.getElementById('ecs-push-note').hidden = document.getElementById('ecs-push').getAttribute('aria-checked') !== 'true';
+  document.getElementById('ecs-edit').style.display = 'none';
+  const prev = document.getElementById('ecs-prev');
+  prev.style.display = 'flex';
+  prev.querySelector('.ecs-scroll').scrollTop = 0;
+  document.getElementById('ecs-publish').focus();
+}
+function ecsBackToEdit() {
+  document.getElementById('ecs-prev').style.display = 'none';
+  document.getElementById('ecs-edit').style.display = 'flex';
+}
+async function ecsPublish() {
+  if (ecsBusy) return;
+  const body = document.getElementById('ecs-text').value.trim();
+  if (!body || ecsLen(body) > ECS_MAX) return;
+  const push = document.getElementById('ecs-push').getAttribute('aria-checked') === 'true';
+  const btn = document.getElementById('ecs-publish');
+  ecsBusy = true; btn.disabled = true;
+  const now = new Date(), nowIso = now.toISOString();
+  const { data: row, error } = await sb.from('coach_daily_posts')
+    .insert([{ body, published_at: nowIso, expires_at: new Date(now.getTime() + 24 * 3600e3).toISOString() }])
+    .select('id,body,published_at,expires_at,replaced_at').single();
+  if (error || !row) {
+    ecsBusy = false; btn.disabled = false;
+    showToast('No se pudo publicar. Revisá tu conexión e intentá de nuevo.', 'error', 4500);
+    return;
+  }
+  // La que estaba activa queda reemplazada (no se borra). Si esto falla, igual manda la más nueva.
+  const { error: repErr } = await sb.from('coach_daily_posts').update({ replaced_at: nowIso })
+    .is('replaced_at', null).gt('expires_at', nowIso).neq('id', row.id);
+  if (repErr) console.warn('Entrena como Sau: no se pudo marcar la anterior', repErr);
+  hhPost = row; hhPostAt = Date.now();
+  ecsBusy = false; btn.disabled = false;
+  document.getElementById('ecs-text').value = '';
+  ecsCloseEditor();
+  showToast('Publicado. Tus clientes ya lo ven en su home.', 'success', 3500);
+  ecsCoachCardRender();
+  if (push) ecsSendPush(row.id);
+}
+// Un push por cliente activo (sin churn, sin ocultos, sin LIFT: no tienen este home), reusando
+// api/notify.js con target.username. Silencioso: si falla, la publicación ya quedó hecha.
+async function ecsSendPush(postId) {
+  try {
+    let list = window._cachedClientsAll;
+    if (!list || !list.length) {
+      const { data } = await sb.from('clients').select('username,is_churn,hidden,program_type').eq('coach_id', currentUser.id);
+      list = data || [];
+    }
+    const users = [...new Set(list.filter(c => !c.is_churn && !c.hidden && c.program_type !== 'lift' && c.username).map(c => c.username))];
+    let ok = 0;
+    for (let i = 0; i < users.length; i += 5) {
+      const res = await Promise.allSettled(users.slice(i, i + 5).map(username =>
+        fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: 'Entrena como Sau', message: 'Sau publicó lo que entrenó hoy. Entrá a verlo.', target: { username } }) })
+          .then(r => r.ok)));
+      ok += res.filter(r => r.status === 'fulfilled' && r.value).length;
+    }
+    if (ok) await sb.from('coach_daily_posts').update({ push_sent: true }).eq('id', postId);
+  } catch (e) { console.warn('Entrena como Sau: push no enviado', e); }
+}
+
+// "Día 3 - Hombros" → { n: 3, name: 'Hombros' }; "Lunes" → { n: posición en la semana, name: 'Lunes' }
+function hhDayInfo(label, idx) {
+  const m = String(label || '').match(/^Día\s*(\d+)\s*[-–:·]?\s*(.*)$/i);
+  return m ? { n: Number(m[1]), name: m[2].trim() } : { n: idx + 1, name: String(label || '').trim() };
+}
+async function hhLoadDay() {
+  if (!currentClient || !clientDay) return null;
+  const key = `${currentClient.id}|${clientWeek}|${clientDay}`;
+  if (hhDay && hhDay.key === key) return hhDay;
+  const req = ++hhDayReq;
+  const { data: days, error } = await sb.from('monthly_plans').select('id,day_of_week,day_order')
+    .eq('client_id', currentClient.id).eq('week_number', clientWeek)
+    .order('day_order', { ascending: true, nullsFirst: false }).order('id', { ascending: true });
+  if (req !== hhDayReq || error) return null;
+  const idx = (days || []).findIndex(d => d.day_of_week === clientDay);
+  if (idx < 0) return null;
+  // plan_day_id sale de la fila del cliente: los ejercicios quedan acotados a él
+  const { data: exs, error: e2 } = await sb.from('exercises')
+    .select('id,name,sets,reps_range,superset_group,circuit_rounds,order_index')
+    .eq('plan_day_id', days[idx].id).order('order_index');
+  if (req !== hhDayReq || e2) return null;
+  const items = [], groups = new Map();
+  (exs || []).forEach(ex => {
+    if (ex.superset_group) {
+      let g = groups.get(ex.superset_group);
+      if (!g) {
+        g = { kind: 'circuit', group: ex.superset_group, rounds: ex.circuit_rounds || ex.sets || 1, members: [] };
+        groups.set(ex.superset_group, g);
+        items.push(g);
+      }
+      g.members.push(ex.name);
+    } else {
+      items.push({ kind: 'ex', name: ex.name, sets: ex.sets, reps: ex.reps_range });
+    }
+  });
+  hhDay = { key, planDayId: days[idx].id, ...hhDayInfo(clientDay, idx), items };
+  return hhDay;
+}
+function hhDayLine(d) {
+  const parts = ['Día ' + d.n];
+  if (d.name) parts.push(d.name);
+  const c = d.items.length;
+  parts.push(c ? `${c} ${c === 1 ? 'ejercicio' : 'ejercicios'}` : 'sin ejercicios cargados');
+  return parts.join(' · ');
+}
+
+function hhIsOn() {
+  const cover = document.getElementById('hoy-cover');
+  return !!cover && !cover.hidden && cover.classList.contains('is-home');
+}
+function hhSync() {
+  const screen = document.getElementById('screen-client-home');
+  if (!screen) return;
+  const on = hhIsOn();
+  screen.classList.toggle('home-dark', on);
+  if (on) hhRender();
+  else hhPaintChip(); // apaga el repintado del chip
+}
+function hhRender() {
+  ensureDelaFont();
+  hhPaint();
+  ecsLoadActivePost().then(() => { if (hhIsOn()) hhPaint(); }, () => {});
+  hhLoadDay().then(() => { if (hhIsOn()) hhPaint(); }, () => {});
+  sauLoadPending().then(() => { if (hhIsOn()) hhPaint(); }, () => {});
+}
+// Chip de la sesión: el tiempo se repinta cada segundo solo mientras se ve el home
+let hhChipTimer = null;
+function hhPaintChip() {
+  const chip = document.getElementById('hh-chip');
+  if (!chip) return;
+  const s = sauHome;
+  const on = hhIsOn() && sauIsPending(s);
+  chip.hidden = !on;
+  if (!on) { clearInterval(hhChipTimer); hhChipTimer = null; return; }
+  const p = sauAutoStopPatch(s);
+  if (p) { Object.assign(s, p); sauPersist(s.id, p); }
+  const txt = s.status === 'running' ? 'Entreno con Sau en curso' : s.status === 'paused' ? 'Entreno con Sau en pausa' : 'Entreno con Sau detenido · finalizalo';
+  const time = sauClock(sauElapsed(s));
+  document.getElementById('hh-chip-txt').textContent = txt;
+  document.getElementById('hh-chip-time').textContent = time;
+  chip.setAttribute('aria-label', `${txt}, ${time}. Abrir la sesión`);
+  if (!hhChipTimer) hhChipTimer = setInterval(hhPaintChip, 1000);
+}
+
+const HH_ARROW = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+function hhHex(color) {
+  return `<svg class="hh-hex" width="170" height="170" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><polygon points="50,4 90,27 90,73 50,96 10,73 10,27" fill="none" stroke="${color}" stroke-width="3"/></svg>`;
+}
+function hhCardA() {
+  const p = ecsIsActive(hhPost) ? hhPost : null;
+  if (!p) return `<div class="hh-card hh-off" role="group" aria-label="Entrena como Sau. Sau todavía no publicó hoy.">
+      <span class="hh-kicker"><span class="hh-dot"></span>TODAVÍA NO HAY NADA HOY</span>
+      <span class="hh-display">Entrena<br>como Sau</span>
+      <span class="hh-foot">Sau todavía no publicó hoy. Volvé más tarde.</span>
+    </div>`;
+  const isNew = !ecsIsSeen(p);
+  const left = ecsLeftText(p);
+  return `<button type="button" class="hh-card hh-a" onclick="ecsOpenPost()" aria-label="Entrena como Sau${isNew ? ', nuevo' : ''}. Lo que hice hoy. Vence en ${left}.">
+      ${hhHex('#F5B83D')}
+      <span class="hh-kicker">${isNew ? '<span class="hh-dot"></span>NUEVO · ' : ''}${escHtml(ecsWhen(Date.parse(p.published_at)))}</span>
+      <span class="hh-display">Entrena<br><em>como Sau</em></span>
+      <span class="hh-foot"><span>Lo que hice hoy · vence en ${left}</span><span class="hh-go">${HH_ARROW}</span></span>
+    </button>`;
+}
+function hhCardB() {
+  if (currentClient?.training_access === false) {
+    return `<button type="button" class="hh-card hh-b" onclick="hhGoLocked()" aria-label="Ir a mi entrenamiento. Módulo exclusivo para MOVERs con programa de entrenamiento.">
+      ${hhHex('#FFFFFF')}
+      <span class="hh-kicker">MÓDULO EXCLUSIVO</span>
+      <span class="hh-title">Ir a mi<br>entrenamiento</span>
+      <span class="hh-foot"><span>Es para MOVERs con programa de entrenamiento</span><span class="hh-go">${HH_ARROW}</span></span>
+    </button>`;
+  }
+  const mode = getClientHoyMode();
+  if (mode === 'construction') {
+    return `<div class="hh-card hh-off" role="group" aria-label="Tu entreno de hoy. Estamos armando tu próxima semana.">
+      <span class="hh-kicker">TU ENTRENO DE HOY</span>
+      <span class="hh-title is-long">Estamos armando tu próxima semana</span>
+      <span class="hh-foot">Sau está preparando tu entrenamiento. Apenas esté lista, la ves acá.</span>
+    </div>`;
+  }
+  if (mode === 'finished') {
+    const wa = `https://wa.me/${EXX_WA_NUMBER}?text=${encodeURIComponent(EVOLUTION_WA_TEXT)}`;
+    return `<div class="hh-card hh-evo" role="group" aria-label="Etapa 1 completada">
+      <span class="hh-kicker">ETAPA 1 · COMPLETADA</span>
+      <span class="hh-title is-long">¡Felicidades por lograr tu primera etapa!</span>
+      <span class="hh-foot">Hablá con Sau para tu evolución. Tu diario, tus hábitos y tus registros siguen disponibles.</span>
+      <a class="hh-wa" href="${wa}" target="_blank" rel="noopener"><svg class="ico" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-message-circle"/></svg>Escribirle a Sau</a>
+    </div>`;
+  }
+  const key = currentClient && clientDay ? `${currentClient.id}|${clientWeek}|${clientDay}` : null;
+  const line = hhDay && hhDay.key === key ? hhDayLine(hhDay) : 'Tu entreno de hoy te espera';
+  return `<button type="button" class="hh-card hh-b" onclick="hhGoTrain()" aria-label="Ir a mi entrenamiento. ${escHtml(line)}.">
+      ${hhHex('#FFFFFF')}
+      <span class="hh-kicker">TU ENTRENO DE HOY</span>
+      <span class="hh-title">Ir a mi<br>entrenamiento</span>
+      <span class="hh-foot"><span>${escHtml(line)}</span><span class="hh-go">${HH_ARROW}</span></span>
+    </button>`;
+}
+function hhPaint() {
+  const $ = id => document.getElementById(id);
+  if (!$('hh')) return;
+  const first = (currentClient?.name || currentUser?.name || '').trim().split(/\s+/)[0];
+  $('hh-date').textContent = fmtCRDay(Date.now(), true).toUpperCase();
+  $('hh-hello').textContent = first ? 'Hola, ' + first : 'Hola';
+  $('hh-contract').hidden = !(clientContractPending && getClientHoyMode() !== 'finished');
+  const html = hhCardA() + hhCardB();
+  // Solo se reemplaza si cambió: así no se pierde el foco del teclado en cada repintado
+  if (html !== hhCardsHtml) { $('hh-cards').innerHTML = html; hhCardsHtml = html; }
+  hhPaintChip();
+}
+// "Ir a mi entrenamiento": la primera vez del día pasa por la bienvenida; después, directo
+// (con el vuelo corto de siempre). La pantalla de ejercicios no cambia.
+let hhGoBusy = false;
+async function hhGoTrain() {
+  if (hhGoBusy) return;
+  hhGoBusy = true;
+  try {
+    if (await welcomeShouldShow()) welcomeOpen();
+    else enterTraining();
+  } catch (e) {
+    console.warn('bienvenida:', e);
+    enterTraining();
+  } finally { hhGoBusy = false; }
+}
+
+// ===== BIENVENIDA (primera vez del día, fecha de Costa Rica) =====
+// Se marca vista apenas se muestra: client_welcome_seen (UNIQUE client_id+seen_date) y
+// localStorage de respaldo. "Saltar" no necesita nada más. Solo lectura del entreno.
+const WL_FLY_MS = 4200;      // vuelo de una sola pasada
+const WL_TO_SUMMARY_MS = 4800; // después pasa sola al resumen
+let wlTimer = null;
+function welcomeLocalKey() { return currentClient ? `mws_welcome_${currentClient.id}_${todayCR()}` : null; }
+async function welcomeShouldShow() {
+  if (!currentClient || currentUser?.role === 'coach') return false;
+  // A mitad de un entreno o con el Modo Timer andando no sale
+  if (isWorkoutStarted() || workoutLock || localStorage.getItem('mws_timer_running') === '1') return false;
+  try { const k = circuitTimerStoreKey(); if (k && localStorage.getItem(k)) return false; } catch {}
+  try { if (localStorage.getItem(welcomeLocalKey()) === '1') return false; } catch {}
+  // Necesita el día con ejercicios para tener qué resumir
+  const day = await hhLoadDay();
+  if (!day || !day.items.length) return false;
+  const { data, error } = await sb.from('client_welcome_seen').select('id')
+    .eq('client_id', currentClient.id).eq('seen_date', todayCR()).maybeSingle();
+  if (!error && data) { try { localStorage.setItem(welcomeLocalKey(), '1'); } catch {} return false; }
+  return true; // sin fila (o sin red / sin tabla): se muestra y el respaldo local evita repetirla
+}
+function welcomeMarkSeen() {
+  try { localStorage.setItem(welcomeLocalKey(), '1'); } catch {}
+  const row = { client_id: currentClient.id, seen_date: todayCR() };
+  Promise.resolve(sb.from('client_welcome_seen').upsert([row], { onConflict: 'client_id,seen_date', ignoreDuplicates: true }))
+    .then(r => { if (r && r.error) console.warn('bienvenida: no se guardó en la base', r.error.message); }, () => {});
+}
+// Achica un título de Dela Gothic One hasta que la palabra más larga entre (no se corta a 390 px)
+function wlFit(el, max, min) {
+  if (!el) return;
+  let size = max;
+  el.style.fontSize = size + 'px';
+  while (size > min && el.scrollWidth > el.clientWidth + 1) { size -= 2; el.style.fontSize = size + 'px'; }
+}
+function wlFitAll() {
+  wlFit(document.getElementById('wl-name'), 46, 22);
+  wlFit(document.getElementById('wl-sum-name'), 44, 22);
+}
+function wlTitle(d) { return d.name || ('Día ' + d.n); }
+function wlCountText(d) { const c = d.items.length; return `${c} ${c === 1 ? 'ejercicio' : 'ejercicios'}`; }
+const WL_BEE_SVG = `<svg width="96" height="64" viewBox="0 0 96 64" aria-hidden="true" focusable="false">
+  <defs><clipPath id="wl-abd"><ellipse cx="28" cy="34" rx="24" ry="10.5"/></clipPath>
+  <radialGradient id="wl-fuzz" cx="45%" cy="38%" r="68%"><stop offset="0" stop-color="#F2CB6B"/><stop offset="1" stop-color="#C98F2E"/></radialGradient></defs>
+  <g stroke="#8A4A2A" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M52 44 L45 56 L38 61"/><path d="M58 45 L59 57 L53 62"/><path d="M48 43 L36 52 L28 54"/></g>
+  <g class="wl-wing"><ellipse cx="46" cy="14" rx="22" ry="7" transform="rotate(-24 46 14)" fill="#FBF6EF" fill-opacity="0.5" stroke="#FBF6EF" stroke-opacity="0.6" stroke-width="0.8"/></g>
+  <g class="wl-wing" style="animation-delay:0.05s"><ellipse cx="58" cy="13" rx="17" ry="6" transform="rotate(-6 58 13)" fill="#FBF6EF" fill-opacity="0.38" stroke="#FBF6EF" stroke-opacity="0.5" stroke-width="0.8"/></g>
+  <ellipse cx="28" cy="34" rx="24" ry="10.5" fill="#3B2C20"/>
+  <g clip-path="url(#wl-abd)" stroke="#F5B83D" stroke-width="4.2" fill="none"><path d="M14 20 q-3 14 0 28"/><path d="M22 20 q-3 14 0 28"/><path d="M30 20 q-3 14 0 28"/><path d="M38 20 q-3 14 0 28"/></g>
+  <path d="M4 34 l-4 1 l4 2 z" fill="#3B2C20"/>
+  <ellipse cx="54" cy="31" rx="13" ry="12" fill="url(#wl-fuzz)"/>
+  <ellipse cx="71" cy="29" rx="8.5" ry="9" fill="#1E1A17"/><ellipse cx="73" cy="27" rx="4.2" ry="5.2" fill="#2F4250"/>
+  <circle cx="74.5" cy="25.2" r="1.3" fill="#FBF6EF" fill-opacity="0.8"/>
+  <path d="M72 21 Q78 12 87 10" stroke="#8A4A2A" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M76 36 q3 3 1 6" stroke="#8A4A2A" stroke-width="2" fill="none" stroke-linecap="round"/>
+</svg>`;
+function welcomeOpen() {
+  const d = hhDay, ov = document.getElementById('wl');
+  if (!d || !ov) { enterTraining(); return; }
+  ensureDelaFont();
+  welcomeMarkSeen();
+  ov.hidden = false;
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) { welcomeSummary(); return; }
+  // Panal (hexágonos de lado 60) alineado con el hexágono donde se posa la abeja, centrado a 390 px
+  ov.innerHTML = `<div class="wl-stage">
+    <svg class="wl-bg" viewBox="-45 0 480 844" aria-hidden="true" focusable="false">
+      <defs>
+        <pattern id="wl-hx" width="103.92" height="180" patternUnits="userSpaceOnUse">
+          <g fill="none" stroke="#F5B83D" stroke-opacity="0.2" stroke-width="1.6">
+            <polygon points="51.96,0 103.92,30 103.92,90 51.96,120 0,90 0,30"/>
+            <polygon points="0,90 51.96,120 51.96,180 0,210 -51.96,180 -51.96,120"/>
+            <polygon points="103.92,90 155.88,120 155.88,180 103.92,210 51.96,180 51.96,120"/>
+            <polygon points="0,-90 51.96,-60 51.96,0 0,30 -51.96,0 -51.96,-60"/>
+            <polygon points="103.92,-90 155.88,-60 155.88,0 103.92,30 51.96,0 51.96,-60"/>
+          </g>
+        </pattern>
+        <radialGradient id="wl-fade" cx="50%" cy="40%" r="75%"><stop offset="40%" stop-color="#14110E" stop-opacity="0"/><stop offset="100%" stop-color="#14110E" stop-opacity="1"/></radialGradient>
+      </defs>
+      <rect x="-45" width="480" height="844" fill="url(#wl-hx)"/>
+      <polygon class="wl-honey" points="207.84,270 259.8,300 259.8,360 207.84,390 155.88,360 155.88,300" fill="#C24E18" fill-opacity="0" stroke="#F5B83D" stroke-width="2"/>
+      <rect x="-45" width="480" height="844" fill="url(#wl-fade)"/>
+    </svg>
+    <div class="wl-box">
+      <div class="wl-bee">${WL_BEE_SVG}</div>
+      <div class="wl-rise">
+        <div class="ecs-mono" style="font-size:13px;letter-spacing:2px;color:#F5B83D;">HOY TOCA · DÍA ${d.n}</div>
+        <div class="wl-name" id="wl-name">${escHtml(wlTitle(d))}</div>
+        <div style="margin-top:16px;font-size:17px;color:#E4DBCF;">${wlCountText(d)}</div>
+      </div>
+    </div>
+    <div class="wl-top"><span class="ecs-mono" style="letter-spacing:1.4px;color:#F5B83D;">MOVE</span><button type="button" class="wl-skip" id="wl-skip" onclick="welcomeDone()">Saltar</button></div>
+    <div class="wl-bottom">
+      <div class="wl-dots" aria-hidden="true"><span class="on"></span><span></span></div>
+      <div class="ecs-mono" style="color:#CFC6BA;">SOLO LA VES LA PRIMERA VEZ DEL DÍA</div>
+    </div>
+  </div>`;
+  wlFitAll();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(wlFitAll);
+  document.getElementById('wl-skip').focus();
+  clearTimeout(wlTimer);
+  wlTimer = setTimeout(welcomeSummary, WL_TO_SUMMARY_MS);
+}
+function welcomeSummary() {
+  clearTimeout(wlTimer); wlTimer = null;
+  const d = hhDay, ov = document.getElementById('wl');
+  if (!d || !ov || ov.hidden) return;
+  const last = d.items.length - 1;
+  let num = 0;
+  const rows = d.items.map((it, i) => {
+    if (it.kind === 'circuit') {
+      return `<li class="wl-item is-circuit">
+        <span class="wl-num" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" focusable="false"><path d="M12 2.5l8.5 4.9v9.2L12 21.5l-8.5-4.9V7.4z"/></svg></span>
+        <span class="wl-iname">${i === last ? 'Circuito final' : 'Circuito ' + escHtml(String(it.group))}<span class="wl-isub">${escHtml(it.members.join(' · '))}</span></span>
+        <span class="wl-dose">${Number(it.rounds) || 1} ${Number(it.rounds) === 1 ? 'ronda' : 'rondas'}</span>
+      </li>`;
+    }
+    num++;
+    const dose = it.sets && it.reps ? `${it.sets}×${it.reps}` : it.reps || (it.sets ? it.sets + ' series' : '');
+    return `<li class="wl-item"><span class="wl-num" aria-hidden="true">${num}</span><span class="wl-iname">${escHtml(it.name)}</span><span class="wl-dose">${escHtml(dose)}</span></li>`;
+  }).join('');
+  ov.innerHTML = `<div class="wl-sum">
+    <div class="wl-head">
+      <svg class="ecs-deco" width="170" height="170" viewBox="0 0 100 100" style="right:-50px;top:-50px;opacity:0.2" aria-hidden="true" focusable="false"><polygon points="50,4 90,27 90,73 50,96 10,73 10,27" fill="none" stroke="#F5B83D" stroke-width="3"/></svg>
+      <div class="wl-head-row"><span class="ecs-mono" style="letter-spacing:1.4px;color:#F5B83D;">HOY TOCA · DÍA ${d.n}</span><button type="button" class="wl-skip" style="font-size:14px;padding:0 16px;" onclick="welcomeDone()">Saltar</button></div>
+      <h1 class="wl-sum-name" id="wl-sum-name">${escHtml(wlTitle(d))}</h1>
+      <div class="wl-chips"><span>${wlCountText(d)}</span></div>
+    </div>
+    <div class="wl-list">
+      <div class="ecs-mono" style="letter-spacing:1.2px;color:#A89C8D;" id="wl-list-lbl">LO QUE VAS A HACER</div>
+      <ol class="wl-items" aria-labelledby="wl-list-lbl">${rows}</ol>
+    </div>
+    <div class="wl-cta"><button type="button" class="ecs-btn ecs-btn-green" id="wl-go" style="min-height:58px;font-size:18px;" onclick="welcomeDone()">Empezar<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+  </div>`;
+  wlFitAll();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(wlFitAll);
+  document.getElementById('wl-go').focus();
+}
+// "Saltar" y "Empezar": a la pantalla normal de ejercicios (la de siempre)
+function welcomeDone() {
+  clearTimeout(wlTimer); wlTimer = null;
+  const ov = document.getElementById('wl');
+  if (ov) { ov.hidden = true; ov.innerHTML = ''; }
+  setHoyCover(false);
+}
+
+// ===== SESIÓN "ENTRENAR COMO SAU" (tabla sau_sessions) =====
+// No es un entreno del plan: no toca days_trained, hitos, rachas, Hive, exercise_logs ni el
+// Modo Timer. El tiempo sale siempre de started_at (nunca contando ticks):
+//   transcurrido = ahora − started_at − paused_total_seconds (en pausa: hasta paused_at)
+// El intervalo de 1 s solo repinta. Toda escritura se aplica primero en pantalla y se guarda
+// con reintento (localStorage), así un corte de red no pierde nada.
+const SAU_SESSION_MAX_SECONDS = 7200; // tope: 2 h. Pasado esto la sesión se detiene sola
+const SAU_PAUSE_ICON = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><rect x="6" y="5" width="4.5" height="14" rx="1.2"/><rect x="13.5" y="5" width="4.5" height="14" rx="1.2"/></svg>';
+const SAU_PLAY_ICON = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>';
+const SAU_CHECK = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7FD19A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex:none;"><path d="M5 12l5 5L20 7"/></svg>';
+let sauSess = null;                 // sesión abierta en pantalla
+let sauHome = null, sauHomeAt = 0;  // sesión pendiente (chip del home)
+let sauTick = null, sauNotesTimer = null, sauRetryTimer = null;
+let sauStarting = false, sauFinBusy = false;
+
+function sauIso(ms) { return new Date(ms).toISOString(); }
+function sauElapsed(s, nowMs) {
+  if (!s) return 0;
+  if (s.status === 'finished' || s.status === 'auto_stopped') return Math.max(0, Number(s.duration_seconds) || 0);
+  const now = nowMs == null ? Date.now() : nowMs;
+  const end = s.status === 'paused' && s.paused_at ? Date.parse(s.paused_at) : now;
+  return Math.max(0, Math.floor((end - Date.parse(s.started_at)) / 1000) - (Number(s.paused_total_seconds) || 0));
+}
+// Auto-stop perezoso: se evalúa al abrir/volver al app y al repintar. Devuelve el cambio o null.
+// Corriendo: al llegar al tope queda en el tope. En pausa más de 2 h: queda con lo que llevaba.
+// Si Sau ya ajustó el tiempo, no se pisa su duración.
+function sauAutoStopPatch(s, nowMs) {
+  if (!s || (s.status !== 'running' && s.status !== 'paused')) return null;
+  const now = nowMs == null ? Date.now() : nowMs;
+  const max = SAU_SESSION_MAX_SECONDS;
+  const keep = s.adjusted_by_coach ? {} : null;
+  if (s.status === 'running') {
+    if (sauElapsed(s, now) < max) return null;
+    const endMs = Date.parse(s.started_at) + (max + (Number(s.paused_total_seconds) || 0)) * 1000;
+    return { status: 'auto_stopped', ended_at: sauIso(endMs), paused_at: null, ...(keep || { duration_seconds: max }) };
+  }
+  const atPause = sauElapsed(s, now);
+  if (now - Date.parse(s.paused_at) < max * 1000 && atPause < max) return null;
+  return { status: 'auto_stopped', ended_at: s.paused_at, paused_at: null, ...(keep || { duration_seconds: Math.min(max, atPause) }) };
+}
+// Para mostrar (vista coach): la conversión se ve pero no se escribe
+function sauView(s) { const p = sauAutoStopPatch(s); return p ? { ...s, ...p } : s; }
+function sauClock(sec) {
+  sec = Math.max(0, Math.floor(sec || 0));
+  return [Math.floor(sec / 3600), Math.floor(sec % 3600 / 60), sec % 60].map(n => String(n).padStart(2, '0')).join(':');
+}
+function sauFmtDur(sec) {
+  sec = Math.max(0, Math.round(Number(sec) || 0));
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60);
+  if (h) return `${h} h ${String(m).padStart(2, '0')} min`;
+  return m ? `${m} min` : 'menos de 1 min';
+}
+
+// ---- Escrituras con reintento ----
+function sauPendKey() { return currentClient ? 'mws_sau_pending_' + currentClient.id : null; }
+function sauPendGet() { try { return JSON.parse(localStorage.getItem(sauPendKey()) || 'null'); } catch { return null; } }
+function sauPendSet(v) { try { v ? localStorage.setItem(sauPendKey(), JSON.stringify(v)) : localStorage.removeItem(sauPendKey()); } catch {} }
+async function sauPersist(id, patch) {
+  const prev = sauPendGet();
+  if (prev && prev.id !== id) await sauFlush();
+  const cur = sauPendGet();
+  sauPendSet({ id, patch: cur && cur.id === id ? { ...cur.patch, ...patch } : { ...patch } });
+  return sauFlush();
+}
+async function sauFlush() {
+  const p = sauPendGet();
+  if (!p || !currentClient) return true;
+  let error = null;
+  try {
+    ({ error } = await sb.from('sau_sessions').update({ ...p.patch, updated_at: new Date().toISOString() })
+      .eq('id', p.id).eq('client_id', currentClient.id));
+  } catch (e) { error = e; }
+  if (error) { sauRetrySoon(); return false; }
+  const now = sauPendGet();
+  if (now && now.id === p.id && JSON.stringify(now.patch) === JSON.stringify(p.patch)) sauPendSet(null);
+  else if (now) sauRetrySoon(0); // se sumó algo mientras se guardaba
+  // Volvió la conexión: el aviso de "Sin conexión" pasa a "Guardado" (si no se está escribiendo)
+  const lbl = document.getElementById('sau-save');
+  if (sauSess && !sauPendGet() && lbl && lbl.classList.contains('is-off')) sauSaveState('ok');
+  return true;
+}
+function sauRetrySoon(ms) {
+  if (sauRetryTimer) return;
+  sauRetryTimer = setTimeout(() => {
+    sauRetryTimer = null;
+    sauFlush().then(ok => { if (ok && sauSess && !sauPendGet()) sauSaveState('ok'); });
+  }, ms == null ? 10000 : ms);
+}
+window.addEventListener('online', () => { if (sauPendGet()) sauFlush(); });
+
+// ---- Sesión pendiente del cliente (chip del home) ----
+// Activa = running/paused (una sola por cliente). También vuelve la detenida sola sin finalizar
+// (últimas 24 h), para que el cliente pueda tocar "Finalizado".
+async function sauLoadPending(force) {
+  if (!currentClient || currentUser?.role === 'coach') return null;
+  if (!force && sauHomeAt && Date.now() - sauHomeAt < 15000) return sauHome;
+  const cid = currentClient.id;
+  await sauFlush().catch(() => {});
+  const r1 = await sb.from('sau_sessions').select('*').eq('client_id', cid).in('status', ['running', 'paused'])
+    .order('started_at', { ascending: false }).limit(1).maybeSingle();
+  if (r1.error || currentClient?.id !== cid) return sauHome; // sin red o sin tabla: lo que había
+  let s = r1.data || null;
+  if (!s) {
+    const r2 = await sb.from('sau_sessions').select('*').eq('client_id', cid).eq('status', 'auto_stopped')
+      .is('diary_entry_id', null).gt('ended_at', sauIso(Date.now() - 24 * 3600e3))
+      .order('started_at', { ascending: false }).limit(1).maybeSingle();
+    if (!r2.error) s = r2.data || null;
+  }
+  if (s) {
+    const pend = sauPendGet();
+    if (pend && pend.id === s.id) Object.assign(s, pend.patch); // lo que todavía no llegó a la base
+    const p = sauAutoStopPatch(s);
+    if (p) { Object.assign(s, p); sauPersist(s.id, p); }
+  }
+  sauHome = s; sauHomeAt = Date.now();
+  return s;
+}
+function sauIsPending(s) {
+  return !!s && (s.status === 'running' || s.status === 'paused' || (s.status === 'auto_stopped' && !s.diary_entry_id));
+}
+
+// ---- Empezar / abrir ----
+async function sauStart(post) {
+  if (sauStarting || !currentClient || !post) return;
+  sauStarting = true;
+  try {
+    const cur = await sauLoadPending(true);
+    if (cur && (cur.status === 'running' || cur.status === 'paused')) { sauOpen(cur); return; } // retomar, no duplicar
+    const row = { client_id: currentClient.id, post_id: post.id, post_body_snapshot: post.body || '',
+      started_at: new Date().toISOString(), status: 'running', paused_total_seconds: 0 };
+    const { data, error } = await sb.from('sau_sessions').insert([row]).select('*').single();
+    if (error || !data) {
+      if (error && error.code === '23505') { const again = await sauLoadPending(true); if (again) { sauOpen(again); return; } }
+      showToast('No se pudo empezar la sesión. Revisá tu conexión e intentá de nuevo.', 'error', 4500);
+      return;
+    }
+    sauHome = data; sauHomeAt = Date.now();
+    sauOpen(data);
+  } finally { sauStarting = false; }
+}
+function sauNotesKey(id) { return 'mws_sau_notes_' + id; }
+function sauOpen(s) {
+  if (!s) return;
+  ensureDelaFont();
+  sauSess = s;
+  sauHome = s;
+  // La publicación abierta se cierra: la nota de Sau vive en la sesión (copia del texto)
+  const post = document.getElementById('ecs-post');
+  if (post && !post.hidden) { post.hidden = true; clearInterval(ecsPostTimer); ecsPostTimer = null; ecsPostOpen = null; }
+  const $ = id => document.getElementById(id);
+  const snap = s.post_body_snapshot || '';
+  $('sau-note').style.display = snap.trim() ? '' : 'none';
+  $('sau-note-first').textContent = snap.split('\n').find(l => l.trim()) || '';
+  $('sau-note-body').textContent = snap;
+  $('sau-note-body').hidden = true;
+  $('sau-note-btn').setAttribute('aria-expanded', 'false');
+  // Lo escrito sin guardar (otra apertura, sin red) manda sobre lo de la base
+  let draft = null;
+  try { draft = localStorage.getItem(sauNotesKey(s.id)); } catch {}
+  $('sau-ta').value = draft != null ? draft : (s.notes || '');
+  const pending = sauPendGet();
+  if (draft != null && draft !== (s.notes || '')) { s.notes = draft; sauSaveState('busy'); clearTimeout(sauNotesTimer); sauNotesTimer = setTimeout(sauSaveNotes, 800); }
+  else sauSaveState(pending && pending.id === s.id ? 'off' : (s.notes ? 'ok' : ''));
+  sauCloseSheet();
+  $('sau').hidden = false;
+  sauOnTick();
+  clearInterval(sauTick);
+  sauTick = setInterval(sauOnTick, 1000);
+  $('sau-ta').focus({ preventScroll: true });
+}
+function sauOnTick() {
+  const s = sauSess;
+  if (!s) return;
+  const p = sauAutoStopPatch(s);
+  if (p) {
+    Object.assign(s, p);
+    sauPersist(s.id, p);
+    // El cliente puede tener abierta la hoja de finalizar con el tiempo viejo: se rearma
+    if (document.getElementById('sau-fin-yes')) sauAskFinish();
+  }
+  sauPaint();
+}
+function sauPaint() {
+  const s = sauSess;
+  if (!s) return;
+  const $ = id => document.getElementById(id);
+  const st = s.status, auto = st === 'auto_stopped';
+  $('sau-clock').textContent = sauClock(sauElapsed(s));
+  $('sau-clock').classList.toggle('is-stopped', auto);
+  const state = $('sau-state');
+  state.className = 'sau-state ecs-mono ' + (st === 'running' ? 'is-running' : st === 'paused' ? 'is-paused' : 'is-stopped');
+  const txt = st === 'running' ? 'EN MARCHA' : st === 'paused' ? 'EN PAUSA' : 'DETENIDO AUTOMÁTICAMENTE';
+  if ($('sau-state-txt').textContent !== txt) $('sau-state-txt').textContent = txt;
+  $('sau-auto').hidden = !auto;
+  const pause = $('sau-pause');
+  pause.hidden = st !== 'running' && st !== 'paused';
+  const want = st === 'paused' ? 'play' : 'pause';
+  if (pause.dataset.icon !== want) {
+    pause.innerHTML = want === 'play' ? SAU_PLAY_ICON : SAU_PAUSE_ICON;
+    pause.dataset.icon = want;
+    pause.setAttribute('aria-label', want === 'play' ? 'Reanudar' : 'Pausar');
+  }
+  $('sau-clock-wrap').classList.toggle('is-small', auto || $('sau-note-btn').getAttribute('aria-expanded') === 'true');
+}
+function sauToggleNote() {
+  const btn = document.getElementById('sau-note-btn');
+  const open = btn.getAttribute('aria-expanded') !== 'true';
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  document.getElementById('sau-note-body').hidden = !open;
+  sauPaint();
+}
+function sauTogglePause() {
+  const s = sauSess;
+  if (!s) return;
+  sauOnTick(); // por si ya pasó el tope
+  const now = Date.now();
+  let patch = null;
+  if (s.status === 'running') patch = { status: 'paused', paused_at: sauIso(now) };
+  else if (s.status === 'paused') patch = { status: 'running', paused_at: null,
+    paused_total_seconds: (Number(s.paused_total_seconds) || 0) + Math.max(0, Math.floor((now - Date.parse(s.paused_at)) / 1000)) };
+  if (!patch) return;
+  Object.assign(s, patch);
+  sauPaint();
+  sauPersist(s.id, patch);
+}
+
+// ---- Notas del cliente (Sau las ve) ----
+function sauSaveState(st) {
+  const el = document.getElementById('sau-save');
+  if (!el) return;
+  el.className = 'sau-save' + (st === 'off' ? ' is-off' : st === 'busy' ? ' is-busy' : '');
+  el.textContent = st === 'off' ? 'Sin conexión, reintentando…' : st === 'busy' ? 'Guardando…' : st === 'ok' ? 'Guardado' : '';
+}
+function sauNotesInput() {
+  const s = sauSess;
+  if (!s) return;
+  const v = document.getElementById('sau-ta').value;
+  s.notes = v;
+  try { localStorage.setItem(sauNotesKey(s.id), v); } catch {}
+  sauSaveState('busy');
+  clearTimeout(sauNotesTimer);
+  sauNotesTimer = setTimeout(sauSaveNotes, 800);
+}
+async function sauSaveNotes() {
+  clearTimeout(sauNotesTimer); sauNotesTimer = null;
+  const s = sauSess;
+  if (!s) return true;
+  const id = s.id, v = s.notes || '';
+  const ok = await sauPersist(id, { notes: v || null, notes_updated_at: new Date().toISOString() });
+  if (sauSess && sauSess.id === id) sauSaveState(ok ? 'ok' : 'off');
+  if (ok) { try { if (localStorage.getItem(sauNotesKey(id)) === v) localStorage.removeItem(sauNotesKey(id)); } catch {} }
+  return ok;
+}
+
+// ---- Hojas: salir y finalizar ----
+function sauSheet(html, focusId) {
+  const host = document.getElementById('sau-sheet-host');
+  host.innerHTML = `<button type="button" class="sau-scrim" aria-label="Cerrar" onclick="sauCloseSheet()"></button>
+    <div class="sau-sheet" role="dialog" aria-modal="true" aria-labelledby="sau-sh-h">${html}</div>`;
+  document.getElementById(focusId)?.focus();
+}
+function sauCloseSheet() { const h = document.getElementById('sau-sheet-host'); if (h) h.innerHTML = ''; }
+function sauAskExit() {
+  const s = sauSess;
+  if (!s) return;
+  const msg = s.status === 'running' ? 'Tu cronómetro sigue corriendo.' : s.status === 'paused' ? 'Tu sesión queda en pausa.' : 'Podés finalizarla después desde tu home.';
+  sauSheet(`<div class="sau-grab" aria-hidden="true"></div>
+    <h2 class="sau-sheet-h" id="sau-sh-h" style="font-size:26px;">¿Salir de la sesión?</h2>
+    <p style="margin:10px 0 0;font-size:15px;line-height:1.45;color:#D9D0C4;">${msg} La retomás desde tu home.</p>
+    <button type="button" class="ecs-btn ecs-btn-orange" id="sau-exit-yes" style="margin-top:22px;" onclick="sauClose()">Salir</button>
+    <button type="button" class="ecs-btn sau-ghost-dark" onclick="sauCloseSheet()">Seguir acá</button>`, 'sau-exit-yes');
+}
+function sauClose() {
+  if (sauNotesTimer) sauSaveNotes();
+  clearInterval(sauTick); sauTick = null;
+  sauCloseSheet();
+  document.getElementById('sau').hidden = true;
+  sauSess = null;
+  if (hhIsOn()) { hhRender(); document.getElementById('hh-chip')?.focus(); }
+}
+function sauAskFinish() {
+  const s = sauSess;
+  if (!s) return;
+  sauSheet(`<div class="sau-grab" aria-hidden="true"></div>
+    <div class="ecs-mono" style="letter-spacing:1.4px;color:#F5B83D;">FINALIZAR</div>
+    <h2 class="sau-sheet-h" id="sau-sh-h">¿Terminaste?</h2>
+    <div class="sau-time-box"><span class="ecs-mono" style="color:#A89C8D;">TIEMPO</span><span class="sau-time-val">${sauFmtDur(sauElapsed(s))}</span></div>
+    <div style="margin-top:6px;">
+      <div class="sau-check">${SAU_CHECK}<span>Se guarda en Mi diario como una sesión.</span></div>
+      <div class="sau-check">${SAU_CHECK}<span>Tus notas quedan guardadas y Sau las puede ver.</span></div>
+    </div>
+    <button type="button" class="ecs-btn ecs-btn-green" id="sau-fin-yes" style="margin-top:22px;" onclick="sauFinish()">Sí, finalizado<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5L20 7"/></svg></button>
+    <button type="button" class="ecs-btn sau-ghost-dark" onclick="sauCloseSheet()">${s.status === 'auto_stopped' ? 'Volver' : 'Seguir entrenando'}</button>`, 'sau-fin-yes');
+}
+// Guarda la sesión en Mi diario (una sola vez) y la cierra. El id del diario se fija antes del
+// primer intento: un doble toque o un reintento tras un corte no crea una segunda entrada.
+async function sauFinish() {
+  const s = sauSess;
+  if (sauFinBusy || !s || !currentClient) return;
+  sauFinBusy = true;
+  const btn = document.getElementById('sau-fin-yes');
+  if (btn) btn.disabled = true;
+  try {
+    if (sauNotesTimer) await sauSaveNotes();
+    sauOnTick();
+    const now = Date.now();
+    const auto = s.status === 'auto_stopped';
+    const dur = sauElapsed(s, now);
+    const endedIso = auto && s.ended_at ? s.ended_at : sauIso(now);
+    const dKey = 'mws_sau_diary_' + s.id;
+    let diaryId = s.diary_entry_id || null;
+    if (!diaryId) {
+      try { diaryId = localStorage.getItem(dKey); } catch {}
+      if (!diaryId) { diaryId = crypto.randomUUID(); try { localStorage.setItem(dKey, diaryId); } catch {} }
+      const { error } = await sb.from('diary_entries').insert([{
+        id: diaryId, client_id: currentClient.id, kind: 'session',
+        entry_date: crDateKey(Date.parse(endedIso)), activity_name: 'Entrena como Sau',
+        option_id: null, source: 'own', source_ref: null, session_type: 'fuerza',
+        duration_minutes: dur > 0 ? Math.max(1, Math.round(dur / 60)) : 0,
+        calories: null, notes: null, emotion: null
+      }]);
+      if (error && error.code !== '23505') throw error; // 23505: ya estaba creada (reintento)
+    }
+    const patch = { status: auto ? 'auto_stopped' : 'finished', ended_at: endedIso, paused_at: null,
+      diary_entry_id: diaryId, ...(s.adjusted_by_coach ? {} : { duration_seconds: dur }) };
+    Object.assign(s, patch);
+    await sauPersist(s.id, patch); // si no llega, queda pendiente y se reintenta; el diario ya está
+    try { localStorage.removeItem(dKey); localStorage.removeItem(sauNotesKey(s.id)); } catch {}
+    sauHome = null; sauHomeAt = Date.now();
+    sauClose();
+    showToast('Sesión guardada', 'success');
+  } catch (e) {
+    console.warn('Entrena como Sau: no se pudo finalizar', e);
+    showToast('No se pudo guardar. Revisá tu conexión e intentá de nuevo.', 'error', 4500);
+    if (btn) btn.disabled = false;
+  } finally { sauFinBusy = false; }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  if (sauSess) { sauOnTick(); sauFlush(); }
+});
+
+// ---- Coach: sesiones en el diario del cliente y "Ajustar tiempo" ----
+// Se cargan al abrir el detalle (sin polling). El coach no edita notas ni borra sesiones.
+// Una sesión corriendo que ya pasó el tope se muestra detenida, sin escribir esa conversión.
+let sauCoachRows = new Map(), sauAdj = null, sauAdjBusy = false;
+async function sauCoachLoad(cid, from, to) {
+  try {
+    const { data, error } = await sb.from('sau_sessions').select('*').eq('client_id', cid)
+      .gte('started_at', crDayRange(from).start).lt('started_at', crDayRange(to).end)
+      .order('started_at', { ascending: false });
+    return error ? [] : (data || []);
+  } catch { return []; }
+}
+function sauMaxLabel() { const h = SAU_SESSION_MAX_SECONDS / 3600; return Number.isInteger(h) ? h + ' h' : sauFmtDur(SAU_SESSION_MAX_SECONDS); }
+function sauCoachCard(raw, c) {
+  sauCoachRows.set(raw.id, raw);
+  const s = sauView(raw);
+  const first = ((c && c.name) || '').trim().split(/\s+/)[0] || 'tu cliente';
+  const live = s.status === 'running' || s.status === 'paused';
+  const ms = Date.parse(s.started_at);
+  const when = (fmtCRDay(ms, true) + ' · ' + ecsTime(ms)).toUpperCase();
+  const accId = 'sau-acc-' + s.id;
+  const badges = [
+    live ? `<span class="sau-cc-badge live">${s.status === 'paused' ? 'En pausa' : 'En curso'}</span>` : '',
+    s.status === 'auto_stopped' ? `<span class="sau-cc-badge auto"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Se detuvo solo a las ${sauMaxLabel()}</span>` : '',
+    s.adjusted_by_coach ? '<span class="sau-cc-badge adj">Ajustado por Sau</span>' : '',
+    !live && !s.diary_entry_id ? '<span class="sau-cc-badge auto">Sin finalizar</span>' : ''
+  ].join('');
+  return `<div class="sau-cc">
+    <div class="sau-cc-top"><span class="ecs-mono" style="color:#6B6258;">${escHtml(when)}</span><span class="sau-cc-tag">ENTRENA COMO SAU</span></div>
+    <div style="margin-top:14px;display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+      <div><div class="ecs-mono" style="font-size:11px;color:#6B6258;">TIEMPO</div><div class="sau-cc-time">${sauFmtDur(live ? sauElapsed(s) : s.duration_seconds)}</div></div>
+      ${live ? '' : `<button type="button" class="sau-cc-adj" onclick="sauAdjOpen('${escHtml(s.id)}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>Ajustar tiempo</button>`}
+    </div>
+    ${badges ? `<div>${badges}</div>` : ''}
+    <div class="sau-cc-notes">
+      <div class="ecs-mono" style="font-size:11px;color:#6B6258;">NOTAS DE ${escHtml(first.toUpperCase())}</div>
+      <div class="sau-cc-notes-body">${s.notes ? escHtml(s.notes) : '<span style="color:#6B6258;">Sin notas.</span>'}</div>
+    </div>
+    ${s.post_body_snapshot ? `<button type="button" class="sau-cc-acc" aria-expanded="false" aria-controls="${accId}" onclick="sauCcToggle(this)">Lo que hiciste ese día<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></button>
+    <div class="sau-cc-acc-body" id="${accId}" hidden>${escHtml(s.post_body_snapshot)}</div>` : ''}
+  </div>`;
+}
+function sauCcToggle(btn) {
+  const open = btn.getAttribute('aria-expanded') !== 'true';
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  const body = document.getElementById(btn.getAttribute('aria-controls'));
+  if (body) body.hidden = !open;
+}
+function sauAdjOpen(id) {
+  const raw = sauCoachRows.get(id);
+  if (!raw) return;
+  const s = sauView(raw);
+  const c = window._coachDiaryClient;
+  const first = ((c && c.name) || '').trim().split(/\s+/)[0] || 'tu cliente';
+  const cur = Number(s.duration_seconds) || 0;
+  sauAdj = { raw, cur };
+  const $ = x => document.getElementById(x);
+  $('sau-adj-kicker').textContent = 'ENTRENA COMO SAU · ' + fmtCRDay(Date.parse(s.started_at)).toUpperCase();
+  $('sau-adj-lead').textContent = s.status === 'auto_stopped' && !s.adjusted_by_coach
+    ? `El cronómetro se detuvo solo a las ${sauFmtDur(SAU_SESSION_MAX_SECONDS)}. Poné el tiempo real de ${first}.`
+    : `Poné el tiempo real de ${first}.`;
+  $('sau-adj-h-in').value = String(Math.floor(cur / 3600));
+  $('sau-adj-m-in').value = String(Math.floor(cur % 3600 / 60));
+  $('sau-adj-before').textContent = sauFmtDur(cur);
+  $('sau-adj-err').textContent = '';
+  sauAdjPreview();
+  $('sau-adj-ov').hidden = false;
+  $('sau-adj-h-in').focus();
+}
+function sauAdjClose() { document.getElementById('sau-adj-ov').hidden = true; sauAdj = null; }
+// Enteros; minutos 0 a 59; total mayor que 0 y hasta 12 h
+function sauAdjParse() {
+  const h = document.getElementById('sau-adj-h-in').value.trim() || '0';
+  const m = document.getElementById('sau-adj-m-in').value.trim() || '0';
+  if (!/^\d{1,2}$/.test(h)) return { err: 'Las horas tienen que ser un número entero.', field: 'h' };
+  if (!/^\d{1,2}$/.test(m)) return { err: 'Los minutos tienen que ser un número entero.', field: 'm' };
+  const hn = parseInt(h, 10), mn = parseInt(m, 10);
+  if (mn > 59) return { err: 'Los minutos van de 0 a 59.', field: 'm' };
+  const sec = hn * 3600 + mn * 60;
+  if (sec <= 0) return { err: 'El tiempo tiene que ser mayor que 0.', field: 'm' };
+  if (sec > 12 * 3600) return { err: 'El máximo es 12 horas.', field: 'h' };
+  return { sec };
+}
+function sauAdjPreview() {
+  const r = sauAdjParse();
+  document.getElementById('sau-adj-after').textContent = r.err ? '—' : sauFmtDur(r.sec);
+  document.getElementById('sau-adj-h-in').setAttribute('aria-invalid', r.field === 'h' ? 'true' : 'false');
+  document.getElementById('sau-adj-m-in').setAttribute('aria-invalid', r.field === 'm' ? 'true' : 'false');
+  document.getElementById('sau-adj-err').textContent = r.err || '';
+}
+async function sauAdjSave() {
+  if (!sauAdj || sauAdjBusy) return;
+  const r = sauAdjParse();
+  sauAdjPreview();
+  if (r.err) return;
+  sauAdjBusy = true;
+  const btn = document.getElementById('sau-adj-save');
+  btn.disabled = true;
+  try {
+    const raw = sauAdj.raw, nowIso = new Date().toISOString();
+    const patch = { duration_seconds: r.sec, adjusted_by_coach: true, adjusted_at: nowIso, updated_at: nowIso };
+    // El valor original se guarda solo la primera vez
+    if (raw.original_duration_seconds == null) patch.original_duration_seconds = sauAdj.cur;
+    const { error } = await sb.from('sau_sessions').update(patch).eq('id', raw.id).eq('client_id', raw.client_id);
+    if (error) { document.getElementById('sau-adj-err').textContent = 'No se pudo guardar. Revisá tu conexión e intentá de nuevo.'; return; }
+    // Solo la duración de la entrada de Mi diario enlazada (si ya existe)
+    if (raw.diary_entry_id) {
+      const { error: e2 } = await sb.from('diary_entries').update({ duration_minutes: Math.max(1, Math.round(r.sec / 60)) })
+        .eq('id', raw.diary_entry_id).eq('client_id', raw.client_id);
+      if (e2) showToast('Se ajustó la sesión, pero no su entrada de Mi diario. Volvé a guardar.', 'error', 4500);
+    }
+    sauAdjClose();
+    showToast('Tiempo ajustado', 'success');
+    if (window._coachDiaryClient) loadCoachDiary(window._coachDiaryClient, window._coachDiaryYm);
+  } finally { sauAdjBusy = false; btn.disabled = false; }
+}
+function hhGoLocked() { applyTrainingAccessGate(); setHoyCover(false); }
+function hhOpenSession() { if (sauIsPending(sauHome)) sauOpen(sauHome); }
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && hhIsOn()) hhRender();
+});
 
 function handleStartWorkout() {
   setWorkoutStarted(true);
@@ -8622,7 +10002,7 @@ function applyTrainingAccessGate() {
 function clientNav(tab,el) {
   document.querySelectorAll('#screen-client-home .nav-item,#screen-client-plan .nav-item,#screen-client-profile .nav-item,#screen-client-food .nav-item,#screen-client-coaching .nav-item').forEach(n=>n.classList.remove('active'));
   el.classList.add('active');
-  if(tab==='home'){showScreen('screen-client-home');if(currentClient?.program_type==='lift'){renderLiftDay(liftViewDay||getLiftCurrentDayNumber(currentClient));}else if(applyTrainingAccessGate()){loadClientDayStrip();showHoyCover();}}
+  if(tab==='home'){showScreen('screen-client-home');if(currentClient?.program_type==='lift'){renderLiftDay(liftViewDay||getLiftCurrentDayNumber(currentClient));}else if(applyTrainingAccessGate()){loadClientDayStrip();showHoyCover();}else{showHoyCover();}}
   else if(tab==='food'){showScreen('screen-client-food');loadFoodScreen();}
   else if(tab==='plan'){showScreen('screen-client-plan');loadClientPlans();loadClientTests();}
   else if(tab==='profile'){showScreen('screen-client-profile');loadClientContractPanel();}
@@ -8762,6 +10142,7 @@ function setClientTab(tab) {
 }
 
 async function loadCoachClients() {
+  ecsCoachCardRender().catch(e => console.warn('ecs coach card:', e));
   const {data:clients} = await sb.from('clients').select('*').eq('coach_id',currentUser.id);
   window._cachedClientsAll = clients || [];
   const notHidden = (clients||[]).filter(c => !c.hidden);
@@ -22204,6 +23585,12 @@ async function loadCoachDiary(c, ym) {
         <div style="font-size:13px;font-weight:800;color:var(--orange);">${s.hours != null ? Number(s.hours).toFixed(1) + 'h' : '-'}</div>
       </div></div>`})))
     .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+  // Entrena como Sau: tarjeta propia. La entrada de Mi diario enlazada no se repite en la lista;
+  // las que todavía no tienen entrada (en curso o sin finalizar) también se ven.
+  const sauRows = await sauCoachLoad(c.id, from, to);
+  if(token !== window._coachDiaryToken) return;
+  const sauByDiary = new Map(sauRows.filter(r => r.diary_entry_id).map(r => [r.diary_entry_id, r]));
+  const sauLoose = sauRows.filter(r => !r.diary_entry_id || !entries.some(e => e.id === r.diary_entry_id));
   const sessions = entries.filter(e => e.kind === 'session').length + hist.filter(e => e.kind === 'session').length;
   const habits = entries.filter(e => e.kind === 'habit').length + hist.filter(e => e.kind === 'habit').length;
   // Solo cuentan las que tienen emoción (los sin día del coach pueden no tenerla)
@@ -22272,10 +23659,11 @@ async function loadCoachDiary(c, ym) {
     </div>
     ${sleepRows.length ? `<details style="margin-bottom:12px;"><summary style="font-size:12px;font-weight:700;color:var(--gray5);cursor:pointer;min-height:32px;">${diaryIcon('sleep', 18)} Sueño del mes (${sleepRows.length} ${sleepRows.length === 1 ? 'noche' : 'noches'})</summary>
       <div class="diary-list" style="margin-top:6px;">${sleepRows.map(r => r.html).join('')}</div></details>` : ''}
-    ${(entries.length || hist.length) ? `
-      ${(sessDated.length || sessHist.length) ? `
+    ${(entries.length || hist.length || sauLoose.length) ? `
+      ${(sessDated.length || sessHist.length || sauLoose.length) ? `
         <div class="diary-sec-head"><div class="diary-h" style="font-size:18px;">Sesiones</div><div class="diary-label" style="color:var(--gray5);">${sessions} ${sessions === 1 ? 'registro' : 'registros'}</div></div>
-        <div class="diary-list">${sessDated.map(e => entryRow(e, true)).join('')}${sessHist.map(g => histRow(g, true)).join('')}</div>` : ''}
+        ${sauLoose.map(r => sauCoachCard(r, c)).join('')}${sessDated.filter(e => sauByDiary.has(e.id)).map(e => sauCoachCard(sauByDiary.get(e.id), c)).join('')}
+        ${(sessDated.some(e => !sauByDiary.has(e.id)) || sessHist.length) ? `<div class="diary-list">${sessDated.filter(e => !sauByDiary.has(e.id)).map(e => entryRow(e, true)).join('')}${sessHist.map(g => histRow(g, true)).join('')}</div>` : ''}` : ''}
       ${habitGroups.length ? `
         <div class="diary-sec-head"><div class="diary-h" style="font-size:18px;">Hábitos</div><div class="diary-label" style="color:var(--gray5);">${habitGroups.length} ${habitGroups.length === 1 ? 'hábito' : 'hábitos'} · ${habits} ${habits === 1 ? 'registro' : 'registros'}</div></div>
         ${habitGroups.map((g, gi) => {
