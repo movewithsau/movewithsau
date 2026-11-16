@@ -26053,7 +26053,7 @@ async function rnRenderLibrary(reload) {
     <div class="section-header"><div class="section-title">Bloques</div><div class="section-action" onclick="rnBlockForm(null)">+ Nuevo bloque</div></div>
     <div class="rn-xs rn-mu" style="margin-bottom:6px;">Un bloque agrupa ejercicios de la biblioteca. En el JSON del plan se nombran en «pre» y «post».</div>${namedHtml}
     <div class="section-header" style="margin-top:12px;"><div class="section-title">Bloques por tipo de sesión</div></div>
-    <div class="rn-xs rn-mu" style="margin-bottom:6px;">Son los valores por defecto. En cada sesión del plan se pueden cambiar.</div>${blocks}</div>`;
+    <div class="rn-xs rn-mu" style="margin-bottom:6px;">Opcional. Si una sesión del plan no trae pre o post, el cliente ve el de su tipo. Con «—» no se muestra nada.</div>${blocks}</div>`;
 }
 // Pantalla 24: + Ejercicio de Run
 function rnExFieldsHtml(e, p) {
@@ -26180,7 +26180,8 @@ function rnBlockRender() {
       <input id="rn-bk-q" class="rn-in is-txt" type="search" value="${rnEsc(b.q)}" placeholder="Buscar ejercicio…" autocomplete="off" oninput="rnBk.q=this.value;rnBkResults()">
       <div id="rn-bk-results" style="margin-top:8px;"></div>
       <button type="button" class="rn-bt is-l" style="margin-top:8px;" onclick="rnBkNewEx()">+ Crear ejercicio nuevo</button></div>
-    <button type="button" class="rn-bt is-g" onclick="rnBlockSave()">Guardar bloque</button>`);
+    <button type="button" class="rn-bt is-g" onclick="rnBlockSave()">Guardar bloque</button>
+    ${b.id ? `<button type="button" class="rn-bt is-l" style="color:#B3261E;" onclick="rnBlockDelete()">Eliminar bloque</button>` : ''}`);
   rnBkResults();
 }
 // Resultados del buscador: sin importar mayúsculas ni tildes; se repinta solo la lista (el campo no pierde el foco)
@@ -26209,6 +26210,26 @@ async function rnBlockSave() {
   const res = b.id ? await sb.from('run_routines').update(row).eq('id', b.id) : await sb.from('run_routines').insert([{ ...row, coach_id: currentUser.id }]);
   if (res.error) { showToast(res.error.message, 'error'); return; }
   rnCloseSheet(); showToast('Bloque guardado', 'success'); rnRenderLibrary(true);
+}
+// Eliminar un bloque (run_routines). Los ejercicios no se tocan. Las sesiones de plan que lo usaban quedan sin
+// ese pre/post (y toman el bloque por defecto de su tipo, si hay).
+async function rnBlockDelete() {
+  const b = rnBk; if (!b || !b.id) return;
+  const [{ data: pre }, { data: post }] = await Promise.all([
+    sb.from('run_planned_sessions').select('id').eq('pre_routine_id', b.id),
+    sb.from('run_planned_sessions').select('id').eq('post_routine_id', b.id)
+  ]);
+  const n = (pre || []).length + (post || []).length;
+  const msg = `¿Eliminar el bloque «${b.name}»?\n\n`
+    + (b.is_default ? `Deja de ser el bloque ${b.block} por defecto de ${(RN_TYPE_NAME[b.session_type] || b.session_type).toLowerCase()}. ` : '')
+    + (n ? (n === 1 ? 'Lo usa 1 sesión de un plan; queda sin este bloque. ' : `Lo usan ${n} sesiones de planes; quedan sin este bloque. `) : '')
+    + 'Los ejercicios siguen en la biblioteca.';
+  if (!(await appConfirm(msg))) return;
+  if ((pre || []).length) { const { error } = await sb.from('run_planned_sessions').update({ pre_routine_id: null }).eq('pre_routine_id', b.id); if (error) { showToast(error.message, 'error'); return; } }
+  if ((post || []).length) { const { error } = await sb.from('run_planned_sessions').update({ post_routine_id: null }).eq('post_routine_id', b.id); if (error) { showToast(error.message, 'error'); return; } }
+  const { error } = await sb.from('run_routines').delete().eq('id', b.id);
+  if (error) { showToast(error.message, 'error'); return; }
+  rnCloseSheet(); showToast('Bloque eliminado', 'success'); rnRenderLibrary(true);
 }
 // Crear un ejercicio nuevo sin salir del bloque: mismo formulario de la biblioteca; al guardar queda en la
 // biblioteca y agregado al bloque.
