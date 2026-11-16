@@ -1538,6 +1538,83 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 .wl-item.is-circuit .wl-dose { color:#F08A4B; }
 .wl-cta { flex:none; padding:12px 24px 34px; }
 @media (prefers-reduced-motion:reduce) { .wl-bee, .wl-wing, .wl-honey, .wl-rise { animation:none; } }
+/* ===== SESIÓN "ENTRENAR COMO SAU" (cliente) ===== */
+.sau { background:#14110E; color:#FBF6EF; }
+.sau-top { flex:none; padding:36px 24px 0; display:flex; align-items:center; justify-content:space-between; }
+.sau .ecs-back { background:rgba(251,246,239,0.1); color:#FBF6EF; }
+.sau-clock-wrap { flex:none; position:relative; height:180px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.sau-clock-wrap.is-small { height:130px; }
+.sau-clock-hex { position:absolute; opacity:0.22; pointer-events:none; }
+.sau-clock-wrap.is-small .sau-clock-hex { display:none; }
+.sau-clock { position:relative; font-family:'Dela Gothic One',sans-serif; font-weight:400; font-size:46px; line-height:1; color:#FBF6EF; font-variant-numeric:tabular-nums; }
+.sau-clock.is-stopped { color:#8F8373; }
+.sau-state { position:relative; margin-top:12px; display:flex; align-items:center; gap:8px; color:#CFC6BA; }
+.sau-state .dot { width:8px; height:8px; border-radius:50%; background:#F5B83D; }
+.sau-state.is-running .dot { animation:hhPulse 1.4s ease-in-out infinite; }
+.sau-state.is-paused .dot, .sau-state.is-stopped .dot { background:#A89C8D; }
+.sau-mid { flex:1; min-height:0; display:flex; flex-direction:column; padding:0 24px; gap:14px; overflow-y:auto; }
+.sau-note { flex:none; background:#26201A; border:1.5px solid rgba(245,184,61,0.5); border-radius:18px; overflow:hidden; }
+.sau-note-btn { width:100%; box-sizing:border-box; border:0; background:transparent; color:inherit; padding:14px 16px; display:flex; align-items:center; gap:12px; text-align:left; font-family:'DM Sans',sans-serif; cursor:pointer; min-height:64px; }
+.sau-note-ico { flex:none; width:36px; height:36px; border-radius:50%; background:rgba(245,184,61,0.16); color:#F5B83D; display:inline-flex; align-items:center; justify-content:center; }
+.sau-note-btn[aria-expanded="true"] .sau-note-ico { background:#F5B83D; color:#14110E; }
+.sau-note-lbl { display:block; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:1px; color:#F5B83D; }
+.sau-note-first { display:block; margin-top:3px; font-size:14px; color:#D9D0C4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sau-note-btn[aria-expanded="true"] .sau-note-first { display:none; }
+.sau-note-chev { flex:none; transition:transform 0.2s; }
+.sau-note-btn[aria-expanded="true"] .sau-note-chev { transform:rotate(180deg); }
+.sau-note-body { padding:0 16px 16px; font-size:15px; line-height:1.55; color:#F1E9DE; white-space:pre-line; overflow-wrap:anywhere; max-height:38vh; overflow-y:auto; }
+.sau-note-body[hidden] { display:none; }
+.sau-auto { flex:none; background:#2B1D14; border:1.5px solid #C24E18; border-radius:18px; padding:14px 16px; display:flex; gap:12px; align-items:flex-start; }
+.sau-auto[hidden] { display:none; }
+.sau-notes { flex:1 0 180px; background:#1B1713; border:1px solid #3A3027; border-radius:18px; padding:14px 16px; display:flex; flex-direction:column; }
+.sau-notes-head { display:flex; justify-content:space-between; align-items:center; gap:8px; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:1px; }
+.sau-notes-head label { color:#A89C8D; }
+.sau-save { color:#7FD19A; letter-spacing:0; }
+.sau-save.is-off { color:#F08A4B; }
+.sau-save.is-busy { color:#A89C8D; }
+.sau-ta { margin-top:8px; flex:1; min-height:120px; width:100%; box-sizing:border-box; background:transparent; border:0; outline:none; resize:none; font-family:'DM Sans',sans-serif; font-size:16px; line-height:1.55; color:#FBF6EF; }
+.sau-ta::placeholder { color:#7A6D5E; }
+.sau-notes:focus-within { border-color:#F5B83D; }
+.sau-bottom { flex:none; padding:14px 24px 34px; display:flex; gap:12px; }
+.sau-pause { flex:none; width:58px; height:58px; border-radius:16px; border:1.5px solid rgba(251,246,239,0.35); background:transparent; color:#FBF6EF; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
+.sau-pause[hidden] { display:none; }
+.sau-done { flex:1; min-height:58px; font-size:18px; }
+/* Hojas inferiores (finalizar / salir / ajustar) */
+.sau-scrim { position:absolute; inset:0; z-index:5; background:rgba(0,0,0,0.55); border:0; padding:0; margin:0; cursor:pointer; }
+.sau-sheet { position:absolute; left:0; right:0; bottom:0; z-index:6; background:#1E1812; border-radius:28px 28px 0 0; border-top:1.5px solid rgba(245,184,61,0.4); padding:12px 24px 34px; max-height:90%; overflow-y:auto; box-sizing:border-box; }
+.sau-grab { width:44px; height:5px; border-radius:3px; background:rgba(251,246,239,0.25); margin:0 auto 20px; }
+.sau-sheet-h { margin:10px 0 0; font-family:'Dela Gothic One',sans-serif; font-weight:400; font-size:30px; line-height:1.1; text-transform:uppercase; }
+.sau-time-box { margin-top:20px; background:#26201A; border:1px solid #3A3027; border-radius:18px; padding:16px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.sau-time-val { font-family:'Dela Gothic One',sans-serif; font-size:28px; color:#F5B83D; }
+.sau-check { display:flex; align-items:center; gap:10px; font-size:14px; color:#D9D0C4; margin-top:10px; }
+.sau-ghost-dark { background:transparent; border:1.5px solid rgba(251,246,239,0.3); color:#FBF6EF; min-height:52px; font-size:16px; margin-top:10px; }
+/* Coach: tarjeta de sesión en Mi diario y hoja de ajustar tiempo */
+.sau-cc { background:#FFFFFF; border:1.5px solid #C24E18; border-radius:22px; padding:16px; margin-bottom:10px; color:#1F1B16; font-family:'DM Sans',sans-serif; }
+.sau-cc-top { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
+.sau-cc-tag { background:#1F1B16; color:#F5B83D; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.8px; padding:5px 10px; border-radius:999px; }
+.sau-cc-time { margin-top:2px; font-family:'Dela Gothic One',sans-serif; font-size:30px; line-height:1.1; }
+.sau-cc-adj { display:inline-flex; align-items:center; gap:8px; min-height:44px; border:1.5px solid #C24E18; background:#FFFFFF; color:#A63E10; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; padding:0 14px; border-radius:14px; cursor:pointer; }
+.sau-cc-badge { display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:700; padding:7px 12px; border-radius:999px; margin:12px 8px 0 0; }
+.sau-cc-badge.auto { background:#FDEBDD; color:#8F3A12; }
+.sau-cc-badge.adj { background:#E7F3EA; color:#1E5C31; }
+.sau-cc-badge.live { background:#E7F3EA; color:#1E5C31; }
+.sau-cc-notes { margin-top:16px; border-top:1px solid #E8DFD3; padding-top:14px; }
+.sau-cc-notes-body { margin-top:8px; font-size:15px; line-height:1.6; white-space:pre-line; overflow-wrap:anywhere; }
+.sau-cc-acc { margin-top:14px; width:100%; box-sizing:border-box; border:0; background:#F3EBDF; border-radius:14px; padding:12px 14px; min-height:44px; display:flex; align-items:center; justify-content:space-between; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; color:#1F1B16; cursor:pointer; }
+.sau-cc-acc[aria-expanded="true"] svg { transform:rotate(180deg); }
+.sau-cc-acc-body { padding:12px 4px 0; font-size:14px; line-height:1.55; color:#3D352D; white-space:pre-line; overflow-wrap:anywhere; }
+.sau-cc-acc-body[hidden] { display:none; }
+.sau-adj-ov { position:fixed; inset:0; z-index:320; }
+.sau-adj-ov[hidden] { display:none; }
+.sau-adj-ov .sau-scrim { position:fixed; background:rgba(20,17,14,0.55); }
+.sau-adj { position:fixed; left:50%; transform:translateX(-50%); bottom:0; width:100%; max-width:480px; box-sizing:border-box; z-index:6; background:#FBF6EF; color:#1F1B16; border-radius:28px 28px 0 0; padding:12px 24px 34px; font-family:'DM Sans',sans-serif; max-height:92vh; overflow-y:auto; }
+.sau-adj .sau-grab { background:#D8CDBE; }
+.sau-adj-in { margin-top:6px; box-sizing:border-box; width:100%; height:58px; border:1.5px solid #C24E18; border-radius:14px; background:#FFFFFF; text-align:center; font-family:'Dela Gothic One',sans-serif; font-size:26px; color:#1F1B16; }
+.sau-adj-in[aria-invalid="true"] { border-color:#B42318; background:#FEF3F2; }
+.sau-adj-cmp { margin-top:14px; background:#F3EBDF; border-radius:14px; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:14px; color:#6B6258; }
+.sau-adj-err { margin-top:10px; font-size:14px; font-weight:700; color:#B42318; }
+.sau-adj-err:empty { display:none; }
+@media (prefers-reduced-motion:reduce) { .sau-state .dot { animation:none !important; } .sau-note-chev { transition:none; } }
 </style>
 </head>
 <body>
@@ -1800,8 +1877,8 @@ button.exx-pill { cursor:pointer; min-height:28px; }
         <button type="button" class="hh-contract-btn" onclick="goToClientContract()">Ver mi contrato</button>
       </div>
       <div class="hh-body">
-        <!-- Sesión "Entrenar como Sau" en curso (se activa en H4) -->
-        <button type="button" class="hh-chip" id="hh-chip" hidden onclick="hhOpenSession()"><span class="hh-chip-dot" aria-hidden="true"></span><span>Entreno con Sau en curso</span><span class="hh-chip-time" id="hh-chip-time"></span></button>
+        <!-- Sesión "Entrenar como Sau" en curso, en pausa o detenida sola sin finalizar: la retoma -->
+        <button type="button" class="hh-chip" id="hh-chip" hidden onclick="hhOpenSession()"><span class="hh-chip-dot" aria-hidden="true"></span><span id="hh-chip-txt">Entreno con Sau en curso</span><span class="hh-chip-time" id="hh-chip-time"></span></button>
         <div class="hh-cards" id="hh-cards"></div>
       </div>
     </div>
@@ -2127,6 +2204,62 @@ button.exx-pill { cursor:pointer; min-height:28px; }
   <div class="ecs-post-cta">
     <div class="ecs-expired" id="ecs-post-expired" role="status" hidden>Esta publicación ya venció.</div>
     <button type="button" class="ecs-btn ecs-btn-orange" id="ecs-post-go" onclick="ecsStartFromPost()">Entrenar como Sau<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+  </div>
+</div>
+
+<!-- ===== SESIÓN "ENTRENAR COMO SAU" (cliente): cronómetro, nota de Sau y notas. La pinta sauPaint() ===== -->
+<div class="ecs-ov sau" id="sau" role="dialog" aria-modal="true" aria-labelledby="sau-title" hidden>
+  <div class="sau-top">
+    <button type="button" class="ecs-back" aria-label="Salir de la sesión" onclick="sauAskExit()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <span class="ecs-mono" id="sau-title" style="letter-spacing:1.2px;color:#F5B83D;">ENTRENANDO COMO SAU</span>
+    <span style="width:44px;" aria-hidden="true"></span>
+  </div>
+  <div class="sau-clock-wrap" id="sau-clock-wrap">
+    <svg class="sau-clock-hex" width="200" height="200" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><polygon points="50,4 90,27 90,73 50,96 10,73 10,27" fill="none" stroke="#F5B83D" stroke-width="1.6"/></svg>
+    <div class="sau-clock" id="sau-clock" role="timer" aria-live="off">00:00:00</div>
+    <div class="sau-state ecs-mono is-running" id="sau-state"><span class="dot" aria-hidden="true"></span><span id="sau-state-txt">EN MARCHA</span></div>
+  </div>
+  <div class="sau-mid">
+    <div class="sau-auto" id="sau-auto" role="status" hidden>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F08A4B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex:none;margin-top:1px;"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <div><div style="font-size:15px;font-weight:700;">Pasaron 2 horas y el cronómetro se detuvo solo.</div><div style="margin-top:4px;font-size:14px;line-height:1.45;color:#D9D0C4;">Si terminaste antes, no pasa nada: Sau puede ajustar tu tiempo.</div></div>
+    </div>
+    <div class="sau-note" id="sau-note">
+      <button type="button" class="sau-note-btn" id="sau-note-btn" aria-expanded="false" aria-controls="sau-note-body" onclick="sauToggleNote()">
+        <span class="sau-note-ico" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" focusable="false"><path d="M12 2.5l8.5 4.9v9.2L12 21.5l-8.5-4.9V7.4z"/></svg></span>
+        <span style="flex:1;min-width:0;"><span class="sau-note-lbl">LO QUE HIZO SAU HOY</span><span class="sau-note-first" id="sau-note-first"></span></span>
+        <svg class="sau-note-chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="sau-note-body" id="sau-note-body" hidden></div>
+    </div>
+    <div class="sau-notes">
+      <div class="sau-notes-head"><label for="sau-ta">TUS NOTAS</label><span class="sau-save" id="sau-save" aria-live="polite"></span></div>
+      <textarea class="sau-ta" id="sau-ta" placeholder="Pesos, series, cómo te sentiste…" oninput="sauNotesInput()"></textarea>
+    </div>
+  </div>
+  <div class="sau-bottom">
+    <button type="button" class="sau-pause" id="sau-pause" aria-label="Pausar" onclick="sauTogglePause()"></button>
+    <button type="button" class="ecs-btn ecs-btn-green sau-done" onclick="sauAskFinish()">Finalizado<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5L20 7"/></svg></button>
+  </div>
+  <div id="sau-sheet-host"></div>
+</div>
+
+<!-- ===== COACH: ajustar el tiempo de una sesión "Entrena como Sau" ===== -->
+<div class="sau-adj-ov" id="sau-adj-ov" hidden>
+  <button type="button" class="sau-scrim" aria-label="Cancelar" onclick="sauAdjClose()"></button>
+  <div class="sau-adj" role="dialog" aria-modal="true" aria-labelledby="sau-adj-h">
+    <div class="sau-grab" aria-hidden="true"></div>
+    <div class="ecs-mono" id="sau-adj-kicker" style="letter-spacing:1.2px;color:#A63E10;"></div>
+    <h2 id="sau-adj-h" style="margin:8px 0 0;font-family:'Playfair Display',serif;font-weight:700;font-size:28px;">Ajustar tiempo</h2>
+    <div id="sau-adj-lead" style="margin-top:6px;font-size:15px;line-height:1.45;color:#6B6258;"></div>
+    <div style="margin-top:18px;display:flex;gap:12px;">
+      <div style="flex:1;"><label for="sau-adj-h-in" class="ecs-mono" style="font-size:11px;color:#6B6258;">HORAS</label><input id="sau-adj-h-in" class="sau-adj-in" type="text" inputmode="numeric" autocomplete="off" maxlength="2" oninput="sauAdjPreview()"></div>
+      <div style="flex:1;"><label for="sau-adj-m-in" class="ecs-mono" style="font-size:11px;color:#6B6258;">MINUTOS</label><input id="sau-adj-m-in" class="sau-adj-in" type="text" inputmode="numeric" autocomplete="off" maxlength="2" oninput="sauAdjPreview()"></div>
+    </div>
+    <div class="sau-adj-cmp"><span>Antes <b id="sau-adj-before" style="color:#1F1B16;"></b></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Ahora <b id="sau-adj-after" style="color:#1E7A3C;"></b></span></div>
+    <div class="sau-adj-err" id="sau-adj-err" role="alert"></div>
+    <button type="button" class="ecs-btn ecs-btn-green" id="sau-adj-save" style="margin-top:20px;" onclick="sauAdjSave()">Guardar</button>
+    <button type="button" class="ecs-btn ecs-btn-ghost" style="margin-top:10px;" onclick="sauAdjClose()">Cancelar</button>
   </div>
 </div>
 
@@ -7235,7 +7368,7 @@ function ecsClosePost() {
 function ecsStartFromPost() {
   ecsPostTick();
   if (!ecsIsActive(ecsPostOpen)) return;
-  /* la sesión arranca en H4 */
+  sauStart(ecsPostOpen);
 }
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && ecsPostOpen) ecsPostTick();
@@ -7408,12 +7541,32 @@ function hhSync() {
   const on = hhIsOn();
   screen.classList.toggle('home-dark', on);
   if (on) hhRender();
+  else hhPaintChip(); // apaga el repintado del chip
 }
 function hhRender() {
   ensureDelaFont();
   hhPaint();
   ecsLoadActivePost().then(() => { if (hhIsOn()) hhPaint(); }, () => {});
   hhLoadDay().then(() => { if (hhIsOn()) hhPaint(); }, () => {});
+  sauLoadPending().then(() => { if (hhIsOn()) hhPaint(); }, () => {});
+}
+// Chip de la sesión: el tiempo se repinta cada segundo solo mientras se ve el home
+let hhChipTimer = null;
+function hhPaintChip() {
+  const chip = document.getElementById('hh-chip');
+  if (!chip) return;
+  const s = sauHome;
+  const on = hhIsOn() && sauIsPending(s);
+  chip.hidden = !on;
+  if (!on) { clearInterval(hhChipTimer); hhChipTimer = null; return; }
+  const p = sauAutoStopPatch(s);
+  if (p) { Object.assign(s, p); sauPersist(s.id, p); }
+  const txt = s.status === 'running' ? 'Entreno con Sau en curso' : s.status === 'paused' ? 'Entreno con Sau en pausa' : 'Entreno con Sau detenido · finalizalo';
+  const time = sauClock(sauElapsed(s));
+  document.getElementById('hh-chip-txt').textContent = txt;
+  document.getElementById('hh-chip-time').textContent = time;
+  chip.setAttribute('aria-label', `${txt}, ${time}. Abrir la sesión`);
+  if (!hhChipTimer) hhChipTimer = setInterval(hhPaintChip, 1000);
 }
 
 const HH_ARROW = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
@@ -7481,6 +7634,7 @@ function hhPaint() {
   const html = hhCardA() + hhCardB();
   // Solo se reemplaza si cambió: así no se pierde el foco del teclado en cada repintado
   if (html !== hhCardsHtml) { $('hh-cards').innerHTML = html; hhCardsHtml = html; }
+  hhPaintChip();
 }
 // "Ir a mi entrenamiento": la primera vez del día pasa por la bienvenida; después, directo
 // (con el vuelo corto de siempre). La pantalla de ejercicios no cambia.
@@ -7641,8 +7795,467 @@ function welcomeDone() {
   if (ov) { ov.hidden = true; ov.innerHTML = ''; }
   setHoyCover(false);
 }
+
+// ===== SESIÓN "ENTRENAR COMO SAU" (tabla sau_sessions) =====
+// No es un entreno del plan: no toca days_trained, hitos, rachas, Hive, exercise_logs ni el
+// Modo Timer. El tiempo sale siempre de started_at (nunca contando ticks):
+//   transcurrido = ahora − started_at − paused_total_seconds (en pausa: hasta paused_at)
+// El intervalo de 1 s solo repinta. Toda escritura se aplica primero en pantalla y se guarda
+// con reintento (localStorage), así un corte de red no pierde nada.
+const SAU_SESSION_MAX_SECONDS = 7200; // tope: 2 h. Pasado esto la sesión se detiene sola
+const SAU_PAUSE_ICON = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><rect x="6" y="5" width="4.5" height="14" rx="1.2"/><rect x="13.5" y="5" width="4.5" height="14" rx="1.2"/></svg>';
+const SAU_PLAY_ICON = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>';
+const SAU_CHECK = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7FD19A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex:none;"><path d="M5 12l5 5L20 7"/></svg>';
+let sauSess = null;                 // sesión abierta en pantalla
+let sauHome = null, sauHomeAt = 0;  // sesión pendiente (chip del home)
+let sauTick = null, sauNotesTimer = null, sauRetryTimer = null;
+let sauStarting = false, sauFinBusy = false;
+
+function sauIso(ms) { return new Date(ms).toISOString(); }
+function sauElapsed(s, nowMs) {
+  if (!s) return 0;
+  if (s.status === 'finished' || s.status === 'auto_stopped') return Math.max(0, Number(s.duration_seconds) || 0);
+  const now = nowMs == null ? Date.now() : nowMs;
+  const end = s.status === 'paused' && s.paused_at ? Date.parse(s.paused_at) : now;
+  return Math.max(0, Math.floor((end - Date.parse(s.started_at)) / 1000) - (Number(s.paused_total_seconds) || 0));
+}
+// Auto-stop perezoso: se evalúa al abrir/volver al app y al repintar. Devuelve el cambio o null.
+// Corriendo: al llegar al tope queda en el tope. En pausa más de 2 h: queda con lo que llevaba.
+// Si Sau ya ajustó el tiempo, no se pisa su duración.
+function sauAutoStopPatch(s, nowMs) {
+  if (!s || (s.status !== 'running' && s.status !== 'paused')) return null;
+  const now = nowMs == null ? Date.now() : nowMs;
+  const max = SAU_SESSION_MAX_SECONDS;
+  const keep = s.adjusted_by_coach ? {} : null;
+  if (s.status === 'running') {
+    if (sauElapsed(s, now) < max) return null;
+    const endMs = Date.parse(s.started_at) + (max + (Number(s.paused_total_seconds) || 0)) * 1000;
+    return { status: 'auto_stopped', ended_at: sauIso(endMs), paused_at: null, ...(keep || { duration_seconds: max }) };
+  }
+  const atPause = sauElapsed(s, now);
+  if (now - Date.parse(s.paused_at) < max * 1000 && atPause < max) return null;
+  return { status: 'auto_stopped', ended_at: s.paused_at, paused_at: null, ...(keep || { duration_seconds: Math.min(max, atPause) }) };
+}
+// Para mostrar (vista coach): la conversión se ve pero no se escribe
+function sauView(s) { const p = sauAutoStopPatch(s); return p ? { ...s, ...p } : s; }
+function sauClock(sec) {
+  sec = Math.max(0, Math.floor(sec || 0));
+  return [Math.floor(sec / 3600), Math.floor(sec % 3600 / 60), sec % 60].map(n => String(n).padStart(2, '0')).join(':');
+}
+function sauFmtDur(sec) {
+  sec = Math.max(0, Math.round(Number(sec) || 0));
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60);
+  if (h) return `${h} h ${String(m).padStart(2, '0')} min`;
+  return m ? `${m} min` : 'menos de 1 min';
+}
+
+// ---- Escrituras con reintento ----
+function sauPendKey() { return currentClient ? 'mws_sau_pending_' + currentClient.id : null; }
+function sauPendGet() { try { return JSON.parse(localStorage.getItem(sauPendKey()) || 'null'); } catch { return null; } }
+function sauPendSet(v) { try { v ? localStorage.setItem(sauPendKey(), JSON.stringify(v)) : localStorage.removeItem(sauPendKey()); } catch {} }
+async function sauPersist(id, patch) {
+  const prev = sauPendGet();
+  if (prev && prev.id !== id) await sauFlush();
+  const cur = sauPendGet();
+  sauPendSet({ id, patch: cur && cur.id === id ? { ...cur.patch, ...patch } : { ...patch } });
+  return sauFlush();
+}
+async function sauFlush() {
+  const p = sauPendGet();
+  if (!p || !currentClient) return true;
+  let error = null;
+  try {
+    ({ error } = await sb.from('sau_sessions').update({ ...p.patch, updated_at: new Date().toISOString() })
+      .eq('id', p.id).eq('client_id', currentClient.id));
+  } catch (e) { error = e; }
+  if (error) { sauRetrySoon(); return false; }
+  const now = sauPendGet();
+  if (now && now.id === p.id && JSON.stringify(now.patch) === JSON.stringify(p.patch)) sauPendSet(null);
+  else if (now) sauRetrySoon(0); // se sumó algo mientras se guardaba
+  // Volvió la conexión: el aviso de "Sin conexión" pasa a "Guardado" (si no se está escribiendo)
+  const lbl = document.getElementById('sau-save');
+  if (sauSess && !sauPendGet() && lbl && lbl.classList.contains('is-off')) sauSaveState('ok');
+  return true;
+}
+function sauRetrySoon(ms) {
+  if (sauRetryTimer) return;
+  sauRetryTimer = setTimeout(() => {
+    sauRetryTimer = null;
+    sauFlush().then(ok => { if (ok && sauSess && !sauPendGet()) sauSaveState('ok'); });
+  }, ms == null ? 10000 : ms);
+}
+window.addEventListener('online', () => { if (sauPendGet()) sauFlush(); });
+
+// ---- Sesión pendiente del cliente (chip del home) ----
+// Activa = running/paused (una sola por cliente). También vuelve la detenida sola sin finalizar
+// (últimas 24 h), para que el cliente pueda tocar "Finalizado".
+async function sauLoadPending(force) {
+  if (!currentClient || currentUser?.role === 'coach') return null;
+  if (!force && sauHomeAt && Date.now() - sauHomeAt < 15000) return sauHome;
+  const cid = currentClient.id;
+  await sauFlush().catch(() => {});
+  const r1 = await sb.from('sau_sessions').select('*').eq('client_id', cid).in('status', ['running', 'paused'])
+    .order('started_at', { ascending: false }).limit(1).maybeSingle();
+  if (r1.error || currentClient?.id !== cid) return sauHome; // sin red o sin tabla: lo que había
+  let s = r1.data || null;
+  if (!s) {
+    const r2 = await sb.from('sau_sessions').select('*').eq('client_id', cid).eq('status', 'auto_stopped')
+      .is('diary_entry_id', null).gt('ended_at', sauIso(Date.now() - 24 * 3600e3))
+      .order('started_at', { ascending: false }).limit(1).maybeSingle();
+    if (!r2.error) s = r2.data || null;
+  }
+  if (s) {
+    const pend = sauPendGet();
+    if (pend && pend.id === s.id) Object.assign(s, pend.patch); // lo que todavía no llegó a la base
+    const p = sauAutoStopPatch(s);
+    if (p) { Object.assign(s, p); sauPersist(s.id, p); }
+  }
+  sauHome = s; sauHomeAt = Date.now();
+  return s;
+}
+function sauIsPending(s) {
+  return !!s && (s.status === 'running' || s.status === 'paused' || (s.status === 'auto_stopped' && !s.diary_entry_id));
+}
+
+// ---- Empezar / abrir ----
+async function sauStart(post) {
+  if (sauStarting || !currentClient || !post) return;
+  sauStarting = true;
+  try {
+    const cur = await sauLoadPending(true);
+    if (cur && (cur.status === 'running' || cur.status === 'paused')) { sauOpen(cur); return; } // retomar, no duplicar
+    const row = { client_id: currentClient.id, post_id: post.id, post_body_snapshot: post.body || '',
+      started_at: new Date().toISOString(), status: 'running', paused_total_seconds: 0 };
+    const { data, error } = await sb.from('sau_sessions').insert([row]).select('*').single();
+    if (error || !data) {
+      if (error && error.code === '23505') { const again = await sauLoadPending(true); if (again) { sauOpen(again); return; } }
+      showToast('No se pudo empezar la sesión. Revisá tu conexión e intentá de nuevo.', 'error', 4500);
+      return;
+    }
+    sauHome = data; sauHomeAt = Date.now();
+    sauOpen(data);
+  } finally { sauStarting = false; }
+}
+function sauNotesKey(id) { return 'mws_sau_notes_' + id; }
+function sauOpen(s) {
+  if (!s) return;
+  ensureDelaFont();
+  sauSess = s;
+  sauHome = s;
+  // La publicación abierta se cierra: la nota de Sau vive en la sesión (copia del texto)
+  const post = document.getElementById('ecs-post');
+  if (post && !post.hidden) { post.hidden = true; clearInterval(ecsPostTimer); ecsPostTimer = null; ecsPostOpen = null; }
+  const $ = id => document.getElementById(id);
+  const snap = s.post_body_snapshot || '';
+  $('sau-note').style.display = snap.trim() ? '' : 'none';
+  $('sau-note-first').textContent = snap.split('\n').find(l => l.trim()) || '';
+  $('sau-note-body').textContent = snap;
+  $('sau-note-body').hidden = true;
+  $('sau-note-btn').setAttribute('aria-expanded', 'false');
+  // Lo escrito sin guardar (otra apertura, sin red) manda sobre lo de la base
+  let draft = null;
+  try { draft = localStorage.getItem(sauNotesKey(s.id)); } catch {}
+  $('sau-ta').value = draft != null ? draft : (s.notes || '');
+  const pending = sauPendGet();
+  if (draft != null && draft !== (s.notes || '')) { s.notes = draft; sauSaveState('busy'); clearTimeout(sauNotesTimer); sauNotesTimer = setTimeout(sauSaveNotes, 800); }
+  else sauSaveState(pending && pending.id === s.id ? 'off' : (s.notes ? 'ok' : ''));
+  sauCloseSheet();
+  $('sau').hidden = false;
+  sauOnTick();
+  clearInterval(sauTick);
+  sauTick = setInterval(sauOnTick, 1000);
+  $('sau-ta').focus({ preventScroll: true });
+}
+function sauOnTick() {
+  const s = sauSess;
+  if (!s) return;
+  const p = sauAutoStopPatch(s);
+  if (p) {
+    Object.assign(s, p);
+    sauPersist(s.id, p);
+    // El cliente puede tener abierta la hoja de finalizar con el tiempo viejo: se rearma
+    if (document.getElementById('sau-fin-yes')) sauAskFinish();
+  }
+  sauPaint();
+}
+function sauPaint() {
+  const s = sauSess;
+  if (!s) return;
+  const $ = id => document.getElementById(id);
+  const st = s.status, auto = st === 'auto_stopped';
+  $('sau-clock').textContent = sauClock(sauElapsed(s));
+  $('sau-clock').classList.toggle('is-stopped', auto);
+  const state = $('sau-state');
+  state.className = 'sau-state ecs-mono ' + (st === 'running' ? 'is-running' : st === 'paused' ? 'is-paused' : 'is-stopped');
+  const txt = st === 'running' ? 'EN MARCHA' : st === 'paused' ? 'EN PAUSA' : 'DETENIDO AUTOMÁTICAMENTE';
+  if ($('sau-state-txt').textContent !== txt) $('sau-state-txt').textContent = txt;
+  $('sau-auto').hidden = !auto;
+  const pause = $('sau-pause');
+  pause.hidden = st !== 'running' && st !== 'paused';
+  const want = st === 'paused' ? 'play' : 'pause';
+  if (pause.dataset.icon !== want) {
+    pause.innerHTML = want === 'play' ? SAU_PLAY_ICON : SAU_PAUSE_ICON;
+    pause.dataset.icon = want;
+    pause.setAttribute('aria-label', want === 'play' ? 'Reanudar' : 'Pausar');
+  }
+  $('sau-clock-wrap').classList.toggle('is-small', auto || $('sau-note-btn').getAttribute('aria-expanded') === 'true');
+}
+function sauToggleNote() {
+  const btn = document.getElementById('sau-note-btn');
+  const open = btn.getAttribute('aria-expanded') !== 'true';
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  document.getElementById('sau-note-body').hidden = !open;
+  sauPaint();
+}
+function sauTogglePause() {
+  const s = sauSess;
+  if (!s) return;
+  sauOnTick(); // por si ya pasó el tope
+  const now = Date.now();
+  let patch = null;
+  if (s.status === 'running') patch = { status: 'paused', paused_at: sauIso(now) };
+  else if (s.status === 'paused') patch = { status: 'running', paused_at: null,
+    paused_total_seconds: (Number(s.paused_total_seconds) || 0) + Math.max(0, Math.floor((now - Date.parse(s.paused_at)) / 1000)) };
+  if (!patch) return;
+  Object.assign(s, patch);
+  sauPaint();
+  sauPersist(s.id, patch);
+}
+
+// ---- Notas del cliente (Sau las ve) ----
+function sauSaveState(st) {
+  const el = document.getElementById('sau-save');
+  if (!el) return;
+  el.className = 'sau-save' + (st === 'off' ? ' is-off' : st === 'busy' ? ' is-busy' : '');
+  el.textContent = st === 'off' ? 'Sin conexión, reintentando…' : st === 'busy' ? 'Guardando…' : st === 'ok' ? 'Guardado' : '';
+}
+function sauNotesInput() {
+  const s = sauSess;
+  if (!s) return;
+  const v = document.getElementById('sau-ta').value;
+  s.notes = v;
+  try { localStorage.setItem(sauNotesKey(s.id), v); } catch {}
+  sauSaveState('busy');
+  clearTimeout(sauNotesTimer);
+  sauNotesTimer = setTimeout(sauSaveNotes, 800);
+}
+async function sauSaveNotes() {
+  clearTimeout(sauNotesTimer); sauNotesTimer = null;
+  const s = sauSess;
+  if (!s) return true;
+  const id = s.id, v = s.notes || '';
+  const ok = await sauPersist(id, { notes: v || null, notes_updated_at: new Date().toISOString() });
+  if (sauSess && sauSess.id === id) sauSaveState(ok ? 'ok' : 'off');
+  if (ok) { try { if (localStorage.getItem(sauNotesKey(id)) === v) localStorage.removeItem(sauNotesKey(id)); } catch {} }
+  return ok;
+}
+
+// ---- Hojas: salir y finalizar ----
+function sauSheet(html, focusId) {
+  const host = document.getElementById('sau-sheet-host');
+  host.innerHTML = `<button type="button" class="sau-scrim" aria-label="Cerrar" onclick="sauCloseSheet()"></button>
+    <div class="sau-sheet" role="dialog" aria-modal="true" aria-labelledby="sau-sh-h">${html}</div>`;
+  document.getElementById(focusId)?.focus();
+}
+function sauCloseSheet() { const h = document.getElementById('sau-sheet-host'); if (h) h.innerHTML = ''; }
+function sauAskExit() {
+  const s = sauSess;
+  if (!s) return;
+  const msg = s.status === 'running' ? 'Tu cronómetro sigue corriendo.' : s.status === 'paused' ? 'Tu sesión queda en pausa.' : 'Podés finalizarla después desde tu home.';
+  sauSheet(`<div class="sau-grab" aria-hidden="true"></div>
+    <h2 class="sau-sheet-h" id="sau-sh-h" style="font-size:26px;">¿Salir de la sesión?</h2>
+    <p style="margin:10px 0 0;font-size:15px;line-height:1.45;color:#D9D0C4;">${msg} La retomás desde tu home.</p>
+    <button type="button" class="ecs-btn ecs-btn-orange" id="sau-exit-yes" style="margin-top:22px;" onclick="sauClose()">Salir</button>
+    <button type="button" class="ecs-btn sau-ghost-dark" onclick="sauCloseSheet()">Seguir acá</button>`, 'sau-exit-yes');
+}
+function sauClose() {
+  if (sauNotesTimer) sauSaveNotes();
+  clearInterval(sauTick); sauTick = null;
+  sauCloseSheet();
+  document.getElementById('sau').hidden = true;
+  sauSess = null;
+  if (hhIsOn()) { hhRender(); document.getElementById('hh-chip')?.focus(); }
+}
+function sauAskFinish() {
+  const s = sauSess;
+  if (!s) return;
+  sauSheet(`<div class="sau-grab" aria-hidden="true"></div>
+    <div class="ecs-mono" style="letter-spacing:1.4px;color:#F5B83D;">FINALIZAR</div>
+    <h2 class="sau-sheet-h" id="sau-sh-h">¿Terminaste?</h2>
+    <div class="sau-time-box"><span class="ecs-mono" style="color:#A89C8D;">TIEMPO</span><span class="sau-time-val">${sauFmtDur(sauElapsed(s))}</span></div>
+    <div style="margin-top:6px;">
+      <div class="sau-check">${SAU_CHECK}<span>Se guarda en Mi diario como una sesión.</span></div>
+      <div class="sau-check">${SAU_CHECK}<span>Tus notas quedan guardadas y Sau las puede ver.</span></div>
+    </div>
+    <button type="button" class="ecs-btn ecs-btn-green" id="sau-fin-yes" style="margin-top:22px;" onclick="sauFinish()">Sí, finalizado<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5L20 7"/></svg></button>
+    <button type="button" class="ecs-btn sau-ghost-dark" onclick="sauCloseSheet()">${s.status === 'auto_stopped' ? 'Volver' : 'Seguir entrenando'}</button>`, 'sau-fin-yes');
+}
+// Guarda la sesión en Mi diario (una sola vez) y la cierra. El id del diario se fija antes del
+// primer intento: un doble toque o un reintento tras un corte no crea una segunda entrada.
+async function sauFinish() {
+  const s = sauSess;
+  if (sauFinBusy || !s || !currentClient) return;
+  sauFinBusy = true;
+  const btn = document.getElementById('sau-fin-yes');
+  if (btn) btn.disabled = true;
+  try {
+    if (sauNotesTimer) await sauSaveNotes();
+    sauOnTick();
+    const now = Date.now();
+    const auto = s.status === 'auto_stopped';
+    const dur = sauElapsed(s, now);
+    const endedIso = auto && s.ended_at ? s.ended_at : sauIso(now);
+    const dKey = 'mws_sau_diary_' + s.id;
+    let diaryId = s.diary_entry_id || null;
+    if (!diaryId) {
+      try { diaryId = localStorage.getItem(dKey); } catch {}
+      if (!diaryId) { diaryId = crypto.randomUUID(); try { localStorage.setItem(dKey, diaryId); } catch {} }
+      const { error } = await sb.from('diary_entries').insert([{
+        id: diaryId, client_id: currentClient.id, kind: 'session',
+        entry_date: crDateKey(Date.parse(endedIso)), activity_name: 'Entrena como Sau',
+        option_id: null, source: 'own', source_ref: null, session_type: 'fuerza',
+        duration_minutes: dur > 0 ? Math.max(1, Math.round(dur / 60)) : 0,
+        calories: null, notes: null, emotion: null
+      }]);
+      if (error && error.code !== '23505') throw error; // 23505: ya estaba creada (reintento)
+    }
+    const patch = { status: auto ? 'auto_stopped' : 'finished', ended_at: endedIso, paused_at: null,
+      diary_entry_id: diaryId, ...(s.adjusted_by_coach ? {} : { duration_seconds: dur }) };
+    Object.assign(s, patch);
+    await sauPersist(s.id, patch); // si no llega, queda pendiente y se reintenta; el diario ya está
+    try { localStorage.removeItem(dKey); localStorage.removeItem(sauNotesKey(s.id)); } catch {}
+    sauHome = null; sauHomeAt = Date.now();
+    sauClose();
+    showToast('Sesión guardada', 'success');
+  } catch (e) {
+    console.warn('Entrena como Sau: no se pudo finalizar', e);
+    showToast('No se pudo guardar. Revisá tu conexión e intentá de nuevo.', 'error', 4500);
+    if (btn) btn.disabled = false;
+  } finally { sauFinBusy = false; }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  if (sauSess) { sauOnTick(); sauFlush(); }
+});
+
+// ---- Coach: sesiones en el diario del cliente y "Ajustar tiempo" ----
+// Se cargan al abrir el detalle (sin polling). El coach no edita notas ni borra sesiones.
+// Una sesión corriendo que ya pasó el tope se muestra detenida, sin escribir esa conversión.
+let sauCoachRows = new Map(), sauAdj = null, sauAdjBusy = false;
+async function sauCoachLoad(cid, from, to) {
+  try {
+    const { data, error } = await sb.from('sau_sessions').select('*').eq('client_id', cid)
+      .gte('started_at', crDayRange(from).start).lt('started_at', crDayRange(to).end)
+      .order('started_at', { ascending: false });
+    return error ? [] : (data || []);
+  } catch { return []; }
+}
+function sauMaxLabel() { const h = SAU_SESSION_MAX_SECONDS / 3600; return Number.isInteger(h) ? h + ' h' : sauFmtDur(SAU_SESSION_MAX_SECONDS); }
+function sauCoachCard(raw, c) {
+  sauCoachRows.set(raw.id, raw);
+  const s = sauView(raw);
+  const first = ((c && c.name) || '').trim().split(/\s+/)[0] || 'tu cliente';
+  const live = s.status === 'running' || s.status === 'paused';
+  const ms = Date.parse(s.started_at);
+  const when = (fmtCRDay(ms, true) + ' · ' + ecsTime(ms)).toUpperCase();
+  const accId = 'sau-acc-' + s.id;
+  const badges = [
+    live ? `<span class="sau-cc-badge live">${s.status === 'paused' ? 'En pausa' : 'En curso'}</span>` : '',
+    s.status === 'auto_stopped' ? `<span class="sau-cc-badge auto"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Se detuvo solo a las ${sauMaxLabel()}</span>` : '',
+    s.adjusted_by_coach ? '<span class="sau-cc-badge adj">Ajustado por Sau</span>' : '',
+    !live && !s.diary_entry_id ? '<span class="sau-cc-badge auto">Sin finalizar</span>' : ''
+  ].join('');
+  return `<div class="sau-cc">
+    <div class="sau-cc-top"><span class="ecs-mono" style="color:#6B6258;">${escHtml(when)}</span><span class="sau-cc-tag">ENTRENA COMO SAU</span></div>
+    <div style="margin-top:14px;display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+      <div><div class="ecs-mono" style="font-size:11px;color:#6B6258;">TIEMPO</div><div class="sau-cc-time">${sauFmtDur(live ? sauElapsed(s) : s.duration_seconds)}</div></div>
+      ${live ? '' : `<button type="button" class="sau-cc-adj" onclick="sauAdjOpen('${escHtml(s.id)}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>Ajustar tiempo</button>`}
+    </div>
+    ${badges ? `<div>${badges}</div>` : ''}
+    <div class="sau-cc-notes">
+      <div class="ecs-mono" style="font-size:11px;color:#6B6258;">NOTAS DE ${escHtml(first.toUpperCase())}</div>
+      <div class="sau-cc-notes-body">${s.notes ? escHtml(s.notes) : '<span style="color:#6B6258;">Sin notas.</span>'}</div>
+    </div>
+    ${s.post_body_snapshot ? `<button type="button" class="sau-cc-acc" aria-expanded="false" aria-controls="${accId}" onclick="sauCcToggle(this)">Lo que hiciste ese día<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></button>
+    <div class="sau-cc-acc-body" id="${accId}" hidden>${escHtml(s.post_body_snapshot)}</div>` : ''}
+  </div>`;
+}
+function sauCcToggle(btn) {
+  const open = btn.getAttribute('aria-expanded') !== 'true';
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  const body = document.getElementById(btn.getAttribute('aria-controls'));
+  if (body) body.hidden = !open;
+}
+function sauAdjOpen(id) {
+  const raw = sauCoachRows.get(id);
+  if (!raw) return;
+  const s = sauView(raw);
+  const c = window._coachDiaryClient;
+  const first = ((c && c.name) || '').trim().split(/\s+/)[0] || 'tu cliente';
+  const cur = Number(s.duration_seconds) || 0;
+  sauAdj = { raw, cur };
+  const $ = x => document.getElementById(x);
+  $('sau-adj-kicker').textContent = 'ENTRENA COMO SAU · ' + fmtCRDay(Date.parse(s.started_at)).toUpperCase();
+  $('sau-adj-lead').textContent = s.status === 'auto_stopped' && !s.adjusted_by_coach
+    ? `El cronómetro se detuvo solo a las ${sauFmtDur(SAU_SESSION_MAX_SECONDS)}. Poné el tiempo real de ${first}.`
+    : `Poné el tiempo real de ${first}.`;
+  $('sau-adj-h-in').value = String(Math.floor(cur / 3600));
+  $('sau-adj-m-in').value = String(Math.floor(cur % 3600 / 60));
+  $('sau-adj-before').textContent = sauFmtDur(cur);
+  $('sau-adj-err').textContent = '';
+  sauAdjPreview();
+  $('sau-adj-ov').hidden = false;
+  $('sau-adj-h-in').focus();
+}
+function sauAdjClose() { document.getElementById('sau-adj-ov').hidden = true; sauAdj = null; }
+// Enteros; minutos 0 a 59; total mayor que 0 y hasta 12 h
+function sauAdjParse() {
+  const h = document.getElementById('sau-adj-h-in').value.trim() || '0';
+  const m = document.getElementById('sau-adj-m-in').value.trim() || '0';
+  if (!/^\d{1,2}$/.test(h)) return { err: 'Las horas tienen que ser un número entero.', field: 'h' };
+  if (!/^\d{1,2}$/.test(m)) return { err: 'Los minutos tienen que ser un número entero.', field: 'm' };
+  const hn = parseInt(h, 10), mn = parseInt(m, 10);
+  if (mn > 59) return { err: 'Los minutos van de 0 a 59.', field: 'm' };
+  const sec = hn * 3600 + mn * 60;
+  if (sec <= 0) return { err: 'El tiempo tiene que ser mayor que 0.', field: 'm' };
+  if (sec > 12 * 3600) return { err: 'El máximo es 12 horas.', field: 'h' };
+  return { sec };
+}
+function sauAdjPreview() {
+  const r = sauAdjParse();
+  document.getElementById('sau-adj-after').textContent = r.err ? '—' : sauFmtDur(r.sec);
+  document.getElementById('sau-adj-h-in').setAttribute('aria-invalid', r.field === 'h' ? 'true' : 'false');
+  document.getElementById('sau-adj-m-in').setAttribute('aria-invalid', r.field === 'm' ? 'true' : 'false');
+  document.getElementById('sau-adj-err').textContent = r.err || '';
+}
+async function sauAdjSave() {
+  if (!sauAdj || sauAdjBusy) return;
+  const r = sauAdjParse();
+  sauAdjPreview();
+  if (r.err) return;
+  sauAdjBusy = true;
+  const btn = document.getElementById('sau-adj-save');
+  btn.disabled = true;
+  try {
+    const raw = sauAdj.raw, nowIso = new Date().toISOString();
+    const patch = { duration_seconds: r.sec, adjusted_by_coach: true, adjusted_at: nowIso, updated_at: nowIso };
+    // El valor original se guarda solo la primera vez
+    if (raw.original_duration_seconds == null) patch.original_duration_seconds = sauAdj.cur;
+    const { error } = await sb.from('sau_sessions').update(patch).eq('id', raw.id).eq('client_id', raw.client_id);
+    if (error) { document.getElementById('sau-adj-err').textContent = 'No se pudo guardar. Revisá tu conexión e intentá de nuevo.'; return; }
+    // Solo la duración de la entrada de Mi diario enlazada (si ya existe)
+    if (raw.diary_entry_id) {
+      const { error: e2 } = await sb.from('diary_entries').update({ duration_minutes: Math.max(1, Math.round(r.sec / 60)) })
+        .eq('id', raw.diary_entry_id).eq('client_id', raw.client_id);
+      if (e2) showToast('Se ajustó la sesión, pero no su entrada de Mi diario. Volvé a guardar.', 'error', 4500);
+    }
+    sauAdjClose();
+    showToast('Tiempo ajustado', 'success');
+    if (window._coachDiaryClient) loadCoachDiary(window._coachDiaryClient, window._coachDiaryYm);
+  } finally { sauAdjBusy = false; btn.disabled = false; }
+}
 function hhGoLocked() { applyTrainingAccessGate(); setHoyCover(false); }
-function hhOpenSession() { /* se activa en H4 */ }
+function hhOpenSession() { if (sauIsPending(sauHome)) sauOpen(sauHome); }
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && hhIsOn()) hhRender();
 });
@@ -22972,6 +23585,12 @@ async function loadCoachDiary(c, ym) {
         <div style="font-size:13px;font-weight:800;color:var(--orange);">${s.hours != null ? Number(s.hours).toFixed(1) + 'h' : '-'}</div>
       </div></div>`})))
     .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+  // Entrena como Sau: tarjeta propia. La entrada de Mi diario enlazada no se repite en la lista;
+  // las que todavía no tienen entrada (en curso o sin finalizar) también se ven.
+  const sauRows = await sauCoachLoad(c.id, from, to);
+  if(token !== window._coachDiaryToken) return;
+  const sauByDiary = new Map(sauRows.filter(r => r.diary_entry_id).map(r => [r.diary_entry_id, r]));
+  const sauLoose = sauRows.filter(r => !r.diary_entry_id || !entries.some(e => e.id === r.diary_entry_id));
   const sessions = entries.filter(e => e.kind === 'session').length + hist.filter(e => e.kind === 'session').length;
   const habits = entries.filter(e => e.kind === 'habit').length + hist.filter(e => e.kind === 'habit').length;
   // Solo cuentan las que tienen emoción (los sin día del coach pueden no tenerla)
@@ -23040,10 +23659,11 @@ async function loadCoachDiary(c, ym) {
     </div>
     ${sleepRows.length ? `<details style="margin-bottom:12px;"><summary style="font-size:12px;font-weight:700;color:var(--gray5);cursor:pointer;min-height:32px;">${diaryIcon('sleep', 18)} Sueño del mes (${sleepRows.length} ${sleepRows.length === 1 ? 'noche' : 'noches'})</summary>
       <div class="diary-list" style="margin-top:6px;">${sleepRows.map(r => r.html).join('')}</div></details>` : ''}
-    ${(entries.length || hist.length) ? `
-      ${(sessDated.length || sessHist.length) ? `
+    ${(entries.length || hist.length || sauLoose.length) ? `
+      ${(sessDated.length || sessHist.length || sauLoose.length) ? `
         <div class="diary-sec-head"><div class="diary-h" style="font-size:18px;">Sesiones</div><div class="diary-label" style="color:var(--gray5);">${sessions} ${sessions === 1 ? 'registro' : 'registros'}</div></div>
-        <div class="diary-list">${sessDated.map(e => entryRow(e, true)).join('')}${sessHist.map(g => histRow(g, true)).join('')}</div>` : ''}
+        ${sauLoose.map(r => sauCoachCard(r, c)).join('')}${sessDated.filter(e => sauByDiary.has(e.id)).map(e => sauCoachCard(sauByDiary.get(e.id), c)).join('')}
+        ${(sessDated.some(e => !sauByDiary.has(e.id)) || sessHist.length) ? `<div class="diary-list">${sessDated.filter(e => !sauByDiary.has(e.id)).map(e => entryRow(e, true)).join('')}${sessHist.map(g => histRow(g, true)).join('')}</div>` : ''}` : ''}
       ${habitGroups.length ? `
         <div class="diary-sec-head"><div class="diary-h" style="font-size:18px;">Hábitos</div><div class="diary-label" style="color:var(--gray5);">${habitGroups.length} ${habitGroups.length === 1 ? 'hábito' : 'hábitos'} · ${habits} ${habits === 1 ? 'registro' : 'registros'}</div></div>
         ${habitGroups.map((g, gi) => {
