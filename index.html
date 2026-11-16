@@ -1795,6 +1795,16 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 #screen-client-home.tr-cfab .hoy-fab { bottom:160px !important; }
 #screen-client-home.tr-cfab.ck-on .hoy-fab { bottom:226px !important; }
 @media (prefers-reduced-motion:reduce) { .tr-knob { transition:none; } }
+/* Series y rondas extra */
+.tr-set-n { display:flex; flex-direction:column; line-height:1.2; }
+.tr-extra-tag { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.6px; color:#F5B83D; }
+.tr-x { appearance:none; -webkit-appearance:none; flex:none; width:36px; height:48px; margin:0 -6px 0 -4px; padding:0; border:0; border-radius:10px; background:none; color:#A89C8D; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
+.tr-x-space { flex:none; width:26px; }
+.tr-add { margin-top:10px; width:100%; min-height:48px; box-sizing:border-box; border:1.5px dashed #5A4E41; border-radius:12px; background:none; color:#CFC6BA; font:600 14px 'DM Sans',sans-serif; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; }
+.tr-add .ico { color:#F5B83D; }
+.tr-add[hidden] { display:none; }
+.tr-rextra { display:flex; align-items:center; justify-content:space-between; gap:8px; padding-top:6px; }
+.tr-x.tr-x-txt { width:auto; height:44px; margin:0 -6px 0 0; padding:0 8px; gap:4px; font:500 13px 'DM Sans',sans-serif; }
 /* Modo Timer en oscuro (pantallas 17 y 18) */
 .tr-tpanel { margin-top:14px; }
 .tr-rest { background:#1B1713; border:1px solid #3A3027; border-radius:18px; padding:18px 16px; text-align:center; }
@@ -5596,7 +5606,7 @@ async function loadClientExercises() {
               .eq('client_id', currentClient.id)
               .eq('week_number', prevWeek)
               .order('logged_at',{ascending:false})
-              .limit(prevExIds.length * 8);
+              .limit(prevExIds.length * 12); // series del plan + extra
             if(prevLogs) {
               prevLogs.forEach(l=>{
                 const curId = prevIdToCurId.get(l.exercise_id);
@@ -5816,7 +5826,7 @@ async function loadClientExercises() {
         </div>`;
       if (trDark) {
         exHtml += `<!--tl-item:${tlState(circuitItemKey, circuitDone)}--><div class="fade-up">${trCardHtml({ key: circuitItemKey, circuit: true, name: `Circuito ${ex.superset_group}`, open: circuitOpen, done: circuitDone,
-          saved: circuitDone ? trSavedText(g.map(se => se.id), rounds, circuitLogs, 'r', 'ronda', 'rondas') : '',
+          saved: circuitDone ? trSavedText(g.map(se => se.id), rounds + trExtra('c:' + ex.superset_group), circuitLogs, 'r', 'ronda', 'rondas') : '',
           body: trCircuitBody(g, ex.superset_group, rounds, restText, circuitLogs, circuitLogsKey, prevByEx, mixedTimed) })}</div>`;
       } else {
       exHtml += `<!--tl-item:${tlState(circuitItemKey, circuitDone)}--><div class="fade-up" style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;border-left:3px solid var(--orange);${circuitDone?'opacity:0.85;':''}">
@@ -5904,7 +5914,7 @@ async function loadClientExercises() {
         </div>`;
       if (trDark) {
         exHtml += `<!--tl-item:${tlState(soloItemKey, isDone)}--><div class="fade-up">${trCardHtml({ key: soloItemKey, name: ex.name, open: soloOpen, done: isDone,
-          saved: isDone ? trSavedText([ex.id], ex.sets, soloLogs, 's', 'serie', 'series') : '', body: trSoloBody(ex, soloLogs, soloLogsKey, prevByEx) })}</div>`;
+          saved: isDone ? trSavedText([ex.id], ex.sets + trExtra(ex.id), soloLogs, 's', 'serie', 'series') : '', body: trSoloBody(ex, soloLogs, soloLogsKey, prevByEx) })}</div>`;
       } else {
       exHtml+=`<!--tl-item:${tlState(soloItemKey, isDone)}--><div class="fade-up" style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;${isDone?'opacity:0.85;':''}">
         <div onclick="toggleAccordionItem('${soloItemKey}')" style="padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;">
@@ -7558,6 +7568,45 @@ function trRepsText(r) {
 function trInputState(w, r) { return w && r ? ' is-filled' : ''; }
 
 // Cuerpo de la tarjeta abierta de un ejercicio (pantalla 15). Mismos ids y mismas funciones de guardado que antes.
+// ---- Series y rondas extra (las agrega el cliente, máx. 4) ----
+// Solo cuántas hay vive en el borrador local del día (mws_extra_*). Se guardan en exercise_logs igual que
+// las demás, con set_number siguiente (Set 3, Ronda 3). La semana siguiente no aparecen solas: manda el plan.
+const TR_EXTRA_MAX = 4;
+function trExtraKey() { return currentClient ? `mws_extra_${exxDayKey()}` : null; }
+function trExtra(id) { const k = trExtraKey(); return k ? Math.max(0, Math.min(TR_EXTRA_MAX, Number(exxReadLS(k)[id]) || 0)) : 0; }
+function trExtraSet(id, n) { const k = trExtraKey(); if (!k) return; const all = exxReadLS(k); if (n > 0) all[id] = n; else delete all[id]; exxWriteLS(k, all); }
+// Al quitar una serie/ronda del medio, las de después corren un lugar (para no dejar huecos)
+function trShiftDraft(lsKey, ids, tag, from, total) {
+  const logs = exxReadLS(lsKey);
+  ids.forEach(id => {
+    for (let i = from; i < total; i++) { const nx = logs[`${id}_${tag}${i + 1}`]; if (nx) logs[`${id}_${tag}${i}`] = nx; else delete logs[`${id}_${tag}${i}`]; }
+    delete logs[`${id}_${tag}${total}`];
+  });
+  exxWriteLS(lsKey, logs);
+}
+const TR_X_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+function trRerenderSolo(exId) {
+  const ex = trExMap[exId], body = document.getElementById(`acc-body-solo-${exId}`);
+  if (!ex || !body) return;
+  const key = `mws_slogs_${exxDayKey()}`;
+  body.innerHTML = trSoloBody(ex, exxReadLS(key), key, prevWeekLogsCache);
+}
+function trAddExtraSet(exId) {
+  const ex = trExMap[exId], n = trExtra(exId);
+  if (!ex || n >= TR_EXTRA_MAX) return;
+  trExtraSet(exId, n + 1);
+  trRerenderSolo(exId);
+  document.getElementById(`slog-w-${exId}-s${ex.sets + n + 1}`)?.focus();
+}
+function trRemoveExtraSet(exId, s) {
+  const ex = trExMap[exId], n = trExtra(exId);
+  if (!ex || !n || s <= ex.sets) return;
+  const total = ex.sets + n;
+  trShiftDraft(`mws_slogs_${exxDayKey()}`, [exId], 's', s, total);
+  trExtraSet(exId, n - 1);
+  trRerenderSolo(exId);
+  document.getElementById(`tr-add-${exId}`)?.focus();
+}
 function trSoloBody(ex, soloLogs, soloLogsKey, prevByEx) {
   trExMap[ex.id] = ex;
   const unit = exUnitFor(ex.id);
@@ -7569,17 +7618,20 @@ function trSoloBody(ex, soloLogs, soloLogsKey, prevByEx) {
     : ex.notes ? `<button type="button" class="tr-video" onclick="trOpenInfo('${ex.id}')">${icon('info', 20)}Ver indicaciones</button>` : '<span></span>';
   const meta = [ex.sets ? `${ex.sets} ${ex.sets === 1 ? 'serie' : 'series'}` : '', trRepsText(ex.reps_range), ex.rest_seconds ? `${ex.rest_seconds} s descanso` : ''].filter(Boolean).join(' · ');
   let hasPrev = false, rows = '';
-  for (let s = 1; s <= ex.sets; s++) {
+  const extra = trExtra(ex.id), total = ex.sets + extra;
+  for (let s = 1; s <= total; s++) {
+    const isExtra = s > ex.sets;
     const saved = soloLogs[`${ex.id}_s${s}`] || {};
     const wVal = saved.w || '', rVal = saved.r || '';
     const prev = prevByEx[ex.id]?.[s];
     const pw = prev?.weight != null && prev.weight !== '', pr = prev?.reps != null && prev.reps !== '';
     if (pw || pr) hasPrev = true;
     const st = trInputState(wVal, rVal);
-    rows += `<div class="tr-set">
-      <span class="tr-set-n">Set ${s}</span>
+    rows += `<div class="tr-set${isExtra ? ' is-extra' : ''}">
+      <span class="tr-set-n">Set ${s}${isExtra ? '<span class="tr-extra-tag">Extra</span>' : ''}</span>
       <span class="tr-in-wrap"><input type="text" inputmode="decimal" autocomplete="off" class="tr-in${pw ? ' has-prev' : ''}${st}" id="slog-w-${ex.id}-s${s}" placeholder="${pw ? escHtml(String(prev.weight)) : unit}" value="${escHtml(String(wVal))}" aria-label="Set ${s}, ${unit}" oninput="exxManualEdit('${ex.id}',${s})" onchange="saveSoloLog('${ex.id}',${s},'${soloLogsKey}')"><span class="exx-auto" id="exx-auto-${ex.id}-s${s}" ${exxIsAuto(ex.id, s) ? '' : 'hidden'}>auto</span></span>
       <input type="text" inputmode="numeric" autocomplete="off" class="tr-in${pr ? ' has-prev' : ''}${st}" id="slog-r-${ex.id}-s${s}" placeholder="${pr ? escHtml(String(prev.reps)) : 'reps'}" value="${escHtml(String(rVal))}" aria-label="Set ${s}, reps" onchange="saveSoloLog('${ex.id}',${s},'${soloLogsKey}')">
+      ${isExtra ? `<button type="button" class="tr-x" aria-label="Quitar set ${s}" onclick="trRemoveExtraSet('${ex.id}',${s})">${TR_X_SVG}</button>` : extra ? '<span class="tr-x-space" aria-hidden="true"></span>' : ''}
     </div>`;
   }
   return `${chips ? `<div class="tr-chips">${chips}</div>` : ''}
@@ -7588,8 +7640,9 @@ function trSoloBody(ex, soloLogs, soloLogsKey, prevByEx) {
     ${ex.rpe ? `<div class="tr-rpe-row">${renderRpe(ex.rpe, 'lg')}</div>` : ''}
     <div id="exx-load-${ex.id}">${exxLastLoadHtml(ex)}</div>
     <div class="tr-sets">${rows}</div>
+    ${extra < TR_EXTRA_MAX ? `<button type="button" class="tr-add" id="tr-add-${ex.id}" onclick="trAddExtraSet('${ex.id}')">${icon('plus', 18)}Agregar serie</button>` : ''}
     ${hasPrev ? '<p class="tr-help">En gris: lo que hiciste la sesión pasada. Escribí tus números de hoy.</p>' : ''}
-    <button type="button" class="tr-save" onclick="saveSoloToSupabase('${ex.id}','${soloLogsKey}',${ex.sets})">Guardar${TR_CHECK_SVG}</button>
+    <button type="button" class="tr-save" onclick="saveSoloToSupabase('${ex.id}','${soloLogsKey}',${total})">Guardar${TR_CHECK_SVG}</button>
     <div class="tr-actions">${exxNotesLinkHtml(ex)}<span class="tr-act-sep" aria-hidden="true"></span><span id="exx-assist-${ex.id}" class="tr-act-slot">${exxAssistBtnHtml(ex)}</span></div>`;
 }
 // ---- Circuito por rondas (pantalla 16) ----
@@ -7622,13 +7675,15 @@ function trRSSave(group) {
 // Estado de cada ronda: con el Modo Timer manda el timer; sin él, lo que marcó el cliente
 function trRoundInfo(group, r) {
   const st = trRS(group), ts = circuitTimerState[group];
-  if (ts && ts.mode === 'timer') {
+  const timerOn = !!(ts && ts.mode === 'timer');
+  const planned = trCircuitMeta[group]?.base || 0; // el timer solo cuenta las rondas del plan
+  if (timerOn && r <= planned) {
     if (ts.phase === 'done' || r < ts.round || (r === ts.round && ts.phase === 'rest')) return { state: 'done', text: 'Lista' };
     if (r === ts.round) return { state: 'cur', text: 'En curso' };
     if (ts.phase === 'rest' && r === ts.round + 1) return { state: 'todo', text: 'Siguiente' };
   }
   if (st.done.includes(r)) return { state: 'done', text: 'Lista' };
-  if (r === st.sel && !(ts && ts.mode === 'timer')) return { state: 'cur', text: 'En curso' };
+  if (r === st.sel && (!timerOn || r > planned)) return { state: 'cur', text: 'En curso' };
   return { state: 'todo', text: 'Pendiente' };
 }
 function trRoundSelHtml(group) {
@@ -7673,7 +7728,46 @@ function trRefreshCircuit(group, focusSel) {
       btn.disabled = !!b.disabled;
     }
   }
+  const add = document.getElementById(`tr-radd-${group}`);
+  if (add) add.hidden = !!(ts && ts.mode === 'timer' && ts.phase !== 'done'); // con el timer andando, después de "Circuito completo"
   if (focusSel) sel?.querySelector('[aria-checked="true"]')?.focus();
+}
+function trRerenderCircuit(group) {
+  const meta = trCircuitMeta[group], body = document.getElementById(`acc-body-circuit-${group}`);
+  if (!meta || !body) return;
+  const g = meta.exs, restSecs = g[0].rest_seconds || 60;
+  const restText = restSecs >= 60 ? `${Math.floor(restSecs/60)}min${restSecs%60>0?' '+restSecs%60+'s':''}` : `${restSecs}s`;
+  const mixedTimed = isMixedTimerCircuit(g) ? new Set(g.filter(se => isTimedPrescription(se.reps_range)).map(se => se.id)) : null;
+  body.innerHTML = trCircuitBody(g, group, meta.base, restText, exxReadLS(meta.logsKey), meta.logsKey, prevWeekLogsCache, mixedTimed);
+  const panel = document.getElementById('timer-panel-' + group);
+  if (panel) panel.dataset.key = '';
+  renderCircuitTimerUI(group);
+  trRefreshCircuit(group);
+}
+function trAddExtraRound(group) {
+  const meta = trCircuitMeta[group], n = trExtra('c:' + group);
+  if (!meta || n >= TR_EXTRA_MAX) return;
+  trExtraSet('c:' + group, n + 1);
+  const st = trRS(group);
+  st.sel = meta.base + n + 1; // queda elegida la ronda nueva
+  meta.rounds = st.sel;
+  trRSSave(group);
+  trRerenderCircuit(group);
+  document.getElementById(`clog-w-${meta.exs[0].id}-r${st.sel}`)?.focus();
+}
+function trRemoveExtraRound(group, r) {
+  const meta = trCircuitMeta[group], n = trExtra('c:' + group);
+  if (!meta || !n || r <= meta.base) return;
+  const total = meta.base + n;
+  trShiftDraft(meta.logsKey, meta.exs.map(e => e.id), 'r', r, total);
+  trExtraSet('c:' + group, n - 1);
+  const st = trRS(group);
+  st.done = st.done.filter(x => x !== r).map(x => (x > r ? x - 1 : x));
+  if (st.sel >= r) st.sel = Math.max(1, st.sel - 1);
+  meta.rounds = total - 1;
+  trRSSave(group);
+  trRerenderCircuit(group);
+  document.getElementById(`tr-radd-${group}`)?.focus();
 }
 function trSelectRound(group, r, focus) {
   const st = trRS(group);
@@ -7753,14 +7847,15 @@ function trNotesFor(exId) {
 // Cuerpo del circuito abierto. Mismos ids de casillas (clog-w/r-<ej>-r<n>) y mismo borrador local.
 function trCircuitBody(g, group, rounds, restText, circuitLogs, logsKey, prevByEx, mixedTimed) {
   const ref = `${g[0].plan_day_id}:${group}`;
-  trCircuitMeta[group] = { name: `Circuito ${group}`, exs: g, rounds, logsKey, ref };
+  const extra = trExtra('c:' + group), total = rounds + extra; // rounds = las del plan; total = con las extra
+  trCircuitMeta[group] = { name: `Circuito ${group}`, exs: g, rounds: total, base: rounds, logsKey, ref };
   g.forEach(se => { trExMap[se.id] = se; });
   const exIds = g.map(se => se.id);
   const unit = circuitUnitFor(group, exIds);
   trUnitShown['c:' + group] = unit;
   const st = trRS(group);
   let lists = '';
-  for (let r = 1; r <= rounds; r++) {
+  for (let r = 1; r <= total; r++) {
     const rows = g.map(se => {
       const saved = circuitLogs[`${se.id}_r${r}`] || {};
       const wVal = saved.w || '', rVal = saved.r || '';
@@ -7783,7 +7878,8 @@ function trCircuitBody(g, group, rounds, restText, circuitLogs, logsKey, prevByE
         </div>
       </div>`;
     }).join('');
-    lists += `<div class="tr-rlist" id="tr-rlist-${group}-${r}" role="group" aria-label="Ronda ${r}"${r !== st.sel ? ' hidden' : ''}>${rows}</div>`;
+    const extraHead = r > rounds ? `<div class="tr-rextra"><span class="tr-extra-tag">Ronda extra</span><button type="button" class="tr-x tr-x-txt" aria-label="Quitar ronda ${r}" onclick="trRemoveExtraRound('${group}',${r})">${TR_X_SVG}<span aria-hidden="true">Quitar</span></button></div>` : '';
+    lists += `<div class="tr-rlist" id="tr-rlist-${group}-${r}" role="group" aria-label="Ronda ${r}${r > rounds ? ', extra' : ''}"${r !== st.sel ? ' hidden' : ''}>${extraHead}${rows}</div>`;
   }
   const hasPrev = g.some(se => Object.values(prevByEx[se.id] || {}).some(p => p && ((p.weight != null && p.weight !== '') || (p.reps != null && p.reps !== ''))));
   const notes = g[0].circuit_notes;
@@ -7799,11 +7895,12 @@ function trCircuitBody(g, group, rounds, restText, circuitLogs, logsKey, prevByE
       </button>
       <div class="tr-restrow" id="tr-restrow-${group}" hidden></div>
     </div>
-    ${rounds > 1 ? `<div class="tr-rsel" role="radiogroup" aria-label="Elegí la ronda" id="tr-rsel-${group}">${trRoundSelHtml(group)}</div>` : ''}
+    ${total > 1 ? `<div class="tr-rsel" role="radiogroup" aria-label="Elegí la ronda" id="tr-rsel-${group}">${trRoundSelHtml(group)}</div>` : ''}
     <div id="timer-panel-${group}" class="tr-tpanel" style="display:none;"></div>
     <div id="tr-rlists-${group}">
       <div class="tr-rhead" aria-hidden="true"><span id="tr-rhead-u-${group}">${unit.toUpperCase()}</span><span>REPS</span></div>
       ${lists}
+      ${extra < TR_EXTRA_MAX ? `<button type="button" class="tr-add" id="tr-radd-${group}" onclick="trAddExtraRound('${group}')">${icon('plus', 18)}Agregar ronda</button>` : ''}
       ${hasPrev ? '<p class="tr-help">En gris: lo que hiciste la sesión pasada. Escribí tus números de hoy.</p>' : ''}
     </div>
     <div class="tr-actions"><button type="button" class="tr-act" onclick="trOpenCircuitNotes('${ref}')"><span class="tr-act-ico-miel">${icon('pencil', 16)}</span><span>Notas</span></button><span class="tr-act-sep" aria-hidden="true"></span><span id="exx-cassist-${ref}" class="tr-act-slot">${exxCircuitAssistBtnHtml(ref)}</span></div>
