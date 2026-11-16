@@ -1749,6 +1749,52 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 .tr-dark .tr-card .exx-last-total { color:#FBF6EF; }
 .tr-dark .tr-card .exx-last [style*="gray5"] { color:#A89C8D !important; }
 .tr-dark .tr-card .exx-link-btn { color:#F08A4B; }
+/* Circuito por rondas */
+.tr-csub { margin-top:4px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.tr-cnotes { margin-top:10px; padding:8px 10px; border-radius:10px; background:#1B1713; font-size:13px; line-height:1.45; color:#CFC6BA; white-space:pre-wrap; }
+.tr-tbox { margin-top:12px; background:#1B1713; border:1px solid #3A3027; border-radius:14px; padding:4px 14px; }
+.tr-tbox.is-on { border-color:rgba(245,184,61,0.5); }
+.tr-switch-row { appearance:none; -webkit-appearance:none; width:100%; min-height:44px; margin:0; padding:0; border:0; background:none; color:#FBF6EF; display:flex; align-items:center; justify-content:space-between; gap:10px; font:700 15px 'DM Sans',sans-serif; cursor:pointer; text-align:left; }
+.tr-switch-lbl { display:inline-flex; align-items:center; gap:10px; }
+.tr-switch { flex:none; position:relative; display:inline-block; width:46px; height:26px; border-radius:999px; background:#3A3027; }
+.tr-knob { position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#CFC6BA; transition:left .15s ease; }
+.tr-switch-row[aria-checked="true"] .tr-switch { background:#F5B83D; }
+.tr-switch-row[aria-checked="true"] .tr-knob { left:23px; background:#14110E; }
+.tr-restrow { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0 10px; border-top:1px solid #332A22; font-size:14px; color:#CFC6BA; }
+.tr-restrow[hidden] { display:none; }
+.tr-restrow-in { display:inline-flex; align-items:center; gap:8px; font-family:'DM Mono',monospace; font-size:13px; color:#A89C8D; }
+.tr-restrow input { box-sizing:border-box; width:64px; height:38px; margin:0; border:1px solid #3A3027; border-radius:10px; background:#14110E; color:#FBF6EF; text-align:center; font-family:'DM Mono',monospace; font-size:16px; outline:none; -webkit-appearance:none; appearance:none; }
+.tr-restrow input:focus { border-color:#F5B83D; }
+.tr-restrow input:disabled { opacity:.45; }
+.tr-rsel { margin-top:12px; display:flex; flex-wrap:wrap; gap:10px; }
+.tr-rbtn { appearance:none; -webkit-appearance:none; flex:1 1 100px; min-width:0; box-sizing:border-box; height:52px; margin:0; padding:0 12px; border-radius:14px; background:#1B1713; border:1px solid #3A3027; color:#CFC6BA; display:flex; align-items:center; gap:10px; cursor:pointer; text-align:left; font-family:'DM Sans',sans-serif; }
+.tr-rbtn.is-sel { background:rgba(245,184,61,0.14); border:1.5px solid #F5B83D; color:#FBF6EF; }
+.tr-rbtn-txt { display:block; min-width:0; }
+.tr-rbtn-n { display:block; font-size:15px; font-weight:700; white-space:nowrap; }
+.tr-rbtn-s { display:block; margin-top:1px; font-family:'DM Mono',monospace; font-size:11px; color:#A89C8D; white-space:nowrap; }
+.tr-rbtn.is-sel .tr-rbtn-s, .tr-rbtn.is-done .tr-rbtn-s { color:#F5B83D; }
+#c-exercises-list [id^="tr-rlists-"][hidden], .tr-rlist[hidden] { display:none; }
+.tr-rhead { margin-top:14px; display:flex; justify-content:flex-end; gap:8px; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1px; color:#A89C8D; }
+.tr-rhead span { width:62px; text-align:center; }
+.tr-cx { padding:8px 0; border-bottom:1px solid #332A22; }
+.tr-cx:last-child { border-bottom:0; }
+.tr-cx-name { appearance:none; -webkit-appearance:none; margin:0; padding:0; border:0; background:none; cursor:pointer; min-height:32px; display:inline-flex; align-items:center; gap:8px; color:#FBF6EF; font:600 15px 'DM Sans',sans-serif; text-align:left; line-height:1.25; }
+.tr-cx-name.is-plain { cursor:default; }
+.tr-play-sm { width:22px; height:22px; }
+.tr-play-sm svg { width:10px; height:10px; }
+.tr-cx-row { margin-top:4px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.tr-cx-meta { min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:5px; }
+.tr-cx-goal { font-family:'DM Mono',monospace; font-size:11px; color:#CFC6BA; }
+.tr-cx-ins { flex:none; display:flex; gap:8px; }
+.tr-in.tr-in-sm { flex:none; width:62px; height:40px; border-radius:10px; font-size:15px; }
+.tr-sticky { position:sticky; bottom:calc(84px + env(safe-area-inset-bottom, 0px)); z-index:5; margin:6px -16px -16px; padding:14px 16px 16px; border-radius:0 0 20px 20px; background:linear-gradient(180deg, rgba(38,32,26,0) 0%, #26201A 38%); }
+.tr-sticky[hidden] { display:none; }
+#screen-client-home.ck-on .tr-sticky { bottom:calc(150px + env(safe-area-inset-bottom, 0px)); }
+.tr-cbtn { width:100%; height:56px; border:0; border-radius:16px; background:#C24E18; color:#FFFFFF; font:700 17px 'DM Sans',sans-serif; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; padding:0 12px; text-align:center; }
+.tr-cbtn:disabled { opacity:.5; cursor:default; }
+#screen-client-home.tr-cfab .hoy-fab { bottom:160px !important; }
+#screen-client-home.tr-cfab.ck-on .hoy-fab { bottom:226px !important; }
+@media (prefers-reduced-motion:reduce) { .tr-knob { transition:none; } }
 </style>
 </head>
 <body>
@@ -5200,6 +5246,7 @@ function finishMixTimer(group, secs) {
   if (input) {
     input.value = String(secs);
     saveCircuitLog(run.exId, round, data.logsKey); // borrador local, igual que si lo escribiera a mano
+    if (input.classList.contains('tr-in')) input.classList.add('is-filled'); else
     input.style.borderColor = 'var(--green)'; input.style.background = 'var(--green-light)'; input.style.color = '#1E7A3C'; input.style.fontWeight = '700';
   }
   (state.mixSaved = state.mixSaved || {})[`${round}:${run.exId}`] = secs;
@@ -5263,12 +5310,17 @@ function renderCircuitTimerUI(group) {
   const state = circuitTimerState[group];
   const data = circuitTimerData[group];
   const checkbox = document.getElementById('timer-toggle-' + group);
-  if(checkbox) checkbox.checked = !!(state && state.mode === 'timer');
+  if(checkbox && checkbox.type === 'checkbox') checkbox.checked = !!(state && state.mode === 'timer');
+  else if(checkbox) { // entreno oscuro: interruptor role="switch"
+    checkbox.setAttribute('aria-checked', String(!!(state && state.mode === 'timer')));
+    document.getElementById('tr-tbox-' + group)?.classList.toggle('is-on', !!(state && state.mode === 'timer'));
+  }
 
   if(!state || state.mode !== 'timer' || !data) {
     container.style.display = 'none';
     container.innerHTML = '';
     saveCircuitTimers(); // al apagar el Modo Timer se borra lo guardado
+    if (trDarkOn()) { const rr = document.getElementById('tr-restrow-' + group); if (rr) { rr.hidden = true; rr.innerHTML = ''; } trRefreshCircuit(group); }
     return;
   }
   container.style.display = 'block';
@@ -5323,6 +5375,7 @@ function renderCircuitTimerUI(group) {
 
   container.innerHTML = `<div style="background:var(--gray1);border-radius:12px;">${inner}</div>`;
   saveCircuitTimers();
+  if (trDarkOn()) trRefreshCircuit(group);
 }
 
 function syncCircuitTimerPanels(groups) {
@@ -5717,7 +5770,8 @@ async function loadClientExercises() {
         </div>`;
       if (trDark) {
         exHtml += `<!--tl-item:${tlState(circuitItemKey, circuitDone)}--><div class="fade-up">${trCardHtml({ key: circuitItemKey, circuit: true, name: `Circuito ${ex.superset_group}`, open: circuitOpen, done: circuitDone,
-          saved: circuitDone ? trSavedText(g.map(se => se.id), rounds, circuitLogs, 'r', 'ronda', 'rondas') : '', body: circuitBodyOld })}</div>`;
+          saved: circuitDone ? trSavedText(g.map(se => se.id), rounds, circuitLogs, 'r', 'ronda', 'rondas') : '',
+          body: trCircuitBody(g, ex.superset_group, rounds, restText, circuitLogs, circuitLogsKey, prevByEx, mixedTimed) })}</div>`;
       } else {
       exHtml += `<!--tl-item:${tlState(circuitItemKey, circuitDone)}--><div class="fade-up" style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;border-left:3px solid var(--orange);${circuitDone?'opacity:0.85;':''}">
         <div onclick="toggleAccordionItem('${circuitItemKey}')" style="padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;">
@@ -5848,6 +5902,7 @@ async function loadClientExercises() {
 
   // Re-sync any running Circuit Timer panels after the DOM was rebuilt
   syncCircuitTimerPanels([...renderedGroups]);
+  if (trDark) { renderedGroups.forEach(gr => trRefreshCircuit(gr)); trSyncFab(); }
 
   // Update home timer badge if workout started
   if(workoutStarted) updateHomeBadge();
@@ -5892,6 +5947,7 @@ function toggleAccordionItem(key) {
   document.getElementById(`acc-card-${key}`)?.classList.toggle('is-open', willOpen);
   document.getElementById(`acc-head-${key}`)?.setAttribute('aria-expanded', String(willOpen));
   accordionOverrides.set(key, willOpen);
+  trSyncFab();
 }
 
 // ===== WAKE LOCK — mantiene la pantalla encendida durante el entreno =====
@@ -7489,6 +7545,223 @@ function trSoloBody(ex, soloLogs, soloLogsKey, prevByEx) {
     ${hasPrev ? '<p class="tr-help">En gris: lo que hiciste la sesión pasada. Escribí tus números de hoy.</p>' : ''}
     <button type="button" class="tr-save" onclick="saveSoloToSupabase('${ex.id}','${soloLogsKey}',${ex.sets})">Guardar${TR_CHECK_SVG}</button>
     <div class="tr-actions">${exxNotesLinkHtml(ex)}<span class="tr-act-sep" aria-hidden="true"></span><span id="exx-assist-${ex.id}" class="tr-act-slot">${exxAssistBtnHtml(ex)}</span></div>`;
+}
+// ---- Circuito por rondas (pantalla 16) ----
+// Una ronda a la vez; todas las rondas quedan en el DOM (las otras con hidden), así cambiar de ronda
+// no pierde nada. "Terminé la ronda" es solo estado de la interfaz: lo único que escribe en la base
+// sigue siendo saveCircuitToSupabase, igual que antes.
+const trCircuitMeta = {};   // grupo → { name, exs, rounds, logsKey, ref }
+const trRoundState = {};    // "<día>|<grupo>" → { sel, done:[] }
+function trRoundsLSKey() { return currentClient ? `mws_rounds_${exxDayKey()}` : null; }
+function trRS(group) {
+  const meta = trCircuitMeta[group];
+  const rounds = meta ? meta.rounds : 1;
+  const k = (currentClient ? exxDayKey() : '') + '|' + group;
+  let st = trRoundState[k];
+  if (!st) {
+    const saved = (trRoundsLSKey() ? exxReadLS(trRoundsLSKey()) : {})[group] || {};
+    st = trRoundState[k] = { sel: saved.sel || 0, done: Array.isArray(saved.done) ? saved.done.filter(n => n >= 1 && n <= rounds) : [] };
+    if (!st.sel) { st.sel = 1; while (st.sel < rounds && st.done.includes(st.sel)) st.sel++; }
+  }
+  st.sel = Math.min(Math.max(1, st.sel), rounds);
+  return st;
+}
+function trRSSave(group) {
+  const key = trRoundsLSKey();
+  if (!key) return;
+  const all = exxReadLS(key), st = trRS(group);
+  all[group] = { sel: st.sel, done: st.done };
+  exxWriteLS(key, all);
+}
+// Estado de cada ronda: con el Modo Timer manda el timer; sin él, lo que marcó el cliente
+function trRoundInfo(group, r) {
+  const st = trRS(group), ts = circuitTimerState[group];
+  if (ts && ts.mode === 'timer') {
+    if (ts.phase === 'done' || r < ts.round || (r === ts.round && ts.phase === 'rest')) return { state: 'done', text: 'Lista' };
+    if (r === ts.round) return { state: 'cur', text: 'En curso' };
+    if (ts.phase === 'rest' && r === ts.round + 1) return { state: 'todo', text: 'Siguiente' };
+  }
+  if (st.done.includes(r)) return { state: 'done', text: 'Lista' };
+  if (r === st.sel && !(ts && ts.mode === 'timer')) return { state: 'cur', text: 'En curso' };
+  return { state: 'todo', text: 'Pendiente' };
+}
+function trRoundSelHtml(group) {
+  const meta = trCircuitMeta[group], st = trRS(group);
+  let out = '';
+  for (let r = 1; r <= meta.rounds; r++) {
+    const info = trRoundInfo(group, r), sel = r === st.sel;
+    out += `<button type="button" role="radio" aria-checked="${sel}" tabindex="${sel ? 0 : -1}" class="tr-rbtn${sel ? ' is-sel' : ''}${info.state === 'done' ? ' is-done' : ''}" data-round="${r}" aria-label="Ronda ${r}, ${info.text}" onclick="trSelectRound('${group}',${r})" onkeydown="trRoundKey(event,'${group}')">
+      ${trHexBox(info.state, 26)}<span class="tr-rbtn-txt"><span class="tr-rbtn-n">Ronda ${r}</span><span class="tr-rbtn-s">${info.text}</span></span></button>`;
+  }
+  return out;
+}
+// Botón inferior: "Terminé la ronda n" en las intermedias, "Guardar circuito X" en la última
+function trCircuitBtn(group) {
+  const meta = trCircuitMeta[group], st = trRS(group), ts = circuitTimerState[group];
+  const letter = group;
+  if (ts && ts.mode === 'timer') {
+    if (ts.phase === 'reps') return { text: `Terminé la ronda ${ts.round}`, act: 'timer', next: true, disabled: !!ts.mixRun };
+    if (ts.phase === 'done') return { text: `Guardar circuito ${letter}`, act: 'save' };
+    return null; // en descanso, trabajo o listo para arrancar: sin botón inferior
+  }
+  if (meta.rounds === 1 || st.sel >= meta.rounds) return { text: `Guardar circuito ${letter}`, act: 'save' };
+  return { text: `Terminé la ronda ${st.sel}`, act: 'next', next: true };
+}
+const TR_ARROW_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+function trRefreshCircuit(group, focusSel) {
+  const meta = trCircuitMeta[group];
+  if (!meta || !document.getElementById(`tr-rlists-${group}`)) return;
+  const st = trRS(group), ts = circuitTimerState[group];
+  const sel = document.getElementById(`tr-rsel-${group}`);
+  if (sel) sel.innerHTML = trRoundSelHtml(group);
+  const resting = !!(ts && ts.mode === 'timer' && ts.phase === 'rest');
+  document.getElementById(`tr-rlists-${group}`).hidden = resting;
+  for (let r = 1; r <= meta.rounds; r++) { const l = document.getElementById(`tr-rlist-${group}-${r}`); if (l) l.hidden = r !== st.sel; }
+  const wrap = document.getElementById(`tr-cbtn-wrap-${group}`), btn = document.getElementById(`tr-cbtn-${group}`);
+  const b = trCircuitBtn(group);
+  if (wrap && btn) {
+    wrap.hidden = !b;
+    if (b) {
+      btn.innerHTML = escHtml(b.text) + (b.next ? TR_ARROW_SVG : TR_CHECK_SVG);
+      btn.dataset.act = b.act;
+      btn.disabled = !!b.disabled;
+    }
+  }
+  if (focusSel) sel?.querySelector('[aria-checked="true"]')?.focus();
+}
+function trSelectRound(group, r, focus) {
+  const st = trRS(group);
+  st.sel = r;
+  trRSSave(group);
+  trRefreshCircuit(group, focus);
+}
+function trRoundKey(e, group) {
+  const meta = trCircuitMeta[group];
+  if (!meta) return;
+  const st = trRS(group);
+  let r = st.sel;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') r = r >= meta.rounds ? 1 : r + 1;
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') r = r <= 1 ? meta.rounds : r - 1;
+  else if (e.key === 'Home') r = 1;
+  else if (e.key === 'End') r = meta.rounds;
+  else return;
+  e.preventDefault();
+  trSelectRound(group, r, true);
+}
+function trCircuitMain(group) {
+  const meta = trCircuitMeta[group];
+  const btn = document.getElementById(`tr-cbtn-${group}`);
+  if (!meta || !btn || btn.disabled) return;
+  const act = btn.dataset.act;
+  if (act === 'save') { saveCircuitToSupabase(group, meta.logsKey, meta.exs.map(e => e.id), meta.rounds); return; }
+  if (act === 'timer') { finishCircuitRoundManual(group); return; }
+  // Modo manual: la ronda queda lista y pasa a la siguiente pendiente (no escribe en la base)
+  const st = trRS(group);
+  if (!st.done.includes(st.sel)) st.done.push(st.sel);
+  let next = st.sel + 1;
+  while (next < meta.rounds && st.done.includes(next)) next++;
+  st.sel = Math.min(next, meta.rounds);
+  trRSSave(group);
+  trRefreshCircuit(group);
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.getElementById(`tr-rsel-${group}`)?.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
+}
+// Botones flotantes (cronómetro, ?, WhatsApp) suben mientras haya un circuito abierto, para no tapar su botón
+function trSyncFab() {
+  const screen = document.getElementById('screen-client-home');
+  if (screen) screen.classList.toggle('tr-cfab', trDarkOn() && !!document.querySelector('#c-exercises-list .tr-circuit.is-open'));
+}
+// Notas del circuito: se elige el ejercicio y se usan sus notas de siempre (exercise_notes, sin tabla nueva)
+function trOpenCircuitNotes(ref) {
+  const c = exxState.circuits?.[ref];
+  if (!c || !currentClient) return;
+  if (c.exercises.length === 1) { trNotesFor(c.exercises[0].id); return; }
+  document.getElementById('tr-cnotes-sheet')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'tr-cnotes-sheet';
+  ov.className = 'modal-overlay open exx-sheet';
+  ov.onclick = (ev) => { if (ev.target === ov) ov.remove(); };
+  ov.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="tr-cnotes-title">
+      <div class="exx-head">
+        <div><h2 class="exx-h" id="tr-cnotes-title">Notas</h2><div class="exx-sub">${escHtml(c.name)}</div></div>
+        <button type="button" class="exx-icon-btn" aria-label="Cerrar" onclick="document.getElementById('tr-cnotes-sheet')?.remove()">${icon('x', 22)}</button>
+      </div>
+      <div class="exx-stack">
+        <span class="exx-label" id="tr-cnotes-label">¿De qué ejercicio?</span>
+        <div class="exx-reasons" role="group" aria-labelledby="tr-cnotes-label">
+          ${c.exercises.map(e => `<button type="button" class="exx-reason" onclick="trNotesFor('${e.id}')">${escHtml(e.name)}</button>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  ov.querySelector('.exx-reason')?.focus();
+}
+function trNotesFor(exId) {
+  const ex = trExMap[exId];
+  if (!ex) return;
+  if (!exxState.exById[exId]) exxState.exById[exId] = ex;
+  document.getElementById('tr-cnotes-sheet')?.remove();
+  openExxSheet(exId, 'notes');
+}
+// Cuerpo del circuito abierto. Mismos ids de casillas (clog-w/r-<ej>-r<n>) y mismo borrador local.
+function trCircuitBody(g, group, rounds, restText, circuitLogs, logsKey, prevByEx, mixedTimed) {
+  const ref = `${g[0].plan_day_id}:${group}`;
+  trCircuitMeta[group] = { name: `Circuito ${group}`, exs: g, rounds, logsKey, ref };
+  g.forEach(se => { trExMap[se.id] = se; });
+  const exIds = g.map(se => se.id);
+  const unit = circuitUnitFor(group, exIds);
+  trUnitShown['c:' + group] = unit;
+  const st = trRS(group);
+  let lists = '';
+  for (let r = 1; r <= rounds; r++) {
+    const rows = g.map(se => {
+      const saved = circuitLogs[`${se.id}_r${r}`] || {};
+      const wVal = saved.w || '', rVal = saved.r || '';
+      const prev = prevByEx[se.id]?.[r];
+      const pw = prev?.weight != null && prev.weight !== '', pr = prev?.reps != null && prev.reps !== '';
+      const timed = !!(mixedTimed && mixedTimed.has(se.id));
+      const stc = trInputState(wVal, rVal);
+      const name = se.name || '';
+      const nameEl = se.video_url
+        ? `<button type="button" class="tr-cx-name" onclick="trOpenInfo('${se.id}')"><span class="tr-play tr-play-sm" aria-hidden="true">${TR_PLAY_SVG}</span><span>${escHtml(name)}</span></button>`
+        : se.notes ? `<button type="button" class="tr-cx-name" onclick="trOpenInfo('${se.id}')"><span>${escHtml(name)}</span></button>` : `<span class="tr-cx-name is-plain">${escHtml(name)}</span>`;
+      return `<div class="tr-cx">
+        ${nameEl}
+        <div class="tr-cx-row">
+          <div class="tr-cx-meta">${se.reps_range ? `<span class="tr-cx-goal">${escHtml(trRepsText(se.reps_range))}</span>` : ''}${renderRpe(se.rpe, 'sm')}</div>
+          <div class="tr-cx-ins">
+            <input type="text" inputmode="decimal" autocomplete="off" class="tr-in tr-in-sm${pw ? ' has-prev' : ''}${stc}" id="clog-w-${se.id}-r${r}" placeholder="${pw ? escHtml(String(prev.weight)) : unit}" value="${escHtml(String(wVal))}" aria-label="Ronda ${r}, ${escHtml(name)}, ${unit}" onchange="saveCircuitLog('${se.id}',${r},'${logsKey}')">
+            <input type="text" inputmode="numeric" autocomplete="off" class="tr-in tr-in-sm${pr ? ' has-prev' : ''}${stc}" id="clog-r-${se.id}-r${r}" placeholder="${pr ? escHtml(String(prev.reps)) : (timed ? 's' : 'reps')}" value="${escHtml(String(rVal))}" aria-label="Ronda ${r}, ${escHtml(name)}, ${timed ? 'segundos' : 'reps'}" onchange="saveCircuitLog('${se.id}',${r},'${logsKey}')">
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    lists += `<div class="tr-rlist" id="tr-rlist-${group}-${r}" role="group" aria-label="Ronda ${r}"${r !== st.sel ? ' hidden' : ''}>${rows}</div>`;
+  }
+  const hasPrev = g.some(se => Object.values(prevByEx[se.id] || {}).some(p => p && ((p.weight != null && p.weight !== '') || (p.reps != null && p.reps !== ''))));
+  const notes = g[0].circuit_notes;
+  return `<div class="tr-csub">
+      <div class="tr-meta" style="margin-top:0;">${rounds} ${rounds === 1 ? 'ronda' : 'rondas'} · ${escHtml(restText)} descanso</div>
+      ${trUnitBoxHtml(`unit-toggle-${group}`, unit, `Unidad de peso del circuito ${group}`, u => `setCircuitUnit('${group}','${u}',this)`)}
+    </div>
+    ${notes ? `<div class="tr-cnotes">${escHtml(notes)}</div>` : ''}
+    <div class="tr-tbox" id="tr-tbox-${group}">
+      <button type="button" role="switch" aria-checked="false" id="timer-toggle-${group}" class="tr-switch-row" onclick="toggleCircuitTimerMode('${group}')">
+        <span class="tr-switch-lbl"><span class="tr-act-ico-miel">${icon('timer', 20)}</span>Modo Timer</span>
+        <span class="tr-switch" aria-hidden="true"><span class="tr-knob"></span></span>
+      </button>
+      <div class="tr-restrow" id="tr-restrow-${group}" hidden></div>
+    </div>
+    ${rounds > 1 ? `<div class="tr-rsel" role="radiogroup" aria-label="Elegí la ronda" id="tr-rsel-${group}">${trRoundSelHtml(group)}</div>` : ''}
+    <div id="timer-panel-${group}" class="tr-tpanel" style="display:none;"></div>
+    <div id="tr-rlists-${group}">
+      <div class="tr-rhead" aria-hidden="true"><span id="tr-rhead-u-${group}">${unit.toUpperCase()}</span><span>REPS</span></div>
+      ${lists}
+      ${hasPrev ? '<p class="tr-help">En gris: lo que hiciste la sesión pasada. Escribí tus números de hoy.</p>' : ''}
+    </div>
+    <div class="tr-actions"><button type="button" class="tr-act" onclick="trOpenCircuitNotes('${ref}')"><span class="tr-act-ico-miel">${icon('pencil', 16)}</span><span>Notas</span></button><span class="tr-act-sep" aria-hidden="true"></span><span id="exx-cassist-${ref}" class="tr-act-slot">${exxCircuitAssistBtnHtml(ref)}</span></div>
+    <div class="tr-sticky" id="tr-cbtn-wrap-${group}"><button type="button" class="tr-cbtn" id="tr-cbtn-${group}" onclick="trCircuitMain('${group}')"></button></div>`;
 }
 const TR_PLAY_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="#FFFFFF" aria-hidden="true" focusable="false"><path d="M7 4l13 8-13 8z"/></svg>';
 const TR_CHECK_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5L20 7"/></svg>';
@@ -20122,6 +20395,7 @@ function saveCircuitLog(exId, round, logsKey) {
   const wEl = document.getElementById(`clog-w-${exId}-r${round}`);
   const rEl = document.getElementById(`clog-r-${exId}-r${round}`);
   const filled = w && r;
+  if(wEl?.classList.contains('tr-in')) { [wEl, rEl].forEach(el => el?.classList.toggle('is-filled', !!filled)); return; } // entreno oscuro: solo clase
   if(wEl){ wEl.style.borderColor = filled?'var(--green)':'var(--gray2)'; wEl.style.background = filled?'var(--green-light)':'var(--white)'; }
   if(rEl){ rEl.style.borderColor = filled?'var(--green)':'var(--gray2)'; rEl.style.background = filled?'var(--green-light)':'var(--white)'; }
 }
@@ -20130,7 +20404,7 @@ async function saveCircuitToSupabase(groupName, logsKey, exIds, rounds) {
   if(!currentClient) return;
   let logs = {};
   try { logs = JSON.parse(localStorage.getItem(logsKey)||'{}'); } catch{}
-  const weightUnit = currentWeightUnit;
+  const weightUnit = circuitUnitFor(groupName, exIds); // fuera del entreno oscuro es currentWeightUnit, como siempre
   const inserts = [];
   for(const exId of exIds){
     for(let r=1;r<=rounds;r++){
@@ -20152,6 +20426,18 @@ async function saveCircuitToSupabase(groupName, logsKey, exIds, rounds) {
 }
 
 function setCircuitUnit(groupName, unit, btn) {
+  if (trDarkOn()) {
+    // Entreno oscuro: una unidad para todo este circuito (no toca la de los demás)
+    trUnitSet('c:' + groupName, unit);
+    trPaintUnitBox(`unit-toggle-${groupName}`, unit);
+    (trCircuitMeta[groupName]?.exs || []).forEach(se => document.querySelectorAll(`[id^="clog-w-${se.id}-r"]`).forEach(inp => {
+      if (!inp.classList.contains('has-prev')) inp.placeholder = unit;
+      inp.setAttribute('aria-label', (inp.getAttribute('aria-label') || '').replace(/(kg|lb)$/, unit));
+    }));
+    const h = document.getElementById(`tr-rhead-u-${groupName}`);
+    if (h) h.textContent = unit.toUpperCase();
+    return;
+  }
   currentWeightUnit = unit;
   const container = document.getElementById(`unit-toggle-${groupName}`);
   if(container){
