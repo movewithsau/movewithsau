@@ -2029,7 +2029,8 @@ button.exx-pill { cursor:pointer; min-height:28px; }
     <div id="coach-training-panel"></div>
     <div class="section-header">
       <div class="section-title">Módulo Food</div>
-      <div class="section-action" onclick="openNutritionImportModal()" style="background:#f0fff4;color:#276749;border:1.5px solid #276749;padding:5px 10px;border-radius:6px;font-size:11px;display:inline-flex;align-items:center;gap:4px;"><svg class="ico" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-download"/></svg>Pegar Menú</div>
+      <div style="display:flex;gap:6px;"><div class="section-action" onclick="openNutritionImportModal()" style="background:#f0fff4;color:#276749;border:1.5px solid #276749;padding:5px 10px;border-radius:6px;font-size:11px;display:inline-flex;align-items:center;gap:4px;"><svg class="ico" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-download"/></svg>Pegar Menú</div>
+      <div class="section-action" onclick="nwExportMenu()" style="background:#fff;color:#A63E10;border:1.5px solid #A63E10;padding:5px 10px;border-radius:6px;font-size:11px;display:inline-flex;align-items:center;gap:4px;"><svg class="ico" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-download"/></svg>Exportar</div></div>
     </div>
     <div id="coach-food-panel"></div>
     <!-- CONTRACT SECTION (coach view) -->
@@ -14870,8 +14871,9 @@ async function loadFoodScreen() {
   window._clientNutritionDays = [];
   window._clientNutritionDay = window._clientNutritionDay || null;
   if ((currentClient.menu_mode||'estandar') === 'dinamico') {
-    const {data:ndays} = await sb.from('nutrition_plans').select('id,day_of_week,day_order').eq('client_id',currentClient.id).order('day_order',{ascending:true,nullsFirst:false}).order('id',{ascending:true});
-    window._clientNutritionDays = ndays || [];
+    const nw = await nwClientDays();
+    window._clientNutritionWeek = nw.week;
+    window._clientNutritionDays = nw.days;
     if (!window._clientNutritionDay || !window._clientNutritionDays.find(d=>d.day_of_week===window._clientNutritionDay))
       window._clientNutritionDay = window._clientNutritionDays[0]?.day_of_week || null;
   }
@@ -14968,7 +14970,7 @@ async function renderClientNutritionPlan() {
 
   // Day chips
   let html = '<div class="card food-card" style="margin-bottom:0;padding-bottom:14px;">';
-  html += '<div class="food-label" style="margin-bottom:10px;">Tu menú semanal</div>';
+  html += '<div class="food-label" style="margin-bottom:10px;">' + (window._clientNutritionWeek != null ? 'Tu menú · Semana ' + window._clientNutritionWeek : 'Tu menú semanal') + '</div>';
   html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">';
   days.forEach(d => {
     const active = d.day_of_week === window._clientNutritionDay;
@@ -15017,7 +15019,7 @@ function toggleClientProtocol(id) {
 async function buildClientMealList() {
   const el = document.getElementById('client-meal-list');
   if (!el || !window._clientNutritionDay) return;
-  const {data: pd} = await sb.from('nutrition_plans').select('id').eq('client_id', currentClient.id).eq('day_of_week', window._clientNutritionDay).maybeSingle();
+  const {data: pd} = await nwClientPd();
   if (!pd) { el.innerHTML = ''; return; }
   const {data: meals} = await sb.from('nutrition_meals').select('id,meal_slot,meal_order,target_kcal,target_proteina,target_carbs,target_grasas').eq('nutrition_plan_id', pd.id).order('meal_order', {ascending:true}).order('id', {ascending:true});
   if (!meals || meals.length === 0) { el.innerHTML = '<div style="font-size:12px;color:var(--gray4);text-align:center;padding:12px 0;">Sin comidas cargadas para este día.</div>'; return; }
@@ -15073,7 +15075,7 @@ async function buildClientMealList() {
 
 async function downloadNutritionPDF() {
   if (!window._clientNutritionDay) { showToast('Seleccioná un día primero', 'error'); return; }
-  const {data: pd} = await sb.from('nutrition_plans').select('id').eq('client_id', currentClient.id).eq('day_of_week', window._clientNutritionDay).maybeSingle();
+  const {data: pd} = await nwClientPd();
   if (!pd) { showToast('Sin plan para este día', 'error'); return; }
   const {data: meals} = await sb.from('nutrition_meals').select('id,meal_slot,target_kcal,target_proteina,target_carbs,target_grasas,meal_order').eq('nutrition_plan_id', pd.id).order('meal_order',{ascending:true});
   if (!meals||!meals.length) { showToast('Sin comidas cargadas', 'error'); return; }
@@ -15152,7 +15154,7 @@ async function downloadNutritionPDF() {
 
 async function shareMenuWhatsApp() {
   if (!window._clientNutritionDay) { showToast('Seleccioná un día primero', 'error'); return; }
-  const {data: pd} = await sb.from('nutrition_plans').select('id').eq('client_id', currentClient.id).eq('day_of_week', window._clientNutritionDay).maybeSingle();
+  const {data: pd} = await nwClientPd();
   if (!pd) { showToast('Sin plan para este día', 'error'); return; }
   const {data: meals} = await sb.from('nutrition_meals').select('id,meal_slot,meal_order').eq('nutrition_plan_id', pd.id).order('meal_order',{ascending:true});
   if (!meals||!meals.length) { showToast('Sin comidas cargadas', 'error'); return; }
@@ -15575,7 +15577,7 @@ async function loadCoachFoodPanel() {
     </div>
     ${(currentClient.menu_mode||'estandar')==='dinamico'?`
     <div class="card" style="margin-bottom:10px;">
-      <div class="notes-label" style="margin-bottom:8px;">Días del Menú</div>
+      <div class="notes-label" style="margin-bottom:8px;">Menú por semana</div>
       <div id="nutrition-day-strip"></div>
       <div id="nutrition-meal-list" style="margin-top:10px;"></div>
     </div>`:''}
@@ -16309,18 +16311,344 @@ async function addGuidelineFromLibrary(g) {
   buildGuidelinesList(currentClient.id);
 }
 
+// ===== MENÚ POR SEMANAS =====
+// nutrition_plans.week_number (migration_menu_weeks.sql): null = Base, N = semana N del entreno.
+// El cliente ve el menú de su semana actual (la misma del entreno) y, si esa semana no tiene
+// días cargados, la Base. Sin la columna todo sigue como antes (un solo menú).
+let nutritionBuilderWeek = null;
+let _nwClientId = null;
+let _nwHasCol = null;
+let _nwImportWeek = null;
+async function nwHasWeekCol() {
+  if (_nwHasCol === true) return true;
+  const {error} = await sb.from('nutrition_plans').select('week_number').limit(1);
+  _nwHasCol = !error;
+  return _nwHasCol;
+}
+function nwScope(q, week) {
+  if (!_nwHasCol) return q;
+  const w = week === undefined ? nutritionBuilderWeek : week;
+  return w == null ? q.is('week_number', null) : q.eq('week_number', w);
+}
+function nwRow(obj, week) {
+  if (_nwHasCol) obj.week_number = week === undefined ? nutritionBuilderWeek : week;
+  return obj;
+}
+function nwLabel(w) { return w == null ? 'Base' : 'Semana ' + w; }
+function nwTotalWeeks(maxUsed) { return Math.max(Number(currentClient?.total_weeks) || 12, maxUsed || 0); }
+// Map: semana (null = Base) → días [{id, day_of_week, day_order, week_number}]
+async function nwWeekMap() {
+  const cols = 'id,day_of_week,day_order' + (_nwHasCol ? ',week_number' : '');
+  const {data} = await sb.from('nutrition_plans').select(cols).eq('client_id', currentClient.id)
+    .order('day_order', {ascending: true, nullsFirst: false}).order('id', {ascending: true});
+  const m = new Map();
+  (data || []).forEach(r => { const k = _nwHasCol && r.week_number != null ? Number(r.week_number) : null; if (!m.has(k)) m.set(k, []); m.get(k).push(r); });
+  return m;
+}
+function nwWeekBar(wmap) {
+  const box = document.createElement('div');
+  if (!_nwHasCol) {
+    box.innerHTML = '<div style="font-size:11px;color:var(--gray5);margin-bottom:10px;">Para armar menús por semana falta correr <b>migration_menu_weeks.sql</b> en Supabase.</div>';
+    return box;
+  }
+  const used = [...wmap.keys()].filter(k => k != null);
+  const total = nwTotalWeeks(used.length ? Math.max(...used) : 0);
+  const cur = nutritionBuilderWeek;
+  const chip = (k) => {
+    const on = k === cur, has = (wmap.get(k) || []).length > 0;
+    return `<button type="button" aria-pressed="${on}" onclick="nwPickWeek(${k == null ? 'null' : k})"
+      style="min-width:40px;padding:6px 10px;border-radius:16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;
+      border:1.5px ${has || on ? 'solid' : 'dashed'} ${on ? '#C24E18' : has ? '#A63E10' : 'var(--gray3)'};
+      background:${on ? '#C24E18' : has ? '#F6E6DB' : 'transparent'};color:${on ? '#fff' : has ? '#A63E10' : 'var(--gray4)'};">${k == null ? 'Base' : 'S' + k}</button>`;
+  };
+  const hasCur = (wmap.get(cur) || []).length > 0;
+  const hint = cur == null
+    ? 'El cliente ve la Base en las semanas que no tienen menú propio.'
+    : hasCur ? 'El cliente ve este menú en la Semana ' + cur + ' del entreno.'
+             : 'Semana ' + cur + ' sin menú propio: el cliente ve la Base. Agregá un día o copiá otra semana acá.';
+  box.innerHTML = `
+    <div role="group" aria-label="Semana del menú" style="display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;margin-bottom:6px;">
+      ${[null, ...Array.from({length: total}, (_, i) => i + 1)].map(chip).join('')}
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+      <div style="flex:1;font-size:11px;color:var(--gray5);line-height:1.4;">${hint}</div>
+      ${hasCur ? `<button type="button" onclick="nwOpenCopy()" style="flex-shrink:0;padding:6px 12px;border-radius:8px;border:1.5px solid #A63E10;background:#fff;color:#A63E10;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Copiar a…</button>` : ''}
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--gray5);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">Días · ${nwLabel(cur)}</div>`;
+  return box;
+}
+function nwPickWeek(k) {
+  nutritionBuilderWeek = k;
+  nutritionBuilderDay = null;
+  buildNutritionDayStrip();
+}
+
+// --- Copiar una semana (o la Base) a otras semanas vacías ---
+async function nwOpenCopy() {
+  const wmap = await nwWeekMap();
+  const src = nutritionBuilderWeek;
+  const used = [...wmap.keys()].filter(k => k != null);
+  const total = nwTotalWeeks(used.length ? Math.max(...used) : 0);
+  const targets = [null, ...Array.from({length: total}, (_, i) => i + 1)].filter(k => k !== src);
+  const picked = new Set();
+  document.getElementById('nw-copy-sheet')?.remove();
+  const sheet = document.createElement('div');
+  sheet.id = 'nw-copy-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:600;display:flex;align-items:flex-end;justify-content:center;';
+  const render = () => {
+    sheet.innerHTML = `
+      <div role="dialog" aria-modal="true" aria-label="Copiar menú" style="background:var(--white);border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;max-width:480px;">
+        <div style="font-size:16px;font-weight:700;margin-bottom:4px;">Copiar ${nwLabel(src)}</div>
+        <div style="font-size:12px;color:var(--gray5);margin-bottom:14px;">Se copian sus días, comidas y opciones. Las semanas que ya tienen menú no se tocan; vacialas primero si querés reemplazarlas.</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;">
+          ${targets.map(k => {
+            const busy = (wmap.get(k) || []).length > 0, on = picked.has(k);
+            return `<button type="button" data-k="${k == null ? 'base' : k}" ${busy ? 'disabled' : ''} aria-pressed="${on}"
+              style="padding:7px 12px;border-radius:16px;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:${busy ? 'not-allowed' : 'pointer'};
+              border:1.5px solid ${on ? '#C24E18' : 'var(--gray2)'};background:${on ? '#C24E18' : busy ? 'var(--gray1)' : '#fff'};color:${on ? '#fff' : busy ? 'var(--gray3)' : 'var(--black)'};">
+              ${k == null ? 'Base' : 'S' + k}${busy ? ' · ya tiene' : ''}</button>`;
+          }).join('')}
+        </div>
+        <button type="button" id="nw-copy-go" class="btn-primary" style="padding:12px;margin-bottom:10px;" ${picked.size ? '' : 'disabled'}>${picked.size ? 'Copiar a ' + picked.size + (picked.size === 1 ? ' semana' : ' semanas') : 'Elegí al menos una'}</button>
+        <button type="button" id="nw-copy-cancel" style="width:100%;padding:12px;border-radius:var(--radius-sm);background:var(--gray1);border:1.5px solid var(--gray2);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Cancelar</button>
+      </div>`;
+    sheet.querySelectorAll('[data-k]').forEach(b => b.onclick = () => {
+      const k = b.dataset.k === 'base' ? null : Number(b.dataset.k);
+      picked.has(k) ? picked.delete(k) : picked.add(k);
+      render();
+    });
+    sheet.querySelector('#nw-copy-cancel').onclick = () => sheet.remove();
+    sheet.querySelector('#nw-copy-go').onclick = async () => {
+      if (!picked.size) return;
+      sheet.remove();
+      showToast('Copiando menú…', 60000);
+      try {
+        for (const k of picked) await nwCopyDays(wmap.get(src) || [], k);
+        showToast(nwLabel(src) + ' copiada a ' + [...picked].map(nwLabel).join(', '), 'success');
+      } catch (e) { showToast('Error al copiar: ' + (e.message || e), 'error', 5000); }
+      await buildNutritionDayStrip();
+    };
+  };
+  sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  render();
+  document.body.appendChild(sheet);
+}
+const nwStrip = (row, drop) => { const o = {...row}; ['id', 'created_at', 'updated_at', ...drop].forEach(k => delete o[k]); return o; };
+async function nwCopyDays(days, week) {
+  for (const d of days) {
+    const {data: np, error: pe} = await sb.from('nutrition_plans')
+      .insert([nwRow({client_id: currentClient.id, day_of_week: d.day_of_week, day_order: d.day_order}, week)]).select().single();
+    if (pe) throw pe;
+    const {data: meals} = await sb.from('nutrition_meals').select('*').eq('nutrition_plan_id', d.id).order('meal_order', {ascending: true}).order('id', {ascending: true});
+    for (const m of (meals || [])) {
+      const {data: nm, error: me} = await sb.from('nutrition_meals').insert([{...nwStrip(m, ['nutrition_plan_id']), nutrition_plan_id: np.id}]).select().single();
+      if (me) throw me;
+      const {data: opts} = await sb.from('nutrition_meal_options').select('*').eq('nutrition_meal_id', m.id).order('order_index', {ascending: true});
+      if (opts && opts.length) {
+        const {error: oe} = await sb.from('nutrition_meal_options').insert(opts.map(o => ({...nwStrip(o, ['nutrition_meal_id']), nutrition_meal_id: nm.id})));
+        if (oe) throw oe;
+      }
+    }
+  }
+}
+
+// --- Renombrar un día también en las semanas siguientes ---
+async function nwOfferRenameLater(oldName, newName) {
+  if (!_nwHasCol || nutritionBuilderWeek == null) return;
+  const from = nutritionBuilderWeek;
+  const {data: later} = await sb.from('nutrition_plans').select('id,week_number,day_of_week').eq('client_id', currentClient.id).gt('week_number', from).in('day_of_week', [oldName, newName]);
+  const rows = later || [];
+  const clashWeeks = new Set(rows.filter(r => r.day_of_week === newName).map(r => r.week_number));
+  const todo = rows.filter(r => r.day_of_week === oldName && !clashWeeks.has(r.week_number));
+  if (!todo.length) return;
+  const weeks = [...new Set(todo.map(r => r.week_number))].sort((a, b) => a - b);
+  const ok = await appDialog({
+    title: '¿Renombrar también en las semanas siguientes?',
+    text: '"' + oldName + '" aparece en ' + weeks.map(w => 'S' + w).join(', ') + '. Se cambia a "' + newName + '" en esas semanas.' + (clashWeeks.size ? ' Las semanas que ya tienen un "' + newName + '" se dejan igual.' : ''),
+    okLabel: 'Sí, renombrar', cancelLabel: 'Solo esta semana'
+  });
+  if (!ok) return;
+  for (const r of todo) await sb.from('nutrition_plans').update({day_of_week: newName}).eq('id', r.id);
+  showToast('Renombrado en ' + weeks.length + (weeks.length === 1 ? ' semana más' : ' semanas más'), 'success');
+  await buildNutritionDayStrip();
+}
+
+// --- Cliente: menú de su semana del entreno, o la Base ---
+async function nwClientWeek() {
+  try { await loadAutoWeek(); } catch (e) {}
+  const a = clientAutoWeekInfo();
+  if (a) return a.state === 'active' && a.mapped ? Number(a.mapped.week) : null;
+  const hw = currentClient?.hidden_weeks || [];
+  if (hw.includes(clientWeek)) { const v = getVisibleWeeks(); if (v.length) return Number(v[0]); }
+  return Number(clientWeek) || 1;
+}
+async function nwClientDays() {
+  await nwHasWeekCol();
+  const q = () => sb.from('nutrition_plans').select('id,day_of_week,day_order').eq('client_id', currentClient.id);
+  const ord = x => x.order('day_order', {ascending: true, nullsFirst: false}).order('id', {ascending: true});
+  if (_nwHasCol) {
+    const w = await nwClientWeek();
+    if (w != null) {
+      const {data} = await ord(q().eq('week_number', w));
+      if (data && data.length) return {week: w, days: data};
+    }
+    const {data} = await ord(q().is('week_number', null));
+    return {week: null, days: data || []};
+  }
+  const {data} = await ord(q());
+  return {week: null, days: data || []};
+}
+function nwClientPd() {
+  const d = (window._clientNutritionDays || []).find(x => x.day_of_week === window._clientNutritionDay);
+  return Promise.resolve({data: d ? {id: d.id} : null});
+}
+
+// --- Exportar el menú completo (Base + semanas) ---
+async function nwDayGroups(days) {
+  const out = [];
+  for (const d of days) {
+    const {data: meals} = await sb.from('nutrition_meals').select('*').eq('nutrition_plan_id', d.id).order('meal_order', {ascending: true}).order('id', {ascending: true});
+    const ids = (meals || []).map(m => m.id);
+    const {data: opts} = ids.length ? await sb.from('nutrition_meal_options').select('*').in('nutrition_meal_id', ids).order('order_index', {ascending: true}) : {data: []};
+    out.push({
+      day_label: d.day_of_week, day_order: d.day_order,
+      meals: (meals || []).map(m => ({
+        meal_slot: m.meal_slot, meal_order: m.meal_order,
+        target: {kcal: m.target_kcal ?? null, proteina: m.target_proteina ?? null, carbs: m.target_carbs ?? null, grasas: m.target_grasas ?? null},
+        options: (opts || []).filter(o => o.nutrition_meal_id === m.id).map(o => ({title: o.title, kcal: o.kcal ?? null, proteina: o.proteina ?? null, carbs: o.carbs ?? null, grasas: o.grasas ?? null}))
+      }))
+    });
+  }
+  return out;
+}
+async function nwExportMenu() {
+  if (!currentClient) return;
+  await nwHasWeekCol();
+  const wmap = await nwWeekMap();
+  if (![...wmap.values()].some(v => v.length)) { showToast('Este cliente no tiene menú cargado', 'error'); return; }
+  showToast('Preparando menú…', 30000);
+  const weeks = [];
+  for (const k of [...wmap.keys()].filter(k => k != null).sort((a, b) => a - b)) weeks.push({week: k, day_groups: await nwDayGroups(wmap.get(k))});
+  const out = {type: 'nutrition', version: 2, client: currentClient.name || '', exported_at: todayCR(),
+    day_groups: await nwDayGroups(wmap.get(null) || []), weeks};
+  const json = JSON.stringify(out, null, 2);
+  try { await navigator.clipboard.writeText(json); showToast('Menú copiado y descargado', 'success'); }
+  catch (e) { showToast('Menú descargado', 'success'); }
+  const slug = (currentClient.name || 'cliente').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const url = URL.createObjectURL(new Blob([json], {type: 'application/json'}));
+  const a = document.createElement('a'); a.href = url; a.download = `menu-${slug}-${todayCR()}.json`; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// --- Pegar menú: a una semana (JSON de un menú) o desde la semana N (JSON exportado con "weeks") ---
+function nwImportWeekSelectHtml() {
+  if (!_nwHasCol) return '';
+  const total = nwTotalWeeks(0);
+  const cur = nutritionBuilderWeek;
+  const opts = [`<option value="" ${cur == null ? 'selected' : ''}>Base</option>`]
+    .concat(Array.from({length: total}, (_, i) => `<option value="${i + 1}" ${cur === i + 1 ? 'selected' : ''}>Semana ${i + 1}</option>`)).join('');
+  return `<label class="form-label" for="ni-week">Semana</label>
+    <select id="ni-week" class="form-input" style="font-size:13px;padding:9px 12px;margin-bottom:6px;">${opts}</select>
+    <div style="font-size:11px;color:var(--gray5);margin-bottom:12px;line-height:1.45;">Un menú normal se agrega a esa semana. Un menú exportado (con varias semanas) reemplaza desde esa semana en adelante y deja las anteriores como están; con «Base» reemplaza todo.</div>`;
+}
+// Días de menú (ids) que el cliente ya usó para registrar comidas: no se borran.
+async function nwLockedPlanIds(planIds) {
+  if (!planIds.length) return new Set();
+  const {data} = await sb.from('nutrition_logs').select('nutrition_plan_id').in('nutrition_plan_id', planIds).limit(5000);
+  return new Set((data || []).map(r => r.nutrition_plan_id));
+}
+async function nwReplaceTargets(from) {
+  const wmap = await nwWeekMap();
+  const out = [];
+  wmap.forEach((days, k) => { if (from == null || (k != null && k >= from)) days.forEach(d => out.push({...d, wk: k})); });
+  return out;
+}
+async function nwAnalyzeV2(parsed, from) {
+  if (!_nwHasCol) { showToast('Para pegar un menú por semanas falta correr migration_menu_weeks.sql', 'error', 5000); return; }
+  const weeks = (parsed.weeks || []).map(w => ({week: Number(w.week), day_groups: Array.isArray(w.day_groups) ? w.day_groups : []}))
+    .filter(w => w.week >= 1 && (from == null || w.week >= from)).sort((a, b) => a.week - b.week);
+  const base = from == null && Array.isArray(parsed.day_groups) ? parsed.day_groups : null;
+  const targets = await nwReplaceTargets(from);
+  const locked = await nwLockedPlanIds(targets.map(t => t.id));
+  if (locked.size) {
+    const lw = [...new Set(targets.filter(t => locked.has(t.id)).map(t => t.wk))].sort((a, b) => (a ?? 0) - (b ?? 0));
+    showToast('No se puede: ' + lw.map(nwLabel).join(', ') + ' ya tiene comidas registradas por el cliente. Elegí una semana posterior.', 'error', 7000);
+    return;
+  }
+  _nImport = {v2: true, from, weeks, base};
+  const n = gs => gs.reduce((a, g) => a + (g.meals || []).length, 0);
+  const rows = (base ? [{week: null, day_groups: base}] : []).concat(weeks);
+  document.getElementById('nutrition-import-body').innerHTML = `
+    <div style="font-size:13px;color:var(--gray5);margin-bottom:12px;line-height:1.5;">
+      ${from == null ? 'Se reemplaza <b>todo</b> el menú (Base y semanas).' : 'Se reemplaza desde la <b>Semana ' + from + '</b> en adelante. Las semanas anteriores y la Base quedan como están.'}
+      ${targets.length === 1 ? ' Se borra 1 día de menú que hoy existe en esas semanas.' : targets.length ? ' Se borran ' + targets.length + ' días de menú que hoy existen en esas semanas.' : ''}
+    </div>
+    ${rows.length ? rows.map(r => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--gray1);font-size:13px;">
+      <span style="font-weight:700;">${nwLabel(r.week)}</span><span style="color:var(--gray5);">${r.day_groups.length} ${r.day_groups.length === 1 ? 'día' : 'días'} · ${n(r.day_groups)} ${n(r.day_groups) === 1 ? 'comida' : 'comidas'}</span></div>`).join('')
+      : '<div style="font-size:12px;color:var(--gray4);">El JSON no trae semanas desde ahí: esas semanas quedan vacías y el cliente ve la Base.</div>'}
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button onclick="nwConfirmV2()" class="btn-primary" style="flex:1;padding:14px;">Reemplazar menú</button>
+      <button onclick="closeModal('modal-nutrition-import')" class="btn-secondary" style="flex:0.4;padding:14px;">Cancelar</button>
+    </div>`;
+}
+async function nwInsertGroups(groups, week) {
+  for (let di = 0; di < groups.length; di++) {
+    const dg = groups[di];
+    const {data: np, error: pe} = await sb.from('nutrition_plans')
+      .insert([nwRow({client_id: currentClient.id, day_of_week: dg.day_label, day_order: dg.day_order ?? di}, week)]).select().single();
+    if (pe) throw pe;
+    for (let mi = 0; mi < (dg.meals || []).length; mi++) {
+      const m = dg.meals[mi], t = m.target || {};
+      const {data: nm, error: me} = await sb.from('nutrition_meals').insert([{nutrition_plan_id: np.id, meal_slot: m.meal_slot, meal_order: m.meal_order ?? mi,
+        target_kcal: t.kcal ?? null, target_proteina: t.proteina ?? null, target_carbs: t.carbs ?? null, target_grasas: t.grasas ?? null}]).select().single();
+      if (me) throw me;
+      const opts = (m.options || []).map((o, oi) => ({nutrition_meal_id: nm.id, title: o.title || '', kcal: o.kcal ?? null, proteina: o.proteina ?? null, carbs: o.carbs ?? null, grasas: o.grasas ?? null, order_index: oi}));
+      if (opts.length) { const {error: oe} = await sb.from('nutrition_meal_options').insert(opts); if (oe) throw oe; }
+    }
+  }
+}
+async function nwConfirmV2() {
+  if (!_nImport || !_nImport.v2 || !currentClient) return;
+  const {from, weeks, base} = _nImport;
+  showToast('Reemplazando menú…', 60000);
+  try {
+    const targets = await nwReplaceTargets(from);
+    const locked = await nwLockedPlanIds(targets.map(t => t.id));
+    if (locked.size) { showToast('El cliente registró comidas mientras tanto. No se cambió nada.', 'error', 6000); return; }
+    for (const t of targets) {
+      const {data: meals} = await sb.from('nutrition_meals').select('id').eq('nutrition_plan_id', t.id);
+      const ids = (meals || []).map(m => m.id);
+      if (ids.length) await sb.from('nutrition_meal_options').delete().in('nutrition_meal_id', ids);
+      await sb.from('nutrition_meals').delete().eq('nutrition_plan_id', t.id);
+      const {error} = await sb.from('nutrition_plans').delete().eq('id', t.id);
+      if (error) throw error;
+    }
+    if (base) await nwInsertGroups(base, null);
+    for (const w of weeks) await nwInsertGroups(w.day_groups, w.week);
+    closeModal('modal-nutrition-import');
+    _nImport = null;
+    nutritionBuilderWeek = from;
+    nutritionBuilderDay = null;
+    showToast('Menú reemplazado' + (from == null ? '' : ' desde la Semana ' + from), 'success', 4000);
+    loadCoachFoodPanel();
+  } catch (e) {
+    showToast('Error: ' + (e.message || String(e)), 'error', 5000);
+  }
+}
+
 // ===== NUTRITION DAY BUILDER =====
 let nutritionBuilderDay = null;
 
 async function buildNutritionDayStrip() {
   const strip = document.getElementById('nutrition-day-strip');
   if (!strip || !currentClient) return;
-  const {data: days} = await sb.from('nutrition_plans')
-    .select('id,day_of_week,day_order')
-    .eq('client_id', currentClient.id)
-    .order('day_order', {ascending: true, nullsFirst: false})
-    .order('id', {ascending: true});
+  if (_nwClientId !== currentClient.id) { _nwClientId = currentClient.id; nutritionBuilderWeek = null; nutritionBuilderDay = null; }
+  await nwHasWeekCol();
+  const wmap = await nwWeekMap();
+  if (!_nwHasCol) nutritionBuilderWeek = null;
+  const days = wmap.get(nutritionBuilderWeek) || [];
   strip.innerHTML = '';
+  strip.appendChild(nwWeekBar(wmap));
   const row = document.createElement('div');
   row.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;';
   if (days && days.length > 0) {
@@ -16387,9 +16715,9 @@ function openAddNutritionDaySheet(existingName) {
 
 async function addNewNutritionDay(dayName) {
   if (!currentClient) return;
-  const {data: ex} = await sb.from('nutrition_plans').select('id').eq('client_id', currentClient.id).eq('day_of_week', dayName).maybeSingle();
+  const {data: ex} = await nwScope(sb.from('nutrition_plans').select('id').eq('client_id', currentClient.id).eq('day_of_week', dayName)).maybeSingle();
   if (ex) { showToast('Ya existe ese día', 'error'); return; }
-  const {error} = await sb.from('nutrition_plans').insert([{client_id: currentClient.id, day_of_week: dayName, day_order: 999}]);
+  const {error} = await sb.from('nutrition_plans').insert([nwRow({client_id: currentClient.id, day_of_week: dayName, day_order: 999})]);
   if (error) { showToast(error.message, 'error'); return; }
   nutritionBuilderDay = dayName;
   showToast('Día "' + dayName + '" creado', 'success');
@@ -16397,7 +16725,7 @@ async function addNewNutritionDay(dayName) {
 }
 
 async function moveNutritionDayOrder(dayValue, direction) {
-  const {data: days} = await sb.from('nutrition_plans').select('id,day_of_week,day_order').eq('client_id', currentClient.id).order('day_order', {ascending: true, nullsFirst: false}).order('id', {ascending: true});
+  const {data: days} = await nwScope(sb.from('nutrition_plans').select('id,day_of_week,day_order').eq('client_id', currentClient.id)).order('day_order', {ascending: true, nullsFirst: false}).order('id', {ascending: true});
   if (!days || days.length < 2) return;
   const idx = days.findIndex(d => d.day_of_week === dayValue);
   const swapIdx = idx + direction;
@@ -16413,14 +16741,18 @@ async function moveNutritionDayOrder(dayValue, direction) {
 }
 
 async function renameNutritionDay(oldName, newName) {
-  await sb.from('nutrition_plans').update({day_of_week: newName}).eq('client_id', currentClient.id).eq('day_of_week', oldName);
+  if (oldName === newName) return;
+  const {data: clash} = await nwScope(sb.from('nutrition_plans').select('id').eq('client_id', currentClient.id).eq('day_of_week', newName)).maybeSingle();
+  if (clash) { showToast('Ya existe un día "' + newName + '" en ' + nwLabel(nutritionBuilderWeek), 'error'); return; }
+  await nwScope(sb.from('nutrition_plans').update({day_of_week: newName}).eq('client_id', currentClient.id).eq('day_of_week', oldName));
   if (nutritionBuilderDay === oldName) nutritionBuilderDay = newName;
   await buildNutritionDayStrip();
+  await nwOfferRenameLater(oldName, newName);
 }
 
 async function deleteNutritionDay(dayValue) {
-  if (!(await appConfirm('¿Borrar el día "' + dayValue + '" y todas sus comidas?'))) return;
-  const {data: pd} = await sb.from('nutrition_plans').select('id').eq('client_id', currentClient.id).eq('day_of_week', dayValue).maybeSingle();
+  if (!(await appConfirm('¿Borrar el día "' + dayValue + '" de ' + nwLabel(nutritionBuilderWeek) + ' y todas sus comidas?'))) return;
+  const {data: pd} = await nwScope(sb.from('nutrition_plans').select('id').eq('client_id', currentClient.id).eq('day_of_week', dayValue)).maybeSingle();
   if (pd) {
     const {data: meals} = await sb.from('nutrition_meals').select('id').eq('nutrition_plan_id', pd.id);
     if (meals) for (const m of meals) await sb.from('nutrition_meal_options').delete().eq('nutrition_meal_id', m.id);
@@ -16464,7 +16796,7 @@ const nutritionExpandedMeals = new Set();
 async function buildNutritionMealList() {
   const listEl = document.getElementById('nutrition-meal-list');
   if (!listEl || !currentClient || !nutritionBuilderDay) { if(listEl) listEl.innerHTML=''; return; }
-  const {data: pd} = await sb.from('nutrition_plans').select('id').eq('client_id', currentClient.id).eq('day_of_week', nutritionBuilderDay).maybeSingle();
+  const {data: pd} = await nwScope(sb.from('nutrition_plans').select('id').eq('client_id', currentClient.id).eq('day_of_week', nutritionBuilderDay)).maybeSingle();
   if (!pd) { listEl.innerHTML = ''; return; }
   const planId = pd.id;
   const {data: meals} = await sb.from('nutrition_meals').select('id,meal_slot,meal_order').eq('nutrition_plan_id', planId).order('meal_order', {ascending: true}).order('id', {ascending: true});
@@ -16549,18 +16881,18 @@ async function promoteMealToDay(sourcePlanId, mealId, mealSlot) {
     showToast('No podés promover el único tiempo de este día. Agregá otro primero.', 'error');
     return;
   }
-  const {data: existing} = await sb.from('nutrition_plans')
-    .select('id').eq('client_id', currentClient.id).eq('day_of_week', mealSlot).maybeSingle();
+  const {data: existing} = await nwScope(sb.from('nutrition_plans')
+    .select('id').eq('client_id', currentClient.id).eq('day_of_week', mealSlot)).maybeSingle();
   if (existing) {
     showToast('Ya existe un tab con ese nombre. Renombrá el tiempo primero.', 'error');
     return;
   }
-  const {data: allPlans} = await sb.from('nutrition_plans')
-    .select('day_order').eq('client_id', currentClient.id)
+  const {data: allPlans} = await nwScope(sb.from('nutrition_plans')
+    .select('day_order').eq('client_id', currentClient.id))
     .order('day_order', {ascending: false}).limit(1);
   const nextOrder = allPlans?.length ? (allPlans[0].day_order ?? 0) + 1 : 1;
   const {data: newPlan, error: planErr} = await sb.from('nutrition_plans')
-    .insert([{client_id: currentClient.id, day_of_week: mealSlot, day_order: nextOrder}])
+    .insert([nwRow({client_id: currentClient.id, day_of_week: mealSlot, day_order: nextOrder})])
     .select().single();
   if (planErr) { showToast(planErr.message, 'error'); return; }
   const {error: moveErr} = await sb.from('nutrition_meals')
@@ -24227,6 +24559,7 @@ async function deleteTestTemplate(templateId) {
 function openNutritionImportModal() {
   if (!currentClient) return;
   document.getElementById('nutrition-import-body').innerHTML = `
+    ${nwImportWeekSelectHtml()}
     <p style="font-size:13px;color:var(--gray5);margin-bottom:10px;">Pegá el JSON del plan de nutrición:</p>
     <textarea id="ni-json" class="form-textarea" rows="12"
       style="width:100%;box-sizing:border-box;font-family:monospace;font-size:11px;resize:vertical;"
@@ -24239,18 +24572,23 @@ function openNutritionImportModal() {
 }
 
 async function analyzeNutritionJSON() {
+  await nwHasWeekCol();
   const raw = (document.getElementById('ni-json')?.value||'').trim();
   let parsed;
   try { parsed = JSON.parse(raw); } catch(e) {
     showToast('JSON inválido: '+e.message, 'error', 4000); return;
   }
+  const nwSel = document.getElementById('ni-week')?.value;
+  const nwWeek = nwSel ? Number(nwSel) : null;
+  if (parsed.type === 'nutrition' && Array.isArray(parsed.weeks)) { await nwAnalyzeV2(parsed, nwWeek); return; }
   if (parsed.type !== 'nutrition' || !Array.isArray(parsed.day_groups)) {
     showToast('Falta type:"nutrition" o el array "day_groups"', 'error', 4000); return;
   }
   _nImport = {
     day_groups: [...parsed.day_groups].sort((a,b)=>(a.day_order||0)-(b.day_order||0)),
     activeDay: 0,
-    mealToggles: {}
+    mealToggles: {},
+    week: nwWeek
   };
   renderNutritionPreview();
 }
@@ -24316,6 +24654,7 @@ function renderNutritionPreview() {
 
 async function confirmNutritionImport() {
   if (!_nImport || !currentClient) return;
+  _nwImportWeek = _nImport.week;
   showToast('⏳ Importando menú...', 60000);
   const stats = {days:0, meals:0, options:0};
 
@@ -24323,15 +24662,15 @@ async function confirmNutritionImport() {
     for (let di=0; di<_nImport.day_groups.length; di++) {
       const dg = _nImport.day_groups[di];
 
-      const {data:existingPlan} = await sb.from('nutrition_plans')
-        .select('id').eq('client_id', currentClient.id).eq('day_of_week', dg.day_label).maybeSingle();
+      const {data:existingPlan} = await nwScope(sb.from('nutrition_plans')
+        .select('id').eq('client_id', currentClient.id).eq('day_of_week', dg.day_label), _nImport.week).maybeSingle();
 
       let planId;
       if (existingPlan) {
         planId = existingPlan.id;
       } else {
         const {data:newPlan, error:planErr} = await sb.from('nutrition_plans')
-          .insert([{client_id:currentClient.id, day_of_week:dg.day_label, day_order:dg.day_order||di}])
+          .insert([nwRow({client_id:currentClient.id, day_of_week:dg.day_label, day_order:dg.day_order||di}, _nImport.week)])
           .select().single();
         if (planErr) throw planErr;
         planId = newPlan.id;
@@ -24403,6 +24742,7 @@ async function confirmNutritionImport() {
     closeModal('modal-nutrition-import');
     _nImport = null;
     showToast(`✅ Menú importado: ${stats.days} días nuevos, ${stats.meals} comidas, ${stats.options} opciones`, 4000);
+    if (_nwHasCol) nutritionBuilderWeek = _nwImportWeek;
     loadCoachFoodPanel();
 
   } catch(e) {
