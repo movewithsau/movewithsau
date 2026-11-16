@@ -1364,6 +1364,71 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 #screen-client-home .bottom-nav .nav-item:nth-child(1), #screen-client-plan .bottom-nav .nav-item:nth-child(4), #screen-client-profile .bottom-nav .nav-item:nth-child(5), #screen-client-food .bottom-nav .nav-item:nth-child(2), #screen-client-coaching .bottom-nav .nav-item:nth-child(2) { background:#F6E6DB; border-radius:16px; margin:0 4px; }
 #screen-client-home .bottom-nav .nav-item:nth-child(1) .nav-icon, #screen-client-home .bottom-nav .nav-item:nth-child(1) .nav-label, #screen-client-home.cover-on .bottom-nav .nav-item:nth-child(1) .nav-icon, #screen-client-home.cover-on .bottom-nav .nav-item:nth-child(1) .nav-label, #screen-client-plan .bottom-nav .nav-item:nth-child(4) .nav-icon, #screen-client-plan .bottom-nav .nav-item:nth-child(4) .nav-label, #screen-client-profile .bottom-nav .nav-item:nth-child(5) .nav-icon, #screen-client-profile .bottom-nav .nav-item:nth-child(5) .nav-label, #screen-client-food .bottom-nav .nav-item:nth-child(2) .nav-icon, #screen-client-food .bottom-nav .nav-item:nth-child(2) .nav-label, #screen-client-coaching .bottom-nav .nav-item:nth-child(2) .nav-icon, #screen-client-coaching .bottom-nav .nav-item:nth-child(2) .nav-label { color:#A63E10; font-weight:700; }
 #screen-client-plan .bottom-nav .nav-item:nth-child(4) .ico { stroke-width:2.2; }
+/* ===== HOY: home oscuro (Entrena como Sau + Ir a mi entrenamiento) =====
+   Vive dentro de #hoy-cover. Con recordatorio de pago la portada sigue naranja como siempre;
+   sin pago (o después de cerrarlo) la portada pasa a .is-home y muestra solo este home. */
+.hh { display:none; }
+.hoy-cover.is-home { background:#14110E; justify-content:flex-start; align-items:stretch; padding:0 0 96px; text-align:left; overflow-y:auto; color:#FBF6EF; }
+.hoy-cover.is-home::before { display:none; }
+.hoy-cover.is-home > :not(.hh):not(.bee-flight) { display:none !important; }
+.hoy-cover.is-home .hh { display:flex; flex-direction:column; flex:1 0 auto; font-family:'DM Sans',sans-serif; }
+.hh-head { padding:36px 24px 18px; }
+.hh-date { font-family:'DM Mono',monospace; font-size:12px; letter-spacing:1.2px; color:#A89C8D; }
+.hh-hello { margin:6px 0 0; font-family:'Playfair Display',serif; font-weight:700; font-size:34px; line-height:1.1; color:#FBF6EF; overflow-wrap:anywhere; }
+.hh-sub { margin-top:6px; font-size:15px; color:#CFC6BA; }
+.hh-contract { margin:0 24px 14px; background:#26201A; border:1px solid #3A3027; border-radius:20px; padding:14px 16px; display:flex; flex-direction:column; gap:12px; }
+.hh-contract[hidden] { display:none; }
+.hh-contract-row { display:flex; align-items:center; gap:12px; }
+.hh-contract-ico { flex:none; width:40px; height:40px; border-radius:50%; background:rgba(245,184,61,0.16); color:#F5B83D; display:flex; align-items:center; justify-content:center; }
+.hh-contract-title { font-size:15px; font-weight:700; color:#FBF6EF; line-height:1.3; }
+.hh-contract-text { font-size:13px; line-height:1.4; color:#CFC6BA; margin-top:2px; }
+.hh-contract-btn { width:100%; min-height:46px; border:0; border-radius:14px; background:#C24E18; color:#FFFFFF; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:700; cursor:pointer; }
+.hh-body { flex:1 0 auto; display:flex; flex-direction:column; gap:14px; padding:0 24px 18px; }
+.hh-chip { display:flex; align-items:center; gap:10px; width:100%; min-height:48px; box-sizing:border-box; padding:0 16px; border-radius:999px; border:1px solid rgba(127,209,154,0.45); background:rgba(127,209,154,0.12); color:#7FD19A; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; text-align:left; cursor:pointer; }
+.hh-chip[hidden] { display:none; }
+.hh-chip-dot { flex:none; width:9px; height:9px; border-radius:50%; background:#7FD19A; animation:hhPulse 1.6s ease-in-out infinite; }
+.hh-chip-time { margin-left:auto; font-family:'DM Mono',monospace; font-weight:500; }
+@keyframes hhPulse { 0%,100% { opacity:1; } 50% { opacity:0.35; } }
+.hh-cards { flex:1 0 auto; display:flex; flex-direction:column; gap:14px; }
+/* Las dos tarjetas: misma altura (flex 1 cada una) */
+.hh-card { appearance:none; -webkit-appearance:none; margin:0; font:inherit; text-align:left; width:100%; box-sizing:border-box; flex:1 1 0; min-height:208px; position:relative; overflow:hidden; border:1.5px solid transparent; border-radius:24px; padding:22px; display:flex; flex-direction:column; justify-content:space-between; gap:12px; cursor:pointer; text-decoration:none; -webkit-tap-highlight-color:transparent; }
+.hh-card:focus-visible { outline:3px solid #F5B83D; outline-offset:3px; }
+.hh-hex { position:absolute; right:-44px; bottom:-44px; opacity:0.2; pointer-events:none; }
+.hh-kicker { position:relative; display:flex; align-items:center; gap:8px; font-family:'DM Mono',monospace; font-size:12px; letter-spacing:1px; }
+.hh-dot { flex:none; width:8px; height:8px; border-radius:50%; background:currentColor; }
+.hh-display { position:relative; display:block; font-family:'Dela Gothic One',sans-serif; font-weight:400; font-size:36px; line-height:1.1; text-transform:uppercase; }
+.hh-display em { font-style:normal; color:#F5B83D; }
+.hh-title { position:relative; display:block; font-family:'Playfair Display',serif; font-weight:700; font-size:36px; line-height:1.1; }
+.hh-title.is-long { font-size:26px; line-height:1.15; }
+.hh-foot { position:relative; display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:14px; line-height:1.4; }
+.hh-go { flex:none; width:38px; height:38px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; }
+.hh-a { background:#26201A; border:1.5px solid rgba(245,184,61,0.5); color:#FBF6EF; }
+.hh-a .hh-kicker { color:#F5B83D; }
+.hh-a .hh-foot { color:#D9D0C4; }
+.hh-a .hh-go { background:#F5B83D; color:#14110E; }
+.hh-off { background:#1B1713; border:1.5px dashed #5A4E41; color:#8F8373; cursor:default; }
+.hh-off .hh-kicker { color:#A89C8D; }
+.hh-off .hh-dot { background:#7A6D5E; }
+.hh-off .hh-display, .hh-off .hh-display em, .hh-off .hh-title { color:#8F8373; }
+.hh-off .hh-foot { color:#B8AD9E; }
+.hh-b { background:#C24E18; color:#FFFFFF; }
+.hh-b .hh-kicker { color:#FFFFFF; letter-spacing:1.2px; }
+.hh-b .hh-foot { color:#FFFFFF; }
+.hh-b .hh-go { background:#FFFFFF; color:#A63E10; }
+.hh-evo { background:#26201A; border:1.5px solid #3A3027; color:#FBF6EF; cursor:default; justify-content:flex-start; }
+.hh-evo .hh-kicker { color:#F5B83D; }
+.hh-evo .hh-foot { color:#CFC6BA; display:block; }
+.hh-wa { position:relative; margin-top:auto; min-height:52px; border-radius:16px; background:#1E7A3C; color:#FFFFFF; display:flex; align-items:center; justify-content:center; gap:10px; font-size:16px; font-weight:700; text-decoration:none; }
+/* Barra inferior real, oscura solo mientras se ve este home (el resto del app sigue crema) */
+#screen-client-home.home-dark .bottom-nav { background:#1B1713; border-top:1px solid #2E261F; }
+#screen-client-home.home-dark .bottom-nav::before { display:none; }
+#screen-client-home.home-dark.cover-on .bottom-nav .nav-item .nav-icon, #screen-client-home.home-dark.cover-on .bottom-nav .nav-item .nav-label { color:#A89C8D; }
+#screen-client-home.home-dark.cover-on .bottom-nav .nav-item:nth-child(1) { background:rgba(245,184,61,0.14); }
+#screen-client-home.home-dark.cover-on .bottom-nav .nav-item:nth-child(1) .nav-icon, #screen-client-home.home-dark.cover-on .bottom-nav .nav-item:nth-child(1) .nav-label { color:#F5B83D; font-weight:700; }
+#screen-client-home.home-dark.cover-on .hv-bg { fill:#F5B83D; stroke:#1B1713; }
+#screen-client-home.home-dark.cover-on .hv-fg { stroke:#14110E; }
+#screen-client-home.home-dark.cover-on .hv-fill { fill:#14110E; }
+@media (prefers-reduced-motion:reduce) { .hh-chip-dot { animation:none; } }
 </style>
 </head>
 <body>
@@ -1610,6 +1675,26 @@ button.exx-pill { cursor:pointer; min-height:28px; }
       <h1 class="hoy-evo-title">¡Felicidades por lograr tu primera etapa!</h1>
       <p class="hoy-evo-text">Hablá con Sau para tu evolución.</p>
       <a class="hoy-evo-btn" id="hoy-evo-btn" href="#" target="_blank" rel="noopener"><svg class="ico" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-message-circle"/></svg>Escribirle a Sau</a>
+    </div>
+    <!-- Home oscuro (dos opciones). Sale cuando no hay recordatorio de pago: el pago va primero, naranja como siempre -->
+    <div class="hh" id="hh">
+      <div class="hh-head">
+        <div class="hh-date" id="hh-date"></div>
+        <h1 class="hh-hello" id="hh-hello">Hola</h1>
+        <div class="hh-sub">¿Qué toca hoy?</div>
+      </div>
+      <div class="hh-contract" id="hh-contract" role="status" hidden>
+        <div class="hh-contract-row">
+          <span class="hh-contract-ico"><svg class="ico" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-file-text"/></svg></span>
+          <div><div class="hh-contract-title">Tu contrato sigue sin firmar</div><div class="hh-contract-text">Leelo y confirmalo en tu perfil para seguir al día.</div></div>
+        </div>
+        <button type="button" class="hh-contract-btn" onclick="goToClientContract()">Ver mi contrato</button>
+      </div>
+      <div class="hh-body">
+        <!-- Sesión "Entrenar como Sau" en curso (se activa en H4) -->
+        <button type="button" class="hh-chip" id="hh-chip" hidden onclick="hhOpenSession()"><span class="hh-chip-dot" aria-hidden="true"></span><span>Entreno con Sau en curso</span><span class="hh-chip-time" id="hh-chip-time"></span></button>
+        <div class="hh-cards" id="hh-cards"></div>
+      </div>
     </div>
     <div class="hoy-cover-note" id="hoy-cover-note" hidden><span class="hoy-cover-note-ico"><svg class="ico" width="18" height="18" aria-hidden="true" focusable="false"><use href="#i-check"/></svg></span><span>Tu diario, tus hábitos y tus registros siguen disponibles.</span></div>
     <div class="bee-flight" id="bee-flight" aria-hidden="true">
@@ -3604,6 +3689,7 @@ function clientAutoWeekInfo() {
 // se resuelven antes (no llegan acá). Prioridad: terminado > en construcción > entrenar.
 function getClientHoyMode() {
   if (!currentClient || currentUser?.role === 'coach' || currentClient.program_type === 'lift') return 'train';
+  if (currentClient.training_access === false) return 'train'; // sin módulo de entreno: el home muestra "Módulo exclusivo"
   const auto = clientAutoWeekInfo();
   if (auto && auto.state === 'finished') return 'finished';
   return getVisibleWeeks().length ? 'train' : 'construction';
@@ -6742,7 +6828,7 @@ function tlNode(state) {
 // El Hoy de siempre sigue cargando detrás; "Entrenar" solo lo descubre.
 function hoyCoverAllowed() {
   if (!currentClient || currentClient.program_type === 'lift' || currentClient.is_churn) return false;
-  if (currentClient.training_access === false) return false;
+  // training_access=false también ve el home (decisión de Sau): la tarjeta de entreno lleva a "Módulo exclusivo"
   if (isWorkoutStarted() || workoutLock) return false;
   return true;
 }
@@ -6753,6 +6839,7 @@ function setHoyCover(on) {
   cover.hidden = !on;
   screen.classList.toggle('cover-on', on);
   ckRefresh();
+  hhSync();
 }
 function updateHoyCoverPill() {
   const pill = document.getElementById('hoy-cover-pill');
@@ -6793,7 +6880,7 @@ function payReminderDays() {
 function payReminderDismiss() {
   payReminderClosed = true;
   applyHoyCoverMode();
-  document.getElementById('hoy-cover-btn')?.focus();
+  (hhIsOn() ? document.querySelector('#hh-cards button') : document.getElementById('hoy-cover-btn'))?.focus();
 }
 function payReminderPay() {
   const url = PAYMENT_LINK || `https://wa.me/${EXX_WA_NUMBER}?text=${encodeURIComponent(PAYMENT_WA_TEXT)}`;
@@ -6860,6 +6947,10 @@ function applyHoyCoverMode() {
     const logo = $('hoy-evo-logo');
     if (logo && !logo.getAttribute('src')) logo.src = logo.dataset.src;
   }
+  // Home oscuro: sin recordatorio de pago la portada pasa a ser el home de dos opciones.
+  // Con pago, todo lo de arriba queda igual que siempre (naranja) hasta "Pagar" o "Dale, gracias".
+  cover.classList.toggle('is-home', pay == null);
+  hhSync();
 }
 let hoyCoverFlying = false;
 function enterTraining() {
@@ -6879,6 +6970,196 @@ function enterTraining() {
     setHoyCover(false);
   }, 850);
 }
+
+// ===== HOY: HOME OSCURO (Entrena como Sau + Ir a mi entrenamiento) =====
+// Es la portada (#hoy-cover) en modo .is-home: sale cuando no hay recordatorio de pago.
+// Solo lee: la publicación activa (coach_daily_posts, la misma para todos los clientes) y el
+// día de hoy del plan (monthly_plans/exercises del cliente). No escribe nada en la base.
+const ECS_TZ = 'America/Costa_Rica';
+let hhPost = null, hhPostAt = 0, hhPostReq = 0;
+// Día de hoy ya armado; lo reusa el resumen de la bienvenida. items: ejercicio suelto o circuito (cuenta 1).
+let hhDay = null, hhDayReq = 0;
+let hhCardsHtml = '';
+
+function ensureDelaFont() {
+  if (document.getElementById('dela-font')) return;
+  const l = document.createElement('link');
+  l.id = 'dela-font'; l.rel = 'stylesheet';
+  l.href = 'https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap';
+  document.head.appendChild(l);
+}
+// "6:12 A. M." en hora de Costa Rica
+function ecsTime(ms) {
+  return new Intl.DateTimeFormat('es-CR', { timeZone: ECS_TZ, hour: 'numeric', minute: '2-digit', hour12: true }).format(ms).toUpperCase();
+}
+// "HOY 6:12 A. M." / "AYER 9:40 P. M." (fecha de Costa Rica)
+function ecsWhen(ms) {
+  const d = crDateKey(ms), t = todayCR();
+  const day = d === t ? 'HOY' : d === tcAddDays(t, -1) ? 'AYER' : fmtCRDay(ms).toUpperCase();
+  return day + ' ' + ecsTime(ms);
+}
+function ecsIsActive(p) { return !!p && !p.replaced_at && Date.parse(p.expires_at) > Date.now(); }
+function ecsLeftText(p) {
+  const h = Math.floor((Date.parse(p.expires_at) - Date.now()) / 3600000);
+  return h < 1 ? 'menos de 1 h' : h + ' h';
+}
+function ecsSeenKey() { return currentClient ? 'mws_ecs_seen_' + currentClient.id : null; }
+function ecsIsSeen(p) { try { return !!p && localStorage.getItem(ecsSeenKey()) === p.id; } catch { return false; } }
+function ecsMarkSeen(p) { try { if (p) localStorage.setItem(ecsSeenKey(), p.id); } catch {} }
+// Publicación activa más reciente. Sin la tabla (SQL pendiente) o sin red: se queda con lo último que tenía.
+async function ecsLoadActivePost(force) {
+  if (!force && hhPostAt && Date.now() - hhPostAt < 60000) return hhPost;
+  const req = ++hhPostReq;
+  const { data, error } = await sb.from('coach_daily_posts').select('id,body,published_at,expires_at,replaced_at')
+    .is('replaced_at', null).gt('expires_at', new Date().toISOString())
+    .order('published_at', { ascending: false }).limit(1).maybeSingle();
+  if (req !== hhPostReq) return hhPost;
+  if (!error) { hhPost = data || null; hhPostAt = Date.now(); }
+  return hhPost;
+}
+function ecsOpenPost() {
+  if (!ecsIsActive(hhPost)) return;
+  ecsMarkSeen(hhPost);
+  hhPaint();
+}
+
+// "Día 3 - Hombros" → { n: 3, name: 'Hombros' }; "Lunes" → { n: posición en la semana, name: 'Lunes' }
+function hhDayInfo(label, idx) {
+  const m = String(label || '').match(/^Día\s*(\d+)\s*[-–:·]?\s*(.*)$/i);
+  return m ? { n: Number(m[1]), name: m[2].trim() } : { n: idx + 1, name: String(label || '').trim() };
+}
+async function hhLoadDay() {
+  if (!currentClient || !clientDay) return null;
+  const key = `${currentClient.id}|${clientWeek}|${clientDay}`;
+  if (hhDay && hhDay.key === key) return hhDay;
+  const req = ++hhDayReq;
+  const { data: days, error } = await sb.from('monthly_plans').select('id,day_of_week,day_order')
+    .eq('client_id', currentClient.id).eq('week_number', clientWeek)
+    .order('day_order', { ascending: true, nullsFirst: false }).order('id', { ascending: true });
+  if (req !== hhDayReq || error) return null;
+  const idx = (days || []).findIndex(d => d.day_of_week === clientDay);
+  if (idx < 0) return null;
+  // plan_day_id sale de la fila del cliente: los ejercicios quedan acotados a él
+  const { data: exs, error: e2 } = await sb.from('exercises')
+    .select('id,name,sets,reps_range,superset_group,circuit_rounds,order_index')
+    .eq('plan_day_id', days[idx].id).order('order_index');
+  if (req !== hhDayReq || e2) return null;
+  const items = [], groups = new Map();
+  (exs || []).forEach(ex => {
+    if (ex.superset_group) {
+      let g = groups.get(ex.superset_group);
+      if (!g) {
+        g = { kind: 'circuit', group: ex.superset_group, rounds: ex.circuit_rounds || ex.sets || 1, members: [] };
+        groups.set(ex.superset_group, g);
+        items.push(g);
+      }
+      g.members.push(ex.name);
+    } else {
+      items.push({ kind: 'ex', name: ex.name, sets: ex.sets, reps: ex.reps_range });
+    }
+  });
+  hhDay = { key, planDayId: days[idx].id, ...hhDayInfo(clientDay, idx), items };
+  return hhDay;
+}
+function hhDayLine(d) {
+  const parts = ['Día ' + d.n];
+  if (d.name) parts.push(d.name);
+  const c = d.items.length;
+  parts.push(c ? `${c} ${c === 1 ? 'ejercicio' : 'ejercicios'}` : 'sin ejercicios cargados');
+  return parts.join(' · ');
+}
+
+function hhIsOn() {
+  const cover = document.getElementById('hoy-cover');
+  return !!cover && !cover.hidden && cover.classList.contains('is-home');
+}
+function hhSync() {
+  const screen = document.getElementById('screen-client-home');
+  if (!screen) return;
+  const on = hhIsOn();
+  screen.classList.toggle('home-dark', on);
+  if (on) hhRender();
+}
+function hhRender() {
+  ensureDelaFont();
+  hhPaint();
+  ecsLoadActivePost().then(() => { if (hhIsOn()) hhPaint(); }, () => {});
+  hhLoadDay().then(() => { if (hhIsOn()) hhPaint(); }, () => {});
+}
+
+const HH_ARROW = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+function hhHex(color) {
+  return `<svg class="hh-hex" width="170" height="170" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><polygon points="50,4 90,27 90,73 50,96 10,73 10,27" fill="none" stroke="${color}" stroke-width="3"/></svg>`;
+}
+function hhCardA() {
+  const p = ecsIsActive(hhPost) ? hhPost : null;
+  if (!p) return `<div class="hh-card hh-off" role="group" aria-label="Entrena como Sau. Sau todavía no publicó hoy.">
+      <span class="hh-kicker"><span class="hh-dot"></span>TODAVÍA NO HAY NADA HOY</span>
+      <span class="hh-display">Entrena<br>como Sau</span>
+      <span class="hh-foot">Sau todavía no publicó hoy. Volvé más tarde.</span>
+    </div>`;
+  const isNew = !ecsIsSeen(p);
+  const left = ecsLeftText(p);
+  return `<button type="button" class="hh-card hh-a" onclick="ecsOpenPost()" aria-label="Entrena como Sau${isNew ? ', nuevo' : ''}. Lo que hice hoy. Vence en ${left}.">
+      ${hhHex('#F5B83D')}
+      <span class="hh-kicker">${isNew ? '<span class="hh-dot"></span>NUEVO · ' : ''}${escHtml(ecsWhen(Date.parse(p.published_at)))}</span>
+      <span class="hh-display">Entrena<br><em>como Sau</em></span>
+      <span class="hh-foot"><span>Lo que hice hoy · vence en ${left}</span><span class="hh-go">${HH_ARROW}</span></span>
+    </button>`;
+}
+function hhCardB() {
+  if (currentClient?.training_access === false) {
+    return `<button type="button" class="hh-card hh-b" onclick="hhGoLocked()" aria-label="Ir a mi entrenamiento. Módulo exclusivo para MOVERs con programa de entrenamiento.">
+      ${hhHex('#FFFFFF')}
+      <span class="hh-kicker">MÓDULO EXCLUSIVO</span>
+      <span class="hh-title">Ir a mi<br>entrenamiento</span>
+      <span class="hh-foot"><span>Es para MOVERs con programa de entrenamiento</span><span class="hh-go">${HH_ARROW}</span></span>
+    </button>`;
+  }
+  const mode = getClientHoyMode();
+  if (mode === 'construction') {
+    return `<div class="hh-card hh-off" role="group" aria-label="Tu entreno de hoy. Estamos armando tu próxima semana.">
+      <span class="hh-kicker">TU ENTRENO DE HOY</span>
+      <span class="hh-title is-long">Estamos armando tu próxima semana</span>
+      <span class="hh-foot">Sau está preparando tu entrenamiento. Apenas esté lista, la ves acá.</span>
+    </div>`;
+  }
+  if (mode === 'finished') {
+    const wa = `https://wa.me/${EXX_WA_NUMBER}?text=${encodeURIComponent(EVOLUTION_WA_TEXT)}`;
+    return `<div class="hh-card hh-evo" role="group" aria-label="Etapa 1 completada">
+      <span class="hh-kicker">ETAPA 1 · COMPLETADA</span>
+      <span class="hh-title is-long">¡Felicidades por lograr tu primera etapa!</span>
+      <span class="hh-foot">Hablá con Sau para tu evolución. Tu diario, tus hábitos y tus registros siguen disponibles.</span>
+      <a class="hh-wa" href="${wa}" target="_blank" rel="noopener"><svg class="ico" width="20" height="20" aria-hidden="true" focusable="false"><use href="#i-message-circle"/></svg>Escribirle a Sau</a>
+    </div>`;
+  }
+  const key = currentClient && clientDay ? `${currentClient.id}|${clientWeek}|${clientDay}` : null;
+  const line = hhDay && hhDay.key === key ? hhDayLine(hhDay) : 'Tu entreno de hoy te espera';
+  return `<button type="button" class="hh-card hh-b" onclick="hhGoTrain()" aria-label="Ir a mi entrenamiento. ${escHtml(line)}.">
+      ${hhHex('#FFFFFF')}
+      <span class="hh-kicker">TU ENTRENO DE HOY</span>
+      <span class="hh-title">Ir a mi<br>entrenamiento</span>
+      <span class="hh-foot"><span>${escHtml(line)}</span><span class="hh-go">${HH_ARROW}</span></span>
+    </button>`;
+}
+function hhPaint() {
+  const $ = id => document.getElementById(id);
+  if (!$('hh')) return;
+  const first = (currentClient?.name || currentUser?.name || '').trim().split(/\s+/)[0];
+  $('hh-date').textContent = fmtCRDay(Date.now(), true).toUpperCase();
+  $('hh-hello').textContent = first ? 'Hola, ' + first : 'Hola';
+  $('hh-contract').hidden = !(clientContractPending && getClientHoyMode() !== 'finished');
+  const html = hhCardA() + hhCardB();
+  // Solo se reemplaza si cambió: así no se pierde el foco del teclado en cada repintado
+  if (html !== hhCardsHtml) { $('hh-cards').innerHTML = html; hhCardsHtml = html; }
+}
+// "Ir a mi entrenamiento": hoy entra directo (con la abeja corta). La bienvenida se suma en H3.
+function hhGoTrain() { enterTraining(); }
+function hhGoLocked() { applyTrainingAccessGate(); setHoyCover(false); }
+function hhOpenSession() { /* se activa en H4 */ }
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && hhIsOn()) hhRender();
+});
 
 function handleStartWorkout() {
   setWorkoutStarted(true);
@@ -8622,7 +8903,7 @@ function applyTrainingAccessGate() {
 function clientNav(tab,el) {
   document.querySelectorAll('#screen-client-home .nav-item,#screen-client-plan .nav-item,#screen-client-profile .nav-item,#screen-client-food .nav-item,#screen-client-coaching .nav-item').forEach(n=>n.classList.remove('active'));
   el.classList.add('active');
-  if(tab==='home'){showScreen('screen-client-home');if(currentClient?.program_type==='lift'){renderLiftDay(liftViewDay||getLiftCurrentDayNumber(currentClient));}else if(applyTrainingAccessGate()){loadClientDayStrip();showHoyCover();}}
+  if(tab==='home'){showScreen('screen-client-home');if(currentClient?.program_type==='lift'){renderLiftDay(liftViewDay||getLiftCurrentDayNumber(currentClient));}else if(applyTrainingAccessGate()){loadClientDayStrip();showHoyCover();}else{showHoyCover();}}
   else if(tab==='food'){showScreen('screen-client-food');loadFoodScreen();}
   else if(tab==='plan'){showScreen('screen-client-plan');loadClientPlans();loadClientTests();}
   else if(tab==='profile'){showScreen('screen-client-profile');loadClientContractPanel();}
