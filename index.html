@@ -2382,9 +2382,12 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
 
     <!-- NUTRICIÓN PANEL -->
     <div id="coaching-panel-nutrition">
-      <div style="margin-bottom:14px;">
-        <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:900;">Librería de Alimentos</div>
-        <div style="font-size:11px;color:var(--gray4);margin-top:3px;">Global — disponible para todos los clientes con NutriFlex</div>
+      <div style="margin-bottom:14px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+        <div>
+          <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:900;">Librería de Alimentos</div>
+          <div style="font-size:11px;color:var(--gray4);margin-top:3px;">Global — disponible para todos los clientes con NutriFlex</div>
+        </div>
+        <button onclick="exportFoodLibrary()" style="background:var(--gray1);color:var(--gray5);border:1.5px solid var(--gray3);border-radius:var(--radius-sm);padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;flex-shrink:0;">Exportar JSON</button>
       </div>
       <input class="form-input" id="food-lib-search" placeholder="Buscar alimento..." oninput="renderFoodLibrary()" style="margin-bottom:10px;">
       <div class="filter-chips" id="food-cat-chips">
@@ -19648,6 +19651,25 @@ async function loadExCoaching() {
   const {data} = await sb.from('exercise_library').select('*').eq('coach_id',currentUser.id).order('name');
   allExCoaching = data || [];
   renderExCoaching();
+}
+
+// Exporta todos los alimentos guardados (food_library) con sus macros, para armar planes nutricionales.
+// Solo lee. Se copia al portapapeles y se descarga como alimentos-AAAA-MM-DD.json.
+async function exportFoodLibrary() {
+  const {data, error} = await sb.from('food_library').select('name,categoria,kcal,proteina,carbs,grasas').order('name');
+  if (error) { showToast(error.message, 'error'); return; }
+  if (!data || !data.length) { showToast('No hay alimentos guardados', 'error'); return; }
+  const out = {
+    type: 'food_library', exported_at: todayCR(), total: data.length,
+    unidades: 'Macros en gramos y kcal por la porción indicada en el nombre',
+    alimentos: data.map(f => ({nombre: f.name, categoria: f.categoria || null, kcal: f.kcal ?? null, proteina: f.proteina ?? null, carbs: f.carbs ?? null, grasas: f.grasas ?? null}))
+  };
+  const json = JSON.stringify(out, null, 2);
+  try { await navigator.clipboard.writeText(json); showToast(data.length + ' alimentos copiados y descargados', 'success'); }
+  catch (e) { showToast(data.length + ' alimentos descargados', 'success'); }
+  const url = URL.createObjectURL(new Blob([json], {type: 'application/json'}));
+  const a = document.createElement('a'); a.href = url; a.download = `alimentos-${todayCR()}.json`; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 async function exportExerciseLibrary() {
