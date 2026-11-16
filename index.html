@@ -25332,8 +25332,10 @@ async function rnLoadClientData() {
   ]);
   rnRoutines = rt.data || [];
   rnClient = { tab: rnClient?.tab || 'semana', planned: pl.data || [], runs: rs.data || [], checkin: rnClient?.checkin || null, legHeavy: rnClient?.legHeavy || false, legKnown: rnClient?.legKnown || false, exById: {} };
-  const exIds = [...new Set(rnRoutines.flatMap(r => rnRtItems(r).map(it => it.id)))];
-  if (exIds.length) { const { data: exs } = await sb.from('run_exercises').select('*').in('id', exIds); (exs || []).forEach(e => { rnClient.exById[String(e.id)] = e; }); }
+  const keys = [...new Set(rnRoutines.flatMap(r => rnRtItems(r).map(it => it.id)))];
+  const runIds = keys.filter(k => !k.startsWith('lib:')), libIds = keys.filter(k => k.startsWith('lib:')).map(k => k.slice(4));
+  if (runIds.length) { const { data: exs } = await sb.from('run_exercises').select('*').in('id', runIds); (exs || []).forEach(e => { rnClient.exById[String(e.id)] = e; }); }
+  if (libIds.length) { const { data: libs } = await sb.from('exercise_library').select('id,name,muscle_group,tag,video_url').in('id', libIds); (libs || []).forEach(l => { rnClient.exById['lib:' + l.id] = rnLibAsEx(l); }); }
   if (typeof rnLoadCheckinCtx === 'function') await rnLoadCheckinCtx();
 }
 function rnHasPlan() { return rnProfile && rnProfile.mode === 'plan' && (rnProfile.plan_status === 'active' || rnProfile.plan_status === 'paused'); }
@@ -26009,16 +26011,17 @@ function rnHomeBadgeHtml(c) {
 // Lee y escribe run_exercises y run_routines. exercise_library no se toca.
 const RN_EX_CATS = [['pre', 'Pre-run'], ['post', 'Post-run'], ['apoyo', 'Apoyo']];
 const RN_EX_CAT_NAME = Object.fromEntries(RN_EX_CATS);
-let rnLib = { cat: '', ex: [], routines: [], loaded: false };
+let rnLib = { cat: '', ex: [], lib: [], routines: [], loaded: false };
 
 async function rnLoadLibrary() {
   const uid = currentUser?.id;
-  const [ex, rt] = await Promise.all([
+  const [ex, rt, lib] = await Promise.all([
     sb.from('run_exercises').select('*').or(`coach_id.eq.${uid},coach_id.is.null`).order('name', { ascending: true }),
-    sb.from('run_routines').select('*').order('session_type', { ascending: true })
+    sb.from('run_routines').select('*').order('session_type', { ascending: true }),
+    sb.from('exercise_library').select('id,name,muscle_group,tag,video_url').eq('coach_id', uid).order('name', { ascending: true })
   ]);
   if (ex.error) { showToast('No se pudo cargar Run: ' + ex.error.message, 'error'); }
-  rnLib.ex = ex.data || []; rnLib.routines = rt.data || []; rnLib.loaded = true;
+  rnLib.ex = ex.data || []; rnLib.lib = lib.data || []; rnLib.routines = rt.data || []; rnLib.loaded = true;
 }
 async function rnRenderLibrary(reload) {
   const list = document.getElementById('ex-coaching-list');
@@ -26111,10 +26114,27 @@ async function rnExDelete(id) {
 // ---------- Bloques (run_routines): editor único para bloques con nombre y bloques por defecto ----------
 // exercise_ids guarda REFERENCIAS a run_exercises, en orden. Cada item es el id (texto) o {id, dose}
 // cuando el bloque usa su propia "duración o repeticiones"; el ejercicio original no se toca.
+// Un item también puede apuntar a la biblioteca general (exercise_library): {lib: id, dose}. Se referencia,
+// no se copia, y exercise_library no se modifica. Clave interna: 'lib:<id>'.
 function rnRtItems(r) {
-  return ((r && r.exercise_ids) || []).map(x => (x && typeof x === 'object') ? { id: String(x.id), dose: x.dose || '' } : { id: String(x), dose: '' }).filter(it => it.id && it.id !== 'undefined');
+  return ((r && r.exercise_ids) || []).map(x => {
+    if (x && typeof x === 'object') return x.lib != null ? { id: 'lib:' + x.lib, dose: x.dose || '' } : { id: String(x.id), dose: x.dose || '' };
+    return { id: String(x), dose: '' };
+  }).filter(it => it.id && it.id !== 'undefined' && it.id !== 'lib:undefined');
 }
-function rnRtSerialize(items) { return items.map(it => (it.dose && it.dose.trim()) ? { id: it.id, dose: it.dose.trim() } : it.id); }
+function rnRtSerialize(items) {
+  return items.map(it => {
+    const dose = (it.dose || '').trim();
+    if (it.id.startsWith('lib:')) return dose ? { lib: it.id.slice(4), dose } : { lib: it.id.slice(4) };
+    return dose ? { id: it.id, dose } : it.id;
+  });
+}
+// Ejercicio de la biblioteca general con la forma de un ejercicio de Run (solo lectura)
+function rnLibAsEx(l) { return l ? { id: 'lib:' + l.id, name: l.name, video_url: l.video_url || null, dose: null, cues: null, category: 'lib', muscle_group: l.muscle_group || '' } : null; }
+function rnExByKey(key) {
+  if (key.startsWith('lib:')) return rnLibAsEx((rnLib.lib || []).find(l => String(l.id) === key.slice(4))) || (rnClient && rnClient.exById && rnClient.exById[key]);
+  return rnLib.ex.find(e => String(e.id) === key) || (rnClient && rnClient.exById && rnClient.exById[key]);
+}
 let rnBk = null;
 function rnRoutineForm(type, block) {
   const r = rnLib.routines.find(x => x.session_type === type && x.block === block && x.is_default);
@@ -26140,12 +26160,11 @@ function rnBkRead() {
 function rnBlockRender() {
   const b = rnBk; if (!b) return;
   if (b.creating) return rnBkNewExRender();
-  const exOf = id => rnLib.ex.find(e => String(e.id) === id);
   const itemsHtml = b.items.map((it, i) => {
-    const e = exOf(it.id);
+    const e = rnExByKey(it.id);
     if (!e) return `<div class="rn-row" style="padding:6px 0;gap:6px;"><span class="rn-fx rn-sm rn-mu">Ejercicio borrado de la biblioteca</span><button type="button" class="rn-ib" aria-label="Quitar" onclick="rnBkRemove(${i})">${icon('x', 16)}</button></div>`;
     return `<div style="padding:8px 0;border-bottom:1px solid #EFE9DF;">
-      <div class="rn-row" style="gap:6px;align-items:center;"><span class="rn-m rn-mu" style="width:18px;">${i + 1}</span><span class="rn-fx" style="font-size:14px;font-weight:600;">${rnEsc(e.name)}</span>
+      <div class="rn-row" style="gap:6px;align-items:center;"><span class="rn-m rn-mu" style="width:18px;">${i + 1}</span><span class="rn-fx" style="font-size:14px;font-weight:600;">${rnEsc(e.name)}${e.category === 'lib' ? ' <span class="rn-xs rn-mu" style="font-weight:400;">· de tu biblioteca</span>' : ''}</span>
         <button type="button" class="rn-ib" aria-label="Subir ${rnEsc(e.name)}" ${i === 0 ? 'disabled' : ''} onclick="rnBkMove(${i},-1)">${icon('chevron-up', 16)}</button>
         <button type="button" class="rn-ib" aria-label="Bajar ${rnEsc(e.name)}" ${i === b.items.length - 1 ? 'disabled' : ''} onclick="rnBkMove(${i},1)">${icon('chevron-down', 16)}</button>
         <button type="button" class="rn-ib" aria-label="Quitar ${rnEsc(e.name)}" onclick="rnBkRemove(${i})">${icon('x', 16)}</button></div>
@@ -26157,7 +26176,7 @@ function rnBlockRender() {
     <div class="rn-cd"><div class="rn-lb">Va</div><div class="rn-chs">${[['pre', 'Antes de correr (pre)'], ['post', 'Después de correr (post)']].map(([k, l]) => `<button type="button" class="rn-ch${b.block === k ? ' is-on' : ''}" aria-pressed="${b.block === k}" ${b.is_default && b.id ? 'disabled' : ''} onclick="rnBkRead();rnBk.block='${k}';rnBlockRender()">${l}</button>`).join('')}</div></div>
     <div class="rn-cd"><div class="rn-lb">Ejercicios, en orden</div>${itemsHtml}
       <div class="rn-xs rn-mu" style="margin-top:6px;">Si dejás vacío «duración o repeticiones», se usa la del ejercicio. Cambiarla acá no cambia el ejercicio original.</div></div>
-    <div class="rn-cd"><label class="rn-lb" for="rn-bk-q" style="display:block;">Agregar de la biblioteca</label>
+    <div class="rn-cd"><label class="rn-lb" for="rn-bk-q" style="display:block;">Agregar ejercicios (Run y tu biblioteca)</label>
       <input id="rn-bk-q" class="rn-in is-txt" type="search" value="${rnEsc(b.q)}" placeholder="Buscar ejercicio…" autocomplete="off" oninput="rnBk.q=this.value;rnBkResults()">
       <div id="rn-bk-results" style="margin-top:8px;"></div>
       <button type="button" class="rn-bt is-l" style="margin-top:8px;" onclick="rnBkNewEx()">+ Crear ejercicio nuevo</button></div>
@@ -26168,10 +26187,11 @@ function rnBlockRender() {
 function rnBkResults() {
   const box = document.getElementById('rn-bk-results'); if (!box || !rnBk) return;
   const q = _normStr(rnBk.q || ''), chosen = new Set(rnBk.items.map(it => it.id));
-  const pool = rnLib.ex.filter(e => !chosen.has(String(e.id)) && (!q || _normStr(e.name).includes(q)));
+  const all = [...rnLib.ex, ...(rnLib.lib || []).map(rnLibAsEx)];
+  const pool = all.filter(e => !chosen.has(String(e.id)) && (!q || _normStr(e.name).includes(q)));
   const shown = pool.slice(0, q ? 30 : 8);
   box.innerHTML = shown.map(e => `<button type="button" class="rn-row" style="width:100%;gap:8px;padding:8px 4px;border:0;border-bottom:1px solid #EFE9DF;background:none;text-align:left;cursor:pointer;font-family:inherit;" onclick="rnBkAdd('${e.id}')">
-      <span style="color:#C24E18;">${icon('plus', 16)}</span><span class="rn-fx"><span style="display:block;font-size:14px;font-weight:600;color:var(--black);">${rnEsc(e.name)}</span><span class="rn-xs rn-mu">${RN_EX_CAT_NAME[e.category] || e.category}${e.dose ? ' · ' + rnEsc(e.dose) : ''}</span></span></button>`).join('')
+      <span style="color:#C24E18;">${icon('plus', 16)}</span><span class="rn-fx"><span style="display:block;font-size:14px;font-weight:600;color:var(--black);">${rnEsc(e.name)}</span><span class="rn-xs rn-mu">${e.category === 'lib' ? 'Tu biblioteca' + (e.muscle_group ? ' · ' + rnEsc(e.muscle_group) : '') : 'Run · ' + (RN_EX_CAT_NAME[e.category] || e.category)}${e.dose ? ' · ' + rnEsc(e.dose) : ''}</span></span></button>`).join('')
     + (pool.length > shown.length ? `<div class="rn-xs rn-mu" style="padding:6px 4px;">${pool.length - shown.length} más. Escribí para filtrar.</div>` : '')
     + (!pool.length ? `<div class="rn-sm rn-mu" style="padding:6px 0;">${q ? 'No hay ejercicios con ese nombre.' : 'No quedan ejercicios por agregar.'}</div>` : '');
 }
@@ -26212,8 +26232,7 @@ async function rnBkNewExSave() {
 // la duración o repeticiones, del bloque si la tiene.
 function rnBlockHtml(r, label) {
   if (!r) return '';
-  const exOf = id => rnLib.ex.find(e => String(e.id) === id) || (rnClient && rnClient.exById && rnClient.exById[id]);
-  const rows = rnRtItems(r).map(it => ({ e: exOf(it.id), dose: it.dose })).filter(x => x.e).map(({ e, dose }) => {
+  const rows = rnRtItems(r).map(it => ({ e: rnExByKey(it.id), dose: it.dose })).filter(x => x.e).map(({ e, dose }) => {
     const d = dose || e.dose;
     return `<div style="padding:8px 0 8px 10px;border-top:1px solid #EFE9DF;">
       <div class="rn-row rn-sp" style="gap:8px;align-items:flex-start;"><span style="font-size:14px;font-weight:600;">${rnEsc(e.name)}${d ? ` <span class="rn-mu" style="font-weight:400;">· ${rnEsc(d)}</span>` : ''}</span>
