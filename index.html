@@ -26407,8 +26407,19 @@ function rnLibTagDisplayItems() {
   return (rnLib.libTags || []).map(t => {
     const l = (rnLib.lib || []).find(x => String(x.id) === String(t.lib_exercise_id));
     if (!l) return null;
-    return { id: 'libtag:' + t.id, tagId: t.id, libId: l.id, name: l.name, categories: t.categories, muscle_group: l.muscle_group, video_url: l.video_url, isLibTag: true };
+    return { id: 'libtag:' + t.id, tagId: t.id, libId: l.id, name: l.name, categories: t.categories, subgroup: t.subgroup || null, muscle_group: l.muscle_group, video_url: l.video_url, isLibTag: true };
   }).filter(Boolean);
+}
+// Una fila de ejercicio (se reusa tanto en lista plana como agrupada en acordeones)
+function rnLibRowHtml(e) {
+  return `<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--gray2);">
+      <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;margin-bottom:3px;">${rnEsc(e.name)}</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;"><span class="muscle-tag" style="font-size:8px;">Run · ${rnExCatLabel(e)}</span>${e.dose ? `<span class="muscle-tag" style="font-size:8px;">${rnEsc(e.dose)}</span>` : ''}${(e.levels || []).length && (e.levels || []).length < 3 ? `<span class="muscle-tag" style="font-size:8px;">Niv. ${(e.levels || []).join(', ')}</span>` : ''}${e.is_example ? '<span class="muscle-tag" style="font-size:8px;">ejemplo</span>' : ''}${e.isLibTag ? '<span class="muscle-tag" style="font-size:8px;">tu biblioteca</span>' : ''}</div></div>
+      <div style="display:flex;gap:4px;flex-shrink:0;">
+        ${e.video_url ? `<a href="${rnEsc(e.video_url)}" target="_blank" rel="noopener" style="background:var(--blue-light);color:var(--blue);border:none;border-radius:6px;padding:6px 9px;" aria-label="Ver video">${icon('play', 18)}</a>` : ''}
+        <button class="icon-btn" onclick="${e.isLibTag ? `rnLibTagForm('${e.libId}')` : `rnExForm('${e.id}')`}" style="background:var(--orange-light);color:var(--orange);border:none;border-radius:6px;padding:6px 9px;cursor:pointer;" aria-label="Editar ejercicio">${icon('pencil', 18)}</button>
+        <button class="icon-btn" onclick="${e.isLibTag ? `rnLibTagRemove('${e.tagId}')` : `rnExDelete('${e.id}')`}" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:6px 9px;cursor:pointer;" aria-label="${e.isLibTag ? 'Quitar de Run' : 'Borrar ejercicio'}">${icon('x', 18)}</button>
+      </div></div>`;
 }
 async function rnRenderLibrary(reload) {
   const list = document.getElementById('ex-coaching-list');
@@ -26420,14 +26431,25 @@ async function rnRenderLibrary(reload) {
   items.sort((a, b) => String(a.name).localeCompare(String(b.name), 'es'));
   const sub = `<div class="rn-row" style="gap:6px;margin:4px 0 10px;overflow-x:auto;">${[['', 'Todos'], ...RN_EX_CATS].map(([k, l]) => `<div class="filter-chip${rnLib.cat === k ? ' active' : ''}" onclick="rnLib.cat='${k}';rnRenderLibrary()">${l}</div>`).join('')}</div>
     <button type="button" class="rn-ch" style="width:100%;min-height:40px;margin-bottom:10px;" onclick="rnLibTagPicker()">${icon('plus', 16)} Agregar de tu biblioteca</button>`;
-  const rows = items.map(e => `<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--gray2);">
-      <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;margin-bottom:3px;">${rnEsc(e.name)}</div>
-        <div style="display:flex;gap:5px;flex-wrap:wrap;"><span class="muscle-tag" style="font-size:8px;">Run · ${rnExCatLabel(e)}</span>${e.dose ? `<span class="muscle-tag" style="font-size:8px;">${rnEsc(e.dose)}</span>` : ''}${(e.levels || []).length && (e.levels || []).length < 3 ? `<span class="muscle-tag" style="font-size:8px;">Niv. ${(e.levels || []).join(', ')}</span>` : ''}${e.is_example ? '<span class="muscle-tag" style="font-size:8px;">ejemplo</span>' : ''}${e.isLibTag ? '<span class="muscle-tag" style="font-size:8px;">tu biblioteca</span>' : ''}</div></div>
-      <div style="display:flex;gap:4px;flex-shrink:0;">
-        ${e.video_url ? `<a href="${rnEsc(e.video_url)}" target="_blank" rel="noopener" style="background:var(--blue-light);color:var(--blue);border:none;border-radius:6px;padding:6px 9px;" aria-label="Ver video">${icon('play', 18)}</a>` : ''}
-        <button class="icon-btn" onclick="${e.isLibTag ? `rnLibTagForm('${e.libId}')` : `rnExForm('${e.id}')`}" style="background:var(--orange-light);color:var(--orange);border:none;border-radius:6px;padding:6px 9px;cursor:pointer;" aria-label="Editar ejercicio">${icon('pencil', 18)}</button>
-        <button class="icon-btn" onclick="${e.isLibTag ? `rnLibTagRemove('${e.tagId}')` : `rnExDelete('${e.id}')`}" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:6px 9px;cursor:pointer;" aria-label="${e.isLibTag ? 'Quitar de Run' : 'Borrar ejercicio'}">${icon('x', 18)}</button>
-      </div></div>`).join('') || '<div class="empty-state"><div class="empty-text">Sin ejercicios de Run en esta categoría.</div></div>';
+  let rows;
+  if (q) {
+    // Buscando: lista plana (pocos resultados, no hace falta acordeón)
+    rows = items.map(rnLibRowHtml).join('') || '<div class="empty-state"><div class="empty-text">Sin ejercicios de Run con ese nombre.</div></div>';
+  } else {
+    // Sin búsqueda: agrupado en acordeones por subgrupo (y por categoría cuando se ven todas),
+    // colapsados por defecto, para que la lista no quede eterna con 180+ ejercicios.
+    const showCat = !rnLib.cat;
+    const groups = {}, order = [];
+    items.forEach(e => {
+      const sg = e.subgroup || 'Otros';
+      const key = showCat ? `${rnExCatLabel(e)} · ${sg}` : sg;
+      if (!groups[key]) { groups[key] = []; order.push(key); }
+      groups[key].push(e);
+    });
+    order.sort((a, b) => a.localeCompare(b, 'es'));
+    rows = order.map(key => `<details class="rn-blk" style="margin-top:4px;"><summary class="rn-sm" style="cursor:pointer;font-weight:700;min-height:36px;display:flex;align-items:center;gap:6px;">${rnEsc(key)} <span class="rn-xs rn-mu" style="font-weight:400;">(${groups[key].length})</span></summary>${groups[key].map(rnLibRowHtml).join('')}</details>`).join('')
+      || '<div class="empty-state"><div class="empty-text">Sin ejercicios de Run en esta categoría.</div></div>';
+  }
   const blocks = RN_TYPES.map(([t, l]) => {
     const pre = rnLib.routines.find(r => r.session_type === t && r.block === 'pre' && r.is_default), post = rnLib.routines.find(r => r.session_type === t && r.block === 'post' && r.is_default);
     const sum = r => r ? `${rnEsc(r.name)} (${(r.exercise_ids || []).length})` : '—';
@@ -26440,7 +26462,8 @@ async function rnRenderLibrary(reload) {
   list.innerHTML = `<div class="rn">${sub}${rows}
     <div class="rn-xs rn-mu" style="margin:10px 0;">Pliometría y tramos fuertes: opcionales y de bajo impacto en los niveles 1 y 2. El post-run es práctica de coaching, no evidencia científica.</div>
     <div class="section-header"><div class="section-title">Bloques</div><div class="section-action" onclick="rnBlockForm(null)">+ Nuevo bloque</div></div>
-    <div class="rn-xs rn-mu" style="margin-bottom:6px;">Un bloque agrupa ejercicios de la biblioteca. En el JSON del plan se nombran en «pre» y «post».</div>${namedHtml}
+    <div class="rn-xs rn-mu" style="margin-bottom:6px;">Un bloque agrupa ejercicios de la biblioteca. En el JSON del plan se nombran en «pre» y «post».</div>
+    <details class="rn-blk"><summary class="rn-sm" style="cursor:pointer;font-weight:700;min-height:36px;display:flex;align-items:center;gap:6px;">Ver bloques <span class="rn-xs rn-mu" style="font-weight:400;">(${named.length})</span></summary>${namedHtml}</details>
     <div class="section-header" style="margin-top:12px;"><div class="section-title">Bloques por tipo de sesión</div></div>
     <div class="rn-xs rn-mu" style="margin-bottom:6px;">Opcional. Si una sesión del plan no trae pre o post, el cliente ve el de su tipo. Con «—» no se muestra nada.</div>${blocks}</div>`;
 }
