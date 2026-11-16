@@ -1700,6 +1700,55 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 #screen-client-home.tr-dark:not(.cover-on) .hv-fg { stroke:#14110E; }
 #screen-client-home.tr-dark:not(.cover-on) .hv-fill { fill:#14110E; }
 @media (prefers-reduced-motion:reduce) { .tr-dark .fade-up { animation:none; } .tr-card .chev { transition:none; } }
+/* RPE: un solo componente (10 segmentos + "RPE n"), dos tamaños */
+.tr-rpe { display:inline-flex; align-items:center; gap:8px; white-space:nowrap; }
+.tr-rpe-bar { display:inline-flex; gap:3px; }
+.tr-rpe-seg { display:inline-block; width:10px; height:6px; border-radius:2px; background:#3A3027; }
+.tr-rpe-seg.is-on { background:#7FD19A; }
+.tr-rpe-txt { font-family:'DM Mono',monospace; font-size:11px; color:#7FD19A; }
+.tr-rpe-sm { gap:6px; }
+.tr-rpe-sm .tr-rpe-bar { gap:2px; }
+.tr-rpe-sm .tr-rpe-seg { width:4px; height:5px; border-radius:1px; }
+.tr-rpe-sm .tr-rpe-txt { font-size:10px; }
+.tr-rpe-row { margin-top:10px; }
+/* Ejercicio abierto */
+.tr-chips { margin-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.tr-chip { font-size:12px; font-weight:700; padding:5px 10px; border-radius:999px; }
+.tr-chip-eq { background:rgba(240,138,75,0.16); color:#F08A4B; }
+.tr-chip-mg { background:rgba(178,126,214,0.18); color:#D6B1F0; }
+.tr-vrow { margin-top:12px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.tr-video { appearance:none; -webkit-appearance:none; border:0; background:none; margin:0; padding:0 6px 0 0; cursor:pointer; display:inline-flex; align-items:center; gap:8px; min-height:44px; color:#F08A4B; font:700 14px 'DM Sans',sans-serif; text-align:left; }
+.tr-play { flex:none; width:28px; height:28px; border-radius:50%; background:#C24E18; display:inline-flex; align-items:center; justify-content:center; }
+.tr-unit { flex:none; display:inline-flex; background:#1B1713; border:1px solid #3A3027; border-radius:12px; padding:3px; }
+.tr-unit .unit-btn { min-width:46px; min-height:38px; padding:0 12px; border:0; border-radius:9px; background:transparent; color:#A89C8D; font:700 13px 'DM Sans',sans-serif; transition:none; cursor:pointer; }
+.tr-unit .unit-btn.selected { background:#C24E18; color:#FFFFFF; border:0; }
+.tr-meta { margin-top:6px; font-size:13px; line-height:1.4; color:#CFC6BA; }
+.tr-sets { margin-top:14px; display:flex; flex-direction:column; gap:8px; }
+.tr-set { display:flex; align-items:center; gap:10px; }
+.tr-set-n { flex:none; width:52px; font-family:'DM Mono',monospace; font-size:13px; color:#CFC6BA; }
+.tr-in-wrap { position:relative; flex:1; min-width:0; display:flex; }
+.tr-in { box-sizing:border-box; flex:1; min-width:0; width:100%; height:48px; margin:0; padding:0 6px; border:1px solid #3A3027; border-radius:12px; background:#1B1713; text-align:center; font-family:'DM Mono',monospace; font-size:17px; color:#FBF6EF; outline:none; -webkit-appearance:none; appearance:none; }
+.tr-in::placeholder { color:#6E6254; opacity:1; }
+.tr-in.has-prev::placeholder { color:#A89C8D; }
+.tr-in:focus { border-color:#F5B83D; }
+.tr-in.is-filled { border-color:rgba(245,184,61,0.45); }
+.tr-in.is-saved { border-color:rgba(127,209,154,0.7); }
+.tr-dark .tr-in:focus-visible { outline:none; }
+.tr-dark .exx-auto { top:-7px; right:4px; background:rgba(127,209,154,0.18); color:#7FD19A; }
+.tr-help { margin:8px 0 0; font-size:12px; line-height:1.4; color:#A89C8D; }
+.tr-save { margin-top:14px; width:100%; height:54px; border:0; border-radius:15px; background:#C24E18; color:#FFFFFF; font:700 17px 'DM Sans',sans-serif; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; }
+.tr-actions { margin-top:2px; display:flex; align-items:center; justify-content:center; gap:4px; }
+.tr-act-slot { display:inline-flex; }
+.tr-act-sep { width:1px; height:18px; background:#3A3027; flex:none; }
+.tr-act { appearance:none; -webkit-appearance:none; border:0; background:none; margin:0; cursor:pointer; min-height:44px; padding:0 12px; display:inline-flex; align-items:center; gap:7px; color:#CFC6BA; font:500 13px 'DM Sans',sans-serif; white-space:nowrap; }
+.tr-act-ico-miel { display:inline-flex; color:#F5B83D; }
+.tr-act-ico-ok { display:inline-flex; color:#7FD19A; }
+.tr-act-count { min-width:18px; height:18px; box-sizing:border-box; padding:0 5px; border-radius:9px; background:rgba(245,184,61,0.18); color:#F5B83D; font:700 11px 'DM Mono',monospace; display:inline-flex; align-items:center; justify-content:center; }
+.tr-dark .tr-card .exx-last { margin:12px 0 0; background:#1B1713; border:1px solid #3A3027; color:#FBF6EF; }
+.tr-dark .tr-card .exx-last .exx-label { color:#A89C8D; }
+.tr-dark .tr-card .exx-last-total { color:#FBF6EF; }
+.tr-dark .tr-card .exx-last [style*="gray5"] { color:#A89C8D !important; }
+.tr-dark .tr-card .exx-link-btn { color:#F08A4B; }
 </style>
 </head>
 <body>
@@ -5755,7 +5804,7 @@ async function loadClientExercises() {
         </div>`;
       if (trDark) {
         exHtml += `<!--tl-item:${tlState(soloItemKey, isDone)}--><div class="fade-up">${trCardHtml({ key: soloItemKey, name: ex.name, open: soloOpen, done: isDone,
-          saved: isDone ? trSavedText([ex.id], ex.sets, soloLogs, 's', 'serie', 'series') : '', body: soloBodyOld })}</div>`;
+          saved: isDone ? trSavedText([ex.id], ex.sets, soloLogs, 's', 'serie', 'series') : '', body: trSoloBody(ex, soloLogs, soloLogsKey, prevByEx) })}</div>`;
       } else {
       exHtml+=`<!--tl-item:${tlState(soloItemKey, isDone)}--><div class="fade-up" style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;${isDone?'opacity:0.85;':''}">
         <div onclick="toggleAccordionItem('${soloItemKey}')" style="padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;">
@@ -7350,6 +7399,99 @@ function trBack() {
   showHoyCover();
   window.scrollTo(0, 0);
 }
+// Ejercicios del día por id (para abrir su ficha/video sin meter el objeto en el HTML)
+const trExMap = {};
+function trOpenInfo(exId) { const ex = trExMap[exId]; if (ex) openExInfo(ex); }
+
+// ---- RPE: un solo componente, dos tamaños ('lg' ejercicio, 'sm' circuito) ----
+function renderRpe(value, size) {
+  const v = Number(value);
+  if (!Number.isInteger(v) || v < 1 || v > 10) return '';
+  const segs = Array.from({ length: 10 }, (_, i) => `<span class="tr-rpe-seg${i < v ? ' is-on' : ''}"></span>`).join('');
+  return `<span class="tr-rpe${size === 'sm' ? ' tr-rpe-sm' : ''}"><span class="tr-rpe-bar" role="img" aria-label="RPE ${v} de 10">${segs}</span><span class="tr-rpe-txt" aria-hidden="true">RPE ${v}</span></span>`;
+}
+
+// ---- kg/lb: uno por ejercicio y uno por circuito (solo en el entreno oscuro) ----
+// Se guarda en exercise_logs.weight_unit como siempre; solo cambia de dónde sale la unidad.
+// Orden: lo que el cliente eligió hoy → lo que se mostró al dibujar → la unidad de la sesión pasada → la general.
+const trUnitShown = {};
+function trUnitsKey() { return currentClient ? `mws_units_${currentClient.id}_w${clientWeek}_${clientDay}` : null; }
+function trUnitsRead() { const k = trUnitsKey(); return k ? exxReadLS(k) : {}; }
+function trUnitSet(id, unit) { const k = trUnitsKey(); if (!k) return; const u = exxReadLS(k); u[id] = unit; exxWriteLS(k, u); trUnitShown[id] = unit; }
+function trPrevUnit(exIds) {
+  for (const id of exIds) {
+    const sets = Object.values(prevWeekLogsCache[id] || {});
+    const hit = sets.find(x => x && x.weight != null && x.unit) || sets.find(x => x && x.unit);
+    if (hit) return hit.unit;
+  }
+  return null;
+}
+function exUnitFor(exId) {
+  if (!trDarkOn()) return currentWeightUnit;
+  return trUnitsRead()[exId] || trUnitShown[exId] || trPrevUnit([exId]) || currentWeightUnit;
+}
+function circuitUnitFor(group, exIds) {
+  if (!trDarkOn()) return currentWeightUnit;
+  const id = 'c:' + group;
+  return trUnitsRead()[id] || trUnitShown[id] || trPrevUnit(exIds || []) || currentWeightUnit;
+}
+// call(u) → el onclick de cada botón, ej. u => `setSoloUnit('id','${u}',this)`
+function trUnitBoxHtml(boxId, unit, label, call) {
+  return `<div class="tr-unit" id="${boxId}" role="group" aria-label="${escHtml(label)}">${['kg', 'lb'].map(u =>
+    `<button type="button" class="unit-btn${u === unit ? ' selected' : ''}" aria-pressed="${u === unit}" onclick="${call(u)}">${u}</button>`).join('')}</div>`;
+}
+function trPaintUnitBox(boxId, unit) {
+  document.querySelectorAll(`#${CSS.escape(boxId)} .unit-btn`).forEach(b => {
+    const on = b.textContent.trim() === unit;
+    b.classList.toggle('selected', on);
+    b.setAttribute('aria-pressed', String(on));
+  });
+}
+// Meta "2 series · 10-12 reps · 60 s descanso", solo con lo que existe
+function trRepsText(r) {
+  const t = String(r || '').trim();
+  if (!t) return '';
+  return /^\d+(\s*[-–]\s*\d+)?$/.test(t) ? t + ' reps' : t;
+}
+function trInputState(w, r) { return w && r ? ' is-filled' : ''; }
+
+// Cuerpo de la tarjeta abierta de un ejercicio (pantalla 15). Mismos ids y mismas funciones de guardado que antes.
+function trSoloBody(ex, soloLogs, soloLogsKey, prevByEx) {
+  trExMap[ex.id] = ex;
+  const unit = exUnitFor(ex.id);
+  trUnitShown[ex.id] = unit;
+  const name = ex.name || '';
+  const chips = [ex.tag ? `<span class="tr-chip tr-chip-eq">${escHtml(ex.tag)}</span>` : '', ex.muscle_group ? `<span class="tr-chip tr-chip-mg">${escHtml(ex.muscle_group)}</span>` : ''].join('');
+  const video = ex.video_url
+    ? `<button type="button" class="tr-video" onclick="trOpenInfo('${ex.id}')"><span class="tr-play" aria-hidden="true">${TR_PLAY_SVG}</span>Ver video</button>`
+    : ex.notes ? `<button type="button" class="tr-video" onclick="trOpenInfo('${ex.id}')">${icon('info', 20)}Ver indicaciones</button>` : '<span></span>';
+  const meta = [ex.sets ? `${ex.sets} ${ex.sets === 1 ? 'serie' : 'series'}` : '', trRepsText(ex.reps_range), ex.rest_seconds ? `${ex.rest_seconds} s descanso` : ''].filter(Boolean).join(' · ');
+  let hasPrev = false, rows = '';
+  for (let s = 1; s <= ex.sets; s++) {
+    const saved = soloLogs[`${ex.id}_s${s}`] || {};
+    const wVal = saved.w || '', rVal = saved.r || '';
+    const prev = prevByEx[ex.id]?.[s];
+    const pw = prev?.weight != null && prev.weight !== '', pr = prev?.reps != null && prev.reps !== '';
+    if (pw || pr) hasPrev = true;
+    const st = trInputState(wVal, rVal);
+    rows += `<div class="tr-set">
+      <span class="tr-set-n">Set ${s}</span>
+      <span class="tr-in-wrap"><input type="text" inputmode="decimal" autocomplete="off" class="tr-in${pw ? ' has-prev' : ''}${st}" id="slog-w-${ex.id}-s${s}" placeholder="${pw ? escHtml(String(prev.weight)) : unit}" value="${escHtml(String(wVal))}" aria-label="Set ${s}, ${unit}" oninput="exxManualEdit('${ex.id}',${s})" onchange="saveSoloLog('${ex.id}',${s},'${soloLogsKey}')"><span class="exx-auto" id="exx-auto-${ex.id}-s${s}" ${exxIsAuto(ex.id, s) ? '' : 'hidden'}>auto</span></span>
+      <input type="text" inputmode="numeric" autocomplete="off" class="tr-in${pr ? ' has-prev' : ''}${st}" id="slog-r-${ex.id}-s${s}" placeholder="${pr ? escHtml(String(prev.reps)) : 'reps'}" value="${escHtml(String(rVal))}" aria-label="Set ${s}, reps" onchange="saveSoloLog('${ex.id}',${s},'${soloLogsKey}')">
+    </div>`;
+  }
+  return `${chips ? `<div class="tr-chips">${chips}</div>` : ''}
+    <div class="tr-vrow">${video}${trUnitBoxHtml(`unit-solo-${ex.id}`, unit, `Unidad de peso de ${name}`, u => `setSoloUnit('${ex.id}','${u}',this)`)}</div>
+    ${meta ? `<div class="tr-meta">${escHtml(meta)}</div>` : ''}
+    ${ex.rpe ? `<div class="tr-rpe-row">${renderRpe(ex.rpe, 'lg')}</div>` : ''}
+    <div id="exx-load-${ex.id}">${exxLastLoadHtml(ex)}</div>
+    <div class="tr-sets">${rows}</div>
+    ${hasPrev ? '<p class="tr-help">En gris: lo que hiciste la sesión pasada. Escribí tus números de hoy.</p>' : ''}
+    <button type="button" class="tr-save" onclick="saveSoloToSupabase('${ex.id}','${soloLogsKey}',${ex.sets})">Guardar${TR_CHECK_SVG}</button>
+    <div class="tr-actions">${exxNotesLinkHtml(ex)}<span class="tr-act-sep" aria-hidden="true"></span><span id="exx-assist-${ex.id}" class="tr-act-slot">${exxAssistBtnHtml(ex)}</span></div>`;
+}
+const TR_PLAY_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="#FFFFFF" aria-hidden="true" focusable="false"><path d="M7 4l13 8-13 8z"/></svg>';
+const TR_CHECK_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5L20 7"/></svg>';
 
 // ===== HOY: PORTADA =====
 // Portada naranja antes del entreno. Solo visual: no lee ni escribe nada en la base.
@@ -18822,12 +18964,14 @@ function saveSoloLog(exId, setNum, logsKey) {
   const filled = w && r;
   const wEl = document.getElementById(`slog-w-${exId}-s${setNum}`);
   const rEl = document.getElementById(`slog-r-${exId}-s${setNum}`);
+  if(wEl?.classList.contains('tr-in')) { [wEl, rEl].forEach(el => el?.classList.toggle('is-filled', !!filled)); return; } // entreno oscuro: solo clase
   if(wEl){ wEl.style.borderColor=filled?'var(--green)':'var(--gray2)'; wEl.style.background=filled?'var(--green-light)':'var(--white)'; }
   if(rEl){ rEl.style.borderColor=filled?'var(--green)':'var(--gray2)'; rEl.style.background=filled?'var(--green-light)':'var(--white)'; }
 }
 
 async function saveSoloToSupabase(exId, logsKey, sets) {
   if(!currentClient) return;
+  const unit = exUnitFor(exId); // fuera del entreno oscuro es currentWeightUnit, como siempre
   let logs = {};
   try { logs = JSON.parse(localStorage.getItem(logsKey)||'{}'); } catch{}
   const inserts = [];
@@ -18845,14 +18989,14 @@ async function saveSoloToSupabase(exId, logsKey, sets) {
     const w = parseDecimal(saved.w)||null;
     const r = parseInt(saved.r)||null;
     if(w||r){
-      inserts.push({exercise_id:exId, client_id:currentClient.id, week_number:clientWeek, set_number:s, weight:w, weight_unit:currentWeightUnit, reps_done:r, difficulty:null});
+      inserts.push({exercise_id:exId, client_id:currentClient.id, week_number:clientWeek, set_number:s, weight:w, weight_unit:unit, reps_done:r, difficulty:null});
       if(w&&r) totalWeight += w*r;
       // Compare with previous week
       const prev = prevSets[s];
       if(prev) {
         const prevW = parseDecimal(prev.weight)||0;
         const prevR = parseInt(prev.reps)||0;
-        if(w && prevW && w > prevW) progressions.push({set:s, type:'peso', from:prevW, to:w, unit:currentWeightUnit});
+        if(w && prevW && w > prevW) progressions.push({set:s, type:'peso', from:prevW, to:w, unit});
         else if(r && prevR && r > prevR && !(w > prevW)) progressions.push({set:s, type:'reps', from:prevR, to:r});
       }
     }
@@ -18868,6 +19012,7 @@ async function saveSoloToSupabase(exId, logsKey, sets) {
     if (saved.w || saved.r) {
       const wInput = document.getElementById(`slog-w-${exId}-s${s}`);
       const rInput = document.getElementById(`slog-r-${exId}-s${s}`);
+      if (wInput?.classList.contains('tr-in')) { [wInput, rInput].forEach(el => el?.classList.add('is-saved')); continue; }
       if (wInput) { wInput.style.background='#f0fff4'; wInput.style.borderColor='#38a169'; wInput.style.color='#276749'; }
       if (rInput) { rInput.style.background='#f0fff4'; rInput.style.borderColor='#38a169'; rInput.style.color='#276749'; }
     }
@@ -18881,7 +19026,7 @@ async function saveSoloToSupabase(exId, logsKey, sets) {
       : `¡Progresión! Set ${best.set}: ${best.from} → ${best.to} reps`;
     showProgressionCelebration(msg);
   } else if(totalWeight > 0){
-    showToast(`¡${totalWeight.toFixed(0)}${currentWeightUnit} levantados!`, 3500);
+    showToast(`¡${totalWeight.toFixed(0)}${unit} levantados!`, 3500);
   } else {
     showToast('¡Guardado!', 'success');
   }
@@ -18890,6 +19035,17 @@ async function saveSoloToSupabase(exId, logsKey, sets) {
 }
 
 function setSoloUnit(exId, unit, btn) {
+  if (trDarkOn()) {
+    // Entreno oscuro: la unidad es de este ejercicio (no toca la de los demás)
+    trUnitSet(exId, unit);
+    trPaintUnitBox(`unit-solo-${exId}`, unit);
+    document.querySelectorAll(`[id^="slog-w-${exId}-"]`).forEach(inp => {
+      if (!inp.classList.contains('has-prev')) inp.placeholder = unit;
+      inp.setAttribute('aria-label', (inp.getAttribute('aria-label') || '').replace(/(kg|lb)$/, unit));
+    });
+    exxOnUnitChange(exId);
+    return;
+  }
   currentWeightUnit = unit;
   const container = document.getElementById(`unit-solo-${exId}`);
   if(container){ container.querySelectorAll('.unit-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); }
@@ -18983,6 +19139,7 @@ function exxSameDay(r) { return r.week_number === clientWeek && (r.day_label || 
 
 function exxNotesLinkHtml(ex) {
   const n = exxState.notesCount[exxKey(ex.name)] || 0;
+  if(trDarkOn()) return `<button type="button" class="tr-act" data-exx-notes="${ex.id}" onclick="openExxSheet('${ex.id}','notes')" aria-label="Notas${n ? ', ' + n : ''}"><span class="tr-act-ico-miel">${icon('pencil', 16)}</span><span>Notas</span>${n ? `<span class="tr-act-count" aria-hidden="true">${n}</span>` : ''}</button>`;
   return `<button type="button" class="exx-notes-link" data-exx-notes="${ex.id}" onclick="openExxSheet('${ex.id}','notes')" aria-label="Notas del ejercicio${n ? ', ' + n : ''}">${icon('pencil', 15)}<span>NOTAS</span>${n ? `<span class="exx-count">${n}</span>` : ''}</button>`;
 }
 // Re-pinta el link NOTAS de todas las cards del mismo ejercicio (sin re-render del día)
@@ -19222,7 +19379,7 @@ function exxLastLoadHtml(ex) {
   if(!exxPlatesAllowed(ex)) return '';
   const st = exxState.setups[exxKey(ex.name)];
   if(!st) return '';
-  const unit = currentWeightUnit;
+  const unit = exUnitFor(ex.id);
   const total = exxTotalText(st, unit);
   const drawing = st.mode === 'bar'
     ? exxBarSvg(st.plates, {width:150, height:66, labels:false})
@@ -19260,7 +19417,7 @@ function exxApplyAutofill(exId) {
   const st = exxState.setups[exxKey(ex.name)];
   const kg = exxTotalKg(st);
   if(kg == null) return;
-  const unit = currentWeightUnit;
+  const unit = exUnitFor(exId);
   const val = exxFmtNum(exxRoundUnit(exxFromKg(kg, unit), unit));
   const autoKey = `mws_exx_auto_${exxDayKey()}`, logsKey = `mws_slogs_${exxDayKey()}`;
   const auto = exxReadLS(autoKey), logs = exxReadLS(logsKey);
@@ -19286,8 +19443,15 @@ function exxManualEdit(exId, s) {
   document.getElementById(`exx-auto-${exId}-s${s}`)?.setAttribute('hidden', '');
 }
 // kg/lb: los números auto se recalculan en la nueva unidad; las placas no cambian
-function exxOnUnitChange() {
+function exxOnUnitChange(exId) {
   if(!currentClient) return;
+  if(exId && trDarkOn()) {
+    // Solo este ejercicio: recalcula su autocompletado y su "Última carga"
+    if(Object.keys(exxReadLS(`mws_exx_auto_${exxDayKey()}`)).some(k => k.startsWith(exId + '_s')) && exxState.exById[exId]) exxApplyAutofill(exId);
+    const ex = exxState.exById[exId], el = document.getElementById('exx-load-' + exId);
+    if(ex && el) el.innerHTML = exxLastLoadHtml(ex);
+    return;
+  }
   document.querySelectorAll('[id^="unit-solo-"]').forEach(box => {
     box.querySelectorAll('.unit-btn').forEach(b => b.classList.toggle('selected', b.textContent.trim() === currentWeightUnit));
   });
@@ -19299,7 +19463,7 @@ function exxOnUnitChange() {
 
 // ---- pestaña Placas del sheet ----
 function exxNewSetup(ex) {
-  const unit = currentWeightUnit;
+  const unit = exUnitFor(ex.id);
   return { mode: ex.tag === 'Máquina' ? 'pin' : 'bar', bar_kg: exxToKg(unit === 'lb' ? 45 : 20, unit), plates: [],
     pin_position: 1, pin_stack_size: EXX_PIN_STACK, pin_plate_weight: null, weight_unit: unit };
 }
@@ -19456,8 +19620,9 @@ async function saveExxPlates() {
   // Todas las cards del día con este ejercicio: última carga + autocompletar
   Object.values(exxState.exById).forEach(e => { if(exxKey(e.name) === key) exxApplyAutofill(e.id); });
   exxRefreshLastLoad();
+  const toastUnit = exUnitFor(exxSheet.exId);
   closeExxSheet();
-  showToast(totalKg == null ? 'Placas guardadas' : `Placas guardadas · ${exxTotalText(row, currentWeightUnit)}`, 'success');
+  showToast(totalKg == null ? 'Placas guardadas' : `Placas guardadas · ${exxTotalText(row, toastUnit)}`, 'success');
 }
 
 // ---- solicitar asistencia (cliente) ----
@@ -19468,11 +19633,18 @@ const exxAssist = { mode:'exercise', exId:null, ref:null, targetExId:null, reaso
 
 function exxAssistBtnHtml(ex) {
   const open = exxState.assist[exxKey(ex.name)];
+  if(trDarkOn()) return trAssistBtnHtml(!!open, `openExxAssist('${ex.id}')`);
   if(open) return `<div class="exx-assist-sent">
       <span class="exx-sent-chip">${icon('check', 14)}Solicitud enviada</span>
       <button type="button" class="exx-link-btn" style="padding:0 4px 0 10px;" onclick="openExxAssist('${ex.id}')">Reenviar</button>
     </div>`;
   return `<button type="button" class="exx-assist-btn" onclick="openExxAssist('${ex.id}')">${icon('life-buoy', 18)}<span>Solicitar asistencia</span></button>`;
+}
+// Entreno oscuro: acción discreta de la fila "Notas | Solicitar asistencia" (mismo modal de siempre)
+function trAssistBtnHtml(sent, call) {
+  return sent
+    ? `<button type="button" class="tr-act" onclick="${call}" aria-label="Solicitud enviada. Reenviar"><span class="tr-act-ico-ok">${icon('check', 16)}</span><span>Enviada · Reenviar</span></button>`
+    : `<button type="button" class="tr-act" onclick="${call}">${icon('life-buoy', 16)}<span>Solicitar asistencia</span></button>`;
 }
 function exxRefreshAssistBtns() {
   Object.values(exxState.exById).forEach(ex => {
@@ -19510,7 +19682,7 @@ function exxAssistMessage() {
   ];
   if(detail) lines.push(detail);
   const st = exxPlatesAllowed(ex) ? exxState.setups[exxKey(ex.name)] : null;
-  if(st) lines.push(exxLoadLine(st, currentWeightUnit));
+  if(st) lines.push(exxLoadLine(st, exUnitFor(ex.id)));
   return lines.join('\n');
 }
 
@@ -19585,7 +19757,7 @@ async function sendExxAssist() {
   const lastLoad = st ? {
     mode: st.mode, bar_kg: st.bar_kg, plates: st.plates || [], pin_position: st.pin_position,
     pin_stack_size: st.pin_stack_size, pin_plate_weight: st.pin_plate_weight, weight_unit: st.weight_unit,
-    total_kg: exxTotalKg(st), text: exxLoadLine(st, currentWeightUnit)
+    total_kg: exxTotalKg(st), text: exxLoadLine(st, exUnitFor(ex.id))
   } : null;
   const day = exxState.day || {};
   const fields = { reason: exxAssist.reason, detail, last_load: lastLoad, exercise_id: ex.id, exercise_name: ex.name, plan_day_id: ex.plan_day_id || null, week_number: clientWeek,
@@ -19616,6 +19788,7 @@ async function sendExxAssist() {
 // Un circuito no tiene id propio: es la letra de exercises.superset_group dentro de un día
 // del plan. circuit_ref = "<plan_day_id>:<letra>" lo identifica de forma única por semana y día.
 function exxCircuitAssistBtnHtml(ref) {
+  if(trDarkOn()) return trAssistBtnHtml(!!exxState.cassist?.[ref], `openExxCircuitAssist('${ref}')`);
   if(exxState.cassist?.[ref]) return `<div class="exx-assist-sent">
       <span class="exx-sent-chip">${icon('check', 14)}Solicitud enviada</span>
       <button type="button" class="exx-link-btn" style="padding:0 4px 0 10px;" onclick="openExxCircuitAssist('${ref}')">Reenviar</button>
