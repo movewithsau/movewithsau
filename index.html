@@ -1483,6 +1483,10 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 .ecs-switch[aria-checked="true"] span { left:25px; }
 .ecs-c-foot { padding:16px 24px 34px; display:flex; flex-direction:column; gap:10px; }
 .ecs-c-note { text-align:center; font-size:13px; color:#6B6258; }
+.ecs-c-status { margin-top:10px; font-size:13px; font-weight:700; color:#1E7A3C; }
+.ecs-c-status[hidden], .ecs-c-foot[hidden] { display:none; }
+.ecs-retire { align-self:center; min-height:48px; padding:0 16px; border:0; background:transparent; color:#8C1D12; font-family:'DM Sans',sans-serif; font-size:16px; font-weight:700; text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+.ecs-retire:disabled { opacity:0.45; cursor:default; }
 .ecs-prev-card { margin:0 24px; border-radius:26px; background:#14110E; color:#FBF6EF; padding:22px 20px 26px; position:relative; overflow:hidden; }
 .ecs-prev-card .ecs-big { font-size:38px; margin-top:12px; }
 .ecs-prev-card .ecs-line { margin-top:18px; width:48px; }
@@ -2510,18 +2514,28 @@ span.tr-next-name { cursor:default; }
       <div class="ecs-c-pad">
         <h1 class="ecs-c-h1" id="ecs-c-title">Entrena como Sau</h1>
         <div class="ecs-c-lead">Lo que escribas lo ven todos tus clientes en su home. Se borra solo a las 24 horas.</div>
+        <div class="ecs-c-status" id="ecs-status" hidden></div>
         <label for="ecs-text" class="ecs-c-lbl ecs-mono">TU ENTRENO DE HOY</label>
         <textarea id="ecs-text" class="ecs-ta" maxlength="500" placeholder="Qué entrenaste hoy, cómo te fue y el reto para tus clientes." oninput="ecsCount()"></textarea>
         <div class="ecs-c-meta"><span id="ecs-active-note"></span><span class="ecs-mono" id="ecs-count" aria-live="polite">0 / 500</span></div>
+        <div id="ecs-sw-edit">
         <div class="ecs-switch-row">
           <div><div id="ecs-push-lbl" style="font-size:16px;font-weight:700;">Avisar a los clientes</div><div style="margin-top:2px;font-size:13px;color:#6B6258;">Mandar notificación push al publicar</div></div>
           <button type="button" class="ecs-switch" id="ecs-push" role="switch" aria-checked="true" aria-labelledby="ecs-push-lbl" onclick="ecsTogglePush()"><span></span></button>
         </div>
+        </div>
       </div>
     </div>
-    <div class="ecs-c-foot">
+    <div class="ecs-c-foot" id="ecs-foot-new">
       <button type="button" class="ecs-btn ecs-btn-orange" id="ecs-to-prev" onclick="ecsShowPreview()">Ver vista previa<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
       <div class="ecs-c-note">Todavía no se publica nada.</div>
+    </div>
+    <div class="ecs-c-foot" id="ecs-foot-edit" hidden>
+      <button type="button" class="ecs-btn ecs-btn-green" id="ecs-save" onclick="ecsSavePost()">Guardar cambios<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5L20 7"/></svg></button>
+      <button type="button" class="ecs-btn ecs-btn-ghost" id="ecs-to-prev-b" onclick="ecsShowPreview()">Publicar como nueva</button>
+      <div class="ecs-c-note">Reemplaza la publicación actual.</div>
+      <button type="button" class="ecs-retire" id="ecs-retire" onclick="ecsRetire()">Retirar publicación</button>
+      <div class="ecs-c-note">Los cambios se ven de inmediato.</div>
     </div>
   </div>
   <div id="ecs-prev" style="display:none;flex-direction:column;flex:1;min-height:0;">
@@ -2537,6 +2551,7 @@ span.tr-next-name { cursor:default; }
         <div class="ecs-line" aria-hidden="true"></div>
         <div class="ecs-body" id="ecs-prev-body" style="position:relative;"></div>
       </div>
+      <div id="ecs-sw-prev" style="padding:0 24px;"></div>
     </div>
     <div class="ecs-c-foot">
       <div class="ecs-push-note" id="ecs-push-note"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1E7A3C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8M10 21a2 2 0 004 0"/></svg><span>Se enviará un push a todos tus clientes.</span></div>
@@ -8270,32 +8285,50 @@ async function ecsOpenEditor() {
   const ta = document.getElementById('ecs-text');
   ecsBackToEdit();
   ov.hidden = false;
+  await ecsRefreshEditor(true);
+  ta.focus();
+}
+// Lee la activa y arma el editor en modo "nueva" o "edición". loadText: carga el texto activo si el campo está vacío.
+async function ecsRefreshEditor(loadText) {
+  const ta = document.getElementById('ecs-text');
   const p = await ecsLoadActivePost(true).catch(() => null);
   ecsEditorActive = ecsIsActive(p) ? p : null;
   // Si ya hay una activa, el editor la carga (solo si todavía no se escribió nada)
-  if (ecsEditorActive && !ta.value.trim()) ta.value = ecsEditorActive.body || '';
-  document.getElementById('ecs-active-note').textContent = ecsEditorActive ? 'Si publicás otra, reemplaza esta.' : '';
+  if (loadText && ecsEditorActive && !ta.value.trim()) ta.value = ecsEditorActive.body || '';
+  const a = ecsEditorActive;
+  const st = document.getElementById('ecs-status');
+  st.hidden = !a;
+  st.textContent = a ? `Publicado ${ecsWhen(Date.parse(a.published_at)).toLowerCase()} · vence en ${ecsLeftText(a)}` : '';
+  document.getElementById('ecs-active-note').textContent = '';
+  document.getElementById('ecs-foot-new').hidden = !!a;
+  document.getElementById('ecs-foot-edit').hidden = !a;
+  // El interruptor de push solo aplica a "publicar nueva": con activa vive en la vista previa
+  document.getElementById(a ? 'ecs-sw-prev' : 'ecs-sw-edit').appendChild(document.querySelector('.ecs-switch-row'));
   ecsCount();
-  ta.focus();
 }
 function ecsCloseEditor() { document.getElementById('ecs-coach').hidden = true; }
 function ecsCount() {
-  const n = ecsLen(document.getElementById('ecs-text').value);
+  const v = document.getElementById('ecs-text').value;
+  const n = ecsLen(v);
   const c = document.getElementById('ecs-count');
   c.textContent = `${n} / ${ECS_MAX}`;
   c.classList.toggle('over', n > ECS_MAX);
-  document.getElementById('ecs-to-prev').disabled = !document.getElementById('ecs-text').value.trim() || n > ECS_MAX;
+  const bad = !v.trim() || n > ECS_MAX;
+  document.getElementById('ecs-to-prev').disabled = bad;
+  document.getElementById('ecs-to-prev-b').disabled = bad;
+  document.getElementById('ecs-save').disabled = bad || !ecsEditorActive || v.trim() === (ecsEditorActive.body || '').trim();
 }
 function ecsTogglePush() {
   const sw = document.getElementById('ecs-push');
   sw.setAttribute('aria-checked', sw.getAttribute('aria-checked') === 'true' ? 'false' : 'true');
+  document.getElementById('ecs-push-note').hidden = !!ecsEditorActive || sw.getAttribute('aria-checked') !== 'true';
 }
 function ecsShowPreview() {
   const body = document.getElementById('ecs-text').value.trim();
   if (!body || ecsLen(body) > ECS_MAX) return;
   ensureDelaFont();
   document.getElementById('ecs-prev-body').textContent = body;
-  document.getElementById('ecs-push-note').hidden = document.getElementById('ecs-push').getAttribute('aria-checked') !== 'true';
+  document.getElementById('ecs-push-note').hidden = !!ecsEditorActive || document.getElementById('ecs-push').getAttribute('aria-checked') !== 'true';
   document.getElementById('ecs-edit').style.display = 'none';
   const prev = document.getElementById('ecs-prev');
   prev.style.display = 'flex';
@@ -8305,6 +8338,16 @@ function ecsShowPreview() {
 function ecsBackToEdit() {
   document.getElementById('ecs-prev').style.display = 'none';
   document.getElementById('ecs-edit').style.display = 'flex';
+}
+// Mensaje de error real (no todo es "revisá tu conexión"). verb: 'publicar' | 'guardar' | 'retirar'.
+function ecsErrMsg(error, verb) {
+  console.error('Entrena como Sau: error al ' + verb, error);
+  const msg = String(error?.message || error || '');
+  if (error?.code === 'PGRST205' || /schema cache|does not exist/i.test(msg))
+    return 'Falta crear la tabla de publicaciones en Supabase. Corré migration_entrena_como_sau.sql.';
+  if (error instanceof TypeError || /failed to fetch|networkerror|load failed/i.test(msg) || navigator.onLine === false)
+    return 'No se pudo ' + verb + '. Revisá tu conexión e intentá de nuevo.';
+  return 'No se pudo ' + verb + ' (' + (error?.code || 'error') + '). Intentá de nuevo.';
 }
 async function ecsPublish() {
   if (ecsBusy) return;
@@ -8319,7 +8362,7 @@ async function ecsPublish() {
     .select('id,body,published_at,expires_at,replaced_at').single();
   if (error || !row) {
     ecsBusy = false; btn.disabled = false;
-    showToast('No se pudo publicar. Revisá tu conexión e intentá de nuevo.', 'error', 4500);
+    showToast(ecsErrMsg(error, 'publicar'), 'error', 5500);
     return;
   }
   // La que estaba activa queda reemplazada (no se borra). Si esto falla, igual manda la más nueva.
@@ -8333,6 +8376,56 @@ async function ecsPublish() {
   showToast('Publicado. Tus clientes ya lo ven en su home.', 'success', 3500);
   ecsCoachCardRender();
   if (push) ecsSendPush(row.id);
+}
+// Editar en sitio: solo cambia body. No toca published_at, expires_at ni push_sent, y no manda push.
+async function ecsSavePost() {
+  const a = ecsEditorActive;
+  if (ecsBusy || !a) return;
+  const body = document.getElementById('ecs-text').value.trim();
+  if (!body || ecsLen(body) > ECS_MAX || body === (a.body || '').trim()) return;
+  const btn = document.getElementById('ecs-save');
+  ecsBusy = true; btn.disabled = true;
+  let res;
+  try {
+    res = await sb.from('coach_daily_posts').update({ body }).eq('id', a.id).is('replaced_at', null)
+      .select('id,body,published_at,expires_at,replaced_at').maybeSingle();
+  } catch (e) { res = { error: e }; }
+  ecsBusy = false;
+  if (res.error) { ecsCount(); showToast(ecsErrMsg(res.error, 'guardar'), 'error', 5500); return; }
+  if (!res.data || !ecsIsActive(res.data)) { await ecsGoneRefresh(); return; }
+  hhPost = res.data; hhPostAt = Date.now();
+  document.getElementById('ecs-text').value = '';
+  ecsCloseEditor();
+  showToast('Cambios guardados. Tus clientes ya ven la versión nueva.', 'success', 3500);
+  ecsCoachCardRender();
+}
+// Retirar: replaced_at = ahora. La fila queda en la base (nunca se borra).
+async function ecsRetire() {
+  const a = ecsEditorActive;
+  if (ecsBusy || !a) return;
+  const ok = await appDialog({ title: '¿Retirar la publicación?', text: 'Tus clientes dejan de verla. Los avisos ya enviados no se pueden deshacer.', okLabel: 'Sí, retirar', cancelLabel: 'Cancelar' });
+  if (!ok || ecsBusy) return;
+  const btn = document.getElementById('ecs-retire');
+  ecsBusy = true; btn.disabled = true;
+  let res;
+  try {
+    res = await sb.from('coach_daily_posts').update({ replaced_at: new Date().toISOString() }).eq('id', a.id).is('replaced_at', null)
+      .select('id').maybeSingle();
+  } catch (e) { res = { error: e }; }
+  ecsBusy = false; btn.disabled = false;
+  if (res.error) { showToast(ecsErrMsg(res.error, 'retirar'), 'error', 5500); return; }
+  if (!res.data) { await ecsGoneRefresh(); return; }
+  hhPost = null; hhPostAt = Date.now();
+  document.getElementById('ecs-text').value = '';
+  ecsCloseEditor();
+  showToast('Publicación retirada.', 'success', 3000);
+  ecsCoachCardRender();
+}
+// 0 filas: ya la retiraron o venció desde otro dispositivo
+async function ecsGoneRefresh() {
+  showToast('Esta publicación ya no está activa.', 'error', 4000);
+  await ecsRefreshEditor(false);
+  ecsCoachCardRender();
 }
 // Un push por cliente activo (sin churn, sin ocultos, sin LIFT: no tienen este home), reusando
 // api/notify.js con target.username. Silencioso: si falla, la publicación ya quedó hecha.
