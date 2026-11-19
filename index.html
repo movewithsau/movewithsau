@@ -8306,6 +8306,16 @@ function ecsBackToEdit() {
   document.getElementById('ecs-prev').style.display = 'none';
   document.getElementById('ecs-edit').style.display = 'flex';
 }
+// Mensaje de error real (no todo es "revisá tu conexión"). verb: 'publicar' | 'guardar' | 'retirar'.
+function ecsErrMsg(error, verb) {
+  console.error('Entrena como Sau: error al ' + verb, error);
+  const msg = String(error?.message || error || '');
+  if (error?.code === 'PGRST205' || /schema cache|does not exist/i.test(msg))
+    return 'Falta crear la tabla de publicaciones en Supabase. Corré migration_entrena_como_sau.sql.';
+  if (error instanceof TypeError || /failed to fetch|networkerror|load failed/i.test(msg) || navigator.onLine === false)
+    return 'No se pudo ' + verb + '. Revisá tu conexión e intentá de nuevo.';
+  return 'No se pudo ' + verb + ' (' + (error?.code || 'error') + '). Intentá de nuevo.';
+}
 async function ecsPublish() {
   if (ecsBusy) return;
   const body = document.getElementById('ecs-text').value.trim();
@@ -8319,7 +8329,7 @@ async function ecsPublish() {
     .select('id,body,published_at,expires_at,replaced_at').single();
   if (error || !row) {
     ecsBusy = false; btn.disabled = false;
-    showToast('No se pudo publicar. Revisá tu conexión e intentá de nuevo.', 'error', 4500);
+    showToast(ecsErrMsg(error, 'publicar'), 'error', 5500);
     return;
   }
   // La que estaba activa queda reemplazada (no se borra). Si esto falla, igual manda la más nueva.
