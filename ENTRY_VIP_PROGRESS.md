@@ -51,3 +51,20 @@ Supuestos / dudas:
 - "términos y el descargo" abre una hoja con los textos de Aviso médico, Riesgos y Resultados del contrato actual.
 - Campos obligatorios del onboarding Entry: profesión, correo, objetivo, días, experiencia y términos. Lesiones, equipo, éxito y "Algo más" opcionales.
 - En la ficha, la fila extra "Éxito para el cliente" muestra la respuesta de éxito.
+
+### E2: barra nueva del coach — terminado
+Commit: (ver git log, "E2")
+
+Hecho:
+- Las 7 barras del coach (Clientes, Machotes, Coaching, Run, Ajustes, más ai-builder y data) pasan a 4: Clientes, Build, Delivery, Ajustes (`.ev-coach-nav`, `data-nav`).
+- Pantalla nueva `screen-coach-build` con tres tarjetas (Machotes, Coaching, Run) que abren las pantallas de siempre con `coachNav('builder'|'coaching'|'run')`, sin cambios por dentro. La tarjeta de Run muestra "N pidió acceso" cuando `evRunRequestCount()` > 0 (se conecta en E4; hoy devuelve 0).
+- Pantalla nueva `screen-coach-delivery` con estado "Pronto" (se llena en E4, E5, E7). En la barra hay un globito para avisos (`data-ev-badge="delivery"`, oculto por ahora).
+- `coachNav` marca el ítem activo en todas las barras según la sección (Machotes/Coaching/Run → Build).
+
+Probado (base simulada, 390 px):
+- [x] Clientes → Build → Machotes / Coaching / Run abren `screen-templates`, `screen-coach-coaching`, `screen-coach-run`; Build queda marcado.
+- [x] Delivery muestra "Pronto"; Ajustes y Clientes funcionan; ítem activo correcto al volver.
+- [ ] No probado en real.
+
+Notas:
+- `screen-coach-data` (Analytics) ya no tenía entrada en la barra antes de este cambio; sigue igual.
