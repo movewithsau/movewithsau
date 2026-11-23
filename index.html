@@ -2017,6 +2017,7 @@ span.tr-next-name { cursor:default; }
     </div>
     <div id="lift-home-block" style="display:none;"></div>
     <div id="c-exercises-list"><div class="spinner"></div></div>
+    <div id="ev-refer-slot"></div><!-- Refiere y Gana $$ (E7): entre Done y Trabajo de hoy -->
     <div id="c-muscle-summary"></div>
     <div id="lift-missions-block" style="display:none;"></div>
     <div id="training-locked-block" style="display:none;">
@@ -4077,7 +4078,7 @@ function handleLogout() {
   currentUser=null; currentClient=null; clientWeek=1; clientDay=null; screenHistory=[];
   document.body.classList.remove('lift-mode', 'ev-entry', 'ev-locked'); // Entry / VIP
   if (typeof evProgressLocked !== 'undefined') evProgressLocked = false;
-  ['evt', 'ev-onb', 'ev-lock-note', 'ev-chat', 'ev-cchat', 'ev-vipoffer', 'ev-pause'].forEach(id => document.getElementById(id)?.remove());
+  ['evt', 'ev-onb', 'ev-lock-note', 'ev-chat', 'ev-cchat', 'ev-vipoffer', 'ev-pause', 'ev-rate', 'ev-refer', 'ev-rules', 'ev-habit', 'ev-runlock', 'ev-terms-sheet', 'ev-rfs'].forEach(id => document.getElementById(id)?.remove());
   document.body.classList.remove('ev-paused');
   if (typeof evPausePoll !== 'undefined') clearInterval(evPausePoll);
   if (typeof evUnreadPoll !== 'undefined') { clearInterval(evUnreadPoll); clearInterval(evChatPoll); clearInterval(evCChatPoll); }
@@ -6038,6 +6039,7 @@ async function loadClientExercises() {
   }).join('');
   const finishRowHtml = finishBtnHtml ? `<div class="tl-plain">${finishBtnHtml}</div>` : '';
   list.innerHTML = startBtnHtml + `<div class="tl">` + warmupBanner + tlItemsHtml + finishRowHtml + cooldownBanner + `</div>`;
+  evRenderRefer(); // Refiere y Gana $$ (E7)
   if (trDark) {
     const curIdx = firstPendingItem ? itemsOrder.indexOf(firstPendingItem) + 1 : itemsOrder.length;
     trPaintHead(curIdx, itemsOrder.length);
@@ -29862,6 +29864,7 @@ body.ev-entry .tr-act-sep { display:none; }
 .ev-modal { width:100%; max-width:350px; background:#fff; border-radius:26px; padding:22px 20px 20px; display:flex; flex-direction:column; align-items:center; text-align:center; color:#2A211B; font-family:'DM Sans',sans-serif; }
 .ev-modal .ev-mico { width:64px; height:64px; border-radius:50%; background:#F6E6DB; color:#A63E10; display:flex; align-items:center; justify-content:center; }
 .ev-modal h2 { font-family:'Playfair Display',serif; font-size:34px; margin:4px 0 0; }
+.ev-modal h2.ev-dela, .ev-sheet h2.ev-dela { font-family:'Dela Gothic One',sans-serif; font-weight:400; }
 .ev-modal p { margin:10px 0 0; font-size:15px; line-height:1.45; }
 .ev-modal .ev-m-mute { color:#6F655B; }
 .ev-modal .ev-m-small { font-size:12px; color:#6F655B; margin-top:12px; }
@@ -30028,6 +30031,31 @@ body:not(.ev-entry) .ev-chat-fab { display:none !important; }
 .ev-rf-s { display:flex; flex-direction:column; align-items:flex-end; } .ev-rf-s b { font:700 18px 'DM Mono',monospace; color:#A63E10; } .ev-rf-s b.zero { color:#6F655B; } .ev-rf-s span { font-size:11px; color:#6F655B; }
 /* Acceso en pausa (E6): por encima del onboarding y el tour; el chat (10080) queda arriba */
 .ev-ov.ev-pause { z-index:10058; }
+/* Refiere y Gana $$ y Rate us (E7) */
+.ev-refer { display:flex; align-items:center; gap:12px; width:100%; min-height:100px; margin:4px 0 16px; padding:0 18px; border:0; border-radius:22px; background:#F5B83D; color:#14110E; text-align:left; cursor:pointer; font-family:'DM Sans',sans-serif; }
+.ev-refer-t { flex:1; display:flex; flex-direction:column; gap:6px; min-width:0; }
+.ev-refer-h { font-size:22px; line-height:1.05; color:#14110E; margin:0; }
+.ev-refer-s { font-size:13px; font-weight:500; color:#3A2A06; }
+.ev-refer-go { width:46px; height:46px; border-radius:50%; background:#14110E; color:#F5B83D; display:flex; align-items:center; justify-content:center; flex:none; }
+.ev-xbtn.dk { background:#1B1713; color:#CFC6BA; }
+.ev-refer-two { display:flex; gap:12px; align-items:center; margin-top:16px; padding:14px; border-radius:18px; background:#1B1713; border:1px solid #5A4417; }
+.ev-refer-two > span { width:38px; height:38px; border-radius:50%; background:#F5B83D; color:#14110E; display:flex; align-items:center; justify-content:center; flex:none; }
+.ev-refer-two p { margin:0; font-size:15px; line-height:1.3; }
+.ev-rule.dk { color:#FBF6EF; }
+.ev-rule-n.honey { background:#F5B83D; color:#14110E; }
+.ev-modal-wrap.dk { background:rgba(10,8,6,.72); }
+.ev-modal.dk { background:#26201A; border:1px solid #3A3027; color:#FBF6EF; }
+.ev-modal.dk .ev-inp { height:auto; }
+.ev-stars { display:flex; gap:8px; margin-top:18px; }
+.ev-stars button { width:46px; height:46px; border:0; background:transparent; color:#5A4E42; cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center; }
+.ev-stars button.on { color:#F5B83D; }
+.ev-stars-n { margin-top:6px; font:12px 'DM Mono',monospace; color:#F5B83D; }
+.ev-rate-later { margin-top:10px; height:44px; border:0; background:transparent; color:#A89C8D; font:700 14px 'DM Sans',sans-serif; cursor:pointer; }
+.ev-rate-row { background:#fff; border:1px solid #EADFD2; border-radius:18px; padding:14px; margin-bottom:8px; }
+.ev-rate-top { display:flex; justify-content:space-between; gap:10px; align-items:center; }
+.ev-rate-top b { font-size:15px; color:#2A211B; }
+.ev-rate-stars { color:#F5B83D; letter-spacing:2px; font-size:15px; } .ev-rate-stars i { color:#E3D6C7; font-style:normal; }
+.ev-rate-row p { margin:8px 0 6px; font-size:14px; line-height:1.4; color:#2A211B; }
 .ev-mini { background:none; border:0; padding:4px 0; font:700 13px 'DM Sans',sans-serif; color:#A63E10; cursor:pointer; }
 </style>
 <script>
@@ -30243,7 +30271,7 @@ async function evClientGate(cd) {
   if (error) { console.warn('client_onboarding:', error.message); return; }
   window._evOnbRow = data || null;
   loadGoalDisplay(currentClient.goal_text); // motivación tal cual si viene del onboarding
-  if (cd.onboarding_required !== true) { evMaybeShowVipOffer(); return; }
+  if (cd.onboarding_required !== true) { evPostLoginPopups(); return; }
   if (data && data.completed_at) { evAfterOnboarding(); return; }
   ensureDelaFont();
   if (evIsEntry(cd)) evShowEntryOnb(); else evShowVipOnb();
@@ -30873,7 +30901,8 @@ function evLockGuard(target) {
 function evAfterOnboarding() {
   const r = window._evOnbRow;
   if (!r || !r.tour_seen_at) { evStartTour(); return; }
-  if (evIsEntry(currentClient)) evCheckProgressLock().then(locked => { if (locked) evGoToProgress(); else evMaybeShowVipOffer(); });
+  if (evIsEntry(currentClient)) evCheckProgressLock().then(locked => { if (locked) evGoToProgress(); else evPostLoginPopups(); });
+  else evPostLoginPopups();
 }
 
 // ---------- Menú, Perfil y WhatsApp por tier (E3B) ----------
@@ -31825,6 +31854,156 @@ function evCoachPayRowHtml(c) {
   return `<div class="ev-cc"><div class="ev-crow"><div><b>Próxima fecha de pago</b><span>El cliente la ve en su Perfil. Pasadas 48 h sin pago, solo accede al chat.</span>
       <button type="button" class="ev-mini" style="align-self:flex-start;" onclick="showModal('modal-edit-payment')">Cambiar fecha</button></div>
     <div style="text-align:right;flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:6px;"><b style="font-size:17px;">${when}</b>${tag}</div></div></div>`;
+}
+
+// ---------- Refiere y Gana $$ (E7) ----------
+// Bloque miel entre "Done" y "Trabajo de hoy", para todos los clientes. No se puede cerrar y no
+// rastrea nada: solo explica cómo funciona.
+function evReferHtml() {
+  return `<button type="button" class="ev-refer" onclick="evOpenRefer()">
+    <span class="ev-refer-t"><span class="ev-dela ev-refer-h">Refiere y<br>Gana $$</span><span class="ev-refer-s">Tocá y mirá cómo funciona</span></span>
+    <span class="ev-refer-go">${EVT_S('<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>', 22, 2.4)}</span>
+  </button>`;
+}
+function evRenderRefer() {
+  const box = document.getElementById('ev-refer-slot');
+  if (!box) return;
+  const list = document.getElementById('c-exercises-list');
+  const show = currentClient && currentUser?.role !== 'coach' && list && list.style.display !== 'none' && list.querySelector('.tl');
+  if (!show) { box.innerHTML = ''; return; }
+  if (!box.firstElementChild) { box.innerHTML = evReferHtml(); ensureEvFonts(); }
+}
+function evOpenRefer() {
+  if (document.getElementById('ev-refer')) return;
+  ensureEvFonts();
+  const dim = document.createElement('div');
+  dim.className = 'ev-dim'; dim.id = 'ev-refer';
+  const step = (n, t) => `<div class="ev-rule dk"><span class="ev-rule-n honey">${n}</span><span>${t}</span></div>`;
+  dim.innerHTML = `<div class="ev-sheet" role="dialog" aria-modal="true" aria-labelledby="ev-refer-t">
+    <div class="ev-handle"></div>
+    <div class="ev-sheet-top"><span class="ev-eb">Refiere y Gana $$</span><button type="button" class="ev-xbtn dk" aria-label="Cerrar" onclick="document.getElementById('ev-refer')?.remove()">${EVT_S(EV_I.x, 18, 2.2)}</button></div>
+    <h2 class="ev-dela" id="ev-refer-t" style="font-size:25px;margin-top:10px;">Ganá 10% por<br>cada amigo<br>que se una</h2>
+    <p class="ev-p ev-soft" style="margin-top:12px;font-size:15px;">Cuando alguien que referís se une a MOVE, ganás el 10% del primer pago de esa persona.</p>
+    <div class="ev-refer-two"><span>${EVT_S('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', 20, 2.2)}</span><p><b class="ev-honey">2 amigos en el mismo mes:</b> ganás 15% por cada uno.</p></div>
+    <div class="ev-eb" style="margin-top:20px;color:#A89C8D;">Cómo funciona</div>
+    <div class="ev-rules" style="margin-top:12px;gap:12px;">
+      ${step(1, 'Tu amigo le escribe a Sau por Instagram.')}
+      ${step(2, 'Tiene que mencionar que lo referiste vos.')}
+      ${step(3, 'Cuando hace su primer pago, Sau te paga tu comisión por SINPE al cierre del mes.')}
+    </div>
+    <button type="button" class="ev-btn" style="margin-top:22px;" onclick="document.getElementById('ev-refer')?.remove()">Entendido</button>
+  </div>`;
+  dim.addEventListener('click', e => { if (e.target === dim) dim.remove(); });
+  document.body.appendChild(dim);
+  evFitTitles(dim);
+}
+
+// ---------- Rate us (E7) ----------
+// Automático desde el día 20 del primer mes, solo clientes creados desde el lanzamiento
+// (onboarding_required) de los dos tiers. Una sola vez: se guarda en client_rate_us; "Ahora no"
+// queda en client_onboarding.rate_us_dismissed_at. Con 4 o 5 estrellas se pide un testimonio.
+let evRate = 0, evRateComment = '';
+function evRateDay(c) {
+  const r = window._evOnbRow;
+  const start = String(c.start_date || (r && r.completed_at) || c.created_at || '').slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(start)) return 0;
+  return Math.floor((Date.parse(todayCR() + 'T12:00:00Z') - Date.parse(start + 'T12:00:00Z')) / 864e5) + 1;
+}
+async function evRateUsDue() {
+  const c = currentClient, r = window._evOnbRow;
+  if (!c || c.onboarding_required !== true || !r || !r.completed_at || r.rate_us_dismissed_at) return false;
+  if (evRateDay(c) < 20) return false;
+  const { data, error } = await sb.from('client_rate_us').select('id').eq('client_id', c.id).maybeSingle();
+  return !error && !data;
+}
+async function evPostLoginPopups() {
+  if (document.getElementById('ev-pause') || document.getElementById('evt') || document.getElementById('ev-onb') || evProgressLocked) return;
+  if (await evRateUsDue()) { evShowRateUs(); return; }
+  evMaybeShowVipOffer();
+}
+function evStarSvg(on) {
+  return on ? `<svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true" focusable="false">${EV_I.star}</svg>`
+    : `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true" focusable="false">${EV_I.star}</svg>`;
+}
+function evShowRateUs() {
+  if (document.getElementById('ev-rate')) return;
+  ensureEvFonts();
+  evRate = 0;
+  const w = document.createElement('div');
+  w.className = 'ev-modal-wrap dk'; w.id = 'ev-rate';
+  w.innerHTML = `<div class="ev-modal dk" role="dialog" aria-modal="true" aria-labelledby="ev-rate-t">
+    <div class="ev-eb">Tu primer mes · Día ${Math.min(evRateDay(currentClient), 99)}</div>
+    <h2 class="ev-dela" id="ev-rate-t" style="font-size:24px;margin-top:10px;">¿Cómo te<br>va con MOVE?</h2>
+    <p class="ev-p ev-soft" style="margin-top:10px;">Tu opinión nos ayuda a mejorar. Te toma 10 segundos.</p>
+    <div class="ev-stars" role="radiogroup" aria-label="Calificación de 1 a 5 estrellas">${[1, 2, 3, 4, 5].map(n => `<button type="button" role="radio" aria-checked="false" aria-label="${n} ${n === 1 ? 'estrella' : 'estrellas'}" onclick="evPickStars(${n})">${evStarSvg(false)}</button>`).join('')}</div>
+    <div class="ev-stars-n" id="ev-stars-n">&nbsp;</div>
+    <label class="ev-lbl" for="ev-rate-c" style="align-self:flex-start;margin-top:16px;text-align:left;">Contale a Sau qué te gusta o qué mejorarías (opcional)</label>
+    <textarea id="ev-rate-c" class="ev-inp" style="height:92px;" maxlength="1000" placeholder="Escribí lo que quieras"></textarea>
+    <button type="button" class="ev-btn" id="ev-rate-go" style="margin-top:18px;" disabled onclick="evSendRate()">Enviar</button>
+    <button type="button" class="ev-rate-later" onclick="evRateLater()">Ahora no</button>
+  </div>`;
+  document.body.appendChild(w);
+  evFitTitles(w);
+}
+function evPickStars(n) {
+  evRate = n;
+  document.querySelectorAll('#ev-rate .ev-stars button').forEach((b, i) => { b.innerHTML = evStarSvg(i < n); b.classList.toggle('on', i < n); b.setAttribute('aria-checked', i + 1 === n ? 'true' : 'false'); });
+  document.getElementById('ev-stars-n').textContent = `${n} de 5`;
+  document.getElementById('ev-rate-go').disabled = false;
+}
+async function evSendRate() {
+  if (!evRate || !currentClient) return;
+  const btn = document.getElementById('ev-rate-go'); btn.disabled = true;
+  const comment = (document.getElementById('ev-rate-c')?.value || '').trim();
+  evRateComment = comment;
+  const { data, error } = await sb.from('client_rate_us').insert([{ client_id: currentClient.id, stars: evRate, comment: comment || null }]).select().maybeSingle();
+  if (error) { btn.disabled = false; showToast('No se pudo enviar. Probá de nuevo.', 'error'); console.warn(error.message); return; }
+  const m = document.querySelector('#ev-rate .ev-modal');
+  if (evRate >= 4 && m) {
+    m.innerHTML = `<div class="ev-eb">¡Gracias!</div>
+      <h2 class="ev-dela" style="font-size:24px;margin-top:10px;">¿Nos dejás<br>un testimonio?</h2>
+      <p class="ev-p ev-soft" style="margin-top:10px;">Contá en pocas palabras cómo te está yendo. Sau lo puede compartir para que más gente se anime.</p>
+      <textarea id="ev-testi" class="ev-inp" style="height:110px;margin-top:16px;" maxlength="1000" placeholder="Tu testimonio"></textarea>
+      <button type="button" class="ev-btn" style="margin-top:18px;" onclick="evSendTestimonial(${data ? data.id : 'null'})">Enviar testimonio</button>
+      <button type="button" class="ev-rate-later" onclick="document.getElementById('ev-rate')?.remove()">Ahora no</button>`;
+    evFitTitles(m);
+    return;
+  }
+  document.getElementById('ev-rate')?.remove();
+  showToast('¡Gracias! Sau ya lo recibió', 'success', 2500);
+}
+async function evSendTestimonial(rowId) {
+  const t = (document.getElementById('ev-testi')?.value || '').trim();
+  if (!t) { document.getElementById('ev-rate')?.remove(); return; }
+  const prev = evRateComment;
+  const q = sb.from('client_rate_us').update({ comment: (prev ? prev + '\n\n' : '') + 'Testimonio: ' + t.slice(0, 1000) });
+  const { error } = rowId != null ? await q.eq('id', rowId) : await q.eq('client_id', currentClient.id);
+  if (error) { showToast('No se pudo enviar. Probá de nuevo.', 'error'); return; }
+  document.getElementById('ev-rate')?.remove();
+  showToast('¡Gracias por tu testimonio!', 'success', 2500);
+}
+async function evRateLater() {
+  document.getElementById('ev-rate')?.remove();
+  const now = new Date().toISOString();
+  if (window._evOnbRow) window._evOnbRow.rate_us_dismissed_at = now;
+  await sb.from('client_onboarding').upsert([{ client_id: currentClient.id, rate_us_dismissed_at: now, updated_at: now }], { onConflict: 'client_id' });
+}
+
+// Delivery: calificaciones (más nueva primero)
+async function evRenderRates() {
+  const box = document.getElementById('ev-dl-rates');
+  if (!box) return;
+  const clients = await evCoachClients();
+  const ids = clients.map(c => c.id);
+  if (!ids.length) { box.innerHTML = ''; return; }
+  const { data, error } = await sb.from('client_rate_us').select('*').in('client_id', ids).order('created_at', { ascending: false });
+  if (error || !data || !data.length) { box.innerHTML = ''; return; }
+  const rows = data.sort((a, b) => b.created_at.localeCompare(a.created_at));
+  box.innerHTML = `<div class="ev-cc-t" style="margin:18px 0 10px;font-size:15px;">Calificaciones</div>` + rows.map(r => {
+    const c = clients.find(x => x.id === r.client_id) || { name: 'Cliente' };
+    return `<div class="ev-rate-row"><div class="ev-rate-top"><b>${evEsc(c.name || '')}</b><span class="ev-rate-stars" aria-label="${r.stars} de 5">${'★'.repeat(r.stars)}<i>${'★'.repeat(5 - r.stars)}</i></span></div>
+      ${r.comment ? `<p>${evEsc(r.comment).replace(/\n/g, '<br>')}</p>` : ''}<span class="ev-when">${new Date(r.created_at).toLocaleDateString('es-CR', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>`;
+  }).join('');
 }
 
 // Delivery: bandeja del coach (chat E4; rifa E5; calificaciones E7)

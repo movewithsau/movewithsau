@@ -189,3 +189,23 @@ Supuestos:
 - Texto de la pausa: el del mockup (incluye "Apenas se acredite el pago, volvés a entrar a todo.").
 - La pausa no tiene "Cerrar sesión" (el mockup no lo trae).
 - El recordatorio naranja de pago que ya existía sigue igual; para Entry su botón abre el chat (E3B).
+
+### E7: Refiere y Gana $$ y Rate us — terminado
+Commit: (ver git log, "E7")
+
+Hecho:
+- Bloque miel "Refiere y Gana $$" entre la tarjeta "Done" y "Trabajo de hoy" (todos los clientes, cuando hay entreno del día). No se puede cerrar y no rastrea nada. Abre la hoja del mockup: 10% del primer pago; 2 referidos en el mismo mes = 15% por cada uno; el amigo menciona quién lo refirió al escribirle a Sau por Instagram; pago "por SINPE al cierre del mes" (texto a confirmar).
+- Rate us: automático desde el día 20 del primer mes (día 1 = `start_date`, o si no hay, cuando terminó el onboarding, o `created_at`), solo clientes con `onboarding_required` (los dos tiers). Estrellas 1–5 + comentario opcional → `client_rate_us`. Con 4 o 5 estrellas pide un testimonio, que se agrega al comentario como "Testimonio: …". "Ahora no" → `client_onboarding.rate_us_dismissed_at` (no vuelve a salir). Sale antes que la burbuja VIP; nunca durante tour, bloqueo o pausa.
+- Delivery: "Calificaciones", más nueva primero (nombre, estrellas, comentario, fecha).
+
+Probado (base simulada):
+- [x] Cliente nuevo día 19: no sale; día 20: sale ("Día 20"); día 26 sin responder: sale. Cliente viejo: no sale.
+- [x] Guardado del rating y del testimonio (el comentario se conserva). Una vez respondido o con "Ahora no", no vuelve.
+- [x] Bloque Refiere y Gana en su lugar y la hoja; 390 px.
+- [x] Lista del coach ordenada, más nueva primero.
+- [ ] No probado en real.
+
+Supuestos / pendientes:
+- Texto de pago de referidos "Sau te paga tu comisión por SINPE al cierre del mes": a confirmar con Sau.
+- Testimonio: se guarda dentro del mismo comentario (no hay columna aparte).
+- Vista del coach en Delivery: propuesta, a confirmar con Sau.
