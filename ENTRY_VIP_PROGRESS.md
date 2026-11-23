@@ -209,3 +209,30 @@ Supuestos / pendientes:
 - Texto de pago de referidos "Sau te paga tu comisión por SINPE al cierre del mes": a confirmar con Sau.
 - Testimonio: se guarda dentro del mismo comentario (no hay columna aparte).
 - Vista del coach en Delivery: propuesta, a confirmar con Sau.
+
+### E8: NoPain (acompañamiento emocional en Mi Diario) — terminado
+Commit: (ver git log, "E8")
+
+Paso 0:
+- NutriFlex y StrongFlow: llaman a `/api/chat` (Vercel → Groq, modelo `openai/gpt-oss-120b` vía `GROQ_MODEL`, clave `GROQ_API_KEY` en el servidor); el prompt vive en `index.html`; **sí guardan** la conversación (`nutrition_chats`, `training_chats`). NoPain copia la llamada pero no guarda nada.
+- `api/chat.js` solo escribe en los logs el estado, el código y el mensaje de error de Groq; nunca el cuerpo ni el texto de los mensajes.
+- `claude/nopain-agente-emocional.md` no existe en el repo; se usó `docs/NoPain_2.0_Emotional_Wellness_OS.md`, `docs/referencias/docs/TEXTOS-FIJOS.md` y los mockups 32–35.
+
+Hecho:
+- Tarjeta miel "NoPain · Espacio privado" en Mi Diario para todos los clientes (Entry y VIP), con botón blanco y el hexágono con punto central.
+- "Antes de empezar" (primer uso) con los 3 puntos del mockup y el checkbox "Entendí que NoPain no es terapia ni atención médica." Solo se guarda `clients.nopain_accepted_at`.
+- Chat sin historial: la conversación vive solo en memoria de la pestaña; se borra al salir (pide confirmar), con "Borrar" y al cerrar sesión. Sin tablas, sin localStorage, sin datos del cliente en el prompt. Aviso: "Sau no ve esta conversación y no se guarda: si salís, se borra. Tus mensajes se procesan con inteligencia artificial para poder responderte." Nunca "100 % privado".
+- Saludo fijo del mockup y chips "Ordenar mis ideas" / "Solo quiero desahogarme". Respuestas en burbuja miel, cliente en naranja.
+- Prompt "NoPain 2.0" adaptado a voseo costarricense: respuestas cortas (máx. 70 palabras), una pregunta a la vez, sin diagnosticar, sin datos del cliente, con la regla de seguridad (911 y Aquí Estoy) como respaldo.
+- Filtro de crisis fijo en el código (sin tildes, minúsculas; frases en español, voseo y jerga tica). Si dispara, muestra el mensaje fijo del mockup con "Llamar al 911" (`tel:911`) y "Aquí Estoy · 800 273 7869" (`tel:8002737869`), sin llamar al modelo; ese mensaje tampoco se manda después en el historial. No usa el 1322.
+- "Llevarme un resumen (Harvest)": pide la cosecha al modelo y la muestra en una hoja con Copiar y Compartir; el app no la guarda.
+- Sin tope de mensajes.
+
+Probado:
+- [x] Filtro de crisis (node): 29 frases de riesgo reales disparan (incluye "mae ya no quiero vivir", "Diay, ya no quiero seguir aquí", "me quiero tirar del puente", "me tomé todas las pastillas", "serían mejor sin mí"); 12 frases comunes no ("Me mato en el gym", "esta rutina me está matando", "quiero morirme de la risa", "me voy a hacer algo de comer", "ya no puedo más con las sentadillas").
+- [x] Navegador (base simulada): primer uso → solo escribe `nopain_accepted_at`; mensaje normal → 1 llamada a `/api/chat`, 0 escrituras en la base, prompt sin datos del cliente; crisis → 0 llamadas y tarjeta con los dos teléfonos; Harvest sin escrituras; salir vacía la memoria y al volver arranca de cero; localStorage sin cambios.
+- [x] Entry y VIP ven la tarjeta. 390 px.
+- [ ] No probado: respuesta real del modelo (en local `/api/chat` no corre; se simuló).
+- [ ] **Antes de lanzar, Sau re-verifica los contactos**: 911 y Aquí Estoy 800 273 7869 (horario de la línea pendiente).
+
+Pendientes de Sau: nombre final de NoPain, horario de Aquí Estoy, si "sin costo" = sin tope de mensajes.

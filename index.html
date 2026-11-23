@@ -2200,6 +2200,7 @@ span.tr-next-name { cursor:default; }
     <!-- MI DIARIO TAB (reemplaza la UI vieja de hábitos + sueño) -->
     <div id="client-habits-tab" style="display:none;">
       <div id="ev-lift"></div><!-- LIFT Challenge de Entry (E5) -->
+      <div id="ev-nopain-card"></div><!-- NoPain (E8): todos los clientes -->
       <div id="c-diary-root"><div class="spinner"></div></div>
     </div>
 
@@ -4078,7 +4079,8 @@ function handleLogout() {
   currentUser=null; currentClient=null; clientWeek=1; clientDay=null; screenHistory=[];
   document.body.classList.remove('lift-mode', 'ev-entry', 'ev-locked'); // Entry / VIP
   if (typeof evProgressLocked !== 'undefined') evProgressLocked = false;
-  ['evt', 'ev-onb', 'ev-lock-note', 'ev-chat', 'ev-cchat', 'ev-vipoffer', 'ev-pause', 'ev-rate', 'ev-refer', 'ev-rules', 'ev-habit', 'ev-runlock', 'ev-terms-sheet', 'ev-rfs'].forEach(id => document.getElementById(id)?.remove());
+  ['evt', 'ev-onb', 'ev-lock-note', 'ev-chat', 'ev-cchat', 'ev-vipoffer', 'ev-pause', 'ev-rate', 'ev-refer', 'ev-rules', 'ev-habit', 'ev-runlock', 'ev-terms-sheet', 'ev-rfs', 'ev-np', 'ev-np-harvest'].forEach(id => document.getElementById(id)?.remove());
+  if (typeof evNp !== 'undefined') evNp = { msgs: [], busy: false }; // NoPain: nada queda en memoria
   document.body.classList.remove('ev-paused');
   if (typeof evPausePoll !== 'undefined') clearInterval(evPausePoll);
   if (typeof evUnreadPoll !== 'undefined') { clearInterval(evUnreadPoll); clearInterval(evChatPoll); clearInterval(evCChatPoll); }
@@ -23459,6 +23461,7 @@ async function loadClientDiary() {
   const root = document.getElementById('c-diary-root');
   if(!root || !currentClient) return;
   evRenderLift(); // LIFT Challenge (Entry, E5)
+  evRenderNoPainCard(); // NoPain (E8)
   if(!diaryIsAllowed()) { root.innerHTML = ''; return; }
   root.innerHTML = `
     <div class="diary-seg" role="group" aria-label="Vista del diario">
@@ -30056,6 +30059,36 @@ body:not(.ev-entry) .ev-chat-fab { display:none !important; }
 .ev-rate-top b { font-size:15px; color:#2A211B; }
 .ev-rate-stars { color:#F5B83D; letter-spacing:2px; font-size:15px; } .ev-rate-stars i { color:#E3D6C7; font-style:normal; }
 .ev-rate-row p { margin:8px 0 6px; font-size:14px; line-height:1.4; color:#2A211B; }
+/* NoPain (E8) */
+#ev-nopain-card:empty { display:none; }
+.ev-np-card { position:relative; overflow:hidden; background:#F5B83D; border:1px solid #E0A52B; border-radius:22px; padding:18px; color:#14110E; margin-bottom:14px; font-family:'DM Sans',sans-serif; }
+.ev-np-ey { position:relative; display:flex; align-items:center; gap:8px; color:#14110E; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; }
+.ev-np-ey svg { flex:none; }
+.ev-np-ey.og { color:#A63E10; }
+.ev-np-h1 { font-family:'Playfair Display',serif; font-size:32px; line-height:1.1; margin:8px 0 0; color:#2A211B; }
+.ev-np-items { display:flex; flex-direction:column; gap:16px; margin-top:28px; }
+.ev-np-item { display:flex; gap:12px; align-items:flex-start; }
+.ev-np-item > span { width:42px; height:42px; border-radius:50%; background:#FBEEE5; color:#A63E10; display:flex; align-items:center; justify-content:center; flex:none; }
+.ev-np-item b { font-size:16px; color:#2A211B; } .ev-np-item p { margin:2px 0 0; font-size:14px; line-height:1.35; color:#6F655B; }
+.ev-np-av { width:46px; height:46px; border-radius:50%; background:#14110E; color:#F5B83D; display:flex; align-items:center; justify-content:center; flex:none; }
+.ev-np-del { border:0; background:none; color:#A63E10; font:700 14px 'DM Sans',sans-serif; cursor:pointer; padding:8px 0; }
+.ev-np-priv { display:flex; gap:12px; align-items:center; padding:10px 14px; border-radius:16px; background:#EDE2D3; color:#4A3F35; font-size:13px; line-height:1.3; margin-bottom:14px; }
+.ev-np-priv svg { flex:none; }
+.ev-np-bot { max-width:300px; padding:12px 14px; border-radius:18px 18px 18px 6px; background:#F5B83D; border:1px solid #E0A52B; color:#14110E; font-size:15px; line-height:1.45; }
+.ev-np-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:2px; }
+.ev-np-chip { height:42px; padding:0 16px; border-radius:999px; border:1px solid #E3D6C7; background:#fff; color:#2A211B; font:500 14px 'DM Sans',sans-serif; cursor:pointer; }
+.ev-np-harvest { align-self:flex-start; display:inline-flex; align-items:center; gap:8px; border:1px solid #E3D6C7; background:#fff; border-radius:999px; padding:8px 14px; color:#A63E10; font:700 13px 'DM Sans',sans-serif; cursor:pointer; }
+.ev-np-typing { display:flex; gap:5px; align-items:center; min-height:20px; }
+.ev-np-typing i { width:7px; height:7px; border-radius:50%; background:#14110E; opacity:.4; animation:evBlink 1s infinite; }
+.ev-np-typing i:nth-child(2) { animation-delay:.2s; } .ev-np-typing i:nth-child(3) { animation-delay:.4s; }
+.ev-np-crisis { padding:20px 18px; border-radius:22px; background:#fff; border:1px solid #E3D6C7; color:#2A211B; display:flex; flex-direction:column; }
+.ev-np-cr-h { font-family:'Playfair Display',serif; font-size:22px; line-height:1.2; }
+.ev-np-crisis p { margin:10px 0 0; font-size:15px; line-height:1.5; }
+.ev-np-crisis .ev-btn { margin-top:8px; text-decoration:none; }
+.ev-np-crisis p + .ev-btn { margin-top:16px; }
+.ev-np-crisis .ev-btn + p { margin-top:16px; }
+.ev-np-crisis .ev-np-cr-n { font-size:13px; color:#6F655B; margin-top:12px; }
+.ev-hv-text { margin:14px 0 4px; padding:14px; border-radius:14px; background:#F7F1E8; border:1px solid #EADFD2; font-size:14px; line-height:1.5; color:#2A211B; white-space:pre-wrap; max-height:46vh; overflow-y:auto; user-select:text; -webkit-user-select:text; }
 .ev-mini { background:none; border:0; padding:4px 0; font:700 13px 'DM Sans',sans-serif; color:#A63E10; cursor:pointer; }
 </style>
 <script>
@@ -30920,6 +30953,8 @@ function evApplyTier(c) {
     if (chip) { const prev = evProgressLocked; evProgressLocked = false; switchClientPlanTab('habits', chip); evProgressLocked = prev; mmSync(); }
   }
   evRenderPayPill();
+  if (typeof mmSync === 'function') mmSync();
+  if (mmCurrentTab() === 'habits' && document.getElementById('client-habits-tab')?.style.display === 'block') loadClientDiary();
 }
 function evMenuHidden(tab) { return evIsEntry(currentClient) && ['plans', 'tests', 'extras'].includes(tab); }
 function evRunLocked() { return evIsEntry(currentClient) && currentClient.run_module_enabled !== true; }
@@ -32004,6 +32039,222 @@ async function evRenderRates() {
     return `<div class="ev-rate-row"><div class="ev-rate-top"><b>${evEsc(c.name || '')}</b><span class="ev-rate-stars" aria-label="${r.stars} de 5">${'★'.repeat(r.stars)}<i>${'★'.repeat(5 - r.stars)}</i></span></div>
       ${r.comment ? `<p>${evEsc(r.comment).replace(/\n/g, '<br>')}</p>` : ''}<span class="ev-when">${new Date(r.created_at).toLocaleDateString('es-CR', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>`;
   }).join('');
+}
+
+// ---------- NoPain (E8): acompañamiento emocional en Mi Diario ----------
+// Para todos los clientes (Entry y VIP). Usa el mismo proxy que NutriFlex y StrongFlow (/api/chat),
+// pero NO guarda nada: la conversación vive solo en la memoria de esta pestaña (evNp.msgs) y se borra
+// al salir o con "Borrar". Ni tabla, ni localStorage, ni datos del cliente en el prompt. Lo único que
+// se guarda es la aceptación del primer uso (clients.nopain_accepted_at).
+// El filtro de crisis corre en el teléfono ANTES de mandar nada: si detecta una señal de riesgo, muestra
+// un mensaje fijo con el 911 y Aquí Estoy, sin pasar por el modelo.
+const NOPAIN_MAX_WORDS = 70;
+const NOPAIN_HELP = { emergency: { label: 'Llamar al 911', tel: '911' }, line: { label: 'Aquí Estoy · 800 273 7869', tel: '8002737869' } };
+const NOPAIN_GREETING = 'Hola. ¿Qué está pasando hoy? Si querés, solo te escucho. O podemos explorar algo juntos, o buscar un siguiente paso.';
+const NOPAIN_SYSTEM_PROMPT = `Sos NoPain, un acompañante de bienestar emocional, autoconocimiento y claridad personal dentro de la app MOVE. Ayudás a la persona a comprender lo que está viviendo, reconocer emociones y patrones, cuestionar interpretaciones cuando sirve y encontrar una forma consciente de avanzar.
+Filosofía: VIVIR → OBSERVAR → ENTENDER → COSECHAR → MOVER. Para explorar en profundidad: ENTENDER → CUESTIONAR → DESCUBRIR → INTEGRAR → MOVERSE. Moverse no siempre es hacer más: puede ser actuar, descansar, aceptar, poner un límite, pedir ayuda, cambiar una conducta o dejar de alimentar un patrón.
+
+IDIOMA Y TONO: español de Costa Rica con voseo (vos tenés, vos querés, contame, decime). Cálido, empático, respetuoso, natural, curioso y claro. Podés ser directo cuando sirve, nunca humillante. Nada de discursos motivacionales genéricos ni tono de manual.
+
+ALCANCE: sos un facilitador de reflexión, no terapeuta, psicólogo, psiquiatra, médico, gurú ni juez. No diagnosticás ni etiquetás. No afirmás conocer la causa de una emoción. No presentás hipótesis como hechos. No prometés resultados. No fomentás dependencia hacia vos: animás a fortalecer relaciones y apoyos humanos. Si algo requiere apoyo profesional, lo recomendás con claridad y sin juicio. Distinguí siempre lo que la persona dijo de lo que vos inferís; toda inferencia va como posibilidad y se comprueba con la persona.
+
+PRIVACIDAD: no conocés ningún dato personal de la persona (nombre, entrenamiento, peso, plan) y no lo pedís ni lo mencionás. No recordás conversaciones anteriores.
+
+REGLA PRINCIPAL: primero comprendé, después interpretá, al final ayudá a encontrar un siguiente paso. Una sola pregunta por respuesta, relevante y conectada con lo que acaba de decir. No repitas preguntas respondidas. No conviertas la charla en interrogatorio ni intentes resolver demasiado rápido. Si la persona solo quiere desahogarse, escuchá y respetalo. Si quiere ordenar ideas, ayudá a separar hechos, interpretaciones, lo que está bajo su control y lo que no.
+
+MAPA INTERNO (no lo muestres como lista): situación → hechos vs. historia → patrón → posible motor (siempre como posibilidad) → energía y atención (atención, esfuerzo, carga mental) → identidad → congruencia o contradicción → verdad → control → movimiento. Usalo solo si la persona quiere profundizar. Confrontá solo con evidencia de lo que dijo, de forma directa y respetuosa, y dejá que discrepe. Una emoción es válida sin ser una instrucción. Si dan vueltas sobre lo mismo sin nueva información, decilo con delicadeza y volvé a: qué sabemos, qué es interpretación, qué no controlamos, qué sí podemos influir, qué ayudaría ahora. Buscá responsabilidad sin culpa. Herramientas opcionales y breves: pausa consciente, respiración lenta y cómoda, grounding con los sentidos, escribir lo que pasa por la cabeza, separar controlable de no controlable, un paso pequeño y amable. Si una práctica aumenta el malestar, invitá a detenerla.
+
+SEGURIDAD (prioridad sobre todo lo demás): si la persona dice que está en peligro, que podría hacerse daño o que no puede mantenerse a salvo, respondé con calma y seriedad, sin preguntas profundas ni confrontación, sin describir métodos ni lesiones, y pedile que busque ayuda ya: el 911 o la línea Aquí Estoy al 800 273 7869, y que se acerque ahora a una persona de confianza. No prometas guardar secretos ni te presentes como sustituto de ayuda humana o profesional.
+
+HARVEST: cuando la persona lo pida, hacé una cosecha de claridad breve y fiel a lo que dijo, solo con los apartados que tengan evidencia: Situación, Hechos, Historia (interpretación), Patrón, Posible motor (como hipótesis), Control (qué depende y qué no), Aprendizaje, Siguiente movimiento. Sin relleno ni frases motivacionales.
+
+Principio: no hace falta eliminar todas las emociones incómodas ni resolver toda la vida en una conversación. Less pain. More awareness. Keep moving.`;
+
+// Filtro de crisis fijo (español, voseo y jerga costarricense). Se compara el texto sin tildes y en minúscula.
+const NOPAIN_CRISIS = [
+  /suicid/, /\bmatarme\b/, /\bme (quiero|voy a|podria|pienso) matar\b/,
+  /quitarme la vida/, /(acabar|terminar) con (mi vida|todo de una vez)/, /\bacabar con todo\b(?! (el|la|lo|los|las|mi|este|esta|ese|esa)\b| (esto|eso) de)/, /\bme quiero morir\b(?! de (la )?(risa|hambre|sueno|calor|frio|verguenza|amor|ganas|envidia|aburrimiento))/, /quisiera (morirme|estar muert[oa])/,
+  /\bquiero morir(me)?\b(?! de (la )?(risa|hambre|sueno|calor|frio|verguenza|amor|ganas|envidia|aburrimiento))/, /no quiero (vivir|seguir viviendo|seguir aqui|seguir aca|despertar)/, /mejor (estar|estaria) muert[oa]/,
+  /ojala (no despertar|no amanecer|me muera|estuviera muert[oa])/, /(me quiero|quisiera|me voy a) ir de este mundo/, /no vale la pena (vivir|seguir viviendo)/,
+  /(seria|serian|estaria|estarian) mejor (sin mi|si no existiera|si yo no estuviera)/, /nadie me (extranaria|va a extranar)/, /no quiero existir/, /dejar de existir/,
+  /(hacerme|me voy a hacer|me quiero hacer|pienso en hacerme) dano/, /(me voy a hacer|me quiero hacer) algo\b(?! (de|para|rico|bueno))/, /lastimarme/, /autolesi/, /\b(cortarme|me corto|me corte las venas|cortarme las venas)\b/,
+  /\b(colgarme|ahorcarme)\b/, /(tirarme|lanzarme|me (quiero|voy a) (tirar|lanzar)) (de|del|al|a la|por la|desde) (un |el |la )?(puente|edificio|vacio|carro|ventana|calle|precipicio)/,
+  /(tomarme|tragarme) (todas )?(las |unas )?(pastillas|pildoras)/, /(me tome|me trague|tomarme|tragarme) (todas las|todo el frasco|un monton de) (pastillas|pildoras)?/, /todas las pastillas de (golpe|una vez)/, /sobredosis/, /(pegarme|meterme|darme) (un )?(tiro|balazo)/, /carta de despedida/, /despedirme de (todos|todo el mundo)/,
+  /estoy en peligro/, /me (van|quieren) (a )?(matar|hacer dano)/, /no (me )?puedo mantener a salvo/, /no estoy a salvo/
+];
+function npNormalize(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' '); }
+function npIsCrisis(text) { const t = npNormalize(text); return NOPAIN_CRISIS.some(re => re.test(t)); }
+
+let evNp = { msgs: [], busy: false };
+function evRenderNoPainCard() {
+  const box = document.getElementById('ev-nopain-card');
+  if (!box) return;
+  if (!currentClient || currentUser?.role === 'coach') { box.innerHTML = ''; return; }
+  box.innerHTML = `<div class="ev-np-card">
+    <svg class="ev-lift-deco" width="130" height="150" viewBox="0 0 120 138" aria-hidden="true"><polygon points="${EV_HEX_PTS}" fill="none" stroke="#14110E" stroke-opacity="0.35" stroke-width="3" stroke-linejoin="round"/></svg>
+    <div class="ev-np-ey">${EV_NOPAIN_ICO()}<span>Espacio privado</span></div>
+    <h2 class="ev-dela" style="font-size:27px;margin-top:8px;position:relative;color:#14110E;">NoPain</h2>
+    <p style="position:relative;margin:12px 0 0;font-size:15px;line-height:1.4;color:rgba(20,17,14,.82);">Un lugar para ordenar lo que sentís y lo que pasa por tu cabeza. Sau no ve tus conversaciones.</p>
+    <button type="button" class="ev-btn" style="margin-top:16px;position:relative;background:#fff;color:#14110E;" onclick="evOpenNoPain()">Abrir NoPain</button>
+  </div>`;
+  ensureEvFonts();
+}
+function evOpenNoPain() {
+  if (!currentClient) return;
+  if (!currentClient.nopain_accepted_at) { evNoPainFirstUse(); return; }
+  evNoPainChat();
+}
+function evNoPainFirstUse() {
+  document.getElementById('ev-np')?.remove();
+  const w = document.createElement('div');
+  w.id = 'ev-np'; w.className = 'ev-chat';
+  w.setAttribute('role', 'dialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-labelledby', 'ev-np-first-t');
+  const item = (ico, t, d) => `<div class="ev-np-item"><span>${EVT_S(ico, 20, 2.2)}</span><div><b>${t}</b><p>${d}</p></div></div>`;
+  w.innerHTML = `<div class="ev-chat-head" style="border:0;"><button type="button" class="ev-cbtn" aria-label="Cerrar" onclick="evCloseNoPain(true)">${EVT_S(EV_I.x, 20, 2.4)}</button></div>
+    <div class="ev-chat-body" style="padding-top:24px;">
+      <div class="ev-np-ey og">${EV_NOPAIN_ICO()}<span>NoPain</span></div>
+      <h1 id="ev-np-first-t" class="ev-np-h1">Antes de empezar</h1>
+      <p style="margin:10px 0 0;font-size:16px;color:#6F655B;">Esto es lo que tenés que saber de este espacio.</p>
+      <div class="ev-np-items">
+        ${item(EVT_P.msg, 'Es acompañamiento, no terapia', 'NoPain te ayuda a entender lo que vivís y a encontrar un siguiente paso. No diagnostica ni reemplaza a un profesional.')}
+        ${item(EVT_P.lock, 'Sau no ve tus conversaciones', 'No se guardan en el app: al salir del chat, se borran. Tus mensajes se procesan con inteligencia artificial para poder responderte.')}
+        ${item('<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>', 'Si estás en peligro, pedí ayuda ya', 'Si pensás en hacerte daño o no podés mantenerte a salvo, llamá al 911 o a la línea Aquí Estoy: 800 273 7869.')}
+      </div>
+    </div>
+    <div class="ev-chat-foot col" style="border:0;gap:16px;">
+      <label class="ev-check" style="color:#2A211B;"><input type="checkbox" id="ev-np-ok" onchange="document.getElementById('ev-np-go').disabled=!this.checked"><span>Entendí que NoPain no es terapia ni atención médica.</span></label>
+      <button type="button" class="ev-lbtn" id="ev-np-go" style="margin:0;" disabled onclick="evNoPainAccept()">Empezar</button>
+    </div>`;
+  document.body.appendChild(w);
+}
+async function evNoPainAccept() {
+  const btn = document.getElementById('ev-np-go'); if (btn) btn.disabled = true;
+  const now = new Date().toISOString();
+  const { error } = await sb.from('clients').update({ nopain_accepted_at: now }).eq('id', currentClient.id);
+  if (error) { if (btn) btn.disabled = false; showToast('No se pudo guardar. Probá de nuevo.', 'error'); return; }
+  currentClient.nopain_accepted_at = now;
+  evNoPainChat();
+}
+function evNoPainChat() {
+  document.getElementById('ev-np')?.remove();
+  evNp = { msgs: [], busy: false };
+  const w = document.createElement('div');
+  w.id = 'ev-np'; w.className = 'ev-chat';
+  w.setAttribute('role', 'dialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-label', 'NoPain');
+  w.innerHTML = `<div class="ev-chat-head">
+      <button type="button" class="ev-cbtn" aria-label="Salir y borrar" onclick="evCloseNoPain()">${EVT_S(EV_I.back, 20, 2.2)}</button>
+      <span class="ev-np-av">${EV_NOPAIN_ICO()}</span>
+      <div class="ev-chat-who"><b>NoPain</b><span style="font-size:12px;">Acompañamiento, no terapia</span></div>
+      <button type="button" class="ev-np-del" onclick="evNoPainClear()">Borrar</button>
+    </div>
+    <div class="ev-chat-body" id="ev-np-body">
+      <div class="ev-np-priv">${EVT_S(EVT_P.lock, 20, 2.2)}<span>Sau no ve esta conversación y no se guarda: si salís, se borra. Tus mensajes se procesan con inteligencia artificial para poder responderte.</span></div>
+      <div class="ev-chat-list" id="ev-np-list"></div>
+    </div>
+    <div class="ev-chat-foot col">
+      <button type="button" class="ev-np-harvest" onclick="evNoPainHarvest()">${EVT_S('<path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M8 21h8"/>', 16, 2.2)}Llevarme un resumen (Harvest)</button>
+      <div class="ev-chat-row">
+        <input type="text" class="ev-chat-inp" id="ev-np-inp" placeholder="Escribí lo que quieras…" aria-label="Mensaje" autocomplete="off" enterkeyhint="send" onkeydown="if(event.key==='Enter'){event.preventDefault();evNoPainSend();}">
+        <button type="button" class="ev-cbtn send" aria-label="Enviar" onclick="evNoPainSend()">${EVT_S(EV_I.send, 20, 2.2)}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(w);
+  evNoPainDraw();
+}
+function evNoPainDraw() {
+  const list = document.getElementById('ev-np-list');
+  if (!list) return;
+  const bub = m => {
+    if (m.crisis && m.role === 'assistant') return evNoPainCrisisHtml();
+    const me = m.role === 'user';
+    return `<div class="ev-msg ${me ? 'ev-me' : 'ev-them'}"><div class="ev-bub ${me ? 'ev-text ev-me' : 'ev-np-bot'}">${evEsc(m.content).replace(/\n/g, '<br>')}</div></div>`;
+  };
+  let html = bub({ role: 'assistant', content: NOPAIN_GREETING });
+  if (!evNp.msgs.length) html += `<div class="ev-np-chips"><button type="button" class="ev-np-chip" onclick="evNoPainQuick('Quiero ordenar mis ideas.')">Ordenar mis ideas</button><button type="button" class="ev-np-chip" onclick="evNoPainQuick('Solo quiero desahogarme.')">Solo quiero desahogarme</button></div>`;
+  html += evNp.msgs.filter(m => !m.hidden).map(bub).join('');
+  if (evNp.busy) html += '<div class="ev-msg ev-them"><div class="ev-bub ev-np-bot ev-np-typing" aria-label="NoPain está escribiendo"><i></i><i></i><i></i></div></div>';
+  list.innerHTML = html;
+  const b = document.getElementById('ev-np-body');
+  if (b) requestAnimationFrame(() => { b.scrollTop = b.scrollHeight; });
+}
+function evNoPainCrisisHtml() {
+  const phone = EVT_S('<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>', 20, 2.2);
+  return `<div class="ev-np-crisis" role="alert">
+    <b class="ev-np-cr-h">Gracias por contármelo. Lo que sentís importa.</b>
+    <p>No tenés que pasar por esto solo. Si estás en peligro ahora mismo o pensás en hacerte daño, por favor pedí ayuda ya.</p>
+    <a class="ev-btn" href="tel:${NOPAIN_HELP.emergency.tel}">${phone}${NOPAIN_HELP.emergency.label}</a>
+    <a class="ev-btn" style="background:#14110E;color:#FBF6EF;" href="tel:${NOPAIN_HELP.line.tel}">${phone}${NOPAIN_HELP.line.label}</a>
+    <p>Si podés, acercate ahora a una persona de confianza que esté cerca: un familiar, un amigo o alguien que pueda acompañarte.</p>
+    <p class="ev-np-cr-n">NoPain es un espacio de acompañamiento y no reemplaza la ayuda profesional. Este mensaje es fijo y aparece cada vez que se detecta una señal de riesgo.</p>
+  </div>`;
+}
+function evNoPainQuick(t) { const i = document.getElementById('ev-np-inp'); if (i) i.value = t; evNoPainSend(); }
+async function evNoPainAsk(extraUser) {
+  const history = evNp.msgs.filter(m => !m.crisis).map(m => ({ role: m.role, content: m.content })).slice(-24);
+  const msgs = [{ role: 'system', content: NOPAIN_SYSTEM_PROMPT + (extraUser ? '' : chatBrevityRule(NOPAIN_MAX_WORDS)) },
+    { role: 'assistant', content: NOPAIN_GREETING }, ...history];
+  if (extraUser) msgs.push({ role: 'user', content: extraUser });
+  try {
+    const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ max_tokens: extraUser ? 700 : 400, messages: msgs }) });
+    const data = await response.json().catch(() => null);
+    return chatReplyOrNull(response, data);
+  } catch (e) { return null; }
+}
+async function evNoPainSend() {
+  const inp = document.getElementById('ev-np-inp');
+  const txt = (inp?.value || '').trim();
+  if (!txt || evNp.busy) return;
+  inp.value = '';
+  // Filtro de crisis: ni este mensaje ni la respuesta pasan por el modelo (tampoco después, en el historial)
+  if (npIsCrisis(txt)) { evNp.msgs.push({ role: 'user', content: txt.slice(0, 2000), crisis: true }, { role: 'assistant', crisis: true, content: '' }); evNoPainDraw(); return; }
+  evNp.msgs.push({ role: 'user', content: txt.slice(0, 2000) });
+  evNp.busy = true; evNoPainDraw();
+  const reply = await evNoPainAsk();
+  if (!document.getElementById('ev-np')) return; // salió mientras esperaba: no queda nada
+  evNp.busy = false;
+  if (!reply) { evNp.msgs.pop(); inp.value = txt; evNoPainDraw(); showToast(CHAT_UNAVAILABLE_MSG, 'error', 4000); return; }
+  evNp.msgs.push({ role: 'assistant', content: reply });
+  evNoPainDraw();
+}
+async function evNoPainHarvest() {
+  if (evNp.busy) return;
+  if (!evNp.msgs.some(m => m.role === 'user' && !m.crisis)) { showToast('Primero contá un poco de lo que está pasando', 'info', 2500); return; }
+  evNp.busy = true; evNoPainDraw();
+  const reply = await evNoPainAsk('Hacé ahora mi Harvest: una cosecha de claridad breve de esta conversación, solo con los apartados que tengan evidencia, en texto simple con cada apartado en su propia línea (por ejemplo "Situación: ..."). Sin introducción ni cierre.');
+  if (!document.getElementById('ev-np')) return;
+  evNp.busy = false; evNoPainDraw();
+  if (!reply) { showToast(CHAT_UNAVAILABLE_MSG, 'error', 4000); return; }
+  const text = 'Mi Harvest de NoPain\n\n' + reply.replace(/\*\*/g, '').trim();
+  const dim = document.createElement('div');
+  dim.className = 'ev-dim'; dim.id = 'ev-np-harvest'; dim.style.zIndex = '10090';
+  dim.innerHTML = `<div class="ev-sheet lt" role="dialog" aria-modal="true" aria-labelledby="ev-hv-t">
+    <div class="ev-handle"></div>
+    <div class="ev-sheet-top"><h2 id="ev-hv-t" style="margin:0;font-size:24px;">Tu Harvest</h2><button type="button" class="ev-xbtn" aria-label="Cerrar" onclick="document.getElementById('ev-np-harvest')?.remove()">${EVT_S(EV_I.x, 18, 2.2)}</button></div>
+    <p style="font-size:13px;color:#6F655B;margin-top:6px;">El app no lo guarda. Copialo o compartilo para llevártelo.</p>
+    <div class="ev-hv-text" id="ev-hv-text"></div>
+    <button type="button" class="ev-lbtn" onclick="evHarvestCopy()">Copiar</button>
+    ${navigator.share ? '<button type="button" class="ev-lbtn ghost" onclick="evHarvestShare()">Compartir</button>' : ''}
+  </div>`;
+  dim.addEventListener('click', e => { if (e.target === dim) dim.remove(); });
+  document.body.appendChild(dim);
+  document.getElementById('ev-hv-text').textContent = text;
+}
+function evHarvestText() { return document.getElementById('ev-hv-text')?.textContent || ''; }
+async function evHarvestCopy() {
+  try { await navigator.clipboard.writeText(evHarvestText()); showToast('Copiado', 'success', 1500); }
+  catch (e) { const r = document.createRange(); r.selectNodeContents(document.getElementById('ev-hv-text')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); showToast('Seleccionado: copialo con el menú', 'info', 2500); }
+}
+async function evHarvestShare() { try { await navigator.share({ text: evHarvestText() }); } catch (e) { /* canceló */ } }
+async function evNoPainClear() {
+  if (evNp.msgs.length && !(await appConfirm('¿Borrar esta conversación? No se puede recuperar.'))) return;
+  evNp = { msgs: [], busy: false };
+  evNoPainDraw();
+}
+async function evCloseNoPain(force) {
+  if (!force && evNp.msgs.length && !(await appConfirm('Si salís, esta conversación se borra.'))) return;
+  evNp = { msgs: [], busy: false };
+  document.getElementById('ev-np-harvest')?.remove();
+  document.getElementById('ev-np')?.remove();
 }
 
 // Delivery: bandeja del coach (chat E4; rifa E5; calificaciones E7)
