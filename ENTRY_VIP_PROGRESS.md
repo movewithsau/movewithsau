@@ -142,3 +142,26 @@ Probado (base simulada / node):
 Dudas:
 - Push del cliente a Sau: no se envía (el coach no registra su etiqueta en OneSignal; Sau ve el globito en Delivery). Si lo quiere, hay que registrar al coach en OneSignal.
 - Para activar el borrado: crear `CRON_SECRET` en Vercel y agregar la entrada a `vercel.json` (texto en el encabezado del archivo).
+
+### E5: LIFT Challenge y rifa — terminado
+Commit: (ver git log, "E5")
+
+Hecho:
+- Mi Diario (solo Entry): tarjeta "Activá LIFT Challenge" arriba del diario (`#ev-lift`). Hoja "Elegí tu hábito" (texto libre, hasta 140, "Empezar mi racha" apagado hasta escribir) → `entry_lift_habits`. Racha con el hexágono: encendido (marcado hoy), contorno miel (falta hoy, racha viva desde ayer), apagado punteado (se pasó un día → 0, "Empezar de nuevo" marca hoy y arranca en 1). Marcar = fila en `entry_lift_checkins` (única por hábito y día; nunca se desmarca ni se borra).
+- Tarjeta de la rifa: "Estás en la rifa del mes" / "Seguís en la rifa de este mes" / "Entrá a la rifa del mes" según si marcó algún día del mes. Modal "Las reglas" con los 4 puntos del mockup.
+- Ficha del coach (Entry): fila LIFT Challenge con el hábito y la racha actual ("· en la rifa" si participa este mes).
+- Delivery: tarjeta desplegable "Rifa del mes" (N participantes · mes) con "Este mes / Mes pasado", los 2 primeros y "Ver los N y sortear" → lista completa con hábito y racha, "Sortear ahora" (al azar, misma chance para todos) → `entry_lift_raffles` (upsert por mes). Si ya hay ganador, "Sortear de nuevo" pide confirmación.
+- Fechas en hora de Costa Rica (`todayCR`).
+
+Probado (base simulada):
+- [x] Activar, marcar (0 → 1, "Hoy: marcado"), perder racha (marcas de hace 3 y 4 días → 0, "Racha apagada", mejor racha) y reiniciar (→ 1).
+- [x] Cálculo de racha: solo hoy, desde ayer, con hueco, perdida; cambio de mes y febrero.
+- [x] Hora de Costa Rica: 05:30 UTC = día anterior en CR; 06:30 UTC = día siguiente.
+- [x] La rifa lista a todos los que marcaron al menos 1 día del mes, con hábito y racha; sorteo guardado y ganador visible.
+- [x] VIP no ve LIFT.
+- [ ] No probado en real.
+
+Supuestos:
+- Al crear el hábito no se marca el día solo; el cliente toca "Marcar el hábito de hoy".
+- "Mes pasado" en la rifa, para sortear a principio de mes el mes que terminó.
+- Texto cuando todavía no participa del mes: "Entrá a la rifa del mes · Marcá tu hábito al menos 1 día de este mes para participar."

@@ -2198,6 +2198,7 @@ span.tr-next-name { cursor:default; }
 
     <!-- MI DIARIO TAB (reemplaza la UI vieja de hábitos + sueño) -->
     <div id="client-habits-tab" style="display:none;">
+      <div id="ev-lift"></div><!-- LIFT Challenge de Entry (E5) -->
       <div id="c-diary-root"><div class="spinner"></div></div>
     </div>
 
@@ -23451,6 +23452,7 @@ function diaryIsAllowed() { return !!currentClient && currentClient.program_type
 async function loadClientDiary() {
   const root = document.getElementById('c-diary-root');
   if(!root || !currentClient) return;
+  evRenderLift(); // LIFT Challenge (Entry, E5)
   if(!diaryIsAllowed()) { root.innerHTML = ''; return; }
   root.innerHTML = `
     <div class="diary-seg" role="group" aria-label="Vista del diario">
@@ -29718,6 +29720,7 @@ textarea.ev-inp { height:84px; padding:14px 16px; resize:none; line-height:1.35;
 .ev-btn.green { background:#1E7A3C; }
 .ev-btn.honey { background:#F5B83D; color:#14110E; }
 .ev-btn:disabled { background:#2E2721; color:#A89C8D; cursor:default; }
+.ev-btn.green:disabled { background:#1E7A3C; color:#fff; }
 .ev-card { background:#26201A; border:1px solid #3A3027; border-radius:22px; padding:16px 18px; }
 .ev-steps { display:flex; flex-direction:column; gap:12px; }
 .ev-step { display:flex; align-items:flex-start; gap:12px; }
@@ -29966,6 +29969,59 @@ body:not(.ev-entry) .ev-chat-fab { display:none !important; }
 .ev-switch { width:52px; height:30px; border-radius:15px; border:0; background:#DCCFC0; position:relative; flex:none; cursor:pointer; padding:0; }
 .ev-switch i { position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.2); transition:left .2s; }
 .ev-switch.on { background:#1E7A3C; } .ev-switch.on i { left:25px; }
+/* LIFT Challenge de Entry (E5) */
+#ev-lift:empty { display:none; }
+.ev-lift-card { position:relative; overflow:hidden; background:#1B1713; border:1px solid #3A3027; border-radius:22px; padding:18px; color:#FBF6EF; margin-bottom:14px; font-family:'DM Sans',sans-serif; }
+.ev-lift-deco { position:absolute; right:-18px; top:-14px; }
+.ev-lift-on { display:flex; flex-direction:column; align-items:center; text-align:center; }
+.ev-lift-top { width:100%; display:flex; justify-content:space-between; align-items:center; }
+.ev-lift-hex { position:relative; width:150px; height:173px; margin-top:14px; }
+.ev-lift-n { position:absolute; left:0; right:0; top:46px; font:400 56px/1 'Dela Gothic One',sans-serif; text-align:center; }
+.ev-lift-sub { position:absolute; left:0; right:0; top:112px; font:700 10px 'DM Mono',monospace; letter-spacing:.14em; text-align:center; }
+.ev-lift-h { margin-top:14px; font-size:18px; font-weight:700; }
+.ev-lift-rules { display:block; margin:12px auto 0; background:none; border:0; padding:4px; font:700 14px 'DM Sans',sans-serif; color:#F5B83D; text-decoration:underline; cursor:pointer; position:relative; }
+.ev-lift-rules.og, .ev-rule .og { color:#A63E10; }
+.ev-lift-raffle { display:flex; gap:12px; align-items:flex-start; background:#fff; border:1px solid #EADFD2; border-radius:22px; padding:18px; margin-bottom:16px; font-family:'DM Sans',sans-serif; }
+.ev-lift-gift { width:44px; height:44px; border-radius:50%; background:#F6E6DB; color:#A63E10; display:flex; align-items:center; justify-content:center; flex:none; }
+.ev-lift-raffle > div { flex:1; display:flex; flex-direction:column; }
+.ev-lift-raffle b { font-size:16px; color:#2A211B; } .ev-lift-raffle span { font-size:14px; color:#6F655B; margin-top:2px; }
+.ev-lift-raffle .ev-lift-rules { margin:8px 0 0; padding:0; align-self:flex-start; }
+.ev-sheet-top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+.ev-xbtn { width:36px; height:36px; border-radius:50%; border:0; background:#F6E6DB; color:#A63E10; display:flex; align-items:center; justify-content:center; flex:none; cursor:pointer; }
+.ev-quote { margin-top:14px; padding:14px 16px; border-radius:16px; background:#FBEEE5; }
+.ev-quote p { margin:0; font-size:15px; line-height:1.45; color:#2A211B; }
+.ev-quote p.og { margin-top:8px; font-weight:700; font-size:16px; line-height:1.35; color:#A63E10; }
+.ev-rules { display:flex; flex-direction:column; gap:16px; margin-top:20px; }
+.ev-rule { display:flex; gap:12px; align-items:flex-start; font-size:15px; line-height:1.4; color:#2A211B; }
+.ev-rule-n { width:28px; height:28px; border-radius:50%; background:#C24E18; color:#fff; font:700 13px 'DM Sans',sans-serif; display:flex; align-items:center; justify-content:center; flex:none; }
+.ev-lbtn:disabled { background:#E9DECF; color:#A89C8D; cursor:default; }
+/* Rifa (coach) */
+.ev-rf { background:#fff; border:1px solid #EADFD2; border-radius:22px; overflow:hidden; margin-bottom:16px; }
+.ev-rf-head { display:flex; align-items:center; gap:12px; width:100%; padding:16px; border:0; background:#2A211B; color:#FBF6EF; text-align:left; cursor:pointer; font-family:'DM Sans',sans-serif; }
+.ev-rf-ico { width:40px; height:40px; border-radius:50%; background:#14110E; color:#F5B83D; display:flex; align-items:center; justify-content:center; flex:none; }
+.ev-rf-t { flex:1; display:flex; flex-direction:column; } .ev-rf-t b { font-size:17px; } .ev-rf-t span { font-size:13px; color:#CFC6BA; }
+.ev-rf-chev { color:#F5B83D; display:flex; transition:transform .2s; }
+.ev-rf-head[aria-expanded="true"] .ev-rf-chev { transform:rotate(180deg); }
+.ev-rf-body { padding:8px 16px 14px; }
+.ev-rf-months { display:flex; gap:6px; margin:6px 0 6px; }
+.ev-rf-months button { height:32px; padding:0 12px; border-radius:999px; border:1px solid #E3D6C7; background:#fff; font:500 12px 'DM Sans',sans-serif; color:#4A3F35; cursor:pointer; }
+.ev-rf-months button.on { background:#F6E6DB; border-color:#F6E6DB; color:#A63E10; font-weight:700; }
+.ev-rf-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-top:1px solid #EADFD2; }
+.ev-rf-months + .ev-rf-row, .ev-rf-win + .ev-rf-row { border-top:0; }
+.ev-av.sm { width:40px; height:40px; font-size:14px; background:#EDE2D3; color:#4A3F35; }
+.ev-rf-b { flex:1; min-width:0; display:flex; flex-direction:column; line-height:1.25; }
+.ev-rf-b b { font-size:15px; color:#2A211B; } .ev-rf-b span { font-size:12px; color:#6F655B; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ev-rf-n { font:700 18px 'DM Mono',monospace; color:#A63E10; } .ev-rf-n.zero { color:#6F655B; }
+.ev-rf-more { display:flex; align-items:center; justify-content:center; gap:4px; width:100%; margin-top:8px; padding:8px; border:0; background:none; font:700 14px 'DM Sans',sans-serif; color:#A63E10; cursor:pointer; }
+.ev-rf-empty { margin:8px 0 4px; font-size:13px; color:#6F655B; }
+.ev-rf-win { display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:14px; background:#FFF1CC; color:#5C3F08; font-size:14px; margin:6px 0; }
+.ev-rf-win.big { margin:0 0 12px; }
+.ev-rf-count { display:flex; align-items:center; gap:12px; padding:16px; border-radius:22px; background:#1B1713; color:#FBF6EF; margin-bottom:14px; }
+.ev-rf-count > span { font:500 34px/1 'DM Mono',monospace; color:#F5B83D; }
+.ev-rf-count div { display:flex; flex-direction:column; line-height:1.25; } .ev-rf-count b { font-size:15px; } .ev-rf-count div span { font-size:13px; color:#A89C8D; }
+.ev-rf-card { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:18px; background:#fff; border:1px solid #EADFD2; margin-bottom:8px; }
+.ev-rf-card.win { border-color:#F5B83D; background:#FFF8E6; }
+.ev-rf-s { display:flex; flex-direction:column; align-items:flex-end; } .ev-rf-s b { font:700 18px 'DM Mono',monospace; color:#A63E10; } .ev-rf-s b.zero { color:#6F655B; } .ev-rf-s span { font-size:11px; color:#6F655B; }
 .ev-mini { background:none; border:0; padding:4px 0; font:700 13px 'DM Sans',sans-serif; color:#A63E10; cursor:pointer; }
 </style>
 <script>
@@ -31457,6 +31513,237 @@ async function evUploadSauPhoto(input) {
   delete evUrlCache[EV_SAU_PHOTO];
   showToast('Foto actualizada', 'success');
   evRenderSauPhotoSetting();
+}
+
+// ---------- LIFT Challenge de Entry (E5) ----------
+// Tablas propias (entry_lift_habits, entry_lift_checkins, entry_lift_raffles); no se mezcla con el
+// programa LIFT de 28 días (program_type = 'lift'). Fechas en hora de Costa Rica (todayCR).
+// Racha = días seguidos marcados que terminan hoy o ayer; si el último día marcado es anterior a
+// ayer, la racha se apagó (vuelve a 0) y el cliente puede empezar de nuevo.
+const EV_HEX_PTS = '60,3 117,36 117,102 60,135 3,102 3,36';
+function evDayAdd(d, n) { const t = new Date(d + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); }
+function evMonthStart(d) { return (d || todayCR()).slice(0, 7) + '-01'; }
+function evMonthName(ms) { return EV_MONTHS[Number(ms.slice(5, 7)) - 1]; }
+// dates: lista de 'YYYY-MM-DD' (cualquier orden)
+function evStreakInfo(dates) {
+  const set = new Set(dates), today = todayCR(), yest = evDayAdd(today, -1);
+  let end = set.has(today) ? today : set.has(yest) ? yest : null;
+  let cur = 0;
+  for (let d = end; d && set.has(d); d = evDayAdd(d, -1)) cur++;
+  const sorted = [...set].sort();
+  let best = 0, run = 0, prev = null;
+  sorted.forEach(d => { run = prev && evDayAdd(prev, 1) === d ? run + 1 : 1; best = Math.max(best, run); prev = d; });
+  return { current: cur, best, today: set.has(today), lost: !end && sorted.length > 0, any: sorted.length > 0 };
+}
+let evLift = null; // { habit, dates }
+async function evRenderLift() {
+  const box = document.getElementById('ev-lift');
+  if (!box) return;
+  const c = currentClient;
+  if (!c || !evIsEntry(c) || currentUser?.role === 'coach') { box.innerHTML = ''; return; }
+  const cid = c.id;
+  const { data: habits, error } = await sb.from('entry_lift_habits').select('*').eq('client_id', cid).eq('active', true).order('created_at', { ascending: false }).limit(1);
+  if (!currentClient || currentClient.id !== cid) return;
+  if (error) { box.innerHTML = ''; console.warn('entry_lift_habits:', error.message); return; }
+  const habit = habits && habits[0];
+  if (!habit) { evLift = null; box.innerHTML = evLiftIntroHtml(); ensureEvFonts(); evFitTitles(box); return; }
+  const { data: checks } = await sb.from('entry_lift_checkins').select('check_date').eq('client_id', cid).eq('habit_id', habit.id);
+  const { data: monthChecks } = await sb.from('entry_lift_checkins').select('id').eq('client_id', cid).gte('check_date', evMonthStart()).limit(1);
+  evLift = { habit, dates: (checks || []).map(r => r.check_date) };
+  box.innerHTML = evLiftActiveHtml(evLift, !!(monthChecks && monthChecks.length));
+  ensureEvFonts();
+}
+function evLiftIntroHtml() {
+  return `<div class="ev-lift-card ev-lift-intro">
+    <svg class="ev-lift-deco" width="130" height="150" viewBox="0 0 120 138" aria-hidden="true"><polygon points="${EV_HEX_PTS}" fill="none" stroke="#F5B83D" stroke-opacity="0.35" stroke-width="3" stroke-linejoin="round"/></svg>
+    <div class="ev-eb" style="position:relative">Reto del mes</div>
+    <h2 class="ev-dela" style="font-size:27px;margin-top:8px;position:relative">LIFT<br>Challenge</h2>
+    <p class="ev-p ev-soft" style="margin-top:12px;position:relative">Un hábito, todos los días. Prendé tu racha y entrás a la rifa de 1 mes de asesoría con Sau.</p>
+    <button type="button" class="ev-btn" style="margin-top:16px;position:relative" onclick="evOpenHabitSheet()">Activá LIFT Challenge</button>
+    <button type="button" class="ev-lift-rules" onclick="evOpenLiftRules()">Las reglas</button>
+  </div>`;
+}
+function evLiftActiveHtml(L, inRaffle) {
+  const s = evStreakInfo(L.dates);
+  const lost = s.lost;
+  const n = lost ? 0 : s.current;
+  const hex = lost
+    ? `<svg width="150" height="173" viewBox="0 0 120 138" aria-hidden="true"><polygon points="${EV_HEX_PTS}" fill="#241E19" stroke="#5A4E42" stroke-width="3" stroke-dasharray="6 6" stroke-linejoin="round"/></svg>`
+    : s.today
+      ? `<svg width="150" height="173" viewBox="0 0 120 138" style="filter:drop-shadow(0 0 18px rgba(245,184,61,.45))" aria-hidden="true"><polygon points="${EV_HEX_PTS}" fill="#F5B83D" stroke="#FFD27A" stroke-width="2" stroke-linejoin="round"/></svg>`
+      : `<svg width="150" height="173" viewBox="0 0 120 138" aria-hidden="true"><polygon points="${EV_HEX_PTS}" fill="#2A2113" stroke="#F5B83D" stroke-width="3" stroke-linejoin="round"/></svg>`;
+  const numColor = lost ? '#6B5F53' : s.today ? '#14110E' : '#F5B83D';
+  const subColor = lost ? '#A89C8D' : s.today ? '#14110E' : '#CFC6BA';
+  const tag = lost ? '<span class="ev-tag ev-tag-warn">Racha apagada</span>'
+    : s.today ? '<span class="ev-tag ev-tag-ok">Hoy: marcado</span>' : '<span class="ev-tag ev-tag-warn">Hoy: falta</span>';
+  const mid = lost
+    ? `<div class="ev-lift-h">Se te pasó un día. Pasa.</div><p class="ev-p ev-mute" style="margin-top:4px;font-size:14px;">Tu mejor racha fue de ${s.best} ${s.best === 1 ? 'día' : 'días'}. Empezá de nuevo hoy.</p>
+       <p class="ev-p ev-soft" style="margin-top:6px;font-size:13px;">Tu hábito: ${evEsc(L.habit.habit)}</p>
+       <button type="button" class="ev-btn" style="margin-top:16px" onclick="evLiftMark()">Empezar de nuevo</button>`
+    : `<div class="ev-lift-h">${evEsc(L.habit.habit)}</div><p class="ev-p ev-mute" style="margin-top:4px;font-size:14px;">Tu hábito de este mes</p>
+       ${s.today ? `<button type="button" class="ev-btn green" style="margin-top:16px;gap:10px" disabled aria-disabled="true">${EVT_S('<path d="M20 6 9 17l-5-5"/>', 20, 3)}Hábito de hoy listo</button>`
+         : '<button type="button" class="ev-btn" style="margin-top:16px" onclick="evLiftMark()">Marcar el hábito de hoy</button>'}`;
+  const raffle = inRaffle
+    ? (lost ? ['Seguís en la rifa de este mes', 'Ya marcaste tu hábito este mes, así que seguís participando.'] : ['Estás en la rifa del mes', 'Se rifa 1 mes de asesoría con Sau entre todos los que participan.'])
+    : ['Entrá a la rifa del mes', 'Marcá tu hábito al menos 1 día de este mes para participar.'];
+  return `<div class="ev-lift-card ev-lift-on">
+      <div class="ev-lift-top"><span class="ev-eb">LIFT Challenge</span>${tag}</div>
+      <div class="ev-lift-hex">${hex}<div class="ev-lift-n" style="color:${numColor}">${n}</div><div class="ev-lift-sub" style="color:${subColor}">${n === 1 ? 'DÍA SEGUIDO' : 'DÍAS SEGUIDOS'}</div></div>
+      ${mid}
+    </div>
+    <div class="ev-lift-raffle"><span class="ev-lift-gift">${EVT_S(EVT_P.gift, 22)}</span><div><b>${raffle[0]}</b><span>${raffle[1]}</span><button type="button" class="ev-lift-rules og" onclick="evOpenLiftRules()">Las reglas</button></div></div>`;
+}
+function evOpenHabitSheet() {
+  if (document.getElementById('ev-habit')) return;
+  const dim = document.createElement('div');
+  dim.className = 'ev-dim'; dim.id = 'ev-habit';
+  dim.innerHTML = `<div class="ev-sheet lt" role="dialog" aria-modal="true" aria-labelledby="ev-habit-t">
+    <div class="ev-handle"></div>
+    <div class="ev-sheet-top"><h2 id="ev-habit-t" style="margin:0;font-size:26px;">Elegí tu hábito</h2><button type="button" class="ev-xbtn" aria-label="Cerrar" onclick="document.getElementById('ev-habit')?.remove()">${EVT_S(EV_I.x, 18, 2.2)}</button></div>
+    <div class="ev-quote"><p>La vida que tenés hoy viene de tus hábitos. La que querés tener, también.</p><p class="og">¿Qué vida querés tener y qué hábito necesitás para lograrla?</p></div>
+    <label class="ev-lf" for="ev-habit-txt" style="margin-top:18px;">Mi hábito</label>
+    <textarea id="ev-habit-txt" class="ev-linp" rows="3" maxlength="140" placeholder="Escribilo con tus palabras. Ej: Caminar 20 minutos después de almorzar" oninput="document.getElementById('ev-habit-go').disabled=!this.value.trim()"></textarea>
+    <p style="margin-top:8px;font-size:13px;color:#6F655B;">Uno solo, concreto y que puedas cumplir todos los días. El ejercicio no cuenta como hábito. Lo marcás cada día y prendés tu racha.</p>
+    <button type="button" class="ev-lbtn" id="ev-habit-go" disabled onclick="evSaveHabit()">Empezar mi racha</button>
+    <button type="button" class="ev-lift-rules og" style="display:block;margin:14px auto 0;" onclick="evOpenLiftRules()">Las reglas</button>
+  </div>`;
+  dim.addEventListener('click', e => { if (e.target === dim) dim.remove(); });
+  document.body.appendChild(dim);
+  document.getElementById('ev-habit-txt')?.focus();
+}
+async function evSaveHabit() {
+  const txt = (document.getElementById('ev-habit-txt')?.value || '').trim();
+  if (!txt || !currentClient) return;
+  const btn = document.getElementById('ev-habit-go'); if (btn) btn.disabled = true;
+  const { error } = await sb.from('entry_lift_habits').insert([{ client_id: currentClient.id, habit: txt.slice(0, 140), started_on: todayCR(), active: true }]);
+  if (error) { if (btn) btn.disabled = false; showToast('No se pudo guardar. Probá de nuevo.', 'error'); console.warn(error.message); return; }
+  document.getElementById('ev-habit')?.remove();
+  showToast('Tu LIFT Challenge arrancó', 'success');
+  evRenderLift();
+}
+async function evLiftMark() {
+  if (!evLift || !currentClient) return;
+  const day = todayCR();
+  if (evLift.dates.includes(day)) return;
+  const { error } = await sb.from('entry_lift_checkins').insert([{ client_id: currentClient.id, habit_id: evLift.habit.id, check_date: day }]);
+  if (error && error.code !== '23505') { showToast('No se pudo marcar. Probá de nuevo.', 'error'); console.warn(error.message); return; }
+  evRenderLift();
+}
+function evOpenLiftRules() {
+  if (document.getElementById('ev-rules')) return;
+  const dim = document.createElement('div');
+  dim.className = 'ev-dim'; dim.id = 'ev-rules'; dim.style.zIndex = '10075';
+  const step = (n, html) => `<div class="ev-rule"><span class="ev-rule-n">${n}</span><span>${html}</span></div>`;
+  dim.innerHTML = `<div class="ev-sheet lt" role="dialog" aria-modal="true" aria-labelledby="ev-rules-t">
+    <div class="ev-handle"></div>
+    <div class="ev-sheet-top"><div><span class="ev-eb-o">LIFT Challenge</span><h2 id="ev-rules-t" style="margin:2px 0 0;font-size:28px;">Las reglas</h2></div><button type="button" class="ev-xbtn" aria-label="Cerrar" onclick="document.getElementById('ev-rules')?.remove()">${EVT_S(EV_I.x, 18, 2.2)}</button></div>
+    <div class="ev-rules">
+      ${step(1, 'Elegís <b>1 hábito</b> (el ejercicio no cuenta) y lo marcás cada día.')}
+      ${step(2, 'Tu racha cuenta los <b>días seguidos</b>. Si un día pasa sin marcar, vuelve a 0 y podés empezar de nuevo.')}
+      ${step(3, 'Cada mes se <b>rifa 1 mes de asesoría</b> con Sau entre todos los que participaron, o sea, los que marcaron su hábito al menos 1 día de ese mes.')}
+      ${step(4, 'Esto es un <b>compromiso</b>. Te invitamos a compartir tu racha en tus redes y etiquetar a <b class="og">@movewithsau</b>. Es opcional.')}
+    </div>
+    <button type="button" class="ev-lbtn" onclick="document.getElementById('ev-rules')?.remove()">Entendido</button>
+  </div>`;
+  dim.addEventListener('click', e => { if (e.target === dim) dim.remove(); });
+  document.body.appendChild(dim);
+}
+
+// Ficha del coach: hábito y racha actual
+async function evRenderCoachLiftRow(c) {
+  const box = document.getElementById('ev-coach-lift-row');
+  if (!box || !c) return;
+  const { data: habits } = await sb.from('entry_lift_habits').select('id,habit').eq('client_id', c.id).eq('active', true).order('created_at', { ascending: false }).limit(1);
+  const h = habits && habits[0];
+  if (!h) { box.innerHTML = '<div class="ev-crow"><div><b>LIFT Challenge</b><span>Todavía no lo activó</span></div></div>'; return; }
+  const { data: checks } = await sb.from('entry_lift_checkins').select('check_date').eq('client_id', c.id).eq('habit_id', h.id);
+  const dates = (checks || []).map(r => r.check_date);
+  const s = evStreakInfo(dates);
+  const inRaffle = dates.some(d => d >= evMonthStart());
+  box.innerHTML = `<div class="ev-crow"><div><b>LIFT Challenge</b><span>Hábito: ${evEsc(h.habit)}</span></div>
+    <div style="text-align:right;flex:none;"><b style="font:700 24px 'DM Mono',monospace;color:${s.current ? '#A63E10' : '#6F655B'};display:block;">${s.current}</b><span>días${inRaffle ? ' · en la rifa' : ''}</span></div></div>`;
+}
+
+// Delivery: rifa del mes (lista completa con hábito y racha) y "Sortear ahora"
+let evRaffleOpen = true, evRaffleMonth = null;
+async function evRaffleData(ms) {
+  const clients = await evCoachClients();
+  const ids = clients.map(c => c.id);
+  if (!ids.length) return { list: [], draw: null };
+  const end = evMonthStart(evDayAdd(ms, 40));
+  const { data: checks } = await sb.from('entry_lift_checkins').select('client_id,habit_id,check_date').in('client_id', ids).gte('check_date', ms).lt('check_date', end);
+  const part = [...new Set((checks || []).map(r => r.client_id))];
+  let habits = [], all = [];
+  if (part.length) {
+    const r1 = await sb.from('entry_lift_habits').select('id,client_id,habit,active,created_at').in('client_id', part);
+    habits = r1.data || [];
+    const r2 = await sb.from('entry_lift_checkins').select('client_id,habit_id,check_date').in('client_id', part);
+    all = r2.data || [];
+  }
+  const { data: draw } = await sb.from('entry_lift_raffles').select('*').eq('month_start', ms).maybeSingle();
+  const list = part.map(cid => {
+    const c = clients.find(x => x.id === cid) || { id: cid, name: 'Cliente' };
+    const hs = habits.filter(h => h.client_id === cid).sort((a, b) => b.created_at.localeCompare(a.created_at));
+    const h = hs.find(x => x.active) || hs[0];
+    const s = evStreakInfo(all.filter(r => r.client_id === cid && (!h || r.habit_id === h.id)).map(r => r.check_date));
+    return { c, habit: h ? h.habit : '', streak: s.current };
+  }).sort((a, b) => b.streak - a.streak || (a.c.name || '').localeCompare(b.c.name || ''));
+  return { list, draw };
+}
+async function evRenderRaffle() {
+  const box = document.getElementById('ev-dl-raffle');
+  if (!box) return;
+  const ms = evRaffleMonth || evMonthStart();
+  const { list, draw } = await evRaffleData(ms);
+  const winner = draw && draw.winner_client_id ? list.find(p => p.c.id === draw.winner_client_id) : null;
+  const row = p => `<div class="ev-rf-row"><span class="ev-av sm">${evEsc(getInitials(p.c.name || '?'))}</span><span class="ev-rf-b"><b>${evEsc(p.c.name || '')}</b><span>${evEsc(p.habit)}</span></span><span class="ev-rf-n${p.streak ? '' : ' zero'}">${p.streak}</span></div>`;
+  const prev = evMonthStart(evDayAdd(evMonthStart(), -1));
+  box.innerHTML = `<div class="ev-rf">
+    <button type="button" class="ev-rf-head" aria-expanded="${evRaffleOpen}" onclick="evRaffleOpen=!evRaffleOpen;evRenderRaffle()">
+      <span class="ev-rf-ico">${EVT_S(EVT_P.gift, 20)}</span>
+      <span class="ev-rf-t"><b>Rifa del mes</b><span>${list.length} ${list.length === 1 ? 'participante' : 'participantes'} · ${evMonthName(ms)}</span></span>
+      <span class="ev-rf-chev" aria-hidden="true">${EV_SVG_CHEV}</span>
+    </button>
+    ${evRaffleOpen ? `<div class="ev-rf-body">
+      <div class="ev-rf-months"><button type="button" class="${ms === evMonthStart() ? 'on' : ''}" onclick="evRaffleMonth=null;evRenderRaffle()">Este mes</button><button type="button" class="${ms === prev ? 'on' : ''}" onclick="evRaffleMonth='${prev}';evRenderRaffle()">Mes pasado</button></div>
+      ${winner ? `<div class="ev-rf-win">${EVT_S(EV_I.star, 18)}<span>Ganó <b>${evEsc(winner.c.name || '')}</b></span></div>` : ''}
+      ${list.length ? list.slice(0, 2).map(row).join('') : '<p class="ev-rf-empty">Nadie marcó su hábito este mes todavía.</p>'}
+      ${list.length ? `<button type="button" class="ev-rf-more" onclick="evOpenRaffleSheet('${ms}')">Ver ${list.length === 1 ? 'el participante' : 'los ' + list.length} y sortear ${EV_ICO.chev}</button>` : ''}
+    </div>` : ''}
+  </div>`;
+}
+async function evOpenRaffleSheet(ms) {
+  const { list, draw } = await evRaffleData(ms);
+  document.getElementById('ev-rfs')?.remove();
+  const w = document.createElement('div');
+  w.id = 'ev-rfs'; w.className = 'ev-chat';
+  w.setAttribute('role', 'dialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-label', 'Rifa del mes');
+  const winner = draw && draw.winner_client_id ? list.find(p => p.c.id === draw.winner_client_id) : null;
+  w.innerHTML = `<div class="ev-chat-head">
+      <button type="button" class="ev-cbtn" aria-label="Volver" onclick="document.getElementById('ev-rfs')?.remove()">${EVT_S(EV_I.back, 20, 2.2)}</button>
+      <div class="ev-chat-who"><b style="font-family:'Playfair Display',serif;font-size:26px;">Rifa del mes</b><span>${evMonthName(ms).replace(/^./, m => m.toUpperCase())} · premio: 1 mes de coaching</span></div>
+    </div>
+    <div class="ev-chat-body">
+      <div class="ev-rf-count"><span>${list.length}</span><div><b>Participantes</b><span>Marcaron el hábito al menos 1 día este mes</span></div></div>
+      <div id="ev-rfs-win">${winner ? `<div class="ev-rf-win big">${EVT_S(EV_I.star, 20)}<span>Ganó <b>${evEsc(winner.c.name || '')}</b></span></div>` : ''}</div>
+      ${list.map(p => `<div class="ev-rf-card${winner && winner.c.id === p.c.id ? ' win' : ''}"><span class="ev-av sm soft">${evEsc(getInitials(p.c.name || '?'))}</span><span class="ev-rf-b"><b>${evEsc(p.c.name || '')}</b><span>${evEsc(p.habit)}</span></span><span class="ev-rf-s"><b class="${p.streak ? '' : 'zero'}">${p.streak}</b><span>${p.streak === 1 ? 'día seguido' : 'días seguidos'}</span></span></div>`).join('')}
+    </div>
+    <div class="ev-chat-foot col">
+      <button type="button" class="ev-lbtn" style="margin:0;" ${list.length ? '' : 'disabled'} onclick="evDrawRaffle('${ms}')">${winner ? 'Sortear de nuevo' : 'Sortear ahora'}</button>
+      <p style="text-align:center;font-size:12px;color:#6F655B;margin:8px 0 0;">Todos los participantes tienen la misma chance, sin importar la racha.</p>
+    </div>`;
+  document.body.appendChild(w);
+}
+async function evDrawRaffle(ms) {
+  const { list, draw } = await evRaffleData(ms);
+  if (!list.length) return;
+  if (draw && draw.winner_client_id && !(await appConfirm('Ya hay un ganador este mes. ¿Sortear de nuevo?'))) return;
+  const pick = list[Math.floor(Math.random() * list.length)]; // misma chance para todos
+  const { error } = await sb.from('entry_lift_raffles').upsert([{ month_start: ms, winner_client_id: pick.c.id, drawn_at: new Date().toISOString() }], { onConflict: 'month_start' });
+  if (error) { showToast('No se guardó el sorteo: ' + error.message, 'error'); return; }
+  showToast(`Ganó ${pick.c.name}`, 'success', 4000);
+  evOpenRaffleSheet(ms);
+  evRenderRaffle();
 }
 
 // Delivery: bandeja del coach (chat E4; rifa E5; calificaciones E7)
