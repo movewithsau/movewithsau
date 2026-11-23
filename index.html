@@ -25041,6 +25041,17 @@ function renderProgressForm() {
   const slots = [['front','Frente'],['side','Lado'],['back','Espalda']];
   return `
     <div style="font-size:11px;font-weight:700;color:var(--gray4);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;">Registro de esta semana</div>
+    <details class="ev-pg-guide">
+      <summary>${icon('camera', 18)}Cómo tomarte las fotos<span class="ev-pg-ch">${icon('chevron-down', 18)}</span></summary>
+      <div class="ev-pg-body">
+        <p>Ocupamos las siguientes fotos con el fin de poder valorar visualmente tu composición corporal inicial y lograr establecer el punto de partida.</p>
+        <p><b style="color:var(--black);">Importante:</b></p>
+        <ul><li>Tiene que ser <b>en ayunas</b></li><li>Solo <b>UNA vez por semana</b></li><li>Relax, sin forzar pose</li></ul>
+        <div class="ev-pg-shots">
+          ${[['pose-frente','Frente'],['pose-costado','Costado, con brazos al frente'],['pose-espalda','Espalda']].map(([f,l]) => `<button type="button" class="ev-pg-shot" onclick="evOpenStaticPhoto('img/${f}.webp')" aria-label="Ver referencia: ${l}"><img src="img/${f}.webp" alt="Referencia de pose: ${l}" loading="lazy" width="1536" height="1024"><span>${l}</span></button>`).join('')}
+        </div>
+      </div>
+    </details>
     <div style="background:var(--white);border:1.5px solid var(--gray2);border-radius:16px;padding:16px;margin-bottom:20px;">
       <label style="font-size:12px;font-weight:700;color:var(--gray4);display:block;margin-bottom:4px;">Peso (kg) *</label>
       <input class="form-input" type="number" step="0.1" id="progress-weight-input" placeholder="Ej: 72.5" style="width:100%;box-sizing:border-box;margin-bottom:16px;">
@@ -30089,6 +30100,22 @@ body:not(.ev-entry) .ev-chat-fab { display:none !important; }
 .ev-np-crisis .ev-btn + p { margin-top:16px; }
 .ev-np-crisis .ev-np-cr-n { font-size:13px; color:#6F655B; margin-top:12px; }
 .ev-hv-text { margin:14px 0 4px; padding:14px; border-radius:14px; background:#F7F1E8; border:1px solid #EADFD2; font-size:14px; line-height:1.5; color:#2A211B; white-space:pre-wrap; max-height:46vh; overflow-y:auto; user-select:text; -webkit-user-select:text; }
+.ev-chat-row:has(.ev-np-ta) { align-items:flex-end; }
+.ev-chat-inp.ev-np-ta { height:44px; min-height:44px; max-height:150px; padding:11px 16px; line-height:1.4; resize:none; overflow-y:auto; font-family:'DM Sans',sans-serif; white-space:pre-wrap; word-break:break-word; }
+/* Guía de fotos en Tu Progreso */
+.ev-pg-guide { margin:0 0 14px; border:1px solid var(--gray2); border-radius:14px; background:var(--gray1); }
+.ev-pg-guide summary { list-style:none; display:flex; align-items:center; gap:10px; min-height:48px; padding:0 14px; cursor:pointer; font:700 14px 'DM Sans',sans-serif; color:var(--black); }
+.ev-pg-guide summary::-webkit-details-marker { display:none; }
+.ev-pg-guide summary .ev-pg-ch { margin-left:auto; display:flex; transition:transform .2s; color:var(--gray4); }
+.ev-pg-guide[open] summary .ev-pg-ch { transform:rotate(180deg); }
+.ev-pg-body { padding:0 14px 14px; font-size:13px; line-height:1.5; color:var(--gray5); }
+.ev-pg-body p { margin:0 0 8px; }
+.ev-pg-body ul { margin:0 0 12px; padding-left:18px; }
+.ev-pg-body li b { color:var(--black); }
+.ev-pg-shots { display:flex; flex-direction:column; gap:10px; }
+.ev-pg-shot { display:block; width:100%; padding:0; border:1px solid var(--gray2); border-radius:12px; overflow:hidden; background:#fff; cursor:zoom-in; }
+.ev-pg-shot img { display:block; width:100%; height:auto; }
+.ev-pg-shot span { display:block; padding:8px 10px; font:700 12px 'DM Sans',sans-serif; color:var(--black); text-align:left; }
 .ev-mini { background:none; border:0; padding:4px 0; font:700 13px 'DM Sans',sans-serif; color:#A63E10; cursor:pointer; }
 </style>
 <script>
@@ -31117,6 +31144,14 @@ async function evOpenPhoto(path) {
   w.addEventListener('click', () => w.remove());
   document.body.appendChild(w);
 }
+// Imagen del app a pantalla completa (referencias de pose)
+function evOpenStaticPhoto(src) {
+  const w = document.createElement('div');
+  w.className = 'ev-photo-full'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'Referencia');
+  w.innerHTML = `<img src="${src}" alt="Referencia de pose"><button type="button" aria-label="Cerrar">${EVT_S(EV_I.x, 22, 2.4)}</button>`;
+  w.addEventListener('click', () => w.remove());
+  document.body.appendChild(w);
+}
 let evAudioEl = null, evAudioBtn = null;
 async function evPlayAudio(btn) {
   if (evAudioBtn === btn && evAudioEl && !evAudioEl.paused) { evAudioEl.pause(); btn.innerHTML = EV_PLAY; return; }
@@ -31919,12 +31954,12 @@ function evOpenRefer() {
     <div class="ev-sheet-top"><span class="ev-eb">Refiere y Gana $$</span><button type="button" class="ev-xbtn dk" aria-label="Cerrar" onclick="document.getElementById('ev-refer')?.remove()">${EVT_S(EV_I.x, 18, 2.2)}</button></div>
     <h2 class="ev-dela" id="ev-refer-t" style="font-size:25px;margin-top:10px;">Ganá 10% por<br>cada amigo<br>que se una</h2>
     <p class="ev-p ev-soft" style="margin-top:12px;font-size:15px;">Cuando alguien que referís se une a MOVE, ganás el 10% del primer pago de esa persona.</p>
-    <div class="ev-refer-two"><span>${EVT_S('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', 20, 2.2)}</span><p><b class="ev-honey">2 amigos en el mismo mes:</b> ganás 15% por cada uno.</p></div>
+    <div class="ev-refer-two"><span>${EVT_S('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', 20, 2.2)}</span><p><b class="ev-honey">+2 amigos en el mismo mes:</b> ganás 15% por cada uno.</p></div>
     <div class="ev-eb" style="margin-top:20px;color:#A89C8D;">Cómo funciona</div>
     <div class="ev-rules" style="margin-top:12px;gap:12px;">
       ${step(1, 'Tu amigo le escribe a Sau por Instagram.')}
       ${step(2, 'Tiene que mencionar que lo referiste vos.')}
-      ${step(3, 'Cuando hace su primer pago, Sau te paga tu comisión por SINPE al cierre del mes.')}
+      ${step(3, 'Cuando hace su primer pago, Sau te paga tu comisión al cierre de ese mismo mes.')}
     </div>
     <button type="button" class="ev-btn" style="margin-top:22px;" onclick="document.getElementById('ev-refer')?.remove()">Entendido</button>
   </div>`;
@@ -32154,7 +32189,7 @@ function evNoPainChat() {
     <div class="ev-chat-foot col">
       <button type="button" class="ev-np-harvest" onclick="evNoPainHarvest()">${EVT_S('<path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M8 21h8"/>', 16, 2.2)}Llevarme un resumen (Harvest)</button>
       <div class="ev-chat-row">
-        <input type="text" class="ev-chat-inp" id="ev-np-inp" placeholder="Escribí lo que quieras…" aria-label="Mensaje" autocomplete="off" enterkeyhint="send" onkeydown="if(event.key==='Enter'){event.preventDefault();evNoPainSend();}">
+        <textarea class="ev-chat-inp ev-np-ta" id="ev-np-inp" rows="1" placeholder="Escribí lo que quieras…" aria-label="Mensaje" autocomplete="off" oninput="evGrowInput(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!evIsTouch()){event.preventDefault();evNoPainSend();}"></textarea>
         <button type="button" class="ev-cbtn send" aria-label="Enviar" onclick="evNoPainSend()">${EVT_S(EV_I.send, 20, 2.2)}</button>
       </div>
     </div>`;
@@ -32188,6 +32223,14 @@ function evNoPainCrisisHtml() {
     <p class="ev-np-cr-n">NoPain es un espacio de acompañamiento y no reemplaza la ayuda profesional. Este mensaje es fijo y aparece cada vez que se detecta una señal de riesgo.</p>
   </div>`;
 }
+// El campo de NoPain crece hacia arriba mientras se escribe (hasta ~6 líneas, después hace scroll).
+// En el teléfono, Enter hace salto de línea y se envía con el botón; en compu, Enter envía.
+function evIsTouch() { return window.matchMedia && matchMedia('(pointer: coarse)').matches; }
+function evGrowInput(el) {
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 150) + 'px';
+}
 function evNoPainQuick(t) { const i = document.getElementById('ev-np-inp'); if (i) i.value = t; evNoPainSend(); }
 async function evNoPainAsk(extraUser) {
   const history = evNp.msgs.filter(m => !m.crisis).map(m => ({ role: m.role, content: m.content })).slice(-24);
@@ -32204,7 +32247,7 @@ async function evNoPainSend() {
   const inp = document.getElementById('ev-np-inp');
   const txt = (inp?.value || '').trim();
   if (!txt || evNp.busy) return;
-  inp.value = '';
+  inp.value = ''; evGrowInput(inp);
   // Filtro de crisis: ni este mensaje ni la respuesta pasan por el modelo (tampoco después, en el historial)
   if (npIsCrisis(txt)) { evNp.msgs.push({ role: 'user', content: txt.slice(0, 2000), crisis: true }, { role: 'assistant', crisis: true, content: '' }); evNoPainDraw(); return; }
   evNp.msgs.push({ role: 'user', content: txt.slice(0, 2000) });
@@ -32212,7 +32255,7 @@ async function evNoPainSend() {
   const reply = await evNoPainAsk();
   if (!document.getElementById('ev-np')) return; // salió mientras esperaba: no queda nada
   evNp.busy = false;
-  if (!reply) { evNp.msgs.pop(); inp.value = txt; evNoPainDraw(); showToast(CHAT_UNAVAILABLE_MSG, 'error', 4000); return; }
+  if (!reply) { evNp.msgs.pop(); inp.value = txt; evGrowInput(inp); evNoPainDraw(); showToast(CHAT_UNAVAILABLE_MSG, 'error', 4000); return; }
   evNp.msgs.push({ role: 'assistant', content: reply });
   evNoPainDraw();
 }

@@ -236,3 +236,9 @@ Probado:
 - [ ] **Antes de lanzar, Sau re-verifica los contactos**: 911 y Aquí Estoy 800 273 7869 (horario de la línea pendiente).
 
 Pendientes de Sau: nombre final de NoPain, horario de Aquí Estoy, si "sin costo" = sin tope de mensajes.
+
+### Ajustes de Sau (23 nov, después de E8)
+- NoPain: el campo de texto ahora es de varias líneas y crece hacia arriba (hasta ~6 líneas, después scroll). En el teléfono Enter hace salto de línea y se envía con el botón; en compu Enter envía.
+- Tu Progreso: guía colapsable "Cómo tomarte las fotos" arriba del registro de la semana, con el texto de Sau (en ayunas, una vez por semana, sin forzar pose) y las 3 referencias (`img/pose-frente.webp`, `img/pose-costado.webp`, `img/pose-espalda.webp`); tocar una la abre a pantalla completa. Para todos los clientes.
+- Refiere y Gana: "+2 amigos en el mismo mes: ganás 15% por cada uno." y punto 3 "Cuando hace su primer pago, Sau te paga tu comisión al cierre de ese mismo mes."
+- Nota: "Te escucho. ¿Qué pasó hoy?" en NoPain era la respuesta del doble de prueba que quedó activo en la pestaña del navegador del app, no el modelo. NoPain real necesita `/api/chat` (Vercel), que no corre con `python3 -m http.server`.
