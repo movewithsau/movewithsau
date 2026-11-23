@@ -2411,6 +2411,7 @@ span.tr-next-name { cursor:default; }
     </div>
     <!-- Chips de orden quitados (módulo Run, R7). setSortClients y clientSortMode siguen en el código; orden por defecto A–Z. -->
     <div style="height:12px;"></div>
+    <div id="ev-tier-filter"></div>
     <div id="exx-assist-banner"></div>
     <div id="coach-clients-list"><div class="spinner"></div></div>
   </div>
@@ -2567,6 +2568,7 @@ span.tr-next-name { cursor:default; }
   <div class="profile-header" id="coach-profile-header"></div>
   <div class="scroll-body" style="padding-top:14px;">
     <div id="exx-coach-assist"></div>
+    <div id="ev-coach-tier"></div>
     <div class="section-header"><div class="section-title">LIFT</div></div>
     <div class="payment-card" id="coach-lift-card"></div>
     <div class="section-header"><div class="section-title">Información de pago</div><div class="section-action" onclick="showModal('modal-edit-payment')">Editar</div></div>
@@ -3191,7 +3193,26 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
     <div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" id="nc-name" placeholder="Nombre"></div>
     <div class="form-group"><label class="form-label">Usuario</label><input class="form-input" id="nc-username" placeholder="@usuario" autocapitalize="none"></div>
     <div class="form-group"><label class="form-label">Contraseña inicial</label><input class="form-input" type="password" id="nc-password" placeholder="••••••••"></div>
-    <div class="form-group"><label class="form-label">Tipo de cliente</label>
+    <!-- Entry / VIP (E1): tier del cliente nuevo -->
+    <div class="form-group"><span class="form-label">Tipo de cliente</span>
+      <div class="ev-tier-pick" id="ev-new-tier" role="group" aria-label="Tipo de cliente">
+        <button type="button" class="ev-tier-card on" data-tier="vip" aria-pressed="true" onclick="evPickNewTier('vip')"><span class="ev-ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 6 9 17l-5-5"/></svg></span><span class="ev-tag ev-tag-vip">VIP</span><b>Acompañamiento</b><span class="ev-sub">Todo el app, con Sau</span></button>
+        <button type="button" class="ev-tier-card" data-tier="entry" aria-pressed="false" onclick="evPickNewTier('entry')"><span class="ev-ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 6 9 17l-5-5"/></svg></span><span class="ev-tag ev-tag-entry">Entry</span><b>Plan de entrada</b><span class="ev-sub">App simple, sin 1-1</span></button>
+      </div>
+      <div class="ev-tier-info" id="ev-new-tier-info" hidden>
+        <b>Entry aplica al instante</b>
+        <ul>
+          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 6 9 17l-5-5"/></svg>Oculta Evaluaciones, Guías y recursos y Extras</li>
+          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 6 9 17l-5-5"/></svg>Quita Solicitar asistencia y el WhatsApp directo</li>
+          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 6 9 17l-5-5"/></svg>Activa el buzón de soporte dentro del app</li>
+          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 6 9 17l-5-5"/></svg>Pone Run con candado y activa LIFT Challenge</li>
+          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 6 9 17l-5-5"/></svg>Pide el onboarding en su primer login</li>
+        </ul>
+        <div class="ev-small">Podés cambiarlo después desde su ficha. No se borra ningún dato.</div>
+      </div>
+    </div>
+    <!-- Virtual / Híbrido: oculto (E1). El dato sigue guardado. -->
+    <div class="form-group" style="display:none;"><label class="form-label">Tipo de cliente</label>
       <select class="form-select" id="nc-client-type">
         <option value="">Sin especificar</option>
         <option value="Virtual">Virtual (V)</option>
@@ -3201,7 +3222,7 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
     <div class="form-group"><label class="form-label">Fecha de inicio</label><input class="form-input" type="date" id="nc-start-date"></div>
     <div class="form-group"><label class="form-label">Próximo pago</label><input class="form-input" type="date" id="nc-payment-date"></div>
     <div class="form-group"><label class="form-label">Monto ($)</label><input class="form-input" type="number" id="nc-payment-amount" placeholder="0.00"></div>
-    <button class="btn-primary" onclick="addClient()">Crear cliente</button>
+    <button class="btn-primary" id="nc-create-btn" onclick="addClient()">Crear cliente VIP</button>
   </div>
 </div>
 
@@ -3209,7 +3230,8 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
   <div class="modal">
     <span class="modal-close" onclick="closeModal('modal-edit-payment')">×</span>
     <div class="modal-title">Editar cliente</div>
-    <div class="form-group"><label class="form-label">Tipo de cliente</label>
+    <!-- Virtual / Híbrido: oculto (E1). El select conserva el valor para no borrarlo al guardar. -->
+    <div class="form-group" style="display:none;"><label class="form-label">Tipo de cliente</label>
       <select class="form-select" id="ep-client-type">
         <option value="">Sin especificar</option>
         <option value="Virtual">Virtual (V)</option>
@@ -4058,6 +4080,8 @@ async function initClient() {
   }
   // Track last_active silently
   if(cd?.id) sb.from('clients').update({last_active: new Date().toISOString()}).eq('id',cd.id).then(()=>{});
+  // Entry / VIP (E1): onboarding del primer login, solo clientes nuevos (onboarding_required)
+  evClientGate(cd).catch(e => console.warn('onboarding gate:', e));
   const firstName = (cd?.name||currentUser.name||'').split(' ')[0];
   document.getElementById('c-greeting-name').textContent = firstName;
   const cTotalDays = (cd?.days_trained||0)+(cd?.days_trained_adjustment||0);
@@ -4167,7 +4191,13 @@ async function loadAICounts() {
 
 function loadGoalDisplay(goalText) {
   const textEl = document.getElementById('c-goal-text');
-  if(goalText) {
+  // Si la motivación es la respuesta de éxito del onboarding, va tal cual la escribió el cliente
+  const onbSucc = window._evOnbRow && window._evOnbRow.success_text;
+  if(goalText && onbSucc && goalText.trim() === String(onbSucc).trim()) {
+    textEl.innerHTML = `"${escHtml(goalText)}"`;
+    textEl.style.color = 'var(--black)';
+    textEl.style.fontStyle = 'normal';
+  } else if(goalText) {
     textEl.innerHTML = `"Mi meta es <span>${goalText}</span> y por esto voy a dar mi 100% sin excusas."`;
     textEl.style.color = 'var(--black)';
     textEl.style.fontStyle = 'normal';
@@ -11027,11 +11057,18 @@ function renderCoachClients(clients) {
   const list = document.getElementById('coach-clients-list');
   // Filter by current tab — clientes hidden=true solo aparecen bajo el tab "Ocultos",
   // nunca en Activos/Churn.
-  const filtered = (clients||[]).filter(c => {
+  const tabFiltered = (clients||[]).filter(c => {
     if (clientTab === 'hidden') return !!c.hidden;
     if (c.hidden) return false;
     return clientTab === 'churn' ? c.is_churn : !c.is_churn;
   });
+  // Filtro Todos / VIP / Entry / Evo (E1), dentro de la pestaña actual
+  evRenderTierFilter(tabFiltered);
+  const filtered = tabFiltered.filter(c => evTierMatch(c));
+  if(filtered.length===0 && tabFiltered.length && evTierFilter!=='all'){
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">'+icon('users', 44)+'</div><div class="empty-text">Sin clientes en este filtro.</div></div>';
+    return;
+  }
   if(filtered.length===0){
     list.innerHTML = clientTab === 'churn'
       ? '<div class="empty-state"><div class="empty-icon">'+icon('users', 44)+'</div><div class="empty-text">Sin clientes en Churn.<br>¡Todos están activos!</div></div>'
@@ -11058,7 +11095,7 @@ function renderCoachClients(clients) {
     const badgeText = getPaymentBadgeText(d);
     const startDateStr = c.start_date ? formatDate(c.start_date) : (c.created_at ? new Date(c.created_at).toLocaleDateString('es-CR',{day:'numeric',month:'short',year:'numeric'}) : null);
     const endDateStr = c.program_end_date ? formatDate(c.program_end_date) : null;
-    const typeTag = c.client_type ? `<span class="client-type-tag">${c.client_type==='Virtual'?'V':'H'}</span>` : '';
+    const typeTag = ''; // Virtual/Híbrido oculto (E1); el dato sigue en clients.client_type
     const isLift = c.program_type === 'lift';
     const isEvo = c.program_type === 'evolution';
     const evolutionBadge = isLift ? '' : `<span onclick="event.stopPropagation();toggleEvolutionClient('${c.id}',${!isEvo})" title="${isEvo?'Desactivar evoluTion':'Activar evoluTion'}" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:10px;font-weight:800;background:${isEvo?'#111':'var(--gray1)'};color:${isEvo?'var(--orange)':'var(--gray3)'};border:1.5px solid ${isEvo?'var(--orange)':'var(--gray2)'};font-family:'DM Mono',monospace;cursor:pointer;flex-shrink:0;">T</span>`;
@@ -11073,6 +11110,7 @@ function renderCoachClients(clients) {
       <div class="client-info">
         <div class="client-name" style="display:flex;align-items:center;gap:6px;${c.is_churn ? 'color:var(--gray4);' : ''}">${c.name}${typeTag}${evolutionBadge}${liftBadge}${(window._clientsWithReminder||new Set()).has(c.id)?'<div style="width:22px;height:22px;border-radius:5px;background:#fff3e0;display:flex;align-items:center;justify-content:center;font-size:12px;"><svg class="ico" width="14" height="14" aria-hidden="true" focusable="false"><use href="#i-bell"/></svg></div>':''}</div>
         <div class="client-meta">@${c.username} · ${(c.days_trained||0)+(c.days_trained_adjustment||0)} días${startDateStr?` · Inicio: ${startDateStr}`:''}${endDateStr?` · Fin: ${endDateStr}`:''}${clientSortMode==='last_active'?(()=>{const t=(window._lastTrainedMap||{})[c.id];return t?` · ${new Date(t).toLocaleDateString('es-CR',{weekday:'short',day:'numeric',month:'short'})}`:' · Sin entreno';})():''}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">${evClientTagsHtml(c)}</div>
         ${exxReqs.length?`<div class="exx-assist-chip">${icon('life-buoy',12)}Pidió asistencia${exxReqs.length > 1 ? ` (${exxReqs.length})` : ''} · ${exxAgo(exxReqs[0].created_at)}</div>`:''}
         ${progEnd?`<div class="prog-done-line"><img src="assets/evolution-logo.png" alt="" onerror="this.remove()">PROGRAMA TERMINADO · ${fmtCRDay(progEnd).toUpperCase()}</div>`:''}
       </div>
@@ -11136,6 +11174,8 @@ async function loadCoachClients() {
   }
   // Solicitudes de asistencia abiertas (tarjeta naranja + banner); si falla, la lista se ve como antes
   try { await exxLoadOpenAssist(clientIds); } catch(e) { console.warn('exx assist load failed:', e); }
+  // Onboarding pendiente (E1); si falla, la lista sigue sin la etiqueta
+  try { await evLoadOnbMap(clientIds); } catch(e) { console.warn('onboarding map failed:', e); }
   exxStartAssistPolling();
   // Días con registro esta semana (círculo de la tarjeta); si falla, se ve 0 y la lista sigue
   try { await rnLoadHomeWeek((clients||[]).map(c => c.id)); } catch(e) { console.warn('rn home week failed:', e); }
@@ -11158,6 +11198,7 @@ async function openCoachClient(clientId) {
   const {data:c} = await sb.from('clients').select('*').eq('id',clientId).single();
   currentClient=c;
   exxRenderCoachAssist(c);
+  evRenderCoachTier(c);
   const startDateStr = c.start_date ? formatDate(c.start_date) : null;
   const endDateStr = c.program_end_date ? formatDate(c.program_end_date) : null;
   const typeTag = c.client_type ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:10px;font-weight:800;background:var(--orange-light);color:var(--orange);border:1.5px solid var(--orange-mid);font-family:'DM Mono',monospace;margin-left:6px;">${c.client_type==='Virtual'?'V':'H'}</span>` : '';
@@ -11167,8 +11208,8 @@ async function openCoachClient(clientId) {
   document.getElementById('coach-profile-header').innerHTML=`
     <div class="profile-avatar-lg">${getInitials(c.name)}</div>
     <div>
-      <div class="profile-name" style="display:flex;align-items:center;">${c.name}${typeTag}${evoTag}</div>
-      <div class="profile-username">@${c.username}${c.client_type?' · '+c.client_type:''}</div>
+      <div class="profile-name" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">${c.name}${evoTag}<span id="ev-head-tag" style="display:inline-flex;">${evTierTagHtml(c)}</span></div>
+      <div class="profile-username">@${c.username}</div>
       ${startDateStr?`<div style="font-size:11px;color:var(--orange);margin-top:2px;">Inicio: ${startDateStr}${endDateStr?` · Fin: ${endDateStr}`:''}</div>`:''}
     </div>`;
   const d=daysUntil(c.next_payment_date);
@@ -11178,7 +11219,6 @@ async function openCoachClient(clientId) {
     <div class="payment-row"><span class="payment-key">Monto</span><span class="payment-val">$${c.payment_amount||'—'}</span></div>
     <div class="payment-row"><span class="payment-key">Días restantes</span><span class="payment-val" style="color:${dColor}">${d!==null?d+' días':'—'}</span></div>
     ${startDateStr?`<div class="payment-row"><span class="payment-key">Fecha de inicio</span><span class="payment-val">${startDateStr}</span></div>`:''}
-    ${c.client_type?`<div class="payment-row"><span class="payment-key">Tipo</span><span class="payment-val">${c.client_type}</span></div>`:''}
     <div class="payment-row">
       <span class="payment-key">Peso inicial</span>
       <span class="payment-val" style="display:flex;align-items:center;gap:6px;">
@@ -16252,11 +16292,12 @@ async function addClient() {
   if(exists){showToast('Ese usuario ya existe', 'error');return;}
   const {data:user,error:ue} = await sb.from('users').insert([{name,username,password:pass,role:'client'}]).select().single();
   if(ue){showToast(ue.message, 'error');return;}
-  const {error:ce} = await sb.from('clients').insert([{coach_id:currentUser.id,name,username,client_type:clientType||null,start_date:startDate||null,next_payment_date:payDate||null,payment_amount:payAmount||null,days_trained:0}]);
+  const {error:ce} = await sb.from('clients').insert([{coach_id:currentUser.id,name,username,client_type:clientType||null,start_date:startDate||null,next_payment_date:payDate||null,payment_amount:payAmount||null,days_trained:0,...evNewClientFields()}]);
   if(ce){showToast(ce.message, 'error');return;}
   closeModal('modal-add-client');
   ['nc-name','nc-username','nc-password','nc-start-date','nc-payment-date','nc-payment-amount'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('nc-client-type').value='';
+  evPickNewTier('vip');
   showToast('Cliente creado', 'success');
   loadCoachClients();
 }
@@ -29577,6 +29618,513 @@ function rnBlocksHtml(pre, post) { return rnBlockHtml(pre, 'Antes de correr') + 
     <button onclick="closeModal('modal-add-habit')" class="btn-secondary" style="margin-top:10px;">Cancelar</button>
   </div>
 </div>
+
+<!-- ===== ENTRY / VIP (bloques E1–E8) ===== -->
+<style id="ev-css">
+/* Pantallas del cliente (oscuras, como el mockup). Todo con prefijo ev- para no chocar con el resto. */
+.ev-ov { position:fixed; inset:0; z-index:10050; background:#14110E; color:#FBF6EF; overflow-y:auto; -webkit-overflow-scrolling:touch; font-family:'DM Sans',system-ui,sans-serif; font-size:15px; line-height:1.4; -webkit-font-smoothing:antialiased; }
+.ev-ov.ev-hex { background-color:#14110E; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='103.92' height='180'%3E%3Cpath d='M0 30 L51.96 0 L103.92 30 M0 30 V90 M103.92 30 V90 M0 90 L51.96 120 L103.92 90 M51.96 120 V180' fill='none' stroke='%23F5B83D' stroke-opacity='0.10' stroke-width='1'/%3E%3C/svg%3E"); background-repeat:repeat; }
+.ev-wrap { position:relative; max-width:430px; margin:0 auto; padding:36px 20px 30px; min-height:100%; box-sizing:border-box; display:flex; flex-direction:column; }
+.ev-ov *, .ev-sheet * { box-sizing:border-box; }
+.ev-eb { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#F5B83D; }
+.ev-dela { font-family:'Dela Gothic One',sans-serif; text-transform:uppercase; line-height:1.06; font-weight:400; margin:10px 0 0; color:#FBF6EF; }
+.ev-soft { color:#CFC6BA; } .ev-mute { color:#A89C8D; } .ev-honey { color:#F5B83D; }
+.ev-p { margin:0; }
+.ev-fields { display:flex; flex-direction:column; gap:24px; margin-top:28px; }
+.ev-lbl { display:block; font:700 13px 'DM Sans',sans-serif; color:#CFC6BA; margin-bottom:8px; line-height:1.35; }
+.ev-inp { display:block; width:100%; height:52px; padding:0 16px; border-radius:14px; border:1px solid #3A3027; background:#1B1713; color:#FBF6EF; font:500 17px 'DM Sans',sans-serif; outline:none; -webkit-appearance:none; appearance:none; }
+textarea.ev-inp { height:84px; padding:14px 16px; resize:none; line-height:1.35; }
+.ev-inp::placeholder { color:#6F655B; }
+.ev-inp:focus { border-color:#F5B83D; }
+.ev-note { margin:6px 0 0; font-size:12px; color:#A89C8D; }
+.ev-chips { display:flex; flex-wrap:wrap; gap:8px; }
+.ev-chip { display:inline-flex; align-items:center; height:42px; padding:0 16px; border-radius:999px; border:1px solid #3A3027; background:#1B1713; color:#CFC6BA; font:500 14px 'DM Sans',sans-serif; cursor:pointer; }
+.ev-chip[aria-pressed="true"] { background:#F5B83D; border-color:#F5B83D; color:#14110E; font-weight:700; }
+.ev-days { display:flex; justify-content:space-between; gap:4px; }
+.ev-day { flex:1 1 0; min-width:0; max-width:44px; height:48px; display:flex; align-items:center; justify-content:center; border-radius:14px; border:1px solid #3A3027; background:#1B1713; color:#CFC6BA; font:700 16px 'DM Sans',sans-serif; cursor:pointer; padding:0; }
+.ev-days.ev-ten .ev-day { max-width:32px; border-radius:12px; font-size:15px; }
+.ev-day[aria-pressed="true"] { background:#F5B83D; border-color:#F5B83D; color:#14110E; }
+.ev-scale { display:flex; justify-content:space-between; margin-top:8px; font-size:12px; color:#A89C8D; }
+.ev-foot { margin-top:auto; padding-top:32px; display:flex; flex-direction:column; gap:16px; }
+.ev-check { display:flex; align-items:flex-start; gap:12px; font-size:14px; color:#CFC6BA; cursor:pointer; }
+.ev-check input { width:22px; height:22px; margin:0; flex:none; accent-color:#1E7A3C; }
+.ev-link { background:none; border:0; padding:0; font:inherit; font-weight:700; color:#F5B83D; text-decoration:underline; cursor:pointer; }
+.ev-btn { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; height:54px; border:0; border-radius:16px; background:#C24E18; color:#FFFFFF; font:700 16px 'DM Sans',sans-serif; cursor:pointer; }
+.ev-btn.green { background:#1E7A3C; }
+.ev-btn.honey { background:#F5B83D; color:#14110E; }
+.ev-btn:disabled { background:#2E2721; color:#A89C8D; cursor:default; }
+.ev-card { background:#26201A; border:1px solid #3A3027; border-radius:22px; padding:16px 18px; }
+.ev-steps { display:flex; flex-direction:column; gap:12px; }
+.ev-step { display:flex; align-items:flex-start; gap:12px; }
+.ev-step-dot { width:30px; height:30px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; background:#1E7A3C; color:#fff; }
+.ev-step-dot.wait { background:#26201A; border:2px solid #F5B83D; }
+.ev-step-dot.wait i { width:8px; height:8px; border-radius:50%; background:#F5B83D; }
+.ev-step > div b { display:block; font-size:15px; } .ev-step > div span { display:block; font-size:13px; color:#CFC6BA; line-height:1.3; }
+/* Bienvenida VIP: foto a la derecha, texto a la izquierda, degradado horizontal */
+.ev-vipw { position:fixed; inset:0; z-index:10060; background:#14110E; color:#FBF6EF; overflow:hidden; font-family:'DM Sans',system-ui,sans-serif; }
+.ev-vipw-img { position:absolute; top:0; left:4.6%; height:100%; width:auto; max-width:none; }
+.ev-vipw-g1 { position:absolute; inset:0; background:linear-gradient(to right,#14110E 0%,#14110E 20%,rgba(20,17,14,.88) 36%,rgba(20,17,14,.4) 54%,rgba(20,17,14,0) 74%); }
+.ev-vipw-g2 { position:absolute; left:0; right:0; bottom:0; height:34%; background:linear-gradient(to bottom,rgba(20,17,14,0),#14110E 78%); }
+.ev-vipw-tag { position:absolute; left:20px; top:calc(44px + env(safe-area-inset-top,0px)); font-family:'DM Mono',monospace; font-size:11px; letter-spacing:.2em; color:#F5B83D; }
+.ev-vipw-txt { position:absolute; left:24px; top:30%; width:min(214px,56%); }
+.ev-vipw-txt h1 { font-family:'Dela Gothic One',sans-serif; text-transform:uppercase; font-weight:400; font-size:34px; line-height:1.08; margin:8px 0 0; }
+.ev-vipw-bar { width:44px; height:3px; border-radius:2px; background:#F5B83D; margin:18px 0 14px; }
+.ev-vipw-txt .ev-serif { font-family:'Playfair Display',serif; font-size:20px; line-height:1.35; font-weight:700; color:#FBF6EF; margin:0; }
+.ev-vipw-foot { position:absolute; left:20px; right:20px; bottom:calc(30px + env(safe-area-inset-bottom,0px)); max-width:390px; margin:0 auto; }
+/* Hoja simple (términos, edición del coach) */
+.ev-dim { position:fixed; inset:0; z-index:10070; background:rgba(10,8,6,.66); display:flex; align-items:flex-end; justify-content:center; }
+.ev-sheet { width:100%; max-width:430px; max-height:88vh; overflow-y:auto; border-radius:28px 28px 0 0; padding:12px 20px calc(24px + env(safe-area-inset-bottom,0px)); background:#26201A; color:#FBF6EF; border-top:1px solid #3A3027; font-family:'DM Sans',system-ui,sans-serif; }
+.ev-sheet.lt { background:#FFFFFF; color:#2A211B; border-top:0; }
+.ev-handle { width:44px; height:5px; border-radius:3px; background:#4A3F35; margin:0 auto 18px; }
+.ev-sheet.lt .ev-handle { background:#DCCFC0; }
+.ev-sheet h2 { font-family:'Playfair Display',serif; font-size:22px; margin:0 0 12px; }
+.ev-sheet p { font-size:14px; line-height:1.55; margin:0 0 10px; }
+/* Coach (tema claro del app) */
+.ev-tag { display:inline-flex; align-items:center; height:22px; padding:0 9px; border-radius:999px; font:700 11px 'DM Sans',sans-serif; white-space:nowrap; flex-shrink:0; }
+.ev-tag-entry { background:#F6E6DB; color:#A63E10; }
+.ev-tag-vip { background:#2A211B; color:#F5B83D; }
+.ev-tag-warn { background:#FBE9C2; color:#7A5200; }
+.ev-tag-ok { background:#DDF1E3; color:#17602F; }
+.ev-tf { position:relative; margin:0 0 12px; }
+.ev-tf-btn { display:flex; align-items:center; gap:10px; width:100%; height:48px; padding:0 14px; border-radius:14px; border:1.5px solid #C24E18; background:#fff; color:#4A3F35; font:500 14px 'DM Sans',sans-serif; cursor:pointer; text-align:left; }
+.ev-tf-btn .ev-tf-n { flex:1; }
+.ev-tf-btn svg { transition:transform .2s; }
+.ev-tf-btn[aria-expanded="true"] svg { transform:rotate(180deg); }
+.ev-tf-panel { position:absolute; left:0; right:0; top:54px; z-index:30; background:#fff; border-radius:18px; box-shadow:0 12px 32px rgba(42,33,27,.18); padding:6px; }
+.ev-tf-row { display:flex; align-items:center; gap:10px; width:100%; height:52px; padding:0 12px; border:0; border-radius:12px; background:transparent; font:700 14px 'DM Sans',sans-serif; color:#2A211B; cursor:pointer; text-align:left; }
+.ev-tf-row.on { background:#F6E6DB; }
+.ev-tf-row .ev-tf-c { margin-left:auto; font:500 13px 'DM Mono',monospace; color:#6F655B; }
+.ev-tf-row.on .ev-tf-c { color:#A63E10; }
+.ev-tier-pick { display:flex; gap:10px; }
+.ev-tier-card { flex:1; min-width:0; text-align:left; padding:12px; border-radius:16px; border:1.5px solid #EADFD2; background:#fff; cursor:pointer; font-family:'DM Sans',sans-serif; position:relative; }
+.ev-tier-card.on { border-color:#C24E18; background:#FCEEE4; }
+.ev-tier-card b { display:block; font-size:15px; color:#2A211B; margin-top:8px; }
+.ev-tier-card.on b { color:#A63E10; }
+.ev-tier-card span.ev-sub { display:block; font-size:12px; color:#6F655B; }
+.ev-tier-card .ev-ok { position:absolute; right:10px; top:10px; width:22px; height:22px; border-radius:50%; background:#C24E18; color:#fff; display:none; align-items:center; justify-content:center; }
+.ev-tier-card.on .ev-ok { display:flex; }
+.ev-tier-info { margin-top:10px; padding:14px; border-radius:16px; background:#FFF8F1; border:1px solid #EADFD2; font-size:13px; color:#4A3F35; }
+.ev-tier-info b { color:#A63E10; display:block; margin-bottom:6px; }
+.ev-tier-info ul { margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:5px; }
+.ev-tier-info li { display:flex; gap:8px; align-items:flex-start; line-height:1.35; }
+.ev-tier-info li svg { flex:none; color:#C24E18; margin-top:1px; }
+.ev-tier-info .ev-small { margin-top:8px; font-size:12px; color:#6F655B; }
+.ev-cc { background:#fff; border:1px solid #EADFD2; border-radius:20px; padding:16px; margin-bottom:14px; }
+.ev-cc-t { font:700 13px 'DM Sans',sans-serif; color:#2A211B; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+.ev-seg { display:flex; padding:4px; border-radius:14px; background:#EFE6DB; }
+.ev-seg button { flex:1; height:42px; border:0; border-radius:11px; background:transparent; font:700 14px 'DM Sans',sans-serif; color:#6F655B; cursor:pointer; }
+.ev-seg button[aria-pressed="true"] { background:#fff; color:#A63E10; box-shadow:0 1px 3px rgba(0,0,0,.1); }
+.ev-seg button.vip[aria-pressed="true"] { color:#2A211B; }
+.ev-cc-note { font-size:12px; color:#6F655B; margin-top:8px; }
+.ev-kv { display:flex; justify-content:space-between; gap:14px; padding:10px 0; border-top:1px solid #EADFD2; font-size:14px; }
+.ev-kv:first-of-type { border-top:0; }
+.ev-kv span:first-child { color:#6F655B; flex:none; }
+.ev-kv span:last-child { font-weight:700; color:#2A211B; text-align:right; word-break:break-word; }
+.ev-eb-o { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#A63E10; }
+.ev-lf { display:block; font:700 13px 'DM Sans',sans-serif; color:#4A3F35; margin:12px 0 6px; }
+.ev-linp { display:block; width:100%; min-height:46px; padding:10px 14px; border-radius:12px; border:1px solid #E3D6C7; background:#fff; color:#2A211B; font:500 15px 'DM Sans',sans-serif; }
+textarea.ev-linp { min-height:72px; resize:vertical; }
+.ev-lbtn { display:flex; align-items:center; justify-content:center; width:100%; height:50px; border:0; border-radius:14px; background:#C24E18; color:#fff; font:700 15px 'DM Sans',sans-serif; cursor:pointer; margin-top:16px; }
+.ev-lbtn.ghost { background:transparent; color:#A63E10; border:1px solid #E3CDBE; }
+/* Ficha del coach: .profile-name del Perfil del cliente (blanco, 30 px) se filtraba al encabezado */
+#coach-profile-header .profile-name { color:var(--black); font-size:22px; margin-top:0; }
+.ev-mini { background:none; border:0; padding:4px 0; font:700 13px 'DM Sans',sans-serif; color:#A63E10; cursor:pointer; }
+</style>
+<script>
+// ===== ENTRY / VIP =====
+// clients.tier: 'entry' | 'vip' (default 'vip'). Cambiar de tier solo oculta o muestra; nunca borra.
+// clients.onboarding_required = true solo en clientes creados desde el lanzamiento: los de antes
+// no ven onboarding, bienvenida ni tour. client_onboarding: una fila por cliente (unique client_id).
+const EV_SVG_CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 6 9 17l-5-5"/></svg>';
+const EV_SVG_CHEV = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg>';
+const EV_GOALS = ['Ganar músculo', 'Perder grasa', 'Rendimiento', 'Salud y movilidad'];
+const EV_EQUIP = ['Gimnasio completo', 'Mancuernas', 'Bandas', 'Solo mi cuerpo'];
+
+function evTier(c) { return (c && c.tier === 'entry') ? 'entry' : 'vip'; }
+function evIsEntry(c) { return evTier(c) === 'entry'; }
+function evEsc(s) { return escHtml(s == null ? '' : String(s)); }
+function evTierTagHtml(c) {
+  return evIsEntry(c) ? '<span class="ev-tag ev-tag-entry">Entry</span>' : '<span class="ev-tag ev-tag-vip">VIP</span>';
+}
+
+// ---------- Coach: crear cliente con tier ----------
+let evNewTier = 'vip';
+function evPickNewTier(t) {
+  evNewTier = t === 'entry' ? 'entry' : 'vip';
+  document.querySelectorAll('#ev-new-tier .ev-tier-card').forEach(b => {
+    const on = b.dataset.tier === evNewTier;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  const info = document.getElementById('ev-new-tier-info');
+  if (info) info.hidden = evNewTier !== 'entry';
+  const btn = document.getElementById('nc-create-btn');
+  if (btn) btn.textContent = evNewTier === 'entry' ? 'Crear cliente Entry' : 'Crear cliente VIP';
+}
+// Lo que se agrega al insert de clients al crear (aditivo: las columnas existen desde entry-vip-base.sql)
+function evNewClientFields() {
+  const f = { tier: evNewTier, onboarding_required: true };
+  if (evNewTier === 'entry') { f.food_access = true; f.training_access = true; } // todos los Entry tienen los 3 agentes
+  return f;
+}
+
+// ---------- Coach: filtro de la lista (Todos, VIP, Entry, Evo) ----------
+let evTierFilter = 'all';
+let evTfOpen = false;
+const EV_TF = [['all', 'Todos'], ['vip', 'VIP'], ['entry', 'Entry'], ['evo', 'Evo']];
+function evTierMatch(c, f) {
+  f = f || evTierFilter;
+  if (f === 'vip') return evTier(c) === 'vip';
+  if (f === 'entry') return evTier(c) === 'entry';
+  if (f === 'evo') return c.program_type === 'evolution';
+  return true;
+}
+function evTfLabelHtml(key) {
+  if (key === 'vip') return '<span class="ev-tag ev-tag-vip">VIP</span>';
+  if (key === 'entry') return '<span class="ev-tag ev-tag-entry">Entry</span>';
+  return '<span>' + (key === 'evo' ? 'Evo' : 'Todos') + '</span>';
+}
+// tabList: los clientes de la pestaña actual (Activos/Churn/Ocultos) antes de filtrar por tier
+function evRenderTierFilter(tabList) {
+  const box = document.getElementById('ev-tier-filter');
+  if (!box) return;
+  const counts = {};
+  EV_TF.forEach(([k]) => { counts[k] = tabList.filter(c => evTierMatch(c, k)).length; });
+  const n = counts[evTierFilter];
+  box.innerHTML = `<div class="ev-tf">
+    <button type="button" class="ev-tf-btn" aria-haspopup="listbox" aria-expanded="${evTfOpen}" onclick="evTfToggle()">
+      ${evTfLabelHtml(evTierFilter)}<span class="ev-tf-n">${n} ${n === 1 ? 'cliente' : 'clientes'}</span>${EV_SVG_CHEV}
+    </button>
+    ${evTfOpen ? `<div class="ev-tf-panel" role="listbox" aria-label="Filtrar clientes">${EV_TF.map(([k]) => `
+      <button type="button" role="option" aria-selected="${k === evTierFilter}" class="ev-tf-row${k === evTierFilter ? ' on' : ''}" onclick="evTfPick('${k}')">
+        ${evTfLabelHtml(k)}<span class="ev-tf-c">${counts[k]}</span>${k === evTierFilter ? '<span style="color:#A63E10;display:flex;">' + EV_SVG_CHECK + '</span>' : ''}
+      </button>`).join('')}</div>` : ''}
+  </div>`;
+}
+function evTfToggle() { evTfOpen = !evTfOpen; renderCoachClients(window._cachedClientsAll || []); }
+function evTfPick(k) { evTierFilter = k; evTfOpen = false; renderCoachClients(window._cachedClientsAll || []); }
+document.addEventListener('click', e => {
+  if (evTfOpen && !e.target.closest('.ev-tf')) { evTfOpen = false; renderCoachClients(window._cachedClientsAll || []); }
+});
+
+// Estado del onboarding de cada cliente (para la etiqueta "Onboarding pendiente" de la lista)
+window._evOnbMap = {};
+async function evLoadOnbMap(ids) {
+  window._evOnbMap = {};
+  if (!ids || !ids.length) return;
+  const { data, error } = await sb.from('client_onboarding').select('client_id,completed_at').in('client_id', ids);
+  if (error) { console.warn('client_onboarding:', error.message); return; }
+  (data || []).forEach(r => { window._evOnbMap[r.client_id] = r; });
+}
+function evOnbPending(c) {
+  if (!c || c.onboarding_required !== true) return false;
+  const r = window._evOnbMap[c.id];
+  return !(r && r.completed_at);
+}
+function evClientTagsHtml(c) {
+  return evTierTagHtml(c) + (evOnbPending(c) ? '<span class="ev-tag ev-tag-warn">Onboarding pendiente</span>' : '');
+}
+
+// ---------- Coach: ficha (tipo de cliente y onboarding) ----------
+let evCoachOnb = null;
+async function evRenderCoachTier(c) {
+  const box = document.getElementById('ev-coach-tier');
+  if (!box || !c) return;
+  const cid = c.id;
+  const entry = evIsEntry(c);
+  box.innerHTML = `<div class="ev-cc">
+      <div class="ev-cc-t">Tipo de cliente</div>
+      <div class="ev-seg" role="group" aria-label="Tipo de cliente">
+        <button type="button" class="vip" aria-pressed="${!entry}" onclick="evSetTier('vip')">VIP</button>
+        <button type="button" aria-pressed="${entry}" onclick="evSetTier('entry')">Entry</button>
+      </div>
+      <div class="ev-cc-note">Cambiar de tipo solo oculta o muestra secciones. No se borra ningún dato.</div>
+    </div>
+    <div id="ev-coach-onb"><div class="spinner"></div></div>`;
+  const [{ data: onb, error }, { data: logs }] = await Promise.all([
+    sb.from('client_onboarding').select('*').eq('client_id', cid).maybeSingle(),
+    sb.from('client_progress_logs').select('weight_kg,week_start_date').eq('client_id', cid).order('week_start_date', { ascending: false }).limit(1)
+  ]);
+  if (!currentClient || currentClient.id !== cid) return;
+  evCoachOnb = onb || null;
+  const el = document.getElementById('ev-coach-onb');
+  if (!el) return;
+  if (error) { el.innerHTML = ''; console.warn('client_onboarding:', error.message); return; }
+  const weight = logs && logs[0] && logs[0].weight_kg != null ? String(logs[0].weight_kg).replace('.', ',') + ' kg' : '—';
+  const done = !!(onb && onb.completed_at);
+  const status = done ? '<span class="ev-tag ev-tag-ok">Completo</span>'
+    : c.onboarding_required ? '<span class="ev-tag ev-tag-warn">Pendiente</span>' : '';
+  // Entry sin fila y cliente viejo: no hay nada que mostrar
+  if (!onb && entry && !c.onboarding_required) { el.innerHTML = ''; return; }
+  const v = k => (onb && onb[k] != null && String(onb[k]).trim() !== '') ? evEsc(onb[k]) : '—';
+  const rows = [
+    ['Profesión', v('profession')], ['Correo', v('email')], ['Peso (de Tu Progreso)', weight],
+    ['Objetivo', v('goal')], ['Días por semana', v('days_per_week')], ['Experiencia (1 a 10)', v('experience')],
+    ['Equipo', v('equipment')], ['Lesiones', v('injuries')], ['Éxito para el cliente', v('success_text')], ['Algo más', v('extra')]
+  ];
+  el.innerHTML = `<div class="ev-cc">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;">
+      <span class="ev-eb-o">Onboarding</span>${status}
+    </div>
+    ${rows.map(([k, val]) => `<div class="ev-kv"><span>${k}</span><span>${val}</span></div>`).join('')}
+    ${entry ? '' : '<button type="button" class="ev-mini" onclick="evOpenCoachOnbEdit()">Editar datos del cliente</button>'}
+  </div>`;
+}
+async function evSetTier(t) {
+  const c = currentClient;
+  if (!c || evTier(c) === t) return;
+  const { error } = await sb.from('clients').update({ tier: t }).eq('id', c.id);
+  if (error) { showToast('No se pudo cambiar el tipo: ' + error.message, 'error'); return; }
+  c.tier = t;
+  const cached = (window._cachedClientsAll || []).find(x => x.id === c.id);
+  if (cached) cached.tier = t;
+  showToast(t === 'entry' ? 'Ahora es Entry' : 'Ahora es VIP', 'success');
+  evRenderCoachTier(c);
+  evRenderCoachHeaderTag(c);
+}
+function evRenderCoachHeaderTag(c) {
+  const host = document.getElementById('ev-head-tag');
+  if (host) host.innerHTML = evTierTagHtml(c);
+}
+// Sau llena los datos VIP después de reunirse con el cliente (tarjeta editable solo para VIP)
+function evOpenCoachOnbEdit() {
+  const c = currentClient; if (!c) return;
+  const o = evCoachOnb || {};
+  const val = k => evEsc(o[k] == null ? '' : o[k]);
+  const dim = document.createElement('div');
+  dim.className = 'ev-dim'; dim.id = 'ev-onb-edit';
+  dim.innerHTML = `<div class="ev-sheet lt" role="dialog" aria-modal="true" aria-labelledby="ev-onb-edit-t">
+    <div class="ev-handle"></div>
+    <h2 id="ev-onb-edit-t">Datos de ${evEsc((c.name || '').split(' ')[0])}</h2>
+    <label class="ev-lf" for="evc-prof">Profesión</label><input class="ev-linp" id="evc-prof" value="${val('profession')}">
+    <label class="ev-lf" for="evc-mail">Correo</label><input class="ev-linp" id="evc-mail" type="email" value="${val('email')}" autocapitalize="none">
+    <label class="ev-lf" for="evc-goal">Objetivo</label><input class="ev-linp" id="evc-goal" value="${val('goal')}">
+    <label class="ev-lf" for="evc-days">Días por semana</label><input class="ev-linp" id="evc-days" type="number" min="1" max="7" value="${val('days_per_week')}">
+    <label class="ev-lf" for="evc-exp">Experiencia (1 a 10)</label><input class="ev-linp" id="evc-exp" type="number" min="1" max="10" value="${val('experience')}">
+    <label class="ev-lf" for="evc-eq">Equipo</label><input class="ev-linp" id="evc-eq" value="${val('equipment')}">
+    <label class="ev-lf" for="evc-inj">Lesiones</label><textarea class="ev-linp" id="evc-inj">${val('injuries')}</textarea>
+    <label class="ev-lf" for="evc-extra">Algo más</label><textarea class="ev-linp" id="evc-extra">${val('extra')}</textarea>
+    <button type="button" class="ev-lbtn" id="evc-save" onclick="evSaveCoachOnb()">Guardar</button>
+    <button type="button" class="ev-lbtn ghost" onclick="document.getElementById('ev-onb-edit')?.remove()">Cancelar</button>
+  </div>`;
+  dim.addEventListener('click', e => { if (e.target === dim) dim.remove(); });
+  document.body.appendChild(dim);
+}
+async function evSaveCoachOnb() {
+  const c = currentClient; if (!c) return;
+  const g = id => (document.getElementById(id)?.value || '').trim();
+  const days = parseInt(g('evc-days'), 10), exp = parseInt(g('evc-exp'), 10);
+  if (g('evc-days') && !(days >= 1 && days <= 7)) { showToast('Días por semana: de 1 a 7', 'error'); return; }
+  if (g('evc-exp') && !(exp >= 1 && exp <= 10)) { showToast('Experiencia: de 1 a 10', 'error'); return; }
+  const row = {
+    client_id: c.id, profession: g('evc-prof') || null, email: g('evc-mail') || null, goal: g('evc-goal') || null,
+    days_per_week: g('evc-days') ? days : null, experience: g('evc-exp') ? exp : null,
+    equipment: g('evc-eq') || null, injuries: g('evc-inj') || null, extra: g('evc-extra') || null,
+    updated_at: new Date().toISOString()
+  };
+  const btn = document.getElementById('evc-save'); if (btn) btn.disabled = true;
+  // upsert solo toca las columnas enviadas: no pisa success_text ni completed_at del cliente
+  const { error } = await sb.from('client_onboarding').upsert([row], { onConflict: 'client_id' });
+  if (error) { if (btn) btn.disabled = false; showToast('No se guardó: ' + error.message, 'error'); return; }
+  document.getElementById('ev-onb-edit')?.remove();
+  showToast('Datos guardados', 'success');
+  evRenderCoachTier(c);
+}
+
+// ---------- Cliente: onboarding del primer login (una sola vez) ----------
+window._evOnbRow = null;
+// Se llama desde initClient. Clientes viejos (onboarding_required != true) no ven nada.
+async function evClientGate(cd) {
+  window._evOnbRow = null;
+  if (!cd || currentUser?.role === 'coach') return;
+  const { data, error } = await sb.from('client_onboarding').select('*').eq('client_id', cd.id).maybeSingle();
+  if (!currentClient || currentClient.id !== cd.id) return;
+  if (error) { console.warn('client_onboarding:', error.message); return; }
+  window._evOnbRow = data || null;
+  loadGoalDisplay(currentClient.goal_text); // motivación tal cual si viene del onboarding
+  if (cd.onboarding_required !== true) return;
+  if (data && data.completed_at) { evAfterOnboarding(); return; }
+  ensureDelaFont();
+  if (evIsEntry(cd)) evShowEntryOnb(); else evShowVipOnb();
+}
+// Qué sigue al onboarding (el tour se agrega en E3A)
+function evAfterOnboarding() {}
+
+function evChipsHtml(name, opts, multi) {
+  return `<div class="ev-chips" role="group" data-ev="${name}" data-multi="${multi ? 1 : 0}">${opts.map(o =>
+    `<button type="button" class="ev-chip" aria-pressed="false" data-v="${evEsc(o)}" onclick="evTogglePick(this)">${evEsc(o)}</button>`).join('')}</div>`;
+}
+function evDaysHtml(name, from, to, ten) {
+  let h = `<div class="ev-days${ten ? ' ev-ten' : ''}" role="group" data-ev="${name}" data-multi="0">`;
+  for (let i = from; i <= to; i++) h += `<button type="button" class="ev-day" aria-pressed="false" data-v="${i}" onclick="evTogglePick(this)">${i}</button>`;
+  return h + '</div>';
+}
+function evTogglePick(btn) {
+  const g = btn.parentElement;
+  const multi = g.dataset.multi === '1';
+  const on = btn.getAttribute('aria-pressed') === 'true';
+  if (!multi) g.querySelectorAll('[aria-pressed]').forEach(b => b.setAttribute('aria-pressed', 'false'));
+  btn.setAttribute('aria-pressed', on && multi ? 'false' : 'true');
+}
+function evPicked(name) {
+  return Array.from(document.querySelectorAll(`[data-ev="${name}"] [aria-pressed="true"]`)).map(b => b.dataset.v);
+}
+function evShowEntryOnb() {
+  if (document.getElementById('ev-onb')) return;
+  const ov = document.createElement('div');
+  ov.className = 'ev-ov ev-hex'; ov.id = 'ev-onb';
+  ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-labelledby', 'ev-onb-t');
+  ov.innerHTML = `<div class="ev-wrap">
+    <div class="ev-eb">Bienvenido a MOVE · Un solo paso</div>
+    <h1 class="ev-dela" id="ev-onb-t" style="font-size:32px;">Contanos<br>de vos</h1>
+    <p class="ev-p ev-soft" style="margin-top:12px;">Con esto Sau arma tu punto de partida. Te toma 1 minuto.</p>
+    <div class="ev-fields">
+      <div><label class="ev-lbl" for="ev-prof">Profesión o a qué te dedicás</label>
+        <input id="ev-prof" class="ev-inp" type="text" autocomplete="organization-title" placeholder="Por ejemplo: contadora, ingeniero, docente"></div>
+      <div><label class="ev-lbl" for="ev-mail">Correo electrónico</label>
+        <input id="ev-mail" class="ev-inp" type="email" inputmode="email" autocomplete="email" autocapitalize="none" placeholder="tucorreo@ejemplo.com">
+        <p class="ev-note">Sau puede escribirte a este correo con novedades de MOVE.</p></div>
+      <div><span class="ev-lbl" id="ev-goal-l">Tu objetivo</span>${evChipsHtml('goal', EV_GOALS, false)}</div>
+      <div><label class="ev-lbl" for="ev-succ">Más allá del físico: ¿qué querés lograr? ¿Cómo se ve el éxito para vos?</label>
+        <textarea id="ev-succ" class="ev-inp" placeholder="Escribilo con tus palabras"></textarea>
+        <p class="ev-note">Esta respuesta va a ser tu motivación en el Perfil. Podés cambiarla cuando quieras.</p></div>
+      <div><label class="ev-lbl" for="ev-inj">Lesiones o molestias</label>
+        <textarea id="ev-inj" class="ev-inp" placeholder="Ninguna, o contanos cuál y desde cuándo"></textarea></div>
+      <div><span class="ev-lbl">Con qué equipo contás</span>${evChipsHtml('equip', EV_EQUIP, true)}</div>
+      <div><span class="ev-lbl" id="ev-days-l">Días por semana que podés entrenar</span>${evDaysHtml('days', 1, 7, false)}</div>
+      <div><span class="ev-lbl" id="ev-exp-l">Del 1 al 10, ¿qué tan experimentado te considerás haciendo ejercicio?</span>${evDaysHtml('exp', 1, 10, true)}
+        <div class="ev-scale"><span>Recién empiezo</span><span>Muy experimentado</span></div></div>
+      <div><label class="ev-lbl" for="ev-extra">Algo más que deberíamos saber de vos</label>
+        <textarea id="ev-extra" class="ev-inp" placeholder="Lo que quieras contarle a Sau: tu rutina, qué te frena, qué esperás de MOVE"></textarea></div>
+    </div>
+    <div class="ev-foot">
+      <label class="ev-check"><input type="checkbox" id="ev-terms" onchange="document.getElementById('ev-go').disabled=!this.checked">
+        <span>Acepto los <button type="button" class="ev-link" onclick="event.preventDefault();evShowTerms()">términos y el descargo</button> de MOVE. Entiendo que entreno bajo mi propia responsabilidad.</span></label>
+      <button type="button" class="ev-btn green" id="ev-go" disabled onclick="evSaveEntryOnb()">Empezar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+// Términos y descargo: mismos textos del contrato (aviso médico, riesgos, resultados)
+function evShowTerms() {
+  const dim = document.createElement('div');
+  dim.className = 'ev-dim'; dim.id = 'ev-terms-sheet';
+  dim.innerHTML = `<div class="ev-sheet" role="dialog" aria-modal="true" aria-labelledby="ev-terms-t">
+    <div class="ev-handle"></div>
+    <h2 id="ev-terms-t">Términos y descargo</h2>
+    <p><strong>Aviso médico:</strong> Este programa no sustituye el consejo médico profesional. Consultá con un médico antes de iniciar, especialmente si tenés condiciones preexistentes.</p>
+    <p><strong>Riesgos:</strong> Reconocés que la actividad física implica riesgos inherentes y asumís voluntariamente todos los riesgos asociados a tu participación.</p>
+    <p><strong>Resultados:</strong> Los resultados pueden variar. No se garantizan resultados específicos en pérdida de peso, ganancia muscular o rendimiento.</p>
+    <button type="button" class="ev-btn" style="margin-top:8px;" onclick="document.getElementById('ev-terms-sheet')?.remove()">Entendido</button>
+  </div>`;
+  dim.addEventListener('click', e => { if (e.target === dim) dim.remove(); });
+  document.body.appendChild(dim);
+}
+async function evSaveEntryOnb() {
+  const g = id => (document.getElementById(id)?.value || '').trim();
+  const prof = g('ev-prof'), mail = g('ev-mail');
+  const goal = evPicked('goal')[0] || null;
+  const days = parseInt(evPicked('days')[0], 10), exp = parseInt(evPicked('exp')[0], 10);
+  const missing = [];
+  if (!prof) missing.push(['ev-prof', 'tu profesión']);
+  if (!/^\S+@\S+\.\S+$/.test(mail)) missing.push(['ev-mail', 'un correo válido']);
+  if (!goal) missing.push(['ev-goal-l', 'tu objetivo']);
+  if (!days) missing.push(['ev-days-l', 'los días por semana']);
+  if (!exp) missing.push(['ev-exp-l', 'tu experiencia']);
+  if (missing.length) {
+    showToast('Falta ' + missing.map(m => m[1]).join(', '), 'error', 3500);
+    document.getElementById(missing[0][0])?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    return;
+  }
+  if (!document.getElementById('ev-terms')?.checked) return;
+  const btn = document.getElementById('ev-go'); btn.disabled = true; btn.textContent = 'Guardando...';
+  const now = new Date().toISOString();
+  const succ = g('ev-succ');
+  const row = {
+    client_id: currentClient.id, profession: prof, email: mail, goal, success_text: succ || null,
+    injuries: g('ev-inj') || null, equipment: evPicked('equip').join(', ') || null,
+    days_per_week: days, experience: exp, extra: g('ev-extra') || null,
+    terms_accepted_at: now, completed_at: now, updated_at: now
+  };
+  const { data, error } = await sb.from('client_onboarding').upsert([row], { onConflict: 'client_id' }).select().maybeSingle();
+  if (error) { btn.disabled = false; btn.textContent = 'Empezar'; showToast('No se pudo guardar. Probá de nuevo.', 'error'); console.warn(error.message); return; }
+  window._evOnbRow = data || row;
+  await evMotivationFromOnb(succ);
+  document.getElementById('ev-onb')?.remove();
+  evAfterOnboarding();
+}
+// La respuesta de éxito pasa a Mi motivación solo si el cliente no tenía una
+async function evMotivationFromOnb(succ) {
+  if (!succ || !currentClient || (currentClient.goal_text || '').trim()) { loadGoalDisplay(currentClient?.goal_text); return; }
+  const { error } = await sb.from('clients').update({ goal_text: succ }).eq('id', currentClient.id);
+  if (!error) currentClient.goal_text = succ;
+  loadGoalDisplay(currentClient.goal_text);
+}
+
+function evShowVipOnb() {
+  if (document.getElementById('ev-onb')) return;
+  const ov = document.createElement('div');
+  ov.className = 'ev-ov ev-hex'; ov.id = 'ev-onb';
+  ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-labelledby', 'ev-onb-t');
+  const dot = '<span class="ev-step-dot">' + EV_SVG_CHECK.replace('width="14" height="14"', 'width="16" height="16"') + '</span>';
+  ov.innerHTML = `<div class="ev-wrap">
+    <div class="ev-eb">Programa VIP · Bienvenido</div>
+    <h1 class="ev-dela" id="ev-onb-t" style="font-size:30px;line-height:1.1;">Sau ya está<br>preparando tu plan</h1>
+    <p class="ev-p ev-soft" style="margin-top:12px;line-height:1.5;">Al ser parte del Programa VIP, <b style="color:#FBF6EF">Sau llena tus datos después de reunirse personalmente contigo</b>. Vos solo nos contás lo esencial.</p>
+    <div class="ev-card ev-steps" style="margin-top:28px;">
+      <div class="ev-step">${dot}<div><b>Tu reunión personal con Sau</b><span>Es donde conoce tu historia y tus metas</span></div></div>
+      <div class="ev-step">${dot}<div><b>Tus datos, completados por Sau</b><span>Objetivo, lesiones, equipo y disponibilidad</span></div></div>
+      <div class="ev-step"><span class="ev-step-dot wait"><i></i></span><div><b>Tu plan, hecho a tu medida</b><span>Sau lo prepara y te avisa cuando esté listo</span></div></div>
+    </div>
+    <div class="ev-fields" style="margin-top:36px;">
+      <div><label class="ev-lbl" for="ev-succ">Más allá del físico: ¿qué querés lograr? ¿Cómo se ve el éxito para vos?</label>
+        <textarea id="ev-succ" class="ev-inp" placeholder="Escribilo con tus palabras"></textarea>
+        <p class="ev-note">Esta respuesta va a ser tu motivación en el Perfil. Podés cambiarla cuando quieras.</p></div>
+      <div><label class="ev-lbl" for="ev-extra">Algo más que deberíamos saber de vos</label>
+        <textarea id="ev-extra" class="ev-inp" placeholder="Lo que quieras contarle a Sau"></textarea></div>
+    </div>
+    <div class="ev-foot"><button type="button" class="ev-btn green" id="ev-go" onclick="evSaveVipOnb()">Continuar</button></div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+async function evSaveVipOnb() {
+  const btn = document.getElementById('ev-go'); btn.disabled = true; btn.textContent = 'Guardando...';
+  const succ = (document.getElementById('ev-succ')?.value || '').trim();
+  const extraNew = (document.getElementById('ev-extra')?.value || '').trim();
+  const now = new Date().toISOString();
+  // Si Sau ya llenó "Algo más" en la ficha, lo del cliente se agrega abajo (no se pisa)
+  const prev = (window._evOnbRow && window._evOnbRow.extra || '').trim();
+  const row = { client_id: currentClient.id, success_text: succ || null, completed_at: now, updated_at: now };
+  if (extraNew) row.extra = prev && prev !== extraNew ? prev + '\n\nDel cliente: ' + extraNew : extraNew;
+  const { data, error } = await sb.from('client_onboarding').upsert([row], { onConflict: 'client_id' }).select().maybeSingle();
+  if (error) { btn.disabled = false; btn.textContent = 'Continuar'; showToast('No se pudo guardar. Probá de nuevo.', 'error'); console.warn(error.message); return; }
+  window._evOnbRow = data || row;
+  await evMotivationFromOnb(succ);
+  document.getElementById('ev-onb')?.remove();
+  evShowVipWelcome(() => evAfterOnboarding());
+}
+// Bienvenida VIP (después del onboarding VIP, antes del tour)
+function evShowVipWelcome(onDone) {
+  ensureDelaFont();
+  const ov = document.createElement('div');
+  ov.className = 'ev-vipw'; ov.id = 'ev-vipw';
+  ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-labelledby', 'ev-vipw-t');
+  ov.innerHTML = `<img class="ev-vipw-img" src="img/sau-vip.jpg" alt="">
+    <div class="ev-vipw-g1"></div><div class="ev-vipw-g2"></div>
+    <span class="ev-vipw-tag">PROGRAMA VIP</span>
+    <div class="ev-vipw-txt">
+      <p class="ev-p ev-soft" style="font-size:15px;">Te doy la bienvenida al</p>
+      <h1 id="ev-vipw-t"><span class="ev-honey">Lado Premium</span><br>del Fitness</h1>
+      <div class="ev-vipw-bar"></div>
+      <p class="ev-serif">Aquí tus sueños pasan a metas con plazos.</p>
+    </div>
+    <div class="ev-vipw-foot"><button type="button" class="ev-btn" id="ev-vipw-go">Empezar</button></div>`;
+  document.body.appendChild(ov);
+  const go = ov.querySelector('#ev-vipw-go');
+  go.addEventListener('click', () => { ov.remove(); if (onDone) onDone(); });
+  go.focus();
+}
+</script>
 
 </body>
 </html>
