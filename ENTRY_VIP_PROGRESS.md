@@ -97,3 +97,23 @@ Supuestos / dudas:
 - NoPain en Luz: "Visibilidad para lo que sentís. / Espacio privado." (sin corchetes, según actualizacion-v7).
 - Intensidad del aclarado en LIFT, pago y chat: igual que el mockup (pendiente de Sau).
 - VIP en LET'S GO: mismo botón "Ir a Tu Progreso", sin la línea "Último paso".
+
+### E3B: The MOVE Menu por tier, Perfil, Run con candado y sin WhatsApp para Entry — terminado
+Commit: (ver git log, "E3B")
+
+Hecho:
+- `evApplyTier` (en `initClient`, antes del churn) pone `body.ev-entry`. Se limpia en `handleLogout` e `initCoach`.
+- Menú Entry: Run con candado (etiqueta "Aparte" + candado; abre el modal del mockup), Mi Diario y Tu Progreso. Guías y recursos, Evaluaciones y Extras no aparecen. Entry arranca en Mi Diario. Si Entry tiene `run_module_enabled`, Run aparece normal. VIP igual que hoy.
+- Modal de Run: "Pedir acceso" queda como aviso "Pronto…" hasta E4 (ahí manda el mensaje al chat).
+- Perfil: pastilla "Fecha de pago > dd/mm/aa" bajo el usuario (solo con fecha enlazada: `next_payment_date` y Entry u `onboarding_required`). Entry: "Qué incluye tu plan" (textos fijos) en lugar de "Mi contrato". "Muévete con Sau" (Instagram, YouTube, TikTok) para todos.
+- WhatsApp al número de Sau → para Entry "Abrir el chat con Sau" (el chat se arma en E4; hasta entonces muestra "pronto"): overlay de churn, "Quiero mi programa de Entreno", "Quiero mi programa FOOD", Evolution (portada y home oscuro), "Pagar" del recordatorio, "Escribirle a mi coach" de Run. Las 5 burbujas flotantes de WhatsApp se ocultan para Entry (la burbuja del chat va en E4). "Compartir menú" y "lista de compras" sin cambios.
+- Entry sin "Solicitar asistencia" (ejercicio y circuito, claro y oscuro). Entry sin aviso de contrato en Hoy.
+
+Probado (base simulada, 390 px):
+- [x] Entry: 0 botones de WhatsApp visibles; menú Run(candado)/Mi Diario/Tu Progreso; candado abre el modal; Perfil con pastilla, motivación, hitos, "Qué incluye", redes; sin contrato.
+- [x] VIP viejo: WhatsApp flotante visible, menú completo, contrato visible, sin pastilla.
+- [x] Entry en churn: botón "Abrir el chat con Sau".
+- [ ] No probado en real.
+
+Notas:
+- La burbuja del chat con la abeja (Perfil y resto de pantallas) se agrega en E4, junto con el chat.
