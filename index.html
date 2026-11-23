@@ -2581,6 +2581,7 @@ span.tr-next-name { cursor:default; }
   <div class="scroll-body" style="padding-top:14px;">
     <div id="exx-coach-assist"></div>
     <div id="ev-coach-tier"></div>
+    <div id="ev-coach-entry"></div>
     <div class="section-header"><div class="section-title">LIFT</div></div>
     <div class="payment-card" id="coach-lift-card"></div>
     <div class="section-header"><div class="section-title">Información de pago</div><div class="section-action" onclick="showModal('modal-edit-payment')">Editar</div></div>
@@ -2946,6 +2947,8 @@ press plano mancuerna 3 sets, 8-10 reps"></textarea>
   <div class="topbar"><div class="topbar-logo">Move With Sau</div><div class="topbar-action" onclick="handleLogout()">Salir</div></div>
   <div class="scroll-body">
     <div style="margin-bottom:18px;"><div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--orange);text-transform:uppercase;margin-bottom:3px;">Configuración</div><div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;">Ajustes</div></div>
+    <div class="section-header"><div class="section-title">Chat con clientes</div></div>
+    <div id="ev-sau-photo-set"></div>
     <div class="section-header"><div class="section-title">Notificaciones</div></div>
     <div class="card" style="margin-bottom:8px;">
       <div style="margin-bottom:10px;">
@@ -4073,7 +4076,8 @@ function handleLogout() {
   currentUser=null; currentClient=null; clientWeek=1; clientDay=null; screenHistory=[];
   document.body.classList.remove('lift-mode', 'ev-entry', 'ev-locked'); // Entry / VIP
   if (typeof evProgressLocked !== 'undefined') evProgressLocked = false;
-  ['evt', 'ev-onb', 'ev-lock-note'].forEach(id => document.getElementById(id)?.remove());
+  ['evt', 'ev-onb', 'ev-lock-note', 'ev-chat', 'ev-cchat', 'ev-vipoffer'].forEach(id => document.getElementById(id)?.remove());
+  if (typeof evUnreadPoll !== 'undefined') { clearInterval(evUnreadPoll); clearInterval(evChatPoll); clearInterval(evCChatPoll); }
   stopGlobalTimer();
   localStorage.removeItem('mws_user');
   showScreen('screen-login');
@@ -11218,6 +11222,7 @@ async function loadCoachClients() {
   try { await exxLoadOpenAssist(clientIds); } catch(e) { console.warn('exx assist load failed:', e); }
   // Onboarding pendiente (E1); si falla, la lista sigue sin la etiqueta
   try { await evLoadOnbMap(clientIds); } catch(e) { console.warn('onboarding map failed:', e); }
+  evRefreshDeliveryBadge(); // mensajes sin responder en Delivery (E4), sin esperar
   exxStartAssistPolling();
   // Días con registro esta semana (círculo de la tarjeta); si falla, se ve 0 y la lista sigue
   try { await rnLoadHomeWeek((clients||[]).map(c => c.id)); } catch(e) { console.warn('rn home week failed:', e); }
@@ -11241,6 +11246,7 @@ async function openCoachClient(clientId) {
   currentClient=c;
   exxRenderCoachAssist(c);
   evRenderCoachTier(c);
+  evRenderCoachEntryCard(c);
   const startDateStr = c.start_date ? formatDate(c.start_date) : null;
   const endDateStr = c.program_end_date ? formatDate(c.program_end_date) : null;
   const typeTag = c.client_type ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:10px;font-weight:800;background:var(--orange-light);color:var(--orange);border:1.5px solid var(--orange-mid);font-family:'DM Mono',monospace;margin-left:6px;">${c.client_type==='Virtual'?'V':'H'}</span>` : '';
@@ -16595,7 +16601,7 @@ function coachNav(tab,el) {
   if(tab==='coaching'){showScreen('screen-coach-coaching');loadFoodLibrary();switchCoachingTab(coachingActiveTab);}
   if(tab==='data'){showScreen('screen-coach-data');loadDataScreen();}
   if(tab==='run'){showScreen('screen-coach-run');rnOpenCoachRun();}
-  if(tab==='settings'){showScreen('screen-coach-settings');loadSettings();}
+  if(tab==='settings'){showScreen('screen-coach-settings');loadSettings();evRenderSauPhotoSetting();}
 }
 
 function switchCoachingTab(tab) {
@@ -29854,6 +29860,112 @@ body.ev-entry .tr-act-sep { display:none; }
 .ev-modal .ev-m-small { font-size:12px; color:#6F655B; margin-top:12px; }
 .ev-modal .ev-lbtn { margin-top:20px; height:54px; border-radius:16px; font-size:16px; }
 .ev-modal .ev-lbtn.ghost { margin-top:10px; height:44px; font-size:14px; }
+/* Chat con Sau (E4), tema claro del mockup */
+.ev-chat { position:fixed; inset:0; z-index:10080; background:#F7F1E8; color:#2A211B; display:flex; flex-direction:column; font-family:'DM Sans',system-ui,sans-serif; }
+.ev-chat * { box-sizing:border-box; }
+.ev-chat-head { display:flex; align-items:center; gap:12px; padding:calc(14px + env(safe-area-inset-top,0px)) 20px 12px; background:#F7F1E8; border-bottom:1px solid #EADFD2; }
+.ev-chat-who { flex:1; min-width:0; display:flex; flex-direction:column; line-height:1.2; }
+.ev-chat-who b { font-size:18px; } .ev-chat-who span { font-size:13px; color:#6F655B; }
+.ev-cbtn { width:42px; height:42px; border-radius:50%; border:0; background:#EDE2D3; color:#2A211B; display:flex; align-items:center; justify-content:center; flex:none; cursor:pointer; }
+.ev-cbtn.lg { width:48px; height:48px; color:#4A3F35; }
+.ev-cbtn.sm { width:38px; height:38px; color:#4A3F35; }
+.ev-cbtn.send { background:#C24E18; color:#fff; }
+.ev-cbtn.mic { background:#1B1713; color:#F5B83D; }
+.ev-sau-av { width:50px; height:50px; border-radius:50%; overflow:hidden; border:2px solid #F5B83D; flex:none; background:#1B1713; display:block; }
+.ev-sau-av.lg { width:56px; height:56px; }
+.ev-sau-av img { width:100%; height:100%; object-fit:cover; object-position:50% 22%; display:block; }
+.ev-av { width:46px; height:46px; border-radius:50%; background:#C24E18; color:#fff; font:700 16px 'DM Sans',sans-serif; display:flex; align-items:center; justify-content:center; flex:none; }
+.ev-chat-body { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 20px 18px; }
+.ev-hours { display:flex; gap:12px; align-items:flex-start; padding:12px 14px; border-radius:16px; background:#FFF1CC; border:1px solid #F0D68A; color:#5C3F08; margin-bottom:16px; }
+.ev-hours > svg { color:#7A5410; flex:none; margin-top:1px; }
+.ev-hours div { display:flex; flex-direction:column; line-height:1.3; }
+.ev-hours b { font-size:14px; } .ev-hours span { font-size:13px; } .ev-hours .ev-hours-n { font-size:12px; margin-top:4px; opacity:.9; }
+.ev-chat-note { text-align:center; font-size:11px; color:#6F655B; margin:0 0 12px; }
+.ev-chat-list { display:flex; flex-direction:column; gap:12px; }
+.ev-chat-empty { text-align:center; color:#6F655B; font-size:14px; padding:24px 10px; margin:0; }
+.ev-msg { display:flex; flex-direction:column; }
+.ev-msg.ev-me { align-items:flex-end; } .ev-msg.ev-them { align-items:flex-start; }
+.ev-bub { max-width:290px; font-size:15px; line-height:1.4; word-break:break-word; }
+.ev-text.ev-them { padding:12px 14px; border-radius:18px 18px 18px 6px; background:#fff; border:1px solid #E3D6C7; }
+.ev-text.ev-me { padding:12px 14px; border-radius:18px 18px 6px 18px; background:#C24E18; color:#fff; }
+.ev-photo { width:230px; padding:6px; }
+.ev-photo.ev-me { border-radius:18px 18px 6px 18px; background:#C24E18; color:#fff; }
+.ev-photo.ev-them { border-radius:18px 18px 18px 6px; background:#fff; border:1px solid #E3D6C7; }
+.ev-photo-btn { display:block; width:100%; padding:0; border:0; background:#EDE2D3; border-radius:13px; overflow:hidden; cursor:zoom-in; min-height:90px; }
+.ev-photo-btn img { display:block; width:100%; max-height:260px; object-fit:cover; }
+.ev-cap { padding:8px 8px 4px; font-size:14px; }
+.ev-audio { width:270px; display:flex; align-items:center; gap:12px; padding:10px 14px 10px 10px; }
+.ev-audio.ev-them { border-radius:18px 18px 18px 6px; background:#fff; border:1px solid #E3D6C7; }
+.ev-audio.ev-me { border-radius:18px 18px 6px 18px; background:#C24E18; color:#fff; }
+.ev-play { width:42px; height:42px; border-radius:50%; border:0; display:flex; align-items:center; justify-content:center; flex:none; cursor:pointer; background:#C24E18; color:#fff; }
+.ev-audio.ev-me .ev-play { background:#fff; color:#C24E18; }
+.ev-wave { flex:1; display:flex; align-items:center; gap:3px; height:30px; overflow:hidden; }
+.ev-wave i { width:3px; border-radius:2px; background:#D9C7B3; flex:none; }
+.ev-audio.ev-them .ev-wave i:nth-child(-n+4) { background:#C24E18; }
+.ev-audio.ev-me .ev-wave i { background:#fff; }
+.ev-dur { font:12px 'DM Mono',monospace; color:#6F655B; }
+.ev-audio.ev-me .ev-dur { color:#fff; }
+.ev-req { width:270px; padding:12px 14px; background:#FBEEE5; border:1px solid #F0C9AE; color:#2A211B; }
+.ev-req.ev-me { border-radius:18px 18px 6px 18px; } .ev-req.ev-them { border-radius:18px 18px 18px 6px; }
+.ev-req p { margin:8px 0 0; font-size:15px; line-height:1.4; }
+.ev-req .ev-req-sub { margin-top:2px; font-size:13px; color:#6F655B; }
+.ev-req-btn { margin-top:10px; height:40px; padding:0 16px; border:0; border-radius:14px; background:#C24E18; color:#fff; font:700 14px 'DM Sans',sans-serif; cursor:pointer; }
+.ev-meta { display:flex; align-items:center; gap:8px; margin:4px 6px 0; flex-wrap:wrap; }
+.ev-when { font:10px 'DM Mono',monospace; color:#6F655B; }
+.ev-starred { display:inline-flex; align-items:center; gap:4px; font-size:10px; color:#A66A0A; font-weight:700; }
+.ev-starbtn { display:inline-flex; align-items:center; gap:4px; border:1px solid #E3D6C7; background:#fff; border-radius:999px; padding:2px 8px; font:700 10px 'DM Sans',sans-serif; color:#4A3F35; cursor:pointer; }
+.ev-starbtn.on { color:#A66A0A; border-color:#F0D68A; background:#FFF8E6; }
+.ev-tag-soft { background:#EDE2D3; color:#4A3F35; }
+.ev-chat-foot { display:flex; align-items:center; gap:8px; padding:12px 16px calc(14px + env(safe-area-inset-bottom,0px)); background:#F7F1E8; border-top:1px solid #E3D6C7; }
+.ev-chat-foot.col { flex-direction:column; align-items:stretch; }
+.ev-chat-row { display:flex; align-items:center; gap:8px; }
+.ev-chat-inp { flex:1; min-width:0; height:48px; border-radius:24px; padding:0 18px; border:1px solid #E3D6C7; background:#fff; color:#2A211B; font:500 16px 'DM Sans',sans-serif; outline:none; }
+.ev-chat-row .ev-chat-inp { height:44px; border-radius:22px; padding:0 16px; }
+.ev-chat-row .ev-cbtn { width:44px; height:44px; }
+.ev-rec { display:flex; align-items:center; gap:12px; height:52px; padding:0 8px 0 18px; border-radius:26px; background:#fff; border:1px solid #E3D6C7; }
+.ev-rec[hidden] { display:none; }
+.ev-rec-dot { width:12px; height:12px; border-radius:50%; background:#C23B18; flex:none; animation:evBlink 1s infinite; }
+.ev-rec b { font:15px 'DM Mono',monospace; } .ev-rec-l { flex:1; font-size:13px; color:#6F655B; }
+@keyframes evBlink { 50% { opacity:.3; } }
+.ev-photo-full { position:fixed; inset:0; z-index:10090; background:rgba(10,8,6,.92); display:flex; align-items:center; justify-content:center; padding:20px; }
+.ev-photo-full img { max-width:100%; max-height:100%; border-radius:12px; }
+.ev-photo-full button { position:absolute; top:calc(16px + env(safe-area-inset-top,0px)); right:16px; width:44px; height:44px; border-radius:50%; border:0; background:rgba(255,255,255,.15); color:#fff; display:flex; align-items:center; justify-content:center; }
+/* Burbuja flotante del chat (Entry), en el lugar de la de WhatsApp */
+.ev-chat-fab { position:relative; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(0,0,0,.35); border-radius:50%; }
+body:not(.ev-entry) .ev-chat-fab { display:none !important; }
+.ev-fab-dot { position:absolute; right:3px; top:3px; width:13px; height:13px; border-radius:50%; background:#F5B83D; border:2px solid #1B1713; }
+.ev-fab-dot[hidden] { display:none; }
+.ev-fab-bee { position:absolute; left:-14px; top:-16px; }
+/* Burbuja de upsell VIP */
+.ev-vipoffer-wrap { position:fixed; inset:0; z-index:10060; background:rgba(42,33,27,.45); display:flex; align-items:flex-end; justify-content:center; padding:0 16px calc(100px + env(safe-area-inset-bottom,0px)); }
+.ev-vipoffer { position:relative; width:100%; max-width:398px; overflow:hidden; background:#1B1713; border:1px solid #5A4417; border-radius:22px; padding:18px; color:#FBF6EF; box-shadow:0 20px 44px rgba(10,8,6,.45); font-family:'DM Sans',sans-serif; }
+.ev-vo-hex { position:absolute; right:-22px; top:-20px; }
+.ev-vo-top { position:relative; display:flex; justify-content:space-between; align-items:center; }
+.ev-vo-x { width:34px; height:34px; border-radius:50%; border:0; background:#26201A; color:#CFC6BA; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.ev-vipoffer h2, .ev-vipoffer p { position:relative; }
+.ev-vo-btns { position:relative; display:flex; gap:8px; margin-top:16px; }
+.ev-btn.ev-ghost { background:transparent; color:#FBF6EF; border:1px solid #3A3027; }
+/* Coach: Delivery y ficha */
+.ev-ch-row { display:flex; align-items:flex-end; justify-content:space-between; gap:10px; }
+.ev-fchips { display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; margin-top:6px; }
+.ev-fchip { flex:none; height:38px; padding:0 14px; border-radius:999px; border:1px solid #E3D6C7; background:#fff; color:#2A211B; font:500 13px 'DM Sans',sans-serif; cursor:pointer; }
+.ev-fchip.on { background:#C24E18; border-color:#C24E18; color:#fff; font-weight:700; }
+.ev-onlynew { display:flex; align-items:center; gap:8px; font-size:13px; color:#6F655B; margin:10px 2px 12px; }
+.ev-conv { display:flex; gap:12px; width:100%; text-align:left; padding:14px; margin-bottom:10px; border-radius:20px; border:1px solid #EADFD2; background:#fff; cursor:pointer; font-family:'DM Sans',sans-serif; }
+.ev-conv.is-new { border-color:#C24E18; background:#FFF6EF; }
+.ev-conv-b { flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
+.ev-conv-top { display:flex; justify-content:space-between; gap:8px; align-items:baseline; }
+.ev-conv-top b { font-size:16px; color:#2A211B; }
+.ev-conv-tags { display:flex; gap:6px; flex-wrap:wrap; }
+.ev-conv-p { font-size:14px; color:#2A211B; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ev-crow { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-top:1px solid #EADFD2; }
+.ev-crow:first-child { border-top:0; padding-top:0; }
+.ev-crow > div { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.ev-crow b { font-size:15px; color:#2A211B; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.ev-crow span { font-size:12px; color:#6F655B; }
+.ev-switch { width:52px; height:30px; border-radius:15px; border:0; background:#DCCFC0; position:relative; flex:none; cursor:pointer; padding:0; }
+.ev-switch i { position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.2); transition:left .2s; }
+.ev-switch.on { background:#1E7A3C; } .ev-switch.on i { left:25px; }
 .ev-mini { background:none; border:0; padding:4px 0; font:700 13px 'DM Sans',sans-serif; color:#A63E10; cursor:pointer; }
 </style>
 <script>
@@ -30007,6 +30119,7 @@ async function evSetTier(t) {
   showToast(t === 'entry' ? 'Ahora es Entry' : 'Ahora es VIP', 'success');
   evRenderCoachTier(c);
   evRenderCoachHeaderTag(c);
+  evRenderCoachEntryCard(c);
 }
 function evRenderCoachHeaderTag(c) {
   const host = document.getElementById('ev-head-tag');
@@ -30068,7 +30181,7 @@ async function evClientGate(cd) {
   if (error) { console.warn('client_onboarding:', error.message); return; }
   window._evOnbRow = data || null;
   loadGoalDisplay(currentClient.goal_text); // motivación tal cual si viene del onboarding
-  if (cd.onboarding_required !== true) return;
+  if (cd.onboarding_required !== true) { evMaybeShowVipOffer(); return; }
   if (data && data.completed_at) { evAfterOnboarding(); return; }
   ensureDelaFont();
   if (evIsEntry(cd)) evShowEntryOnb(); else evShowVipOnb();
@@ -30237,8 +30350,6 @@ const EV_ICO = {
   chev: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6"/></svg>',
   inbox: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>'
 };
-// Cuántos clientes pidieron acceso a Run y siguen sin respuesta (se conecta en E4)
-async function evRunRequestCount() { return 0; }
 async function evRenderBuild() {
   const box = document.getElementById('ev-build-body');
   if (!box) return;
@@ -30604,7 +30715,7 @@ const EVT_SCREENS = {
 // Los títulos en Dela respetan los cortes de línea del mockup (<br>): cada línea sin cortar y,
 // si no entra en el ancho, la letra se achica (hasta 70 %).
 function evFitTitles(root) {
-  const run = () => (root || document).querySelectorAll('h1.t-dela:not([data-free]), h1.ev-dela').forEach(h => {
+  const run = () => (root || document).querySelectorAll('h1.t-dela:not([data-free]), .ev-dela').forEach(h => {
     if (!h.isConnected) return;
     if (!h.dataset.fs) h.dataset.fs = parseFloat(getComputedStyle(h).fontSize);
     const max = +h.dataset.fs, min = Math.round(max * 0.7);
@@ -30700,7 +30811,7 @@ function evLockGuard(target) {
 function evAfterOnboarding() {
   const r = window._evOnbRow;
   if (!r || !r.tour_seen_at) { evStartTour(); return; }
-  if (evIsEntry(currentClient)) evCheckProgressLock().then(locked => { if (locked) evGoToProgress(); });
+  if (evIsEntry(currentClient)) evCheckProgressLock().then(locked => { if (locked) evGoToProgress(); else evMaybeShowVipOffer(); });
 }
 
 // ---------- Menú, Perfil y WhatsApp por tier (E3B) ----------
@@ -30708,6 +30819,10 @@ function evAfterOnboarding() {
 function evApplyTier(c) {
   const entry = evIsEntry(c);
   document.body.classList.toggle('ev-entry', entry);
+  // Chat con Sau (E4): burbuja en el lugar de la de WhatsApp y aviso de respuesta nueva
+  evMountChatFabs();
+  clearInterval(evUnreadPoll);
+  if (entry) evStartUnreadPoll();
   // Entry: The MOVE Menu arranca en Mi Diario (Guías, Evaluaciones y Extras no existen para Entry)
   if (entry && ['plans', 'tests', 'extras'].includes(mmCurrentTab()) && !evProgressLocked) {
     const chip = mmChip('habits');
@@ -30742,10 +30857,6 @@ function evOpenRunLock() {
   document.body.appendChild(w);
   document.getElementById('ev-runlock-go')?.focus();
 }
-// "Pedir acceso" a Run: se conecta con el chat en E4
-async function evRequestRun() { document.getElementById('ev-runlock')?.remove(); showToast('Pronto vas a poder pedir acceso desde acá', 'info', 3000); }
-// Chat con Sau: se construye en E4
-function evOpenChat(preset) { showToast('El chat con Sau llega pronto', 'info', 3000); }
 // Botones de WhatsApp al número de Sau: VIP sigue igual; Entry abre el chat
 function evWaClick(e, preset) {
   if (!evIsEntry(currentClient)) return true;
@@ -30766,12 +30877,599 @@ function evRenderPayPill() {
   if (d) document.getElementById('ev-paypill-d').textContent = evFmtShort(d);
 }
 
-// Delivery: bandeja del coach. Se llena en E4 (chat), E5 (rifa) y E7 (calificaciones).
+
+// ---------- Chat con Sau (E4) ----------
+// support_messages: una conversación por cliente. Cliente (Entry) manda texto, fotos y pedidos
+// (request_run, request_vip); Sau manda texto, fotos y audios y puede destacar. Archivos en el
+// bucket privado support-chat (15 MB). Los no destacados se borran a los 7 días con el job aparte
+// (api/purge-support.js, sin activar). Push por OneSignal: aviso extra, nunca bloquea el envío.
+const EV_CHAT_BUCKET = 'support-chat';
+const EV_SAU_PHOTO = 'coach/sau.jpg';
+const EV_TAGS = { support: 'Soporte', vip: 'Quiero VIP', run: 'Quiero Run' };
+const EV_I = {
+  back: '<path d="m15 18-6-6 6-6"/>',
+  image: '<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+  send: '<path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/>',
+  mic: '<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/>',
+  trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>'
+};
+const EV_PLAY = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>';
+const EV_PAUSE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>';
+const EV_STAR_ON = '<svg width="11" height="11" viewBox="0 0 24 24" fill="#F5B83D" stroke="#C98A12" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false">' + EV_I.star + '</svg>';
+const EV_BEE_MINI = '<svg class="ev-fab-bee" width="34" height="34" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><ellipse cx="11" cy="9" rx="6.2" ry="4.2" fill="#fff" stroke="#14110E" stroke-width="1.4" transform="rotate(-25 11 9)"/><ellipse cx="21" cy="9" rx="6.2" ry="4.2" fill="#fff" stroke="#14110E" stroke-width="1.4" transform="rotate(25 21 9)"/><path d="M13 12C12 9 11 8 9.5 7.5M19 12c1-3 2-4 3.5-4.5" stroke="#14110E" stroke-width="1.5" fill="none" stroke-linecap="round"/><ellipse cx="16" cy="19" rx="9.5" ry="7.5" fill="#F5B83D" stroke="#14110E" stroke-width="2"/><path d="M12.5 12.8v12.4M19.5 12.8v12.4" stroke="#14110E" stroke-width="2.8"/></svg>';
+
+function evTime(iso) {
+  return new Intl.DateTimeFormat('es-CR', { timeZone: 'America/Costa_Rica', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(iso)).toLowerCase();
+}
+function evAgo(iso) {
+  const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000));
+  if (m < 1) return 'Ahora';
+  if (m < 60) return `Hace ${m} min`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `Hace ${h} h`;
+  const d = Math.round(h / 24);
+  return d === 1 ? 'Ayer' : `Hace ${d} días`;
+}
+// URLs firmadas de los archivos del chat (bucket privado), con caché corta
+const evUrlCache = {};
+async function evSignedUrl(path) {
+  if (!path) return null;
+  const hit = evUrlCache[path];
+  if (hit && hit.exp > Date.now()) return hit.url;
+  const { data, error } = await sb.storage.from(EV_CHAT_BUCKET).createSignedUrl(path, 3600);
+  if (error || !data?.signedUrl) return null;
+  evUrlCache[path] = { url: data.signedUrl, exp: Date.now() + 50 * 60000 };
+  return data.signedUrl;
+}
+// Foto de Sau (la sube Sau desde Ajustes); si no hay, la del app
+let evSauPhoto = null;
+async function evSauPhotoUrl() {
+  if (evSauPhoto) return evSauPhoto;
+  const u = await evSignedUrl(EV_SAU_PHOTO);
+  evSauPhoto = u || 'img/sau-color.jpg';
+  return evSauPhoto;
+}
+function evRandName(ext) { return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`; }
+async function evUploadChatFile(clientId, blob, ext, contentType) {
+  if (blob.size > 15 * 1024 * 1024) { showToast('El archivo pesa más de 15 MB', 'error'); return null; }
+  const path = `${clientId}/${evRandName(ext)}`;
+  const { error } = await sb.storage.from(EV_CHAT_BUCKET).upload(path, blob, { contentType, upsert: false });
+  if (error) { showToast('No se pudo subir el archivo', 'error'); console.warn('chat upload:', error.message); return null; }
+  return path;
+}
+async function evPrepPhoto(file) {
+  const c = await compressProgressPhoto(file, 1600, 0.82);
+  return c && c.size < file.size ? c : file;
+}
+
+// Burbuja de un mensaje. viewer: 'client' | 'coach'
+function evMsgHtml(m, viewer, client) {
+  const mine = m.sender === viewer;
+  const side = mine ? 'ev-me' : 'ev-them';
+  const when = evTime(m.created_at);
+  let body = '';
+  if (m.kind === 'photo') {
+    body = `<div class="ev-bub ev-photo ${side}"><button type="button" class="ev-photo-btn" onclick="evOpenPhoto('${m.media_path}')" aria-label="Ver foto"><img data-ev-src="${evEsc(m.media_path)}" alt="Foto"></button>${m.body ? `<div class="ev-cap">${evEsc(m.body)}</div>` : ''}</div>`;
+  } else if (m.kind === 'audio') {
+    body = `<div class="ev-bub ev-audio ${side}"><button type="button" class="ev-play" data-ev-audio="${evEsc(m.media_path)}" onclick="evPlayAudio(this)" aria-label="Reproducir audio${m.sender === 'coach' ? ' de Sau' : ''}">${EV_PLAY}</button>
+      <span class="ev-wave" aria-hidden="true">${[10,18,26,14,22,28,12,20,26,16,24,10,18,22].map(h => `<i style="height:${h}px"></i>`).join('')}</span><span class="ev-dur">${m.body ? evEsc(m.body) : ''}</span></div>`;
+  } else if (m.kind === 'request_run' || m.kind === 'request_vip') {
+    const run = m.kind === 'request_run';
+    const name = client ? evEsc((client.name || '').split(' ')[0]) : '';
+    const txt = viewer === 'coach' ? (run ? `${name} pidió acceso al módulo Run.` : `${name} quiere info del acompañamiento VIP.`) : evEsc(m.body || '');
+    const sub = viewer === 'client' ? '<p class="ev-req-sub">Sau te escribe por acá para coordinar el pago.</p>'
+      : (run && client && client.run_module_enabled !== true ? `<button type="button" class="ev-req-btn" onclick="evActivateRun('${m.client_id}')">Activar Run</button>`
+        : run ? '<p class="ev-req-sub">Run ya está activo.</p>' : '');
+    body = `<div class="ev-bub ev-req ${side}"><span class="ev-tag ev-tag-ok">${run ? 'Quiero Run' : 'Quiero VIP'}</span><p>${txt}</p>${sub}</div>`;
+  } else {
+    body = `<div class="ev-bub ev-text ${side}">${evEsc(m.body || '').replace(/\n/g, '<br>')}</div>`;
+  }
+  let meta = '';
+  if (viewer === 'coach') {
+    const tag = m.sender === 'client' ? `<span class="ev-tag ev-tag-soft">${EV_TAGS[m.tag] || 'Soporte'}</span>` : '';
+    const star = `<button type="button" class="ev-starbtn${m.starred ? ' on' : ''}" aria-pressed="${!!m.starred}" onclick="evToggleStar(${m.id})">${m.starred ? EV_STAR_ON + 'Destacado' : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false">' + EV_I.star + '</svg>Destacar'}</button>`;
+    meta = `${tag}<span class="ev-when">${m.kind === 'audio' && mine ? 'Audio enviado · ' : ''}${when}</span>${star}`;
+  } else {
+    const lbl = m.kind === 'audio' && !mine ? 'Audio de Sau · ' : (mine && (m.kind === 'request_run' || m.kind === 'request_vip') ? 'Enviado · ' : '');
+    meta = `<span class="ev-when">${lbl}${when}${mine && m.sender === 'client' && m.kind !== 'request_run' && m.kind !== 'request_vip' ? ' · ' + (EV_TAGS[m.tag] || 'Soporte') : ''}</span>${m.starred ? `<span class="ev-starred">${EV_STAR_ON}Destacado</span>` : ''}`;
+  }
+  return `<div class="ev-msg ${side}" data-id="${m.id}">${body}<div class="ev-meta">${meta}</div></div>`;
+}
+// Fotos (y audios) se firman después de dibujar
+async function evHydrateMedia(root) {
+  const imgs = root.querySelectorAll('img[data-ev-src]');
+  for (const img of imgs) { const u = await evSignedUrl(img.dataset.evSrc); if (u) img.src = u; img.removeAttribute('data-ev-src'); }
+}
+async function evOpenPhoto(path) {
+  const u = await evSignedUrl(path);
+  if (!u) return;
+  const w = document.createElement('div');
+  w.className = 'ev-photo-full'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'Foto');
+  w.innerHTML = `<img src="${u}" alt="Foto"><button type="button" aria-label="Cerrar">${EVT_S(EV_I.x, 22, 2.4)}</button>`;
+  w.addEventListener('click', () => w.remove());
+  document.body.appendChild(w);
+}
+let evAudioEl = null, evAudioBtn = null;
+async function evPlayAudio(btn) {
+  if (evAudioBtn === btn && evAudioEl && !evAudioEl.paused) { evAudioEl.pause(); btn.innerHTML = EV_PLAY; return; }
+  if (evAudioEl) { evAudioEl.pause(); if (evAudioBtn) evAudioBtn.innerHTML = EV_PLAY; }
+  const u = await evSignedUrl(btn.dataset.evAudio);
+  if (!u) { showToast('No se pudo cargar el audio', 'error'); return; }
+  evAudioEl = new Audio(u); evAudioBtn = btn;
+  evAudioEl.onended = () => { btn.innerHTML = EV_PLAY; };
+  btn.innerHTML = EV_PAUSE;
+  evAudioEl.play().catch(() => { btn.innerHTML = EV_PLAY; showToast('No se pudo reproducir el audio', 'error'); });
+}
+
+// ===== Cliente (Entry): burbuja y chat =====
+let evChatPoll = null, evUnreadPoll = null, evChatMsgs = [];
+function evMountChatFabs() {
+  document.querySelectorAll('a.ev-wa-fab').forEach(a => {
+    if (a.nextElementSibling && a.nextElementSibling.classList.contains('ev-chat-fab')) return;
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'ev-chat-fab'; b.setAttribute('aria-label', 'Chat con Sau');
+    b.setAttribute('style', a.getAttribute('style') || '');
+    b.style.background = '#1B1713'; b.style.color = '#fff'; b.style.border = '0'; b.style.cursor = 'pointer'; b.style.overflow = 'visible';
+    const prof = !!a.closest('#screen-client-profile');
+    b.innerHTML = (prof ? EV_BEE_MINI : '') + EVT_S(EVT_P.msg, 24, 2.2) + '<span class="ev-fab-dot" hidden></span>';
+    b.addEventListener('click', () => evOpenChat());
+    a.after(b);
+  });
+}
+async function evCheckUnread() {
+  if (!currentClient || !evIsEntry(currentClient) || currentUser?.role === 'coach') return;
+  const { data, error } = await sb.from('support_messages').select('id').eq('client_id', currentClient.id).eq('sender', 'coach').is('read_at', null).limit(1);
+  if (error) return;
+  const on = !!(data && data.length);
+  document.querySelectorAll('.ev-fab-dot').forEach(d => { d.hidden = !on; });
+}
+function evStartUnreadPoll() {
+  clearInterval(evUnreadPoll);
+  evCheckUnread();
+  evUnreadPoll = setInterval(evCheckUnread, 60000);
+}
+async function evOpenChat(preset) {
+  if (!currentClient || currentUser?.role === 'coach') return;
+  if (!evIsEntry(currentClient)) return; // VIP sigue con su canal de siempre
+  if (!document.getElementById('ev-chat')) {
+    const w = document.createElement('div');
+    w.id = 'ev-chat'; w.className = 'ev-chat';
+    w.setAttribute('role', 'dialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-label', 'Chat con Sau');
+    w.innerHTML = `<div class="ev-chat-head">
+        <button type="button" class="ev-cbtn" aria-label="Volver" onclick="evCloseChat()">${EVT_S(EV_I.back, 20, 2.2)}</button>
+        <span class="ev-sau-av"><img id="ev-sau-av" alt="Sau" src="img/sau-color.jpg"></span>
+        <div class="ev-chat-who"><b>Sau</b><span>Tu coach en MOVE</span></div>
+      </div>
+      <div class="ev-chat-body" id="ev-chat-body">
+        <div class="ev-hours">${EVT_S(EVT_P.clock, 20, 2.2)}<div><b>Lunes a viernes · 12 md a 5 pm</b><span>Sau te responde en un plazo máximo de 24 horas.</span><span class="ev-hours-n">Los mensajes se borran a los 7 días, menos los que Sau destaca.</span></div></div>
+        <div id="ev-chat-list" class="ev-chat-list"><div class="spinner"></div></div>
+      </div>
+      <div class="ev-chat-foot">
+        <input type="file" accept="image/*" id="ev-chat-file" hidden onchange="evClientSendPhoto(this)">
+        <button type="button" class="ev-cbtn lg" aria-label="Adjuntar foto" onclick="document.getElementById('ev-chat-file').click()">${EVT_S(EV_I.image, 22)}</button>
+        <input type="text" class="ev-chat-inp" id="ev-chat-inp" placeholder="Escribile a Sau…" aria-label="Mensaje para Sau" enterkeyhint="send" onkeydown="if(event.key==='Enter'){event.preventDefault();evClientSendText();}">
+        <button type="button" class="ev-cbtn lg send" aria-label="Enviar" onclick="evClientSendText()">${EVT_S(EV_I.send, 20, 2.2)}</button>
+      </div>`;
+    document.body.appendChild(w);
+    evSauPhotoUrl().then(u => { const i = document.getElementById('ev-sau-av'); if (i) i.src = u; });
+  }
+  if (preset) { const i = document.getElementById('ev-chat-inp'); if (i && !i.value) i.value = preset; }
+  await evLoadClientChat();
+  clearInterval(evChatPoll);
+  evChatPoll = setInterval(evLoadClientChat, 8000);
+}
+function evCloseChat() {
+  clearInterval(evChatPoll); evChatPoll = null;
+  if (evAudioEl) evAudioEl.pause();
+  document.getElementById('ev-chat')?.remove();
+  evCheckUnread();
+}
+async function evLoadClientChat() {
+  const list = document.getElementById('ev-chat-list');
+  if (!list || !currentClient) return;
+  const cid = currentClient.id;
+  const { data, error } = await sb.from('support_messages').select('*').eq('client_id', cid).order('created_at', { ascending: true }).limit(300);
+  if (error) { list.innerHTML = '<p class="ev-chat-empty">No se pudo cargar el chat. Revisá tu conexión.</p>'; return; }
+  const sig = JSON.stringify((data || []).map(m => [m.id, m.starred]));
+  if (sig === list.dataset.sig) return;
+  list.dataset.sig = sig;
+  evChatMsgs = (data || []).sort((a, b) => a.created_at.localeCompare(b.created_at));
+  const atBottom = evChatAtBottom();
+  list.innerHTML = evChatMsgs.length ? evChatMsgs.map(m => evMsgHtml(m, 'client')).join('')
+    : '<p class="ev-chat-empty">Escribile a Sau lo que necesités: dudas del app, de tu plan o de tu entreno.</p>';
+  evHydrateMedia(list);
+  if (atBottom || !list.dataset.scrolled) { evChatScrollEnd(); list.dataset.scrolled = '1'; }
+  // Lo que mandó Sau queda leído
+  if (evChatMsgs.some(m => m.sender === 'coach' && !m.read_at)) {
+    await sb.from('support_messages').update({ read_at: new Date().toISOString() }).eq('client_id', cid).eq('sender', 'coach').is('read_at', null);
+    evCheckUnread();
+  }
+}
+function evChatAtBottom() { const b = document.getElementById('ev-chat-body'); return !b || b.scrollHeight - b.scrollTop - b.clientHeight < 80; }
+function evChatScrollEnd() { const b = document.getElementById('ev-chat-body'); if (b) requestAnimationFrame(() => { b.scrollTop = b.scrollHeight; }); }
+async function evClientInsert(row) {
+  const full = { client_id: currentClient.id, sender: 'client', status: 'new', tag: 'support', ...row };
+  const { error } = await sb.from('support_messages').insert([full]);
+  if (error) { showToast('No se envió. Probá de nuevo.', 'error'); console.warn('support_messages:', error.message); return false; }
+  const l = document.getElementById('ev-chat-list'); if (l) l.dataset.sig = '';
+  await evLoadClientChat();
+  evChatScrollEnd();
+  return true;
+}
+let evSending = false;
+async function evClientSendText() {
+  const inp = document.getElementById('ev-chat-inp');
+  const txt = (inp?.value || '').trim();
+  if (!txt || evSending) return;
+  evSending = true;
+  inp.value = '';
+  const ok = await evClientInsert({ kind: 'text', body: txt.slice(0, 4000) });
+  if (!ok) inp.value = txt;
+  evSending = false;
+}
+async function evClientSendPhoto(input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file || evSending) return;
+  evSending = true;
+  showToast('Enviando foto…', 'info', 1500);
+  const blob = await evPrepPhoto(file);
+  const path = await evUploadChatFile(currentClient.id, blob, 'jpg', blob.type || 'image/jpeg');
+  if (path) {
+    const cap = (document.getElementById('ev-chat-inp')?.value || '').trim();
+    const ok = await evClientInsert({ kind: 'photo', media_path: path, body: cap || null });
+    if (ok && cap) document.getElementById('ev-chat-inp').value = '';
+    if (!ok) sb.storage.from(EV_CHAT_BUCKET).remove([path]);
+  }
+  evSending = false;
+}
+// "Pedir acceso" a Run: deja el pedido en el chat (una sola vez mientras siga sin respuesta)
+async function evRequestRun() {
+  document.getElementById('ev-runlock')?.remove();
+  if (!currentClient) return;
+  const { data } = await sb.from('support_messages').select('id').eq('client_id', currentClient.id).eq('kind', 'request_run').eq('status', 'new').limit(1);
+  if (!(data && data.length)) {
+    const { error } = await sb.from('support_messages').insert([{ client_id: currentClient.id, sender: 'client', kind: 'request_run', tag: 'run', status: 'new', body: 'Pedí acceso al módulo Run.' }]);
+    if (error) { showToast('No se pudo enviar. Probá de nuevo.', 'error'); return; }
+  }
+  showToast('Listo, Sau recibió tu pedido', 'success', 2500);
+  evOpenChat();
+}
+
+// ===== Burbuja de upsell VIP (cliente Entry) =====
+async function evMaybeShowVipOffer() {
+  const c = currentClient;
+  if (!c || !evIsEntry(c) || c.vip_offer_active !== true || document.getElementById('ev-vipoffer')) return;
+  if (document.getElementById('evt') || document.getElementById('ev-onb') || evProgressLocked) return;
+  const w = document.createElement('div');
+  w.className = 'ev-vipoffer-wrap'; w.id = 'ev-vipoffer';
+  w.innerHTML = `<div class="ev-vipoffer" role="dialog" aria-modal="true" aria-labelledby="ev-vipoffer-t">
+    <svg class="ev-vo-hex" width="120" height="138" viewBox="0 0 120 138" aria-hidden="true"><polygon points="60,3 117,36 117,102 60,135 3,102 3,36" fill="none" stroke="#F5B83D" stroke-opacity="0.3" stroke-width="3" stroke-linejoin="round"/></svg>
+    <div class="ev-vo-top"><span class="ev-eb">De parte de Sau</span><button type="button" class="ev-vo-x" aria-label="Cerrar" onclick="evVipOfferAnswer(false)">${EVT_S(EV_I.x, 16, 2.2)}</button></div>
+    <h2 class="ev-dela" id="ev-vipoffer-t" style="font-size:22px;margin-top:8px;">¿Querés llevarlo<br>al siguiente nivel?</h2>
+    <p class="ev-p ev-soft" style="margin-top:10px;">El acompañamiento VIP incluye evaluaciones, sesiones extra y a Sau directo en tu entrenamiento.</p>
+    <div class="ev-vo-btns"><button type="button" class="ev-btn" style="flex:1.4" onclick="evVipOfferAnswer(true)">Quiero info</button><button type="button" class="ev-btn ev-ghost" style="flex:1" onclick="evVipOfferAnswer(false)">Ahora no</button></div>
+  </div>`;
+  document.body.appendChild(w);
+  ensureEvFonts();
+  evFitTitles(w);
+}
+async function evVipOfferAnswer(want) {
+  document.getElementById('ev-vipoffer')?.remove();
+  const c = currentClient; if (!c) return;
+  const now = new Date().toISOString();
+  c.vip_offer_active = false;
+  await sb.from('clients').update({ vip_offer_active: false, vip_offer_dismissed_at: now }).eq('id', c.id);
+  if (!want) return;
+  const { error } = await sb.from('support_messages').insert([{ client_id: c.id, sender: 'client', kind: 'request_vip', tag: 'vip', status: 'new', body: 'Quiero VIP' }]);
+  if (error) { showToast('No se pudo enviar. Probá de nuevo.', 'error'); return; }
+  showToast('Listo, Sau te escribe por el chat', 'success', 2500);
+}
+
+// ===== Coach: bandeja (Delivery), chat y ficha =====
+let evDlTag = 'all', evDlNew = false, evDlData = { clients: [], msgs: [] };
+async function evCoachClients() {
+  if (window._cachedClientsAll && window._cachedClientsAll.length) return window._cachedClientsAll;
+  const { data } = await sb.from('clients').select('*').eq('coach_id', currentUser.id);
+  window._cachedClientsAll = data || [];
+  return window._cachedClientsAll;
+}
+async function evLoadInbox() {
+  const clients = await evCoachClients();
+  const ids = clients.map(c => c.id);
+  if (!ids.length) { evDlData = { clients, msgs: [] }; return evDlData; }
+  const { data, error } = await sb.from('support_messages').select('*').in('client_id', ids).order('created_at', { ascending: false }).limit(1000);
+  if (error) console.warn('support_messages:', error.message);
+  evDlData = { clients, msgs: (data || []).sort((a, b) => b.created_at.localeCompare(a.created_at)) };
+  return evDlData;
+}
+function evConversations() {
+  const byClient = {};
+  evDlData.msgs.forEach(m => { (byClient[m.client_id] = byClient[m.client_id] || []).push(m); });
+  return Object.entries(byClient).map(([cid, ms]) => {
+    const c = evDlData.clients.find(x => x.id === cid) || { id: cid, name: 'Cliente' };
+    const fromClient = ms.filter(m => m.sender === 'client');
+    const fresh = fromClient.filter(m => m.status === 'new');
+    return { c, last: ms[0], fresh, tags: [...new Set((fresh.length ? fresh : fromClient.slice(0, 1)).map(m => m.tag))], allTags: new Set(fromClient.map(m => m.tag)) };
+  }).sort((a, b) => (b.fresh.length ? 1 : 0) - (a.fresh.length ? 1 : 0) || b.last.created_at.localeCompare(a.last.created_at));
+}
+function evPreview(m) {
+  if (m.kind === 'photo') return (m.sender === 'coach' ? 'Vos: ' : '') + 'Foto' + (m.body ? ' · ' + m.body : '');
+  if (m.kind === 'audio') return (m.sender === 'coach' ? 'Vos: ' : '') + 'Audio';
+  if (m.kind === 'request_run') return 'Pidió acceso al módulo Run.';
+  if (m.kind === 'request_vip') return 'Quiere info del acompañamiento VIP.';
+  return (m.sender === 'coach' ? 'Vos: ' : '') + (m.body || '');
+}
+async function evRenderInbox() {
+  const box = document.getElementById('ev-dl-inbox');
+  if (!box) return;
+  await evLoadInbox();
+  evDrawInbox();
+}
+function evDrawInbox() {
+  const box = document.getElementById('ev-dl-inbox');
+  if (!box) return;
+  const all = evConversations();
+  const list = all.filter(v => (evDlTag === 'all' || v.allTags.has(evDlTag)) && (!evDlNew || v.fresh.length));
+  const chip = (k, l) => `<button type="button" class="ev-fchip${evDlTag === k ? ' on' : ''}" aria-pressed="${evDlTag === k}" onclick="evDlTag='${k}';evDrawInbox()">${l}</button>`;
+  box.innerHTML = `<div class="ev-fchips">${chip('all', 'Todos')}${chip('support', 'Soporte')}${chip('vip', 'Quiero VIP')}${chip('run', 'Quiero Run')}</div>
+    <label class="ev-onlynew"><input type="checkbox" ${evDlNew ? 'checked' : ''} onchange="evDlNew=this.checked;evDrawInbox()"> Solo sin responder</label>
+    ${list.length ? list.map(v => `<button type="button" class="ev-conv${v.fresh.length ? ' is-new' : ''}" onclick="evOpenCoachChat('${v.c.id}')">
+        <span class="ev-av">${evEsc(getInitials(v.c.name || '?'))}</span>
+        <span class="ev-conv-b"><span class="ev-conv-top"><b>${evEsc(v.c.name || '')}</b><span class="ev-when">${evAgo(v.last.created_at)}</span></span>
+          <span class="ev-conv-tags">${v.tags.map(t => `<span class="ev-tag ${t === 'run' ? 'ev-tag-ok' : t === 'vip' ? 'ev-tag-vip' : 'ev-tag-soft'}">${EV_TAGS[t] || 'Soporte'}</span>`).join('')}${v.fresh.length ? '<span class="ev-tag ev-tag-new">Nuevo</span>' : ''}</span>
+          <span class="ev-conv-p">${evEsc(evPreview(v.last))}</span></span>
+      </button>`).join('') : '<div class="ev-empty" style="padding:28px 10px;">Sin mensajes en este filtro.</div>'}`;
+  const n = all.filter(v => v.fresh.length).length;
+  const hb = document.getElementById('ev-dl-count');
+  if (hb) { hb.hidden = !n; hb.textContent = `${n} ${n === 1 ? 'nuevo' : 'nuevos'}`; }
+  evSetDeliveryBadge(n);
+}
+function evSetDeliveryBadge(n) {
+  document.querySelectorAll('[data-ev-badge="delivery"]').forEach(b => { b.hidden = !n; b.textContent = n > 9 ? '9+' : String(n || ''); });
+}
+async function evRefreshDeliveryBadge() {
+  try { await evLoadInbox(); evSetDeliveryBadge(evConversations().filter(v => v.fresh.length).length); } catch (e) { /* silencioso */ }
+}
+async function evRunRequestCount() {
+  await evLoadInbox();
+  const enabled = new Set(evDlData.clients.filter(c => c.run_module_enabled === true).map(c => c.id));
+  return new Set(evDlData.msgs.filter(m => m.kind === 'request_run' && m.status === 'new' && !enabled.has(m.client_id)).map(m => m.client_id)).size;
+}
+
+// Chat del coach con un cliente
+let evCChat = null, evCChatPoll = null;
+async function evOpenCoachChat(clientId) {
+  const clients = await evCoachClients();
+  const c = clients.find(x => x.id === clientId) || (currentClient && currentClient.id === clientId ? currentClient : null);
+  if (!c) return;
+  evCChat = c;
+  document.getElementById('ev-cchat')?.remove();
+  const w = document.createElement('div');
+  w.id = 'ev-cchat'; w.className = 'ev-chat';
+  w.setAttribute('role', 'dialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-label', 'Chat con ' + (c.name || ''));
+  const first = evEsc((c.name || '').split(' ')[0]);
+  w.innerHTML = `<div class="ev-chat-head">
+      <button type="button" class="ev-cbtn" aria-label="Volver" onclick="evCloseCoachChat()">${EVT_S(EV_I.back, 20, 2.2)}</button>
+      <span class="ev-av lg">${evEsc(getInitials(c.name || '?'))}</span>
+      <div class="ev-chat-who"><b>${evEsc(c.name || '')}</b><span id="ev-cchat-sub">${evIsEntry(c) ? 'Entry' : 'VIP'}</span></div>
+      ${evTierTagHtml(c)}
+    </div>
+    <div class="ev-chat-body" id="ev-cchat-body">
+      <p class="ev-chat-note">Los mensajes se borran a los 7 días, menos los que destacás.</p>
+      <div id="ev-cchat-list" class="ev-chat-list"><div class="spinner"></div></div>
+    </div>
+    <div class="ev-chat-foot col">
+      <div class="ev-rec" id="ev-rec" hidden><span class="ev-rec-dot"></span><b id="ev-rec-t">0:00</b><span class="ev-rec-l">Grabando…</span>
+        <button type="button" class="ev-cbtn sm" aria-label="Cancelar audio" onclick="evRecStop(false)">${EVT_S(EV_I.trash, 18)}</button>
+        <button type="button" class="ev-cbtn sm send" aria-label="Enviar audio" onclick="evRecStop(true)">${EVT_S(EV_I.send, 18, 2.2)}</button></div>
+      <div class="ev-chat-row">
+        <input type="file" accept="image/*" id="ev-cchat-file" hidden onchange="evCoachSendPhoto(this)">
+        <button type="button" class="ev-cbtn" aria-label="Adjuntar foto" onclick="document.getElementById('ev-cchat-file').click()">${EVT_S(EV_I.image, 20)}</button>
+        <input type="text" class="ev-chat-inp" id="ev-cchat-inp" placeholder="Respondele a ${first}…" aria-label="Mensaje" enterkeyhint="send" onkeydown="if(event.key==='Enter'){event.preventDefault();evCoachSendText();}">
+        <button type="button" class="ev-cbtn send" aria-label="Enviar" onclick="evCoachSendText()">${EVT_S(EV_I.send, 20, 2.2)}</button>
+        <button type="button" class="ev-cbtn mic" aria-label="Grabar audio" onclick="evRecStart()">${EVT_S(EV_I.mic, 20)}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(w);
+  await evLoadCoachChat();
+  clearInterval(evCChatPoll);
+  evCChatPoll = setInterval(evLoadCoachChat, 8000);
+}
+function evCloseCoachChat() {
+  clearInterval(evCChatPoll); evCChatPoll = null;
+  if (evRec) evRecStop(false);
+  if (evAudioEl) evAudioEl.pause();
+  document.getElementById('ev-cchat')?.remove();
+  if (document.getElementById('screen-coach-delivery')?.classList.contains('active')) evRenderInbox();
+  else evRefreshDeliveryBadge();
+}
+async function evLoadCoachChat() {
+  const list = document.getElementById('ev-cchat-list');
+  if (!list || !evCChat) return;
+  const { data, error } = await sb.from('support_messages').select('*').eq('client_id', evCChat.id).order('created_at', { ascending: true }).limit(300);
+  if (error) { list.innerHTML = '<p class="ev-chat-empty">No se pudo cargar el chat.</p>'; return; }
+  const sig = JSON.stringify((data || []).map(m => [m.id, m.starred, m.status])) + '|' + evCChat.run_module_enabled;
+  if (sig === list.dataset.sig) return;
+  list.dataset.sig = sig;
+  const b = document.getElementById('ev-cchat-body');
+  const atBottom = !b || b.scrollHeight - b.scrollTop - b.clientHeight < 80;
+  const rows = (data || []).sort((a, b) => a.created_at.localeCompare(b.created_at));
+  list.innerHTML = rows.length ? rows.map(m => evMsgHtml(m, 'coach', evCChat)).join('') : '<p class="ev-chat-empty">Todavía no hay mensajes.</p>';
+  evHydrateMedia(list);
+  if (atBottom || !list.dataset.scrolled) { requestAnimationFrame(() => { if (b) b.scrollTop = b.scrollHeight; }); list.dataset.scrolled = '1'; }
+}
+// Cada mensaje de Sau deja respondidos los pendientes del cliente; push como aviso extra
+async function evCoachInsert(row) {
+  const c = evCChat; if (!c) return false;
+  const { error } = await sb.from('support_messages').insert([{ client_id: c.id, sender: 'coach', status: 'answered', tag: 'support', ...row }]);
+  if (error) { showToast('No se envió: ' + error.message, 'error'); return false; }
+  await sb.from('support_messages').update({ status: 'answered' }).eq('client_id', c.id).eq('sender', 'client').eq('status', 'new');
+  try { rnPush(c.username, 'Sau te respondió', 'Abrí el chat en MOVE.'); } catch (e) { /* silencioso */ }
+  const l = document.getElementById('ev-cchat-list'); if (l) l.dataset.sig = '';
+  await evLoadCoachChat();
+  const b = document.getElementById('ev-cchat-body'); if (b) requestAnimationFrame(() => { b.scrollTop = b.scrollHeight; });
+  return true;
+}
+async function evCoachSendText() {
+  const inp = document.getElementById('ev-cchat-inp');
+  const txt = (inp?.value || '').trim();
+  if (!txt || evSending) return;
+  evSending = true; inp.value = '';
+  if (!(await evCoachInsert({ kind: 'text', body: txt.slice(0, 4000) }))) inp.value = txt;
+  evSending = false;
+}
+async function evCoachSendPhoto(input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file || !evCChat || evSending) return;
+  evSending = true;
+  const blob = await evPrepPhoto(file);
+  const path = await evUploadChatFile(evCChat.id, blob, 'jpg', blob.type || 'image/jpeg');
+  if (path) {
+    const cap = (document.getElementById('ev-cchat-inp')?.value || '').trim();
+    const ok = await evCoachInsert({ kind: 'photo', media_path: path, body: cap || null });
+    if (ok && cap) document.getElementById('ev-cchat-inp').value = '';
+    if (!ok) sb.storage.from(EV_CHAT_BUCKET).remove([path]);
+  }
+  evSending = false;
+}
+async function evToggleStar(id) {
+  const list = document.getElementById('ev-cchat-list');
+  const btn = list?.querySelector(`.ev-msg[data-id="${id}"] .ev-starbtn`);
+  const next = !(btn && btn.classList.contains('on'));
+  const { error } = await sb.from('support_messages').update({ starred: next }).eq('id', id);
+  if (error) { showToast('No se pudo destacar', 'error'); return; }
+  if (list) list.dataset.sig = '';
+  evLoadCoachChat();
+}
+async function evActivateRun(clientId) {
+  const { error } = await sb.from('clients').update({ run_module_enabled: true }).eq('id', clientId);
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  [evCChat, currentClient, ...(window._cachedClientsAll || [])].forEach(x => { if (x && x.id === clientId) x.run_module_enabled = true; });
+  await sb.from('support_messages').update({ status: 'answered' }).eq('client_id', clientId).eq('kind', 'request_run').eq('status', 'new');
+  const c = evCChat && evCChat.id === clientId ? evCChat : null;
+  if (c) rnPush(c.username, 'Ya tenés Run', 'Entrá a Mi Espacio › Run.');
+  showToast('Módulo Run activado', 'success');
+  const l = document.getElementById('ev-cchat-list'); if (l) l.dataset.sig = '';
+  evLoadCoachChat();
+}
+
+// Grabar audio (solo Sau). En iPhone (PWA) sale mp4/aac; en otros, lo que soporte el navegador.
+let evRec = null;
+function evRecMime() {
+  const opts = ['audio/mp4;codecs=mp4a.40.2', 'audio/mp4', 'audio/aac', 'audio/webm;codecs=opus', 'audio/webm'];
+  return window.MediaRecorder && MediaRecorder.isTypeSupported ? (opts.find(t => MediaRecorder.isTypeSupported(t)) || '') : '';
+}
+async function evRecStart() {
+  if (evRec || !evCChat) return;
+  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) { showToast('Este navegador no permite grabar audio', 'error'); return; }
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch (e) { showToast('Necesito permiso para usar el micrófono', 'error'); return; }
+  const mime = evRecMime();
+  const mr = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+  const chunks = [];
+  mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  evRec = { mr, stream, chunks, t0: Date.now(), send: false, timer: null };
+  mr.onstop = async () => {
+    const r = evRec; evRec = null;
+    clearInterval(r.timer);
+    r.stream.getTracks().forEach(t => t.stop());
+    document.getElementById('ev-rec')?.setAttribute('hidden', '');
+    if (!r.send || !chunks.length) return;
+    const type = mr.mimeType || mime || 'audio/mp4';
+    const blob = new Blob(chunks, { type });
+    const secs = Math.max(1, Math.round((Date.now() - r.t0) / 1000));
+    const ext = type.includes('webm') ? 'webm' : type.includes('aac') ? 'aac' : 'm4a';
+    const path = await evUploadChatFile(evCChat.id, blob, ext, type.split(';')[0]);
+    if (path && !(await evCoachInsert({ kind: 'audio', media_path: path, body: `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}` }))) sb.storage.from(EV_CHAT_BUCKET).remove([path]);
+  };
+  mr.start();
+  document.getElementById('ev-rec')?.removeAttribute('hidden');
+  evRec.timer = setInterval(() => {
+    const s = Math.round((Date.now() - evRec.t0) / 1000);
+    const t = document.getElementById('ev-rec-t'); if (t) t.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    if (s >= 300) evRecStop(true); // tope de 5 minutos
+  }, 250);
+}
+function evRecStop(send) {
+  if (!evRec) return;
+  evRec.send = !!send;
+  try { evRec.mr.stop(); } catch (e) { evRec = null; }
+}
+
+// Ficha del coach: burbuja VIP, Run (con "Pidió acceso") y acceso al chat (Entry)
+async function evRenderCoachEntryCard(c) {
+  const box = document.getElementById('ev-coach-entry');
+  if (!box) return;
+  if (!c || !evIsEntry(c)) { box.innerHTML = ''; return; }
+  const { data } = await sb.from('support_messages').select('id').eq('client_id', c.id).eq('kind', 'request_run').eq('status', 'new').limit(1);
+  if (!currentClient || currentClient.id !== c.id) return;
+  const asked = !!(data && data.length) && c.run_module_enabled !== true;
+  const sw = (on, fn, label) => `<button type="button" class="ev-switch${on ? ' on' : ''}" role="switch" aria-checked="${on}" aria-label="${label}" onclick="${fn}"><i></i></button>`;
+  box.innerHTML = `<div class="ev-cc">
+    <div class="ev-crow"><div><b>Burbuja de upsell VIP</b><span>El cliente la ve una vez y puede cerrarla</span></div>${sw(c.vip_offer_active === true, 'evToggleVipOffer()', 'Burbuja de upsell VIP')}</div>
+    <div class="ev-crow"><div><b>Módulo Run ${asked ? '<span class="ev-tag ev-tag-new">Pidió acceso</span>' : ''}</b><span>Activalo cuando recibas el SINPE</span></div>${sw(c.run_module_enabled === true, 'evCoachToggleRun()', 'Módulo Run')}</div>
+    <div id="ev-coach-lift-row"></div>
+    <button type="button" class="ev-mini" onclick="evOpenCoachChat('${c.id}')">Abrir el chat con ${evEsc((c.name || '').split(' ')[0])}</button>
+  </div>`;
+  if (typeof evRenderCoachLiftRow === 'function') evRenderCoachLiftRow(c);
+}
+async function evToggleVipOffer() {
+  const c = currentClient; if (!c) return;
+  const next = c.vip_offer_active !== true;
+  const { error } = await sb.from('clients').update({ vip_offer_active: next }).eq('id', c.id);
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  c.vip_offer_active = next;
+  showToast(next ? 'Burbuja VIP activada' : 'Burbuja VIP apagada');
+  evRenderCoachEntryCard(c);
+}
+async function evCoachToggleRun() {
+  await rnToggleModule();
+  const c = currentClient;
+  if (c && c.run_module_enabled === true) await sb.from('support_messages').update({ status: 'answered' }).eq('client_id', c.id).eq('kind', 'request_run').eq('status', 'new');
+  evRenderCoachEntryCard(c);
+}
+
+// Ajustes del coach: foto de Sau para el chat
+async function evRenderSauPhotoSetting() {
+  const box = document.getElementById('ev-sau-photo-set');
+  if (!box) return;
+  evSauPhoto = null;
+  const u = await evSauPhotoUrl();
+  box.innerHTML = `<div class="ev-cc" style="display:flex;align-items:center;gap:14px;">
+    <span class="ev-sau-av lg"><img src="${u}" alt="Foto de Sau"></span>
+    <div style="flex:1;min-width:0;"><b style="display:block;font-size:14px;color:#2A211B;">Tu foto en el chat</b><span style="font-size:12px;color:#6F655B;">La ven tus clientes Entry arriba del chat.</span></div>
+    <input type="file" accept="image/*" id="ev-sau-photo-file" hidden onchange="evUploadSauPhoto(this)">
+    <button type="button" class="ev-mini" onclick="document.getElementById('ev-sau-photo-file').click()">Cambiar</button>
+  </div>`;
+}
+async function evUploadSauPhoto(input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  const blob = await evPrepPhoto(file);
+  const { error } = await sb.storage.from(EV_CHAT_BUCKET).upload(EV_SAU_PHOTO, blob, { contentType: 'image/jpeg', upsert: true });
+  if (error) { showToast('No se pudo subir: ' + error.message, 'error'); return; }
+  delete evUrlCache[EV_SAU_PHOTO];
+  showToast('Foto actualizada', 'success');
+  evRenderSauPhotoSetting();
+}
+
+// Delivery: bandeja del coach (chat E4; rifa E5; calificaciones E7)
 async function evRenderDelivery() {
   const box = document.getElementById('ev-delivery-body');
   if (!box) return;
-  box.innerHTML = `<div class="ev-ch"><span class="ev-eb-o">Coach</span><h1>Delivery</h1></div>
-    <div class="ev-empty"><span class="ev-bico">${EV_ICO.inbox}</span><b>Pronto</b>Acá van a llegar los mensajes de tus clientes, la rifa del mes y las calificaciones.</div>`;
+  box.innerHTML = `<div class="ev-ch ev-ch-row"><div><span class="ev-eb-o">Coach</span><h1>Delivery</h1></div><span class="ev-tag ev-tag-new" id="ev-dl-count" hidden></span></div>
+    <div id="ev-dl-raffle"></div>
+    <div id="ev-dl-inbox"><div class="spinner"></div></div>
+    <div id="ev-dl-rates"></div>`;
+  await evRenderInbox();
+  if (typeof evRenderRaffle === 'function') evRenderRaffle();
+  if (typeof evRenderRates === 'function') evRenderRates();
 }
 </script>
 

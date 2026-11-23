@@ -117,3 +117,28 @@ Probado (base simulada, 390 px):
 
 Notas:
 - La burbuja del chat con la abeja (Perfil y resto de pantallas) se agrega en E4, junto con el chat.
+
+### E4: chat con Sau, bandeja del coach, Pedir acceso a Run y burbuja VIP — terminado
+Commit: (ver git log, "E4")
+
+Hecho:
+- Cliente Entry: burbuja del chat en el mismo lugar que la de WhatsApp en las 5 pantallas (en el Perfil, con la abeja de marca provisoria), con punto miel si hay respuesta de Sau sin leer (revisa cada 60 s). Chat a pantalla completa como el mockup: foto de Sau, horario, aviso de 7 días, estrellas en destacados; manda texto y fotos (sin audio). Lee y marca `read_at` en lo que mandó Sau. Se actualiza cada 8 s mientras está abierto.
+- "Pedir acceso" a Run (modal del candado) crea `request_run` (etiqueta `run`) una sola vez mientras siga sin responder, y abre el chat. Todos los botones "Abrir el chat con Sau" de E3B ya abren el chat.
+- Burbuja de upsell VIP (Entry con `vip_offer_active`): "Quiero info" deja `request_vip` (etiqueta `vip`, texto "Quiero VIP"); las dos opciones la apagan (`vip_offer_active=false`, `vip_offer_dismissed_at`). No sale durante el tour ni con Tu Progreso bloqueado.
+- Coach, Delivery: conversaciones por cliente con filtros Todos / Soporte / Quiero VIP / Quiero Run y "Solo sin responder"; "N nuevos" arriba y globito en la barra. Build muestra "N pidió acceso" en Run.
+- Coach, chat: texto, foto, grabar audio (MediaRecorder; prioriza `audio/mp4` para iPhone), destacar cualquier mensaje, "Activar Run" en el pedido. Cada mensaje de Sau deja `status='answered'` en lo pendiente del cliente y manda push al cliente ("Sau te respondió", sin el texto) dentro de try/catch.
+- Coach, ficha (Entry): burbuja de upsell VIP (interruptor), Módulo Run con "Pidió acceso" e interruptor, "Abrir el chat".
+- Coach, Ajustes: "Tu foto en el chat" (sube a `support-chat/coach/sau.jpg`; si no hay, usa `img/sau-color.jpg`).
+- `api/purge-support.js`: borrado de 7 días **sin activar** (no está en `vercel.json`). Lee la vista `support_messages_purgeable`, borra esos archivos del bucket y esas filas (repite `starred=false` y la fecha en el DELETE). En seco por defecto; borra solo con `?run=1`; exige `CRON_SECRET`.
+
+Probado (base simulada / node):
+- [x] Cliente: enviar texto y foto, ver audio de Sau, destacados con estrella, punto de no leído y lectura.
+- [x] Pedir acceso a Run → tarjeta "Quiero Run" y etiqueta; Build "1 pidió acceso"; Delivery filtra por Quiero Run.
+- [x] Coach: destacar, responder (pendientes pasan a respondidos, push), Activar Run (cliente con Run, pedido respondido).
+- [x] Burbuja VIP: se activa desde la ficha, el cliente la ve, "Quiero info" crea el mensaje y la apaga.
+- [x] Job en seco con node: sin secreto 401; en seco no borra; borra solo mensajes viejos no destacados y respondidos (o de Sau) y sus archivos; destacados, sin responder y recientes quedan. Solo `support_messages` y el bucket.
+- [ ] No probado: grabar audio de verdad (necesita micrófono) y reproducirlo en iPhone y Android; subida real al bucket; push real.
+
+Dudas:
+- Push del cliente a Sau: no se envía (el coach no registra su etiqueta en OneSignal; Sau ve el globito en Delivery). Si lo quiere, hay que registrar al coach en OneSignal.
+- Para activar el borrado: crear `CRON_SECRET` en Vercel y agregar la entrada a `vercel.json` (texto en el encabezado del archivo).
