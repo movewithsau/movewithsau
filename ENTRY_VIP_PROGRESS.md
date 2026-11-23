@@ -68,3 +68,32 @@ Probado (base simulada, 390 px):
 
 Notas:
 - `screen-coach-data` (Analytics) ya no tenía entrada en la barra antes de este cambio; sigue igual.
+
+### E3A: tour de onboarding y paso obligatorio en Tu Progreso — terminado
+Commit: (ver git log, "E3A")
+
+Hecho:
+- Tour como lista calculada en código (`evTourList`): Entry = MOVE, Entrená, Menú, Luz, LIFT, [Fecha de pago], Chat con acuerdo, Hive, Transformación, LET'S GO. VIP = Bienvenida Lado Premium, MOVE, Entrená, Menú VIP, Luz, [Fecha de pago], Hive, Transformación, LET'S GO. Puntos y "N de M" salen de la lista final (la Bienvenida VIP no cuenta y no tiene puntos).
+- Cada pantalla es un escenario de 390×844 portado del HTML del mockup (clases `t-` propias, ids de SVG con prefijo `evt-`), escalado a la pantalla real; en teléfonos más altos se estira hacia abajo, en más bajos se achica con bandas a los lados.
+- Los títulos en Dela respetan los cortes de línea del mockup y se achican si no entran (Dela real es más ancha que la fuente con que se capturó el mockup). Se carga Playfair 500 como en el mockup.
+- "Saltar" en todas menos la Bienvenida VIP, el acuerdo del chat y LET'S GO; lleva a la próxima pantalla obligatoria (acuerdo si falta, si no el cierre). "Siguiente" del chat apagado hasta marcar el acuerdo.
+- Pantalla de fecha: solo con `next_payment_date` y cliente Entry u `onboarding_required` (`evPayDate`). Fecha en texto ("12 de diciembre").
+- Al tocar "Ir a Tu Progreso" se guarda `client_onboarding.tour_seen_at` y se abre Tu Progreso.
+- Paso obligatorio (solo Entry nuevo): aviso arriba de Tu Progreso con el texto fijo; el resto del app bloqueado (`evLockGuard` en `clientNav` y `switchClientPlanTab`; se ocultan The MOVE Menu, gráficos e historial y se abre el registro de la semana). Para guardar se exige foto de frente además del peso. Se desbloquea con una fila de `client_progress_logs` con `weight_kg` y `photo_front_path`.
+- El onboarding VIP ya no muestra la bienvenida suelta: el tour VIP arranca con ella.
+
+Probado (base simulada):
+- [x] Entry con fecha: 10 pantallas, contadores 1..10 de 10. Entry sin fecha: 9 (chat "6 de 9"). VIP con fecha: 8 contadas. VIP sin fecha: 7 ("3 de 7" como el mockup).
+- [x] Saltar desde la pantalla de pago lleva al acuerdo; el acuerdo bloquea "Siguiente".
+- [x] `tour_seen_at` guardado; el tour no vuelve a salir.
+- [x] Bloqueo: Hoy y Mi Diario vuelven a Tu Progreso; sin foto no guarda; con foto de frente + peso guarda, se desbloquea y Hoy abre.
+- [x] VIP: sin bloqueo. Cliente viejo: sin tour ni bloqueo. Cliente VIP viejo con next_payment_date: sin pantalla de pago.
+- [x] 390×844 y 375×667.
+- [ ] No probado en real (Supabase, iPhone).
+
+Supuestos / dudas:
+- Pantalla de pago: el mockup no tiene "Saltar"; el prompt dice que solo no lo tienen el acuerdo y el cierre. Quedó **con** "Saltar" (según el prompt).
+- Pantalla de pago: la tarjeta dice "Tu próximo pago es el / 12 de diciembre" y debajo va la frase fija "Gracias por ser parte de MOVE. Ese día renovamos tu plan con el mismo método de pago." (TEXTOS-FIJOS), además de la tarjeta "Si se te pasa, no pasa nada".
+- NoPain en Luz: "Visibilidad para lo que sentís. / Espacio privado." (sin corchetes, según actualizacion-v7).
+- Intensidad del aclarado en LIFT, pago y chat: igual que el mockup (pendiente de Sau).
+- VIP en LET'S GO: mismo botón "Ir a Tu Progreso", sin la línea "Último paso".

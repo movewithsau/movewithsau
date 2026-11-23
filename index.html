@@ -10217,6 +10217,7 @@ async function loadClientProtocolsView() {
 
 // ===== TESTS (EVALUACIONES) =====
 function switchClientPlanTab(tab, chipEl) {
+  if (typeof evLockGuard === 'function' && evLockGuard(tab)) return; // paso obligatorio Entry (E3A)
   document.getElementById('screen-client-plan').classList.toggle('progress-dark', tab === 'progress');
   document.querySelectorAll('.client-plan-tab-chip').forEach(c => { c.classList.remove('active'); c.style.background='transparent'; c.style.color='var(--gray4)'; });
   chipEl.classList.add('active');
@@ -11010,6 +11011,7 @@ function applyTrainingAccessGate() {
 }
 
 function clientNav(tab,el) {
+  if (tab !== 'plan' && typeof evLockGuard === 'function' && evLockGuard(tab)) return; // paso obligatorio Entry (E3A)
   document.querySelectorAll('#screen-client-home .nav-item,#screen-client-plan .nav-item,#screen-client-profile .nav-item,#screen-client-food .nav-item,#screen-client-coaching .nav-item').forEach(n=>n.classList.remove('active'));
   el.classList.add('active');
   if(tab==='home'){showScreen('screen-client-home');trSyncDark();if(currentClient?.program_type==='lift'){renderLiftDay(liftViewDay||getLiftCurrentDayNumber(currentClient));}else if(applyTrainingAccessGate()){loadClientDayStrip();showHoyCover();}else{showHoyCover();}}
@@ -25105,6 +25107,8 @@ async function saveProgressLog() {
   const weightInput = document.getElementById('progress-weight-input');
   const weight = parseFloat(weightInput?.value);
   if(!weight || weight <= 0) { showToast('⚠️ Ingresá tu peso'); return; }
+  // Paso obligatorio Entry (E3A): la foto de frente también
+  if(evProgressLocked && !selectedProgressPhotos.front) { showToast('Subí tu foto de frente para seguir', 'error'); return; }
 
   // Evitar doble tap (doble insert → 23505 y fotos huérfanas)
   const saveBtn = document.getElementById('save-progress-btn');
@@ -25156,6 +25160,7 @@ async function saveProgressLog() {
   }
   showToast('✅ Progreso guardado');
   loadClientProgress();
+  if(evProgressLocked) evCheckProgressLock().then(locked => { if(!locked) showToast('Listo, ya tenés todo el app', 'success', 3000); });
 }
 
 async function loadProgressHistory() {
@@ -29655,7 +29660,7 @@ function rnBlocksHtml(pre, post) { return rnBlockHtml(pre, 'Antes de correr') + 
 .ev-wrap { position:relative; max-width:430px; margin:0 auto; padding:36px 20px 30px; min-height:100%; box-sizing:border-box; display:flex; flex-direction:column; }
 .ev-ov *, .ev-sheet * { box-sizing:border-box; }
 .ev-eb { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#F5B83D; }
-.ev-dela { font-family:'Dela Gothic One',sans-serif; text-transform:uppercase; line-height:1.06; font-weight:400; margin:10px 0 0; color:#FBF6EF; }
+.ev-dela { display:block; font-family:'Dela Gothic One',sans-serif; text-transform:uppercase; line-height:1.06; font-weight:400; margin:10px 0 0; color:#FBF6EF; }
 .ev-soft { color:#CFC6BA; } .ev-mute { color:#A89C8D; } .ev-honey { color:#F5B83D; }
 .ev-p { margin:0; }
 .ev-fields { display:flex; flex-direction:column; gap:24px; margin-top:28px; }
@@ -29688,17 +29693,36 @@ textarea.ev-inp { height:84px; padding:14px 16px; resize:none; line-height:1.35;
 .ev-step-dot.wait { background:#26201A; border:2px solid #F5B83D; }
 .ev-step-dot.wait i { width:8px; height:8px; border-radius:50%; background:#F5B83D; }
 .ev-step > div b { display:block; font-size:15px; } .ev-step > div span { display:block; font-size:13px; color:#CFC6BA; line-height:1.3; }
-/* Bienvenida VIP: foto a la derecha, texto a la izquierda, degradado horizontal */
-.ev-vipw { position:fixed; inset:0; z-index:10060; background:#14110E; color:#FBF6EF; overflow:hidden; font-family:'DM Sans',system-ui,sans-serif; }
-.ev-vipw-img { position:absolute; top:0; left:4.6%; height:100%; width:auto; max-width:none; }
-.ev-vipw-g1 { position:absolute; inset:0; background:linear-gradient(to right,#14110E 0%,#14110E 20%,rgba(20,17,14,.88) 36%,rgba(20,17,14,.4) 54%,rgba(20,17,14,0) 74%); }
-.ev-vipw-g2 { position:absolute; left:0; right:0; bottom:0; height:34%; background:linear-gradient(to bottom,rgba(20,17,14,0),#14110E 78%); }
-.ev-vipw-tag { position:absolute; left:20px; top:calc(44px + env(safe-area-inset-top,0px)); font-family:'DM Mono',monospace; font-size:11px; letter-spacing:.2em; color:#F5B83D; }
-.ev-vipw-txt { position:absolute; left:24px; top:30%; width:min(214px,56%); }
-.ev-vipw-txt h1 { font-family:'Dela Gothic One',sans-serif; text-transform:uppercase; font-weight:400; font-size:34px; line-height:1.08; margin:8px 0 0; }
-.ev-vipw-bar { width:44px; height:3px; border-radius:2px; background:#F5B83D; margin:18px 0 14px; }
-.ev-vipw-txt .ev-serif { font-family:'Playfair Display',serif; font-size:20px; line-height:1.35; font-weight:700; color:#FBF6EF; margin:0; }
-.ev-vipw-foot { position:absolute; left:20px; right:20px; bottom:calc(30px + env(safe-area-inset-bottom,0px)); max-width:390px; margin:0 auto; }
+/* Tour (E3A): escenario de 390×844 como el mockup, escalado a la pantalla. Clases t- propias. */
+.evt { position:fixed; inset:0; z-index:10055; display:flex; align-items:flex-start; justify-content:center; overflow:hidden; background:#14110E; }
+.evt-stage { position:relative; flex:none; width:390px; height:844px; overflow:hidden; transform-origin:top center; color:#FBF6EF; font-family:'DM Sans',system-ui,sans-serif; font-size:15px; line-height:1.4; -webkit-font-smoothing:antialiased; }
+.evt-stage * { box-sizing:border-box; }
+.evt-stage .t-hexbg { position:absolute; left:0; top:0; pointer-events:none; }
+.evt-stage .t-abs { position:absolute; }
+.evt-stage .t-pad { padding-left:20px; padding-right:20px; }
+.evt-stage .t-row { display:flex; align-items:center; }
+.evt-stage .t-col { display:flex; flex-direction:column; }
+.evt-stage .t-g8 { gap:8px; } .evt-stage .t-g12 { gap:12px; } .evt-stage .t-g16 { gap:16px; }
+.evt-stage .t-dela { font-family:'Dela Gothic One',sans-serif; text-transform:uppercase; line-height:1.04; font-weight:400; margin:0; }
+.evt-stage .t-serif { font-family:'Playfair Display',serif; font-weight:500; margin:0; }
+.evt-stage .t-mono { font-family:'DM Mono',monospace; }
+.evt-stage .t-eb { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; }
+.evt-stage .t-p { margin:0; }
+.evt-stage .t-soft { color:#CFC6BA; } .evt-stage .t-mute { color:#A89C8D; } .evt-stage .t-honey { color:#F5B83D; }
+.evt-stage .t-card { background:#26201A; border:1px solid #3A3027; border-radius:22px; padding:18px; }
+.evt-stage .t-circ { border-radius:50%; display:flex; align-items:center; justify-content:center; flex:none; }
+.evt-stage .t-dots { display:flex; gap:8px; align-items:center; }
+.evt-stage .t-dots i { display:block; height:6px; border-radius:3px; }
+.evt-stage .t-skip { border:0; background:none; font:700 14px 'DM Sans',sans-serif; cursor:pointer; padding:8px 0; }
+.evt-stage .t-btn { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; height:54px; border:0; border-radius:16px; background:#C24E18; color:#FFFFFF; font:700 16px 'DM Sans',sans-serif; cursor:pointer; }
+.evt-stage .t-btn.green { background:#1E7A3C; }
+.evt-stage .t-btn.honey { background:#F5B83D; color:#14110E; }
+.evt-stage .t-btn:disabled { background:#2E2721; color:#A89C8D; cursor:default; }
+.evt-stage h1:focus { outline:none; }
+/* Paso obligatorio en Tu Progreso (Entry) */
+.ev-lock-note { display:flex; gap:12px; align-items:flex-start; margin:0 0 16px; padding:14px 16px; border-radius:18px; background:#2A2113; border:1px solid #5A4417; color:#FBF6EF; font:500 14px/1.45 'DM Sans',sans-serif; }
+.ev-lock-note .ev-lock-ico { color:#F5B83D; display:flex; flex:none; margin-top:1px; }
+body.ev-locked #mm-top, body.ev-locked #progress-charts, body.ev-locked #c-progress-history, body.ev-locked #client-progress-tab .pg-compare { display:none; }
 /* Hoja simple (términos, edición del coach) */
 .ev-dim { position:fixed; inset:0; z-index:10070; background:rgba(10,8,6,.66); display:flex; align-items:flex-end; justify-content:center; }
 .ev-sheet { width:100%; max-width:430px; max-height:88vh; overflow-y:auto; border-radius:28px 28px 0 0; padding:12px 20px calc(24px + env(safe-area-inset-bottom,0px)); background:#26201A; color:#FBF6EF; border-top:1px solid #3A3027; font-family:'DM Sans',system-ui,sans-serif; }
@@ -29991,8 +30015,6 @@ async function evClientGate(cd) {
   ensureDelaFont();
   if (evIsEntry(cd)) evShowEntryOnb(); else evShowVipOnb();
 }
-// Qué sigue al onboarding (el tour se agrega en E3A)
-function evAfterOnboarding() {}
 
 function evChipsHtml(name, opts, multi) {
   return `<div class="ev-chips" role="group" data-ev="${name}" data-multi="${multi ? 1 : 0}">${opts.map(o =>
@@ -30048,6 +30070,7 @@ function evShowEntryOnb() {
     </div>
   </div>`;
   document.body.appendChild(ov);
+  evFitTitles(ov);
 }
 // Términos y descargo: mismos textos del contrato (aviso médico, riesgos, resultados)
 function evShowTerms() {
@@ -30130,6 +30153,7 @@ function evShowVipOnb() {
     <div class="ev-foot"><button type="button" class="ev-btn green" id="ev-go" onclick="evSaveVipOnb()">Continuar</button></div>
   </div>`;
   document.body.appendChild(ov);
+  evFitTitles(ov);
 }
 async function evSaveVipOnb() {
   const btn = document.getElementById('ev-go'); btn.disabled = true; btn.textContent = 'Guardando...';
@@ -30145,30 +30169,8 @@ async function evSaveVipOnb() {
   window._evOnbRow = data || row;
   await evMotivationFromOnb(succ);
   document.getElementById('ev-onb')?.remove();
-  evShowVipWelcome(() => evAfterOnboarding());
+  evAfterOnboarding(); // el tour VIP arranca con la Bienvenida al Lado Premium
 }
-// Bienvenida VIP (después del onboarding VIP, antes del tour)
-function evShowVipWelcome(onDone) {
-  ensureDelaFont();
-  const ov = document.createElement('div');
-  ov.className = 'ev-vipw'; ov.id = 'ev-vipw';
-  ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-labelledby', 'ev-vipw-t');
-  ov.innerHTML = `<img class="ev-vipw-img" src="img/sau-vip.jpg" alt="">
-    <div class="ev-vipw-g1"></div><div class="ev-vipw-g2"></div>
-    <span class="ev-vipw-tag">PROGRAMA VIP</span>
-    <div class="ev-vipw-txt">
-      <p class="ev-p ev-soft" style="font-size:15px;">Te doy la bienvenida al</p>
-      <h1 id="ev-vipw-t"><span class="ev-honey">Lado Premium</span><br>del Fitness</h1>
-      <div class="ev-vipw-bar"></div>
-      <p class="ev-serif">Aquí tus sueños pasan a metas con plazos.</p>
-    </div>
-    <div class="ev-vipw-foot"><button type="button" class="ev-btn" id="ev-vipw-go">Empezar</button></div>`;
-  document.body.appendChild(ov);
-  const go = ov.querySelector('#ev-vipw-go');
-  go.addEventListener('click', () => { ov.remove(); if (onDone) onDone(); });
-  go.focus();
-}
-
 // ---------- Coach: Build y Delivery (E2) ----------
 const EV_ICO = {
   grid: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>',
@@ -30193,6 +30195,456 @@ async function evRenderBuild() {
   draw(0);
   try { const n = await evRunRequestCount(); if (n) draw(n); } catch (e) { console.warn('run requests:', e); }
 }
+
+// ---------- Tour de onboarding (E3A) ----------
+// La lista de pantallas se calcula en código: los puntos y los contadores "N de M" salen de la lista
+// final (la Bienvenida VIP no cuenta). Cada pantalla es un escenario de 390×844 como el mockup, que
+// se escala a la pantalla real; en teléfonos más altos el escenario se estira hacia abajo.
+// Se marca client_onboarding.tour_seen_at al tocar el botón final.
+const EVT_HEXBG = (color, op) => `<svg class="t-hexbg" width="390" height="100%" aria-hidden="true" focusable="false"><defs><pattern id="evt-hx-${color.slice(1)}" width="103.92" height="180" patternUnits="userSpaceOnUse"><path d="M0 30 L51.96 0 L103.92 30 M0 30 V90 M103.92 30 V90 M0 90 L51.96 120 L103.92 90 M51.96 120 V180" fill="none" stroke="${color}" stroke-opacity="${op}" stroke-width="1"/></pattern></defs><rect width="390" height="100%" fill="url(#evt-hx-${color.slice(1)})"/></svg>`;
+const EVT_S = (d, w = 20, sw = 2) => `<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${d}</svg>`;
+const EVT_P = {
+  dumbbell: '<path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/>',
+  calendar: '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
+  book: '<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
+  chart: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>',
+  lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  pulse: '<path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/>',
+  guides: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+  clip: '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>',
+  gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/>',
+  utensils: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>',
+  strong: '<path d="M14.4 14.4 9.6 9.6"/><path d="M18.657 21.485a2 2 0 1 1-2.829-2.828l-1.767 1.768a2 2 0 1 1-2.829-2.829l6.364-6.364a2 2 0 1 1 2.829 2.829l-1.768 1.767a2 2 0 1 1 2.828 2.829z"/><path d="m21.5 21.5-1.4-1.4"/><path d="M3.9 3.9 2.5 2.5"/><path d="M6.404 12.768a2 2 0 1 1-2.829-2.829l1.768-1.767a2 2 0 1 1-2.828-2.829l2.828-2.828a2 2 0 1 1 2.829 2.828l1.767-1.768a2 2 0 1 1 2.829 2.829z"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  msg: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+  trend: '<path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/>',
+  wind: '<path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/>',
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  move: '<path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="M12 2v20"/>',
+  zap: '<path d="M13 2 3 14h9l-1 8 10-12h-9z"/>'
+};
+// Ícono de NoPain: hexágono con punto central
+const EV_NOPAIN_ICO = (w = 22, h = 24) => `<svg width="${w}" height="${h}" viewBox="0 0 58 64" aria-hidden="true" focusable="false"><polygon points="29,4 54,17 54,47 29,60 4,47 4,17" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><circle cx="29" cy="32" r="7" fill="currentColor"/></svg>`;
+// Abeja de la marca (delgada, tipo melipona), la misma del mockup de Transformación
+const EV_BEE_SVG = `<g stroke="#B8774F" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M52 44 L45 56 L38 61"/><path d="M58 45 L59 57 L53 62"/><path d="M48 43 L36 52 L28 54"/></g>
+  <ellipse cx="46" cy="14" rx="22" ry="7" transform="rotate(-24 46 14)" fill="#FBF6EF" fill-opacity="0.5" stroke="#FBF6EF" stroke-opacity="0.6" stroke-width="0.8"/>
+  <ellipse cx="58" cy="13" rx="17" ry="6" transform="rotate(-6 58 13)" fill="#FBF6EF" fill-opacity="0.38" stroke="#FBF6EF" stroke-opacity="0.5" stroke-width="0.8"/>
+  <ellipse cx="28" cy="34" rx="24" ry="10.5" fill="#4A3626"/>
+  <g clip-path="url(#evt-abd)" stroke="#F5B83D" stroke-width="3.2" fill="none"><path d="M14 20 q-3 14 0 28"/><path d="M22 20 q-3 14 0 28"/><path d="M30 20 q-3 14 0 28"/><path d="M38 20 q-3 14 0 28"/></g>
+  <path d="M4 34 l-4 1 l4 2 z" fill="#4A3626"/>
+  <ellipse cx="54" cy="31" rx="13" ry="12" fill="url(#evt-fuzz)"/>
+  <ellipse cx="71" cy="29" rx="8.5" ry="9" fill="#1E1A17"/>
+  <ellipse cx="73" cy="27" rx="4.2" ry="5.2" fill="#2F4250"/>
+  <circle cx="74.5" cy="25.2" r="1.3" fill="#FBF6EF" fill-opacity="0.8"/>
+  <path d="M72 21 Q78 12 87 10" stroke="#B8774F" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+const EV_BEE_DEFS = '<clipPath id="evt-abd"><ellipse cx="28" cy="34" rx="24" ry="10.5"/></clipPath><radialGradient id="evt-fuzz" cx="45%" cy="38%" r="68%"><stop offset="0" stop-color="#F2CB6B"/><stop offset="1" stop-color="#C98F2E"/></radialGradient>';
+
+const EV_MONTHS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+// Fecha de pago enlazada (decisión de Sau): next_payment_date, solo para Entry o clientes nuevos.
+// Sin fecha, no se genera nada (clientes de pago completo).
+function evPayDate(c) {
+  c = c || currentClient;
+  if (!c || !(evIsEntry(c) || c.onboarding_required === true)) return null;
+  const d = String(c.next_payment_date || '').slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null;
+}
+function evFmtLong(d) { const [y, m, dd] = d.split('-').map(Number); return `${dd} de ${EV_MONTHS[m - 1]}`; }
+function evFmtShort(d) { const [y, m, dd] = d.split('-'); return `${dd}/${m}/${y.slice(2)}`; }
+
+function evTourList(c) {
+  const pay = !!evPayDate(c);
+  const l = evIsEntry(c)
+    ? ['move', 'train', 'menu', 'luz', 'lift', pay && 'pay', 'chat', 'hive', 'transf', 'final']
+    : ['welcome', 'move', 'train', 'menuvip', 'luz', pay && 'pay', 'hive', 'transf', 'final'];
+  return l.filter(Boolean);
+}
+// Pantallas sin "Saltar": el acuerdo del chat y el cierre
+const EVT_NOSKIP = ['chat', 'final', 'welcome'];
+let evtList = [], evtIdx = 0, evtChatOk = false;
+
+// Fuentes del mockup que el app no carga de entrada (Dela y Playfair 500)
+function ensureEvFonts() {
+  ensureDelaFont();
+  if (document.getElementById('ev-fonts')) return;
+  const l = document.createElement('link');
+  l.id = 'ev-fonts'; l.rel = 'stylesheet';
+  l.href = 'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=DM+Sans:wght@700&display=swap';
+  document.head.appendChild(l);
+}
+function evStartTour() {
+  if (document.getElementById('evt')) return;
+  ensureEvFonts();
+  evtList = evTourList(currentClient);
+  evtIdx = 0; evtChatOk = false;
+  const ov = document.createElement('div');
+  ov.id = 'evt'; ov.className = 'evt';
+  ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'Bienvenida a MOVE');
+  ov.innerHTML = '<div class="evt-stage" id="evt-stage"></div>';
+  document.body.appendChild(ov);
+  window.addEventListener('resize', evtFit);
+  evtRender();
+}
+function evtFit() {
+  const st = document.getElementById('evt-stage');
+  if (!st) return;
+  const W = window.innerWidth, H = window.innerHeight;
+  const s = Math.min(W / 390, H / 844);
+  st.style.height = Math.max(844, H / s) + 'px';
+  st.style.transform = `scale(${s})`;
+}
+function evtCounted() { return evtList.filter(k => k !== 'welcome'); }
+function evtDots(key, active, inactive) {
+  const list = evtCounted(), i = list.indexOf(key);
+  return '<div class="t-dots" aria-hidden="true">' + list.map((k, j) =>
+    `<i style="width:${j === i ? 26 : 6}px;background:${j === i ? active : inactive}"></i>`).join('') + '</div>';
+}
+function evtNum(key) { const l = evtCounted(); return `${l.indexOf(key) + 1} de ${l.length}`; }
+function evtTop(key, o = {}) {
+  const skip = EVT_NOSKIP.includes(key) ? '<span style="width:44px"></span>'
+    : `<button type="button" class="t-skip" style="color:${o.skipColor || '#CFC6BA'}" onclick="evtSkip()">Saltar</button>`;
+  return `<div class="t-abs t-pad t-row" style="left:0;right:0;top:44px;justify-content:space-between">${evtDots(key, o.active || '#F5B83D', o.inactive || '#5A4F44')}${skip}</div>`;
+}
+function evtNext(label = 'Siguiente', style = '', cls = '') {
+  return `<div class="t-abs t-pad" style="left:0;right:0;bottom:30px"><button type="button" class="t-btn ${cls}" style="${style}" onclick="evtGo()">${label}</button></div>`;
+}
+function evtCard(ico, title, sub, o = {}) {
+  return `<div class="t-card t-row t-g12" style="padding:${o.pad || '14px 16px'};align-items:center;${o.bg ? 'background:' + o.bg : ''}">
+    <span class="t-circ" style="width:${o.sz || 42}px;height:${o.sz || 42}px;${o.circ || 'background:#26201A;border:1px solid #3A3027;color:#F08A4B'}">${ico}</span>
+    <span class="t-col" style="line-height:${o.lh || 1.3}"><b style="font-size:${o.tf || 16}px">${title}</b><span class="t-soft" style="font-size:${o.sf || 13}px">${sub}</span></span></div>`;
+}
+
+const EVT_SCREENS = {
+  welcome() {
+    return { bg: '#14110E', html: `<img src="img/sau-vip.jpg" alt="" class="t-abs" style="left:18px;top:0;width:563px;max-width:none;height:844px">
+      <div class="t-abs" style="left:0;top:0;width:390px;height:100%;background:linear-gradient(to right,#14110E 0%,#14110E 20%,rgba(20,17,14,.88) 36%,rgba(20,17,14,.4) 54%,rgba(20,17,14,0) 74%)"></div>
+      <div class="t-abs" style="left:0;top:560px;width:390px;bottom:0;background:linear-gradient(to bottom,rgba(20,17,14,0),#14110E 78%)"></div>
+      <div class="t-abs t-pad" style="left:0;right:0;top:44px"><span class="t-mono t-honey" style="font-size:11px;letter-spacing:.2em">PROGRAMA VIP</span></div>
+      <div class="t-abs" style="left:24px;top:250px;width:214px">
+        <p class="t-p t-soft" style="font-size:15px">Te doy la bienvenida al</p>
+        <h1 class="t-dela" data-free style="font-size:34px;margin-top:8px;line-height:1.08"><span class="t-honey">Lado Premium</span><br>del Fitness</h1>
+        <div style="width:44px;height:3px;border-radius:2px;background:#F5B83D;margin:18px 0 14px"></div>
+        <p class="t-serif" style="font-size:20px;line-height:1.35;color:#FBF6EF">Aquí tus sueños pasan a metas con plazos.</p>
+      </div>${evtNext('Empezar')}` };
+  },
+  move() {
+    return { bg: '#14110E', html: `${EVT_HEXBG('#E56B33', 0.12)}
+      <svg class="t-abs" style="right:-150px;top:210px" width="440" height="506" viewBox="0 0 120 138" aria-hidden="true"><polygon points="60,3 117,36 117,102 60,135 3,102 3,36" fill="#C24E18" fill-opacity="0.28" stroke="#E56B33" stroke-width="1.2" stroke-linejoin="round"/></svg>
+      ${evtTop('move')}
+      <div class="t-abs t-pad" style="left:0;right:0;top:130px">
+        <div class="t-eb" style="color:#F08A4B">Por qué MOVEWITHSAU · ${evtNum('move')}</div>
+        <h1 class="t-dela" style="font-size:88px;margin-top:14px;line-height:1;color:#E56B33;letter-spacing:-.01em">MOVE</h1>
+        <p class="t-serif" style="margin-top:28px;font-size:27px;line-height:1.32;color:#FBF6EF">El fitness es la manera en la que nos movemos para llegar al <span style="color:#F08A4B">destino que más valor representa</span> para nosotros.</p>
+      </div>${evtNext()}` };
+  },
+  train() {
+    return { bg: '#14110E', html: `${EVT_HEXBG('#F5B83D', 0.10)}
+      <img src="img/sau-bw.jpg" alt="" class="t-abs" style="left:0;top:0;width:390px;height:600px;object-fit:cover;object-position:50% 30%;filter:contrast(1.05)">
+      <div class="t-abs" style="left:0;top:0;width:390px;height:600px;background:linear-gradient(to bottom,rgba(20,17,14,.60) 0%,rgba(20,17,14,0) 20%,rgba(20,17,14,0) 36%,rgba(20,17,14,.85) 66%,#14110E 82%)"></div>
+      ${evtTop('train', { inactive: '#8A7C6C', skipColor: '#FBF6EF' })}
+      <div class="t-abs t-pad" style="left:0;right:0;top:384px">
+        <div class="t-eb t-honey">Cómo se usa · ${evtNum('train')}</div>
+        <h1 class="t-dela" style="font-size:32px;margin-top:10px">Entrená<br>cuando querás</h1>
+        <p class="t-p t-soft" style="margin-top:10px;font-size:15px">En el inicio tenés dos caminos. Elegí el que te sirva ese día.</p>
+      </div>
+      <div class="t-abs t-pad t-col t-g8" style="left:0;right:0;top:578px">
+        ${evtCard(EVT_S(EVT_P.dumbbell, 22, 2.2), 'Entrena como Sau', 'El entreno que Sau publica cada día.', { pad: '12px 14px', bg: 'rgba(38,32,26,.92)', circ: 'background:#C24E18;color:#fff' })}
+        ${evtCard(EVT_S(EVT_P.calendar, 22), 'Ir a mi entrenamiento', 'Tu programa asignado, con tus pesos.', { pad: '12px 14px', bg: 'rgba(38,32,26,.92)', circ: 'background:#1B1713;border:1px solid #3A3027;color:#F08A4B' })}
+      </div>${evtNext()}` };
+  },
+  menu() {
+    return { bg: '#14110E', html: `${EVT_HEXBG('#F5B83D', 0.10)}${evtTop('menu')}
+      <div class="t-abs t-pad" style="left:0;right:0;top:110px">
+        <div class="t-eb t-honey">Cómo se usa · ${evtNum('menu')}</div>
+        <h1 class="t-dela" style="font-size:32px;margin-top:10px">Tu historia<br>en un menú</h1>
+        <p class="t-p t-soft" style="margin-top:12px;font-size:16px">Tocá <b style="color:#FBF6EF">Mi Espacio</b> abajo para abrir The MOVE Menu.</p>
+      </div>
+      <div class="t-abs t-pad t-col t-g8" style="left:0;right:0;top:320px">
+        ${evtCard(EVT_S(EVT_P.book), 'Mi Diario', 'Tus sesiones, hábitos y sueño. Acá activás el LIFT Challenge.')}
+        ${evtCard(EVT_S(EVT_P.chart), 'Tu Progreso', 'Fotos, peso y medidas para ver tu evolución.')}
+        ${evtCard(EVT_S(EVT_P.lock), 'Run', 'Un módulo aparte. Tocá el candado para pedir acceso.', { circ: 'background:#26201A;border:1px solid #3A3027;color:#CFC6BA' })}
+      </div>${evtNext()}` };
+  },
+  menuvip() {
+    const o = { pad: '10px 14px', sz: 38, lh: 1.25, tf: 15, sf: 12.5 };
+    const i = p => EVT_S(p, 19);
+    return { bg: '#14110E', html: `${EVT_HEXBG('#F5B83D', 0.10)}${evtTop('menuvip')}
+      <div class="t-abs t-pad" style="left:0;right:0;top:104px">
+        <div class="t-eb t-honey">Cómo se usa · ${evtNum('menuvip')}</div>
+        <h1 class="t-dela" style="font-size:30px;margin-top:10px;line-height:1.1">Tu historia<br>en un menú</h1>
+        <p class="t-p t-soft" style="margin-top:10px;font-size:15px">Tocá <b style="color:#FBF6EF">Mi Espacio</b> abajo: todo tu Programa VIP vive acá.</p>
+      </div>
+      <div class="t-abs t-pad t-col t-g8" style="left:0;right:0;top:272px">
+        ${evtCard(i(EVT_P.book), 'Mi Diario', 'Tus sesiones, hábitos y sueño.', o)}
+        ${evtCard(i(EVT_P.chart), 'Tu Progreso', 'Fotos, peso y medidas para ver tu evolución.', o)}
+        ${evtCard(i(EVT_P.pulse), 'Run', 'Tu módulo de running, ya activo para vos.', o)}
+        ${evtCard(i(EVT_P.guides), 'Guías y recursos', 'Material para entender y mejorar tu proceso.', o)}
+        ${evtCard(i(EVT_P.clip), 'Evaluaciones', 'Medimos tu avance con Sau, paso a paso.', o)}
+        ${evtCard(i(EVT_P.gift), 'Extras', 'Beneficios exclusivos del Programa VIP.', o)}
+      </div>${evtNext()}` };
+  },
+  luz() {
+    let rays = '';
+    for (let k = 0; k < 17; k++) {
+      const a = (-170 + k * 10) * Math.PI / 180, x2 = (195 + 520 * Math.cos(a)).toFixed(1), y2 = (150 + 520 * Math.sin(a)).toFixed(1);
+      rays += `<line x1="195" y1="150" x2="${x2}" y2="${y2}" stroke="#F5B83D" stroke-opacity="${k % 2 ? 0.28 : 0.14}" stroke-width="${k % 2 ? 3 : 7}"/>`;
+    }
+    const card = (ico, t, sub) => `<div class="t-row t-g12" style="padding:12px 14px;align-items:center;border-radius:20px;background:#fff;border:1px solid #F0D68A;box-shadow:0 6px 18px rgba(245,184,61,.22)">
+      <span class="t-circ" style="width:44px;height:44px;background:#F5B83D;color:#14110E">${ico}</span>
+      <span class="t-col" style="line-height:1.3"><b style="font-size:16px;color:#14110E">${t}</b><span style="font-size:13px;color:#5A4F44">${sub}</span></span></div>`;
+    return { bg: '#FBE3A0', html: `<div class="t-abs" style="inset:0;background:radial-gradient(ellipse at 50% 18%,#FFFFFF 0%,#FFF6DC 38%,#FBE3A0 100%)"></div>
+      <svg class="t-abs" style="left:0;top:0" width="390" height="460" viewBox="0 0 390 460" aria-hidden="true">
+        <defs><radialGradient id="evt-glow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FFFFFF" stop-opacity="1"/><stop offset=".45" stop-color="#FFE9A8" stop-opacity=".85"/><stop offset="1" stop-color="#F5B83D" stop-opacity="0"/></radialGradient></defs>
+        ${rays}<circle cx="195" cy="150" r="170" fill="url(#evt-glow)"/>
+        <polygon points="195.0,72.0 262.5,111.0 262.5,189.0 195.0,228.0 127.5,189.0 127.5,111.0" fill="none" stroke="#F5B83D" stroke-opacity=".55" stroke-width="2" stroke-linejoin="round"/>
+        <polygon points="195.0,90.0 247.0,120.0 247.0,180.0 195.0,210.0 143.0,180.0 143.0,120.0" fill="#F5B83D" stroke="#14110E" stroke-width="3" stroke-linejoin="round"/>
+      </svg>
+      <span class="t-abs" style="left:165px;top:120px;color:#14110E;display:flex"><svg width="60" height="60" viewBox="0 0 24 24" fill="#14110E" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${EVT_P.zap}</svg></span>
+      ${evtTop('luz', { active: '#14110E', inactive: '#CDBBA7', skipColor: '#5A4F44' })}
+      <div class="t-abs t-pad" style="left:0;right:0;top:268px">
+        <div class="t-eb" style="color:#A63E10">Cómo se usa · ${evtNum('luz')}</div>
+        <h1 class="t-dela" style="font-size:30px;margin-top:10px;line-height:1.1;color:#14110E">Claridad a<br>máxima velocidad</h1>
+        <p class="t-p" style="margin-top:10px;font-size:15px;color:#5A4F44">Nada es más rápido que la luz. Tres herramientas para resolver tus dudas al instante.</p>
+      </div>
+      <div class="t-abs t-pad t-col t-g8" style="left:0;right:0;top:488px">
+        ${card(EVT_S(EVT_P.utensils, 22, 2.2), 'NutriFlex', 'Claridad para tu nutrición.')}
+        ${card(EVT_S(EVT_P.strong, 22, 2.2), 'StrongFlow', 'Luz en tu entrenamiento.')}
+        ${card(EV_NOPAIN_ICO(), 'NoPain', 'Visibilidad para lo que sentís.<br>Espacio privado.')}
+      </div>${evtNext('Siguiente', 'background:#14110E;color:#FBF6EF')}` };
+  },
+  lift() {
+    return { bg: '#14110E', html: `${EVT_HEXBG('#F5B83D', 0.10)}
+      <div class="t-abs" style="left:0;top:0;width:390px;height:100%;background:linear-gradient(to bottom,rgba(255,244,222,0) 55%,rgba(255,244,222,.16) 100%)"></div>
+      ${evtTop('lift')}
+      <div class="t-abs t-pad" style="left:0;right:0;top:110px">
+        <div class="t-eb t-honey">Cómo se usa · ${evtNum('lift')}</div>
+        <h1 class="t-dela" style="font-size:32px;margin-top:10px">Un hábito,<br>todos los días</h1>
+        <p class="t-p t-soft" style="margin-top:12px;font-size:16px">Con el LIFT Challenge elegís un hábito, lo marcás cada día y activás una racha.</p>
+      </div>
+      <div class="t-abs t-pad t-col t-g12" style="left:0;right:0;top:350px">
+        <div class="t-card t-row t-g16" style="padding:18px;align-items:center">
+          <svg width="76" height="84" viewBox="0 0 58 64" aria-hidden="true" style="flex:none"><polygon points="29,2 55,16 55,48 29,62 3,48 3,16" fill="#F5B83D" stroke="#F5B83D" stroke-width="2" stroke-linejoin="round"/><text x="29" y="38" text-anchor="middle" font-family="DM Mono" font-weight="500" font-size="20" fill="#14110E">12</text></svg>
+          <span class="t-col" style="line-height:1.35"><b style="font-size:17px">Tu racha</b><span class="t-soft" style="font-size:14px">Un hexágono con tus días seguidos. Si pasa un día sin marcar, vuelve a 0 y podés empezar de nuevo.</span></span>
+        </div>
+        <div class="t-card t-row t-g12" style="padding:16px;background:#2A2113;border-color:#5A4417">
+          <span class="t-honey" style="flex:none;margin-top:2px;display:flex">${EVT_S(EVT_P.gift, 22)}</span>
+          <span class="t-col" style="line-height:1.35"><b style="font-size:15px">Rifa mensual</b><span class="t-soft" style="font-size:14px">Cada mes, todos los que participan entran a la rifa de 1 mes de coaching con Sau.</span></span>
+        </div>
+        <p class="t-p t-mute" style="font-size:13px;padding:0 4px">El ejercicio no cuenta como hábito. Lo activás desde Mi Diario.</p>
+      </div>${evtNext()}` };
+  },
+  pay() {
+    const d = evPayDate();
+    return { bg: '#14110E', html: `${EVT_HEXBG('#F5B83D', 0.10)}
+      <div class="t-abs" style="left:0;top:0;width:390px;height:100%;background:linear-gradient(to bottom,rgba(255,244,222,0) 38%,rgba(255,244,222,.38) 100%)"></div>
+      ${evtTop('pay')}
+      <div class="t-abs t-pad" style="left:0;right:0;top:110px">
+        <div class="t-eb t-honey">Cómo se usa · ${evtNum('pay')}</div>
+        <h1 class="t-dela" style="font-size:32px;margin-top:10px">Tu fecha<br>de pago</h1>
+        <p class="t-p t-soft" style="margin-top:12px;font-size:16px">La vas a ver siempre arriba en tu Perfil.</p>
+      </div>
+      <div class="t-abs t-pad t-col t-g12" style="left:0;right:0;top:318px">
+        <div class="t-card t-row t-g12" style="padding:16px;align-items:center">
+          <span class="t-circ" style="width:48px;height:48px;background:#C24E18;color:#fff">${EVT_S(EVT_P.calendar, 24)}</span>
+          <span class="t-col" style="line-height:1.3"><span class="t-soft" style="font-size:13px">Tu próximo pago es el</span><b class="t-dela" style="font-size:22px;font-weight:400">${d ? evFmtLong(d) : ''}</b></span>
+        </div>
+        <p class="t-p t-soft" style="font-size:14px;line-height:1.5;padding:0 4px">Gracias por ser parte de MOVE. Ese día renovamos tu plan con el mismo método de pago.</p>
+        <div class="t-card" style="padding:18px;background:#2A2113;border-color:#5A4417">
+          <b style="font-size:17px">Si se te pasa, no pasa nada</b>
+          <p class="t-p t-soft" style="margin-top:8px;font-size:15px;line-height:1.5">Sabemos que a veces la vida se complica. Si pasadas 48 horas de esa fecha no vemos tu pago, vamos a pausar tu acceso al app, pero aun vas a poder entrar al chat, para que lo arreglemos juntos.</p>
+          <p class="t-p t-soft" style="margin-top:8px;font-size:15px;line-height:1.5">Tus datos y tu progreso quedan guardados. En cuanto el pago se acredite, volvés a tener todo.</p>
+        </div>
+      </div>${evtNext()}` };
+  },
+  chat() {
+    return { bg: '#14110E', html: `${EVT_HEXBG('#F5B83D', 0.10)}
+      <div class="t-abs" style="left:0;top:0;width:390px;height:100%;background:linear-gradient(to bottom,rgba(255,250,240,0) 24%,rgba(255,250,240,.9) 100%)"></div>
+      ${evtTop('chat')}
+      <div class="t-abs t-pad" style="left:0;right:0;top:110px">
+        <div class="t-eb t-honey">Cómo se usa · ${evtNum('chat')}</div>
+        <h1 class="t-dela" style="font-size:32px;margin-top:10px">Escribile<br>a Sau</h1>
+        <p class="t-p t-soft" style="margin-top:12px;font-size:16px">Esta burbuja te acompaña en todo el app. Tocala cuando tengas una duda.</p>
+      </div>
+      <div class="t-abs t-pad t-col t-g16" style="left:0;right:0;top:320px">
+        <div class="t-card t-row t-g16" style="padding:18px;align-items:center">
+          <span style="position:relative;width:76px;height:76px;flex:none"><span class="t-circ" style="width:76px;height:76px;overflow:hidden;border:3px solid #F5B83D;box-shadow:0 0 0 8px rgba(245,184,61,.15);display:block"><img src="img/sau-color.jpg" alt="Sau" style="display:block;width:230px;max-width:none;margin-left:-123px;margin-top:-80px"></span><span class="t-circ" style="position:absolute;right:-4px;bottom:-4px;width:30px;height:30px;background:#C24E18;color:#fff;border:2px solid #26201A">${EVT_S(EVT_P.msg, 15, 2.4)}</span></span>
+          <span class="t-col" style="line-height:1.35"><b style="font-size:17px">Chat con Sau</b><span class="t-soft" style="font-size:14px">Mandá texto o fotos. A veces Sau te responde con un audio.</span></span>
+        </div>
+        <div class="t-card t-row t-g12" style="padding:16px;background:#2A2113;border-color:#5A4417">
+          <span class="t-honey" style="flex:none;margin-top:2px;display:flex">${EVT_S(EVT_P.clock, 22, 2.2)}</span>
+          <span class="t-col" style="line-height:1.35"><b style="font-size:15px">Lunes a viernes · 12 md a 5 pm</b><span class="t-soft" style="font-size:14px">Sau te responde en un plazo máximo de 24 horas.</span></span>
+        </div>
+      </div>
+      <div class="t-abs t-pad t-col t-g16" style="left:0;right:0;bottom:30px">
+        <label class="t-row t-g12" style="align-items:flex-start;font-size:14px;color:#2A211B;cursor:pointer">
+          <input type="checkbox" id="evt-chat-ok" ${evtChatOk ? 'checked' : ''} onchange="evtChatToggle(this.checked)" style="width:22px;height:22px;margin:0;flex:none;accent-color:#1E7A3C">
+          <span>Confirmo que leí que <b style="color:#A63E10">toda la comunicación con Sau será únicamente por este medio</b>.</span>
+        </label>
+        <button type="button" class="t-btn" id="evt-chat-next" ${evtChatOk ? '' : 'disabled'} onclick="evtGo()">Siguiente</button>
+      </div>` };
+  },
+  hive() {
+    return { bg: '#14110E', html: `${EVT_HEXBG('#F5B83D', 0.12)}${evtTop('hive')}
+      <svg class="t-abs" style="left:0;top:80px" width="390" height="300" viewBox="0 0 390 300" aria-hidden="true"><polygon points="195.0,124.0 234.8,147.0 234.8,193.0 195.0,216.0 155.2,193.0 155.2,147.0" fill="#F5B83D" fill-opacity="0.95" stroke="#F5B83D" stroke-width="2" stroke-linejoin="round"/><polygon points="274.7,170.0 314.5,193.0 314.5,239.0 274.7,262.0 234.9,239.0 234.9,193.0" fill="#F5B83D" fill-opacity="0.22" stroke="#F5B83D" stroke-opacity="0.7" stroke-width="2" stroke-linejoin="round"/><polygon points="115.3,170.0 155.1,193.0 155.1,239.0 115.3,262.0 75.5,239.0 75.5,193.0" fill="none" stroke="#F5B83D" stroke-opacity="0.6" stroke-width="2" stroke-linejoin="round"/><polygon points="195.0,216.0 234.8,239.0 234.8,285.0 195.0,308.0 155.2,285.0 155.2,239.0" fill="#F5B83D" fill-opacity="0.4" stroke="#F5B83D" stroke-opacity="0.8" stroke-width="2" stroke-linejoin="round"/><polygon points="274.7,78.0 314.5,101.0 314.5,147.0 274.7,170.0 234.9,147.0 234.9,101.0" fill="none" stroke="#F5B83D" stroke-opacity="0.4" stroke-width="2" stroke-linejoin="round"/><polygon points="115.3,78.0 155.1,101.0 155.1,147.0 115.3,170.0 75.5,147.0 75.5,101.0" fill="#F5B83D" fill-opacity="0.12" stroke="#F5B83D" stroke-opacity="0.5" stroke-width="2" stroke-linejoin="round"/></svg>
+      <div class="t-abs t-pad" style="left:0;right:0;top:400px">
+        <div class="t-eb t-honey">Por qué las abejas · ${evtNum('hive')}</div>
+        <h1 class="t-dela t-honey" style="font-size:50px;margin-top:10px;line-height:1.02">THE HIVE</h1>
+        <p class="t-serif" style="margin-top:18px;font-size:21px;line-height:1.38;color:#FBF6EF">El concepto nace de lo que representan las creadoras del oro natural. Cuando una persona se mueve con propósito dentro de su comunidad, inevitablemente <span style="color:#F5B83D">hace florecer todo lo que toca</span> a su alrededor.</p>
+      </div>${evtNext('Siguiente', '', 'honey')}` };
+  },
+  transf() {
+    const b = (ico, t) => `<div class="t-card t-col t-g8" style="padding:12px 14px"><span class="t-circ" style="width:34px;height:34px;background:#1B1713;border:1px solid #3A3027;color:#F5B83D">${EVT_S(ico, 18, 2.2)}</span><span style="font-size:14px;line-height:1.3;color:#FBF6EF;font-weight:500">${t}</span></div>`;
+    return { bg: '#14110E', html: `${EVT_HEXBG('#F5B83D', 0.10)}${evtTop('transf')}
+      <svg class="t-abs" style="left:0;top:76px" width="390" height="112" viewBox="0 0 390 112" aria-hidden="true">
+        <defs>${EV_BEE_DEFS}</defs>
+        <rect x="34" y="46" width="80" height="20" rx="10" fill="none" stroke="#CFC6BA" stroke-width="2.2"/>
+        <path d="M54 48v16M72 47v18M90 48v16" stroke="#CFC6BA" stroke-width="1.8" stroke-linecap="round" stroke-opacity=".7"/>
+        <circle cx="44" cy="56" r="2" fill="#CFC6BA"/>
+        <polygon points="195.0,22.0 224.4,39.0 224.4,73.0 195.0,90.0 165.6,73.0 165.6,39.0" fill="#C24E18" fill-opacity=".22" stroke="#E56B33" stroke-width="2.4" stroke-linejoin="round"/>
+        <ellipse cx="195" cy="56" rx="9" ry="15" fill="none" stroke="#E56B33" stroke-width="1.8" stroke-opacity=".8"/>
+        <path d="M126 56H148M142 49l7 7-7 7" fill="none" stroke="#5A4F44" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M242 56H262M256 49l7 7-7 7" fill="none" stroke="#F08A4B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <g transform="translate(280,22)">${EV_BEE_SVG}</g>
+      </svg>
+      <div class="t-abs t-pad" style="left:0;right:0;top:204px">
+        <div class="t-eb t-honey">Qué podés esperar · ${evtNum('transf')}</div>
+        <h1 class="t-dela" style="font-size:22px;margin-top:8px;line-height:1.1">Transformación</h1>
+      </div>
+      <div class="t-abs t-pad" style="left:0;right:0;top:268px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${b(EVT_P.trend, 'Cambios físicos más notorios y más rápidos')}${b(EVT_P.strong, 'Más fuerza')}
+        ${b(EVT_P.wind, 'Mejor capacidad pulmonar')}${b(EVT_P.moon, 'Sueño de alta calidad')}
+        ${b(EVT_P.move, 'Más movilidad en zonas rígidas')}${b(EVT_P.zap, 'Más energía')}
+      </div></div>
+      <div class="t-abs t-pad" style="left:0;right:0;top:636px">
+        <div class="t-card t-row t-g12" style="padding:14px 16px;background:#2A2113;border-color:#5A4417;align-items:center">
+          <svg width="26" height="29" viewBox="0 0 58 64" aria-hidden="true" style="flex:none"><polygon points="29,4 54,17 54,47 29,60 4,47 4,17" fill="#F5B83D"/></svg>
+          <p class="t-serif" style="font-size:17px;line-height:1.35;color:#FBF6EF;margin:0">Y, sobre todo, un <span style="color:#F5B83D">cambio de estilo de vida</span> que trae consigo mucho bienestar y felicidad.</p>
+        </div>
+      </div>${evtNext()}` };
+  },
+  final() {
+    const entry = evIsEntry(currentClient);
+    return { bg: '#14110E', html: `${EVT_HEXBG('#F5B83D', 0.10)}${evtTop('final')}
+      <svg class="t-abs" style="left:0;top:70px" width="390" height="440" viewBox="0 0 390 440" aria-hidden="true">
+        <defs><clipPath id="evt-hexclip"><polygon points="195,10 285,62 285,166 195,218 105,166 105,62"/></clipPath></defs>
+        <polygon points="285,62 375,114 375,218 285,270 195,218 195,114" fill="#F5B83D" fill-opacity="0.16" stroke="#F5B83D" stroke-opacity="0.55" stroke-width="2" stroke-linejoin="round" transform="translate(0,52)"/>
+        <polygon points="105,62 195,114 195,218 105,270 15,218 15,114" fill="none" stroke="#F5B83D" stroke-opacity="0.45" stroke-width="2" stroke-linejoin="round" transform="translate(0,52)"/>
+        <polygon points="195,166 285,218 285,322 195,374 105,322 105,218" fill="#C24E18" fill-opacity="0.9" stroke="#C24E18" stroke-width="2" stroke-linejoin="round" transform="translate(0,52)"/>
+        <polygon points="375,-42 465,10 465,114 375,166 285,114 285,10" fill="none" stroke="#F5B83D" stroke-opacity="0.3" stroke-width="2" stroke-linejoin="round" transform="translate(0,52)"/>
+        <g clip-path="url(#evt-hexclip)"><rect x="105" y="10" width="180" height="208" fill="#1B1713"/><image href="img/sau-fire.jpg" x="39" y="-9" width="300" height="450" preserveAspectRatio="xMidYMid slice"/></g>
+        <polygon points="195,10 285,62 285,166 195,218 105,166 105,62" fill="none" stroke="#F5B83D" stroke-width="4" stroke-linejoin="round"/>
+      </svg>
+      <div class="t-abs t-pad" style="left:0;right:0;top:530px">
+        <p class="t-p t-soft" style="font-size:16px">De nuevo, gracias por estar acá.</p>
+        <h1 class="t-dela t-honey" style="font-size:44px;margin-top:6px;line-height:1.05">LET'S GO</h1>
+      </div>
+      <div class="t-abs t-pad t-col t-g12" style="left:0;right:0;bottom:30px">
+        ${entry ? '<p class="t-p t-mute" style="font-size:13px;text-align:center">Último paso: subí tu foto y tu peso en Tu Progreso.</p>' : ''}
+        <button type="button" class="t-btn green" id="evt-final" onclick="evtFinish()">Ir a Tu Progreso</button>
+      </div>` };
+  }
+};
+// Los títulos en Dela respetan los cortes de línea del mockup (<br>): cada línea sin cortar y,
+// si no entra en el ancho, la letra se achica (hasta 70 %).
+function evFitTitles(root) {
+  const run = () => (root || document).querySelectorAll('h1.t-dela:not([data-free]), h1.ev-dela').forEach(h => {
+    if (!h.isConnected) return;
+    if (!h.dataset.fs) h.dataset.fs = parseFloat(getComputedStyle(h).fontSize);
+    const max = +h.dataset.fs, min = Math.round(max * 0.7);
+    h.style.whiteSpace = 'nowrap';
+    let size = max; h.style.fontSize = size + 'px';
+    while (size > min && h.scrollWidth > h.clientWidth + 1) { size -= 1; h.style.fontSize = size + 'px'; }
+  });
+  run();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(run);
+}
+function evtRender() {
+  const st = document.getElementById('evt-stage'), ov = document.getElementById('evt');
+  if (!st || !ov) return;
+  const key = evtList[evtIdx];
+  const scr = EVT_SCREENS[key]();
+  ov.style.background = scr.bg;
+  st.innerHTML = scr.html;
+  st.dataset.screen = key;
+  evtFit();
+  evFitTitles(st);
+  st.querySelector('h1')?.setAttribute('tabindex', '-1');
+  st.querySelector('h1')?.focus({ preventScroll: true });
+}
+function evtChatToggle(on) {
+  evtChatOk = !!on;
+  const b = document.getElementById('evt-chat-next');
+  if (b) b.disabled = !evtChatOk;
+}
+function evtGo() {
+  if (evtList[evtIdx] === 'chat' && !evtChatOk) return;
+  if (evtIdx < evtList.length - 1) { evtIdx++; evtRender(); }
+}
+// "Saltar": va a la próxima pantalla obligatoria (el acuerdo del chat si falta, o el cierre)
+function evtSkip() {
+  for (let j = evtIdx + 1; j < evtList.length; j++) {
+    if (evtList[j] === 'final' || (evtList[j] === 'chat' && !evtChatOk)) { evtIdx = j; evtRender(); return; }
+  }
+}
+async function evtFinish() {
+  const btn = document.getElementById('evt-final');
+  if (btn) btn.disabled = true;
+  const now = new Date().toISOString();
+  const { error } = await sb.from('client_onboarding').upsert([{ client_id: currentClient.id, tour_seen_at: now, updated_at: now }], { onConflict: 'client_id' });
+  if (error) { console.warn('tour_seen_at:', error.message); }
+  if (window._evOnbRow) window._evOnbRow.tour_seen_at = now;
+  window.removeEventListener('resize', evtFit);
+  document.getElementById('evt')?.remove();
+  evGoToProgress();
+}
+
+// ---------- Paso obligatorio en Tu Progreso (solo Entry) ----------
+// Hasta que el cliente Entry nuevo suba su foto de frente y su peso, el resto del app queda bloqueado.
+// Se desbloquea con una fila de client_progress_logs que tenga weight_kg y photo_front_path.
+let evProgressLocked = false;
+async function evCheckProgressLock() {
+  const c = currentClient;
+  if (!c || !evIsEntry(c) || c.onboarding_required !== true) { evSetProgressLock(false); return false; }
+  const { data, error } = await sb.from('client_progress_logs').select('id,weight_kg,photo_front_path').eq('client_id', c.id);
+  if (error) { console.warn('progress lock:', error.message); evSetProgressLock(false); return false; }
+  const ok = (data || []).some(r => r.weight_kg != null && r.photo_front_path);
+  evSetProgressLock(!ok);
+  return !ok;
+}
+function evSetProgressLock(on) {
+  evProgressLocked = !!on;
+  document.body.classList.toggle('ev-locked', evProgressLocked);
+  const bar = document.getElementById('ev-lock-note');
+  if (evProgressLocked && !bar) {
+    const n = document.createElement('div');
+    n.id = 'ev-lock-note'; n.className = 'ev-lock-note'; n.setAttribute('role', 'status');
+    n.innerHTML = `<span class="ev-lock-ico">${EVT_S(EVT_P.lock, 18)}</span><span>Un paso más: subí tu foto y tu peso. Hasta que lo hagas, el resto del app queda bloqueado.</span>`;
+    const tab = document.getElementById('client-progress-tab');
+    if (tab) tab.prepend(n);
+  } else if (!evProgressLocked && bar) bar.remove();
+  // Con el bloqueo, el registro de la semana queda abierto y a la vista (sin gráficos ni historial)
+  if (evProgressLocked && document.getElementById('pg-week-body')?.hidden && typeof toggleProgressWeek === 'function') toggleProgressWeek();
+}
+function evGoToProgress() {
+  const navItem = document.querySelector('#screen-client-plan .bottom-nav .nav-item:nth-child(4)');
+  clientNav('plan', navItem);
+  switchClientPlanTab('progress', mmChip('progress'));
+  mmSync && mmSync();
+  evCheckProgressLock();
+}
+// Mientras está bloqueado, cualquier intento de ir a otro lado vuelve a Tu Progreso
+function evLockGuard(target) {
+  if (!evProgressLocked || target === 'progress') return false;
+  showToast('Primero subí tu foto de frente y tu peso en Tu Progreso', 'error', 3000);
+  evGoToProgress();
+  return true;
+}
+// Qué sigue al onboarding: tour (una vez) y, para Entry, el paso obligatorio de Tu Progreso
+function evAfterOnboarding() {
+  const r = window._evOnbRow;
+  if (!r || !r.tour_seen_at) { evStartTour(); return; }
+  if (evIsEntry(currentClient)) evCheckProgressLock().then(locked => { if (locked) evGoToProgress(); });
+}
+
 // Delivery: bandeja del coach. Se llena en E4 (chat), E5 (rifa) y E7 (calificaciones).
 async function evRenderDelivery() {
   const box = document.getElementById('ev-delivery-body');
