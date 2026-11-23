@@ -4077,7 +4077,9 @@ function handleLogout() {
   currentUser=null; currentClient=null; clientWeek=1; clientDay=null; screenHistory=[];
   document.body.classList.remove('lift-mode', 'ev-entry', 'ev-locked'); // Entry / VIP
   if (typeof evProgressLocked !== 'undefined') evProgressLocked = false;
-  ['evt', 'ev-onb', 'ev-lock-note', 'ev-chat', 'ev-cchat', 'ev-vipoffer'].forEach(id => document.getElementById(id)?.remove());
+  ['evt', 'ev-onb', 'ev-lock-note', 'ev-chat', 'ev-cchat', 'ev-vipoffer', 'ev-pause'].forEach(id => document.getElementById(id)?.remove());
+  document.body.classList.remove('ev-paused');
+  if (typeof evPausePoll !== 'undefined') clearInterval(evPausePoll);
   if (typeof evUnreadPoll !== 'undefined') { clearInterval(evUnreadPoll); clearInterval(evChatPoll); clearInterval(evCChatPoll); }
   stopGlobalTimer();
   localStorage.removeItem('mws_user');
@@ -4120,6 +4122,8 @@ async function initClient() {
   if(cd?.id) sb.from('clients').update({last_active: new Date().toISOString()}).eq('id',cd.id).then(()=>{});
   // Entry / VIP (E1): onboarding del primer login, solo clientes nuevos (onboarding_required)
   evClientGate(cd).catch(e => console.warn('onboarding gate:', e));
+  // Acceso en pausa (E6): 48 h después de la fecha de pago, solo el chat
+  evApplyPause(); evStartPauseWatch();
   const firstName = (cd?.name||currentUser.name||'').split(' ')[0];
   document.getElementById('c-greeting-name').textContent = firstName;
   const cTotalDays = (cd?.days_trained||0)+(cd?.days_trained_adjustment||0);
@@ -30022,6 +30026,8 @@ body:not(.ev-entry) .ev-chat-fab { display:none !important; }
 .ev-rf-card { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:18px; background:#fff; border:1px solid #EADFD2; margin-bottom:8px; }
 .ev-rf-card.win { border-color:#F5B83D; background:#FFF8E6; }
 .ev-rf-s { display:flex; flex-direction:column; align-items:flex-end; } .ev-rf-s b { font:700 18px 'DM Mono',monospace; color:#A63E10; } .ev-rf-s b.zero { color:#6F655B; } .ev-rf-s span { font-size:11px; color:#6F655B; }
+/* Acceso en pausa (E6): por encima del onboarding y el tour; el chat (10080) queda arriba */
+.ev-ov.ev-pause { z-index:10058; }
 .ev-mini { background:none; border:0; padding:4px 0; font:700 13px 'DM Sans',sans-serif; color:#A63E10; cursor:pointer; }
 </style>
 <script>
@@ -31198,7 +31204,7 @@ async function evRequestRun() {
 async function evMaybeShowVipOffer() {
   const c = currentClient;
   if (!c || !evIsEntry(c) || c.vip_offer_active !== true || document.getElementById('ev-vipoffer')) return;
-  if (document.getElementById('evt') || document.getElementById('ev-onb') || evProgressLocked) return;
+  if (document.getElementById('evt') || document.getElementById('ev-onb') || document.getElementById('ev-pause') || evProgressLocked) return;
   const w = document.createElement('div');
   w.className = 'ev-vipoffer-wrap'; w.id = 'ev-vipoffer';
   w.innerHTML = `<div class="ev-vipoffer" role="dialog" aria-modal="true" aria-labelledby="ev-vipoffer-t">
@@ -31461,12 +31467,13 @@ function evRecStop(send) {
 async function evRenderCoachEntryCard(c) {
   const box = document.getElementById('ev-coach-entry');
   if (!box) return;
-  if (!c || !evIsEntry(c)) { box.innerHTML = ''; return; }
+  if (!c) { box.innerHTML = ''; return; }
+  if (!evIsEntry(c)) { box.innerHTML = evCoachPayRowHtml(c); return; } // VIP nuevo con fecha (E6)
   const { data } = await sb.from('support_messages').select('id').eq('client_id', c.id).eq('kind', 'request_run').eq('status', 'new').limit(1);
   if (!currentClient || currentClient.id !== c.id) return;
   const asked = !!(data && data.length) && c.run_module_enabled !== true;
   const sw = (on, fn, label) => `<button type="button" class="ev-switch${on ? ' on' : ''}" role="switch" aria-checked="${on}" aria-label="${label}" onclick="${fn}"><i></i></button>`;
-  box.innerHTML = `<div class="ev-cc">
+  box.innerHTML = evCoachPayRowHtml(c) + `<div class="ev-cc">
     <div class="ev-crow"><div><b>Burbuja de upsell VIP</b><span>El cliente la ve una vez y puede cerrarla</span></div>${sw(c.vip_offer_active === true, 'evToggleVipOffer()', 'Burbuja de upsell VIP')}</div>
     <div class="ev-crow"><div><b>Módulo Run ${asked ? '<span class="ev-tag ev-tag-new">Pidió acceso</span>' : ''}</b><span>Activalo cuando recibas el SINPE</span></div>${sw(c.run_module_enabled === true, 'evCoachToggleRun()', 'Módulo Run')}</div>
     <div id="ev-coach-lift-row"></div>
@@ -31744,6 +31751,80 @@ async function evDrawRaffle(ms) {
   showToast(`Ganó ${pick.c.name}`, 'success', 4000);
   evOpenRaffleSheet(ms);
   evRenderRaffle();
+}
+
+// ---------- Fecha de pago y acceso en pausa (E6) ----------
+// Fecha = clients.next_payment_date (un solo campo). Solo aplica a Entry o a clientes nuevos
+// (onboarding_required); sin fecha no pasa nada. Pasadas 48 h desde el inicio de ese día en hora de
+// Costa Rica (UTC-6, sin horario de verano), el cliente solo ve "Vamos a arreglarlo juntos" y el
+// chat. Al cambiar la fecha, vuelve el acceso. No se borra ni se cambia ningún dato.
+const EV_GRACE_MS = 48 * 3600 * 1000;
+function evPauseAt(d) { return Date.parse(d + 'T00:00:00-06:00') + EV_GRACE_MS; }
+function evPausedDate(c) {
+  const d = evPayDate(c);
+  return d && Date.now() >= evPauseAt(d) ? d : null;
+}
+let evPausePoll = null;
+function evApplyPause() {
+  const c = currentClient;
+  const d = c && currentUser?.role !== 'coach' && !c.is_churn ? evPausedDate(c) : null;
+  const ov = document.getElementById('ev-pause');
+  if (!d) {
+    if (ov) { ov.remove(); showToast('Listo, volviste a tener todo el app', 'success', 3000); }
+    document.body.classList.remove('ev-paused');
+    return false;
+  }
+  document.body.classList.add('ev-paused');
+  if (ov && ov.dataset.d === d) return true;
+  ov?.remove();
+  ensureEvFonts();
+  const entry = evIsEntry(c);
+  const w = document.createElement('div');
+  w.id = 'ev-pause'; w.className = 'ev-ov ev-hex ev-pause'; w.dataset.d = d;
+  w.setAttribute('role', 'dialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-labelledby', 'ev-pause-t');
+  w.innerHTML = `<div class="ev-wrap" style="padding-top:150px;">
+    <svg width="84" height="94" viewBox="0 0 58 64" aria-hidden="true"><polygon points="29,2 55,16 55,48 29,62 3,48 3,16" fill="#26201A" stroke="#F5B83D" stroke-width="2.5" stroke-linejoin="round"/><rect x="22" y="22" width="4.5" height="20" rx="1.5" fill="#F5B83D"/><rect x="31.5" y="22" width="4.5" height="20" rx="1.5" fill="#F5B83D"/></svg>
+    <div class="ev-eb" style="margin-top:22px;">Acceso en pausa</div>
+    <h1 class="ev-dela" id="ev-pause-t" style="font-size:32px;">Vamos a<br>arreglarlo juntos</h1>
+    <p class="ev-p ev-soft" style="margin-top:14px;font-size:16px;line-height:1.5;">Todavía no vemos tu pago del ${evFmtLong(d)}. Escribile a Sau por ${entry ? 'el chat' : 'WhatsApp'} y lo resolvemos sin complicaciones.</p>
+    <p class="ev-p ev-soft" style="margin-top:10px;font-size:16px;line-height:1.5;">Tus datos y tu progreso están guardados. Apenas se acredite el pago, volvés a entrar a todo.</p>
+    <div class="ev-foot"><button type="button" class="ev-btn" onclick="evContactSau('https://wa.me/' + EXX_WA_NUMBER + '?text=' + encodeURIComponent(PAYMENT_WA_TEXT), PAYMENT_WA_TEXT)">${entry ? 'Abrir el chat con Sau' : 'Escribirle a Sau'}</button></div>
+  </div>`;
+  document.body.appendChild(w);
+  evFitTitles(w);
+  return true;
+}
+// Vuelve a mirar la fecha (por si Sau la cambió) al volver al app y cada 5 minutos en pausa
+async function evRecheckPause() {
+  const c = currentClient;
+  if (!c || currentUser?.role === 'coach') return;
+  const { data } = await sb.from('clients').select('next_payment_date,tier,onboarding_required,is_churn').eq('id', c.id).maybeSingle();
+  if (!data || !currentClient || currentClient.id !== c.id) return;
+  Object.assign(currentClient, data);
+  evRenderPayPill();
+  evApplyPause();
+}
+function evStartPauseWatch() {
+  clearInterval(evPausePoll);
+  evPausePoll = setInterval(() => { if (document.getElementById('ev-pause')) evRecheckPause(); }, 5 * 60000);
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && currentClient && currentUser && currentUser.role !== 'coach') evRecheckPause(); });
+
+// Ficha del coach: próxima fecha de pago y estado (mismo campo de "Editar cliente")
+function evCoachPayRowHtml(c) {
+  if (!(evIsEntry(c) || c.onboarding_required === true)) return '';
+  const d = evPayDate(c);
+  let tag = '<span class="ev-tag ev-tag-soft">Sin fecha</span>', when = '—';
+  if (d) {
+    const [y, m, dd] = d.split('-').map(Number);
+    when = `${dd} ${['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][m - 1]}`;
+    const now = Date.now(), start = Date.parse(d + 'T00:00:00-06:00');
+    tag = now >= evPauseAt(d) ? '<span class="ev-tag ev-tag-new">En pausa</span>'
+      : now >= start ? '<span class="ev-tag ev-tag-warn">En las 48 h</span>' : '<span class="ev-tag ev-tag-ok">Al día</span>';
+  }
+  return `<div class="ev-cc"><div class="ev-crow"><div><b>Próxima fecha de pago</b><span>El cliente la ve en su Perfil. Pasadas 48 h sin pago, solo accede al chat.</span>
+      <button type="button" class="ev-mini" style="align-self:flex-start;" onclick="showModal('modal-edit-payment')">Cambiar fecha</button></div>
+    <div style="text-align:right;flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:6px;"><b style="font-size:17px;">${when}</b>${tag}</div></div></div>`;
 }
 
 // Delivery: bandeja del coach (chat E4; rifa E5; calificaciones E7)

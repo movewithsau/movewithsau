@@ -165,3 +165,27 @@ Supuestos:
 - Al crear el hábito no se marca el día solo; el cliente toca "Marcar el hábito de hoy".
 - "Mes pasado" en la rifa, para sortear a principio de mes el mes que terminó.
 - Texto cuando todavía no participa del mes: "Entrá a la rifa del mes · Marcá tu hábito al menos 1 día de este mes para participar."
+
+### E6: fecha de pago y acceso en pausa — terminado
+Commit: (ver git log, "E6")
+
+Hecho:
+- Fecha = `clients.next_payment_date` (decisión de Sau; `payment_due_date` sin uso). Aplica solo a `tier='entry'` u `onboarding_required=true`; sin fecha no pasa nada; los VIP actuales no cambian.
+- Acceso en pausa: desde las 00:00 (hora de Costa Rica) del día de pago + 48 h. Pantalla del mockup "Vamos a arreglarlo juntos" por encima de todo (también del onboarding y el tour) menos el chat. Entry: "Abrir el chat con Sau" (con el texto de pago listo). VIP nuevo con fecha: "Escribirle a Sau" por WhatsApp (VIP no tiene chat en el app).
+- Vuelve el acceso al cambiar la fecha: se revisa al volver al app (`visibilitychange`) y cada 5 minutos mientras está en pausa.
+- Ficha del coach: tarjeta "Próxima fecha de pago" con estado (Al día / En las 48 h / En pausa / Sin fecha) y "Cambiar fecha" (abre el mismo "Editar cliente", un solo campo).
+- Pastilla del Perfil y pantalla del tour (E3B/E3A) usan la misma regla.
+
+Probado (base simulada):
+- [x] Fecha futura, hoy y ayer: sin pausa. Hace 3 días: en pausa, con la fecha en el texto. Sin fecha: nada.
+- [x] El chat abre encima de la pausa. Al cambiar la fecha a futuro, vuelve el acceso.
+- [x] Ninguna escritura en la base al pausar ni al reactivar (datos intactos).
+- [x] VIP viejo con fecha vencida (Edgar en la prueba): sin pausa ni nada nuevo.
+- [x] Ficha del coach: "En pausa" con fecha vencida; "Al día" con fecha futura.
+- [ ] No probado en real.
+
+Supuestos:
+- "48 h de esa fecha" = 48 h desde el inicio del día de pago en Costa Rica (pago el 12 → pausa el 14 a las 00:00).
+- Texto de la pausa: el del mockup (incluye "Apenas se acredite el pago, volvés a entrar a todo.").
+- La pausa no tiene "Cerrar sesión" (el mockup no lo trae).
+- El recordatorio naranja de pago que ya existía sigue igual; para Entry su botón abre el chat (E3B).
