@@ -4082,8 +4082,9 @@ function handleLogout() {
   currentUser=null; currentClient=null; clientWeek=1; clientDay=null; screenHistory=[];
   document.body.classList.remove('lift-mode', 'ev-entry', 'ev-locked'); // Entry / VIP
   if (typeof evProgressLocked !== 'undefined') evProgressLocked = false;
-  ['evt', 'ev-onb', 'ev-lock-note', 'ev-chat', 'ev-cchat', 'ev-vipoffer', 'ev-pause', 'ev-rate', 'ev-refer', 'ev-rules', 'ev-habit', 'ev-runlock', 'ev-terms-sheet', 'ev-rfs', 'ev-np', 'ev-np-harvest', 'ev-ann', 'ev-ann-prev', 'ann-send', 'ann-pick', 'ann-ask', 'wkc', 'wkc-prev', 'wkc-coach'].forEach(id => document.getElementById(id)?.remove());
+  ['evt', 'ev-onb', 'ev-lock-note', 'ev-chat', 'ev-cchat', 'ev-vipoffer', 'ev-pause', 'ev-rate', 'ev-refer', 'ev-rules', 'ev-habit', 'ev-runlock', 'ev-terms-sheet', 'ev-rfs', 'ev-np', 'ev-np-harvest', 'ev-ann', 'ev-ann-prev', 'ann-send', 'ann-pick', 'ann-ask', 'wkc', 'wkc-prev', 'wkc-coach', 'crm-coach', 'crm-edit', 'crm-view', 'crm-res', 'crm-lock'].forEach(id => document.getElementById(id)?.remove());
   if (typeof annGateOk !== 'undefined') annGateOk = false;
+  if (typeof crmCl !== 'undefined') { crmCl = null; crmFoodPending = null; crmEduFilter = 'all'; }
   if (typeof evNp !== 'undefined') evNp = { msgs: [], busy: false }; // NoPain: nada queda en memoria
   document.body.classList.remove('ev-paused');
   if (typeof evPausePoll !== 'undefined') clearInterval(evPausePoll);
@@ -17325,6 +17326,7 @@ async function loadFoodScreen() {
           <span class="ev-wa-lbl">Quiero mi programa FOOD</span><span class="ev-chat-lbl">Abrir el chat con Sau</span>
         </a>
       </div>`;
+    crmMountFoodTabs(body, true); // E13: Educación también sin Food
     return;
   }
 
@@ -17414,7 +17416,6 @@ function renderFoodScreen() {
         <div class="food-head-label">Move With Sau</div>
         <h1 class="food-head-title">Food</h1>
         ${currentClient.nutrition_mode === 'deficit' ? '<div style="display:inline-block;background:var(--orange);color:white;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:0.08em;margin-top:6px;">MÉTODO DEL PLATO MOVE</div>' : ''}
-        <div><button type="button" class="food-head-clear" onclick="clearFoodChat()">Limpiar chat</button></div>
       </div>
     </div>
     ${hasInBody||hasMacros ? `
@@ -17427,6 +17428,7 @@ function renderFoodScreen() {
     </div>` : ''}
     ${(currentClient.menu_mode||'estandar')==='dinamico'?'<div id="client-nutrition-plan" style="margin-bottom:10px;"></div>':''}
     <div id="client-protocols" style="margin-bottom:10px;"></div>
+    <div class="crm-nf-head"><b>NutriFlex</b><button type="button" class="food-head-clear" style="margin:0;" onclick="clearFoodChat()">Limpiar chat</button></div>
     <div id="food-chat-messages" style="margin-bottom:10px;">${messagesHtml}</div>
     <div style="background:var(--white);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow);margin-bottom:8px;">
       <div style="display:flex;gap:8px;align-items:flex-end;">
@@ -17435,6 +17437,7 @@ function renderFoodScreen() {
       </div>
     </div>`;
 
+  crmMountFoodTabs(body, false); // E13: Tu alimentación / Educación
   scrollFoodChat();
   if ((currentClient.menu_mode||'estandar') === 'dinamico') renderClientNutritionPlan();
   renderClientProtocols();
@@ -29986,6 +29989,159 @@ body.ev-entry .tr-act-sep { display:none; }
 .wkc-notev { margin-top:12px; padding:14px 16px; border:1px solid #E3D6C7; border-radius:14px; font-family:'Playfair Display',serif; font-weight:900; font-size:19px; color:#2A211B; }
 .wkc-alt { display:flex; align-items:center; gap:8px; margin-top:10px; min-height:40px; border:0; background:none; padding:0; color:#A63E10; font:700 15px 'DM Sans',sans-serif; cursor:pointer; text-align:left; }
 .wkc-prevbtn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; height:56px; border:1px solid #E3D6C7; border-radius:18px; background:transparent; color:#A63E10; font:700 17px 'DM Sans',sans-serif; cursor:pointer; }
+/* E13 · Classroom */
+.crm-ov { position:fixed; inset:0; z-index:10060; overflow-y:auto; background:#F7F0E6; color:#2A211B; font-family:'DM Sans',system-ui,sans-serif; }
+.crm-ov *, .crm-ed-wrap *, .crm-viewov * { box-sizing:border-box; }
+.crm-shell { min-height:100%; display:grid; grid-template-columns:1fr; }
+.crm-side { display:none; }
+.crm-main { padding:calc(24px + env(safe-area-inset-top,0px)) 20px 40px; min-width:0; }
+.crm-aside { padding:0 20px 40px; }
+@media (min-width:1024px) {
+  .crm-shell { grid-template-columns:260px minmax(0,1fr) 360px; }
+  .crm-side { display:flex; flex-direction:column; gap:6px; padding:44px 22px; border-right:1px solid #EADFD2; position:sticky; top:0; height:100vh; }
+  .crm-main { padding:44px 32px 60px; } .crm-aside { padding:150px 32px 40px 0; }
+  .crm-back { display:none !important; }
+}
+.crm-logo { font-family:'Playfair Display',serif; font-weight:900; font-size:30px; color:#A63E10; margin:0 0 30px 14px; }
+.crm-sn { display:flex; align-items:center; gap:14px; min-height:56px; padding:0 18px; border:0; border-radius:16px; background:none; color:#4A3F35; font:500 18px 'DM Sans',sans-serif; cursor:pointer; text-align:left; }
+.crm-sn.on { background:#F6E3D9; color:#A63E10; font-weight:700; }
+.crm-back { display:inline-flex; align-items:center; gap:6px; min-height:44px; border:0; background:none; color:#A63E10; font:700 15px 'DM Sans',sans-serif; cursor:pointer; padding:0; margin-bottom:6px; }
+.crm-top { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap; }
+.crm-top h1 { margin:4px 0 0; font-family:'Playfair Display',serif; font-weight:900; font-size:40px; line-height:1.05; }
+.crm-top p { margin:8px 0 0; font-size:16px; color:#6F655B; }
+.crm-acts { display:flex; gap:12px; flex-wrap:wrap; }
+.crm-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:52px; padding:0 22px; border-radius:16px; border:0; background:#C24E18; color:#fff; font:700 16px 'DM Sans',sans-serif; cursor:pointer; }
+.crm-btn.ghost { background:transparent; color:#A63E10; border:1px solid #E3D6C7; }
+.crm-btn:disabled { opacity:.6; cursor:default; }
+.crm-newwrap { position:relative; }
+.crm-newmenu { position:absolute; right:0; top:calc(100% + 8px); z-index:2; width:280px; background:#fff; border:1px solid #EADFD2; border-radius:18px; padding:8px; box-shadow:0 12px 30px rgba(42,33,27,.12); }
+.crm-newmenu button { display:grid; grid-template-columns:28px 1fr; align-items:center; column-gap:8px; width:100%; padding:10px 12px; border:0; border-radius:12px; background:none; color:#2A211B; font:700 15px 'DM Sans',sans-serif; text-align:left; cursor:pointer; }
+.crm-newmenu button:hover { background:#F7F0E6; } .crm-newmenu button svg { color:#A63E10; grid-row:span 2; }
+.crm-newmenu small { grid-column:2; font-weight:500; font-size:13px; color:#6F655B; }
+.crm-cat { background:#fff; border:1px solid #EADFD2; border-radius:28px; padding:10px 22px 14px; margin-bottom:18px; }
+.crm-cat.is-drag { opacity:.5; }
+.crm-cat-h { display:flex; align-items:center; gap:8px; padding:12px 0; border-bottom:1px solid #EFE6DA; }
+.crm-cat-h h3 { margin:0 6px 0 4px; font-family:'Playfair Display',serif; font-weight:900; font-size:24px; flex:0 1 auto; min-width:0; overflow-wrap:anywhere; }
+.crm-cnt { margin-left:auto; font-size:15px; color:#6F655B; white-space:nowrap; }
+.crm-grip { display:flex; color:#8A7F73; cursor:grab; flex:none; }
+.crm-ib { width:38px; height:38px; border-radius:50%; border:0; background:#F7F0E6; color:#4A3F35; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; transition:transform .15s; }
+.crm-rows { display:flex; flex-direction:column; min-height:20px; }
+.crm-row { display:flex; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid #EFE6DA; background:#fff; }
+.crm-row:last-child { border-bottom:0; } .crm-row.is-drag { opacity:.4; }
+.crm-rt { flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:3px; text-align:left; }
+.crm-rt b { font-size:17px; line-height:1.25; color:#2A211B; overflow-wrap:anywhere; }
+.crm-rt small { font-size:14px; color:#6F655B; }
+.crm-tags { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+.crm-tg { display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 12px; border-radius:999px; background:#EDE3D6; color:#4A3F35; font:700 13px 'DM Sans',sans-serif; white-space:nowrap; }
+.crm-tg.is-all { background:#DDF1E3; color:#1E6B3A; } .crm-tg.is-vip { background:#2A211B; color:#F5B83D; } .crm-tg.is-draft { background:#F8E7B8; color:#7A5A0C; }
+.crm-tg.is-new { background:#C24E18; color:#fff; } .crm-tg.is-seen { background:#DDF1E3; color:#1E6B3A; } .crm-tg.is-dark { background:#2A211B; color:#F5B83D; }
+.crm-seen { width:76px; text-align:right; font-size:14px; color:#6F655B; flex:none; }
+.crm-empty { margin:0; padding:14px 0; font-size:14px; color:#8A7F73; }
+@media (max-width:700px) { .crm-tags, .crm-seen { display:none; } .crm-row .crm-th { width:84px !important; height:50px !important; } }
+.crm-sum { display:flex; justify-content:space-between; padding:14px 0; border-bottom:1px solid #EFE6DA; font-size:16px; color:#4A3F35; } .crm-sum b { color:#2A211B; }
+.crm-th { position:relative; display:flex; align-items:center; justify-content:center; border-radius:12px; overflow:hidden; flex:none; }
+.crm-th img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.crm-th.is-lock { background:linear-gradient(135deg,#4A3626,#7A4526); color:#F5B83D; }
+.crm-play { position:relative; display:flex; align-items:center; justify-content:center; border-radius:50%; background:rgba(60,32,12,.72); color:#fff; }
+.crm-play svg { margin-left:8%; }
+/* Editor */
+.crm-ed-wrap { position:fixed; inset:0; z-index:10090; background:rgba(42,33,27,.55); display:flex; align-items:center; justify-content:center; padding:20px; }
+.crm-ed { width:100%; max-width:1180px; max-height:calc(100vh - 40px); display:flex; flex-direction:column; background:#fff; border-radius:32px; color:#2A211B; font-family:'DM Sans',sans-serif; overflow:hidden; }
+.crm-ed-head { display:flex; justify-content:space-between; align-items:flex-start; padding:28px 32px 8px; }
+.crm-ed-head h2 { margin:0; font-family:'Playfair Display',serif; font-weight:900; font-size:34px; } .crm-ed-head p { margin:2px 0 0; color:#6F655B; }
+.crm-ed-body { flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:28px; padding:0 32px; }
+.crm-ed-form { overflow-y:auto; padding:8px 4px 24px 0; }
+.crm-ed-prev { overflow-y:auto; padding:8px 0 24px; }
+.crm-prev-l { font-family:'DM Mono',monospace; font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#6F655B; text-align:center; margin-bottom:12px; }
+.crm-phone { width:300px; margin:0 auto; border-radius:40px; background:#2A211B; padding:10px; position:relative; }
+.crm-notch { position:absolute; left:50%; top:10px; transform:translateX(-50%); width:90px; height:22px; border-radius:0 0 14px 14px; background:#2A211B; z-index:2; }
+.crm-screen { height:560px; overflow-y:auto; border-radius:32px; background:#F7F0E6; zoom:.78; }
+.crm-ed-foot { display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; padding:18px 32px 24px; border-top:1px solid #EFE6DA; }
+@media (max-width:900px) { .crm-ed-body { grid-template-columns:1fr; overflow-y:auto; } .crm-ed-form, .crm-ed-prev { overflow:visible; } .crm-ed-wrap { padding:0; } .crm-ed { max-height:100vh; height:100%; border-radius:0; } }
+.crm-g2 { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px 24px; }
+.crm-g3 { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px 24px; }
+@media (max-width:700px) { .crm-g2, .crm-g3 { grid-template-columns:1fr; } }
+.crm-cover { position:relative; aspect-ratio:16/9; border-radius:18px; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+.crm-cover img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.crm-ok { display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 14px; border-radius:999px; background:#DDF1E3; color:#1E6B3A; font:700 14px 'DM Sans',sans-serif; }
+.crm-link { display:inline-flex; align-items:center; min-height:40px; border:0; background:none; padding:0; color:#A63E10; font:700 15px 'DM Sans',sans-serif; cursor:pointer; }
+.crm-url { display:flex; align-items:center; gap:10px; min-height:56px; padding:0 8px 0 14px; border:1px solid #E3D6C7; border-radius:14px; color:#A63E10; }
+.crm-url.is-ok { border:1.5px solid #1E7A3F; }
+.crm-url input { flex:1; min-width:0; border:0; outline:none; font:500 16px 'DM Sans',sans-serif; color:#2A211B; background:none; height:52px; }
+.crm-pill { display:inline-flex; align-items:center; height:32px; padding:0 12px; border-radius:999px; background:#DDF1E3; color:#1E6B3A; font:700 13px 'DM Sans',sans-serif; white-space:nowrap; }
+.crm-pill.is-bad { background:#FBE3DA; color:#A63E10; }
+.crm-help { margin:6px 0 0; font-size:13px; color:#6F655B; }
+.crm-sel { appearance:auto; }
+.crm-seg { display:flex; padding:4px; border-radius:16px; background:#EDE3D6; }
+.crm-seg button { flex:1; display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:46px; border:0; border-radius:12px; background:none; color:#6F655B; font:700 15px 'DM Sans',sans-serif; cursor:pointer; }
+.crm-seg button[aria-checked="true"] { background:#fff; color:#A63E10; box-shadow:0 2px 6px rgba(42,33,27,.08); }
+.crm-file { display:flex; align-items:center; gap:10px; min-height:52px; padding:0 14px; border:1px solid #E3D6C7; border-radius:14px; color:#A63E10; }
+.crm-file span { flex:1; color:#2A211B; font-size:15px; }
+.crm-blk { margin-top:12px; padding:14px 16px; border:1px solid #EADFD2; border-radius:20px; background:#FFFBF6; }
+.crm-blk.is-drag { opacity:.5; }
+.crm-bh { display:flex; align-items:center; gap:8px; margin-bottom:10px; color:#A63E10; font:700 13px 'DM Sans',sans-serif; letter-spacing:.08em; text-transform:uppercase; }
+.crm-bh span:not(.crm-grip) { flex:1; }
+.crm-bimgp { display:block; max-width:280px; max-height:180px; margin:0 auto; border-radius:12px; object-fit:contain; }
+.crm-addb { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+.crm-addb button { display:inline-flex; align-items:center; gap:8px; min-height:46px; padding:0 16px; border:1.5px dashed #C24E18; border-radius:14px; background:none; color:#A63E10; font:700 15px 'DM Sans',sans-serif; cursor:pointer; }
+.crm-del { display:inline-flex; align-items:center; gap:8px; margin-top:24px; min-height:44px; border:0; background:none; color:#B3261E; font:700 14px 'DM Sans',sans-serif; cursor:pointer; padding:0; }
+.crm-chk { display:flex; align-items:center; gap:12px; font-size:16px; color:#6F655B; cursor:pointer; }
+.crm-chk input { width:24px; height:24px; accent-color:#C24E18; } .crm-chk b { color:#2A211B; }
+/* Cliente: Food en dos pestañas y Educación */
+.crm-ftabs { display:flex; padding:5px; border-radius:20px; background:#EDE3D6; margin:4px 0 14px; position:relative; z-index:1; }
+.crm-ftabs button { flex:1; min-height:48px; border:0; border-radius:16px; background:none; color:#6F655B; font:500 16px 'DM Sans',sans-serif; cursor:pointer; }
+.crm-ftabs button[aria-selected="true"] { background:#fff; color:#A63E10; font-weight:700; box-shadow:0 2px 8px rgba(42,33,27,.08); }
+.crm-fhead { padding:12px 0 8px; }
+#crm-edu { display:none; }
+#food-screen-body.crm-edu-on #crm-edu { display:block; }
+#food-screen-body.crm-edu-on > :not(.food-head):not(.crm-fhead):not(.crm-ftabs):not(#crm-edu) { display:none !important; }
+.crm-nf-head { display:flex; justify-content:space-between; align-items:center; margin:4px 0 6px; padding:0 4px; }
+.crm-nf-head b { font-size:16px; color:var(--ink,#2A211B); }
+.crm-edu-h { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin-top:6px; }
+.crm-edu-t { margin:4px 0 0; font-family:'Playfair Display',serif; font-weight:900; font-size:28px; line-height:1.1; color:#2A211B; }
+.crm-edu-n { font-family:'DM Mono',monospace; font-size:14px; color:#A63E10; white-space:nowrap; padding-bottom:4px; }
+.crm-bar { height:8px; border-radius:999px; background:#E6DACB; margin:14px 0 16px; overflow:hidden; }
+.crm-bar i { display:block; height:100%; border-radius:999px; background:#C24E18; transition:width .3s; }
+.crm-chips { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin:0 -20px 14px; padding-left:20px; padding-right:20px; scrollbar-width:none; }
+.crm-chips .ann-chip { white-space:nowrap; flex:none; }
+.crm-list { display:flex; flex-direction:column; gap:10px; padding-bottom:20px; }
+.crm-card { display:flex; align-items:center; gap:14px; width:100%; padding:10px 14px 10px 10px; border:1px solid #EADFD2; border-radius:22px; background:#fff; cursor:pointer; font-family:'DM Sans',sans-serif; }
+.crm-card.is-lock { background:#FBF7F2; } .crm-card.is-lock .crm-rt b { color:#4A3F35; }
+.crm-card .crm-tg { margin-top:4px; height:26px; font-size:12.5px; }
+/* Cliente: clase (47) y recurso (48); también se usan en la vista previa del editor */
+.crm-viewov { background-image:none; }
+.crm-cv { max-width:480px; margin:0 auto; padding:calc(36px + env(safe-area-inset-top,0px)) 20px 40px; }
+.crm-cv-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; }
+.crm-circ { width:48px; height:48px; border-radius:50%; border:1px solid #E3D6C7; background:#fff; color:#2A211B; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; }
+.crm-cv-media { position:relative; aspect-ratio:16/9; border-radius:24px; overflow:hidden; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.crm-cv-media img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.crm-durb { position:absolute; right:12px; bottom:12px; padding:4px 9px; border-radius:8px; background:rgba(60,32,12,.82); color:#fff; font:500 13px 'DM Mono',monospace; }
+.crm-vid { position:relative; aspect-ratio:16/9; border-radius:18px; overflow:hidden; background:#14110E; margin:12px 0; }
+.crm-vid iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+.crm-cv-media.crm-vid { margin:0; border-radius:24px; cursor:default; }
+.crm-cv-t { margin:22px 0 0; font-family:'Playfair Display',serif; font-weight:900; font-size:30px; line-height:1.15; color:#2A211B; overflow-wrap:anywhere; }
+.crm-cv-tags { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+.crm-cv-d { margin:16px 0 0; font-size:16px; line-height:1.55; color:#4A3F35; white-space:pre-line; }
+.crm-mark { margin-top:22px; gap:10px; }
+.crm-mark.is-on { background:#DDF1E3; color:#1E6B3A; }
+.crm-next { display:flex; align-items:center; gap:14px; width:100%; margin-top:16px; padding:12px; border:1px solid #EADFD2; border-radius:22px; background:#fff; color:#6F655B; cursor:pointer; font-family:'DM Sans',sans-serif; }
+.crm-next .crm-rt b { font-size:16px; }
+.crm-rsheet { max-height:94vh; display:flex; flex-direction:column; padding-bottom:0; }
+.crm-rv { display:flex; flex-direction:column; min-height:0; flex:1; }
+.crm-rv-top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+.crm-rv-top .crm-cv-t { margin-top:6px; font-size:30px; }
+.crm-rv-body { padding:6px 0 10px; }
+.crm-bp { margin:14px 0 0; font-size:16px; line-height:1.55; color:#4A3F35; white-space:pre-line; }
+.crm-bimg { margin:16px 0 0; text-align:center; }
+.crm-bimg img { max-width:100%; border-radius:16px; }
+.crm-bimg figcaption { margin-top:6px; font-size:13px; color:#6F655B; }
+.crm-ul { list-style:none; margin:12px 0 0; padding:0; display:flex; flex-direction:column; gap:12px; }
+.crm-ul li { display:flex; gap:14px; align-items:baseline; font-size:16px; line-height:1.45; color:#2A211B; }
+.crm-ul li i { width:12px; height:12px; border-radius:50%; flex:none; transform:translateY(1px); }
+.crm-hr { border:0; border-top:1px solid #E3D6C7; margin:18px 0; }
+.crm-rv-foot { position:sticky; bottom:0; padding:12px 0 calc(16px + env(safe-area-inset-bottom,0px)); background:linear-gradient(to bottom,rgba(255,255,255,0),#fff 30%); }
+.crm-screen .crm-cv { padding:40px 16px 24px; }
+.crm-screen .crm-rv { padding:40px 16px 0; }
 /* Chat con Sau (E4), tema claro del mockup */
 .ev-chat { position:fixed; inset:0; z-index:10080; background:#F7F1E8; color:#2A211B; display:flex; flex-direction:column; font-family:'DM Sans',system-ui,sans-serif; }
 .ev-chat * { box-sizing:border-box; }
@@ -30627,6 +30783,7 @@ async function evRenderBuild() {
       <span class="ev-bico">${ico}</span><span class="ev-bt"><b>${name}</b>${extra || ''}</span>${EV_ICO.chev}</button>`;
   const draw = n => {
     box.innerHTML = `<div class="ev-ch"><span class="ev-eb-o">Coach</span><h1>Build</h1><p>Todo lo que construís para tus clientes, en un solo lugar.</p></div>
+      ${crmBuildCard()}
       ${card('builder', EV_ICO.grid, 'Machotes')}
       ${card('coaching', EV_ICO.book, 'Coaching')}
       ${card('run', EV_ICO.timer, 'Run', n ? `<span class="ev-tag ev-tag-new">${n} ${n === 1 ? 'pidió' : 'pidieron'} acceso</span>` : '')}`;
@@ -30693,8 +30850,8 @@ function evFmtShort(d) { const [y, m, dd] = d.split('-'); return `${dd}/${m}/${y
 function evTourList(c) {
   const pay = !!evPayDate(c);
   const l = evIsEntry(c)
-    ? ['move', 'train', 'menu', 'luz', 'lift', pay && 'pay', 'chat', 'hive', 'transf', 'final']
-    : ['welcome', 'move', 'train', 'menuvip', 'luz', pay && 'pay', 'hive', 'transf', 'final'];
+    ? ['move', 'train', 'menu', 'luz', 'learn', 'lift', pay && 'pay', 'chat', 'hive', 'transf', 'final']
+    : ['welcome', 'move', 'train', 'menuvip', 'luz', 'learn', pay && 'pay', 'hive', 'transf', 'final'];
   return l.filter(Boolean);
 }
 // Pantallas sin "Saltar": el acuerdo del chat y el cierre
@@ -30819,6 +30976,30 @@ const EVT_SCREENS = {
         ${evtCard(i(EVT_P.guides), 'Guías y recursos', 'Material para entender y mejorar tu proceso.', o)}
         ${evtCard(i(EVT_P.clip), 'Evaluaciones', 'Medimos tu avance con Sau, paso a paso.', o)}
         ${evtCard(i(EVT_P.gift), 'Extras', 'Beneficios exclusivos del Programa VIP.', o)}
+      </div>${evtNext()}` };
+  },
+  // E13 · "Aprendé a tu ritmo": Food con dos pestañas (Educación = Classroom)
+  learn() {
+    const entry = evIsEntry(currentClient);
+    const row = (bg, t, sub, seen, play) => `<div class="t-row t-g12" style="align-items:center;"><span style="width:64px;height:44px;border-radius:10px;background:${bg};display:flex;align-items:center;justify-content:center;flex:none;">${play ? `<span class="t-circ" style="width:28px;height:28px;background:rgba(42,24,10,.6);color:#fff">${EVT_S('<polygon points="7 4 20 12 7 20 7 4"/>', 12, 2.4)}</span>` : ''}</span>
+      <span class="t-col" style="flex:1;line-height:1.3"><b style="font-size:15px">${t}</b><span class="t-soft" style="font-size:12.5px">${sub}</span></span>
+      ${seen ? `<span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px;border-radius:999px;background:#DDF1E3;color:#1E6B3A;font-size:12px;font-weight:700">${EVT_S('<path d="M20 6 9 17l-5-5"/>', 12, 3)}Vista</span>` : ''}</div>`;
+    return { bg: '#14110E', html: `${EVT_HEXBG('#F5B83D', 0.10)}${evtTop('learn')}
+      <div class="t-abs t-pad" style="left:0;right:0;top:110px">
+        <div class="t-eb t-honey">Cómo se usa · ${evtNum('learn')}</div>
+        <h1 class="t-dela" style="font-size:32px;margin-top:10px">Aprendé<br>a tu ritmo</h1>
+        <p class="t-p t-soft" style="margin-top:12px;font-size:16px">En <b style="color:#FBF6EF">Food</b> ahora tenés dos pestañas: tu menú y la Educación de Sau.</p>
+      </div>
+      <div class="t-abs t-pad" style="left:0;right:0;top:318px">
+        <div style="border-radius:24px;background:#26201A;border:1px solid #3A3027;padding:12px 14px 14px">
+          <div class="t-row" style="padding:3px;border-radius:12px;background:#1B1713;border:1px solid #3A3027"><span style="flex:1;text-align:center;padding:7px 0;font-size:13px;color:#CFC6BA">Tu alimentación</span><span style="flex:1;text-align:center;padding:7px 0;font-size:13px;font-weight:700;color:#14110E;background:#F5B83D;border-radius:9px">Educación</span></div>
+          <div class="t-col t-g8" style="margin-top:12px">${row('linear-gradient(135deg,#C24E18,#F5B83D)', 'Guía del sistema', 'Video · 12:40', true, true)}${row('linear-gradient(135deg,#1E7A3F,#7CCB97)', 'Cómo armar un plato', 'Recurso · 4 min', false, false)}</div>
+        </div>
+        <div class="t-row t-g12" style="margin-top:12px;padding:14px 16px;border-radius:22px;background:#2A2113;border:1px solid #5A4417;align-items:flex-start">
+          <span style="color:#F5B83D;display:flex;margin-top:2px">${EVT_S('<path d="M21.42 10.92a1 1 0 0 0-.02-1.84L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.83l8.57 3.91a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>', 20, 2)}</span>
+          <span class="t-col" style="line-height:1.35"><b style="font-size:16px">Clases y recursos</b><span class="t-soft" style="font-size:14px">Videos cortos y guías para entender cómo comer. Marcá cada una como vista para llevar tu avance.</span></span>
+        </div>
+        ${entry ? '<p class="t-soft" style="margin:12px 4px 0;font-size:13.5px;line-height:1.45">Las que tienen candado son parte de VIP. Podés pedir acceso por el chat.</p>' : ''}
       </div>${evtNext()}` };
   },
   luz() {
@@ -32675,7 +32856,7 @@ async function annGo(dest, ref) {
   if (dest === 'semana') { annNav('home', 'screen-client-home', 1); return; }
   if (dest === 'hive') { annNav('hive', 'screen-client-hive', 3); return; }
   if (dest === 'chat') { evOpenChat(); return; }
-  if (dest === 'classroom') { annNav('food', 'screen-client-food', 2); return; } // E13 conecta la pestaña Educación
+  if (dest === 'classroom') { crmFoodPending = { itemId: ref || null }; annNav('food', 'screen-client-food', 2); return; } // Food › Educación (y la clase, si viene)
   if (dest === 'run') { annPlanTab('run'); return; }
   if (dest === 'menu') { annNav('plan', 'screen-client-plan', 4); if (document.getElementById('mm-panel')?.hidden !== false) mmToggle(); return; }
   if (dest === 'extra') {
@@ -33156,6 +33337,684 @@ async function wkcSaveNote(reset) {
 function wkcPreview() {
   const s = wkcC; if (!s || !s.list.length) return;
   wkcShow({ list: s.list, label: s.pair.label, note: (s.row && s.row.note && s.row.note.trim()) || s.st.note }, true);
+}
+
+// ---------- E13 · Classroom (Educación en Food) ----------
+// Tablas classroom_categories / classroom_items / classroom_views y bucket público "classroom"
+// (sql/e13-classroom.sql). Coach: tarjeta en Build → editor a pantalla completa (pensado para compu).
+// Cliente: Food con dos pestañas (Tu alimentación, sin cambios, y Educación). "Solo VIP" se ve con
+// candado para Entry; VIP ve todo; LIFT no ve Classroom. Los borradores no se ven. Los videos no se
+// suben: link de Vimeo o YouTube embebido; título, portada y duración salen de /api/oembed.
+const CRM_BUCKET = 'classroom';
+const CRM_NEW_DAYS = 14;
+const CRM_I = {
+  cap: '<path d="M21.42 10.92a1 1 0 0 0-.02-1.84L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.83l8.57 3.91a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>',
+  play: '<polygon points="7 4 20 12 7 20 7 4"/>',
+  grip: '<circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/>',
+  pencil: '<path d="M21.17 6.81a1 1 0 0 0-3.99-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z"/>',
+  trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  img: '<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/>',
+  list: '<path d="M3 12h.01"/><path d="M3 18h.01"/><path d="M3 6h.01"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M8 6h13"/>',
+  text: '<path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/>',
+  minus: '<path d="M5 12h14"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  chev: '<path d="m6 9 6 6 6-6"/>',
+  chevR: '<path d="m9 18 6-6-6-6"/>',
+  send: '<path d="M14.54 21.69a.5.5 0 0 0 .94-.02l6.5-19a.5.5 0 0 0-.64-.64l-19 6.5a.5.5 0 0 0-.02.94l7.93 3.18a2 2 0 0 1 1.11 1.11z"/><path d="m21.85 2.15-10.94 10.94"/>',
+  book: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>'
+};
+const CRM_GRAD = ['linear-gradient(135deg,#C24E18,#F5B83D)', 'linear-gradient(135deg,#F5B83D,#E56B33)', 'linear-gradient(135deg,#1E7A3F,#7CCB97)', 'linear-gradient(135deg,#5A3A22,#B8541E)'];
+const CRM_DOTS = ['#1E7A3F', '#F5B83D', '#C24E18'];
+const crmS = (p, w, sw) => EVT_S(p, w || 20, sw || 2);
+
+// --- Utilidades compartidas ---
+function crmParseVideo(raw) {
+  let u; try { u = new URL(String(raw || '').trim()); } catch (e) { return null; }
+  const host = u.hostname.replace(/^www\.|^m\./, '');
+  if (host === 'youtu.be') { const id = u.pathname.split('/')[1]; return /^[\w-]{11}$/.test(id || '') ? { provider: 'youtube', videoId: id } : null; }
+  if (host === 'youtube.com' || host === 'youtube-nocookie.com') {
+    let id = u.searchParams.get('v'); const m = u.pathname.match(/^\/(?:shorts|embed|live)\/([\w-]{11})/);
+    if (!id && m) id = m[1];
+    return /^[\w-]{11}$/.test(id || '') ? { provider: 'youtube', videoId: id } : null;
+  }
+  if (host === 'vimeo.com' || host === 'player.vimeo.com') {
+    const parts = u.pathname.split('/').filter(Boolean), i = parts.findIndex(p => /^\d+$/.test(p));
+    if (i < 0) return null;
+    const hash = u.searchParams.get('h') || (parts[i + 1] && /^[0-9a-f]+$/i.test(parts[i + 1]) ? parts[i + 1] : null);
+    return { provider: 'vimeo', videoId: parts[i], hash };
+  }
+  return null;
+}
+function crmEmbed(v, autoplay) {
+  if (!v) return '';
+  if (v.provider === 'vimeo') return `https://player.vimeo.com/video/${encodeURIComponent(v.videoId)}?${v.hash ? 'h=' + encodeURIComponent(v.hash) + '&' : ''}dnt=1&playsinline=1${autoplay ? '&autoplay=1' : ''}`;
+  return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(v.videoId)}?rel=0&playsinline=1${autoplay ? '&autoplay=1' : ''}`;
+}
+function crmIframe(v, autoplay) {
+  return `<div class="crm-vid"><iframe src="${evEsc(crmEmbed(v, autoplay))}" title="Video" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen loading="lazy"></iframe></div>`;
+}
+function crmDur(s) {
+  s = Number(s) || 0; if (!s) return '';
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
+  return h ? `${h}:${String(m).padStart(2, '0')}:${String(x).padStart(2, '0')}` : `${m}:${String(x).padStart(2, '0')}`;
+}
+function crmParseDur(t) {
+  const p = String(t || '').trim().split(':').map(n => Number(n));
+  if (!p.length || p.some(n => !Number.isFinite(n) || n < 0)) return null;
+  const s = p.reduce((a, n) => a * 60 + n, 0);
+  return s > 0 ? Math.round(s) : null;
+}
+function crmWords(s) { return String(s || '').trim().split(/\s+/).filter(Boolean).length; }
+function crmReadMin(it) {
+  let w = crmWords(it.description);
+  (it.blocks || []).forEach(b => { w += crmWords(b.text) + crmWords(b.caption) + (b.items || []).reduce((a, x) => a + crmWords(x), 0); });
+  return Math.max(1, Math.round(w / 200));
+}
+function crmMeta(it, coach) {
+  if (it.kind === 'class') return `Video · ${coach && it.status === 'draft' ? 'sin publicar' : (crmDur(it.video_duration_seconds) || 'sin duración')}`;
+  if (coach) return it.status === 'draft' ? 'Recurso · sin publicar' : `Recurso · ${(it.blocks || []).length} ${(it.blocks || []).length === 1 ? 'bloque' : 'bloques'}`;
+  return `Recurso · ${crmReadMin(it)} min de lectura`;
+}
+function crmThumb(it, w, h, locked) {
+  const bg = CRM_GRAD[Math.abs(Number(it.id) || 0) % CRM_GRAD.length];
+  if (locked) return `<span class="crm-th is-lock" style="width:${w}px;height:${h}px;">${crmS(EVT_P.lock, Math.round(h * 0.32), 2.2)}</span>`;
+  const ico = it.kind === 'class' ? `<span class="crm-play" style="width:${Math.round(h * 0.44)}px;height:${Math.round(h * 0.44)}px;">${crmS(CRM_I.play, Math.round(h * 0.2), 2.2)}</span>` : `<span class="crm-play" style="width:${Math.round(h * 0.44)}px;height:${Math.round(h * 0.44)}px;">${crmS(CRM_I.book, Math.round(h * 0.2), 2.2)}</span>`;
+  return `<span class="crm-th" style="width:${w}px;height:${h}px;background:${bg};">${it.cover_url ? `<img src="${evEsc(it.cover_url)}" alt="" loading="lazy">` : ''}${ico}</span>`;
+}
+function crmBlocksHtml(blocks) {
+  return (blocks || []).map(b => {
+    if (b.type === 'text') return b.text ? `<p class="crm-bp">${evEsc(b.text)}</p>` : '';
+    if (b.type === 'image') return b.url ? `<figure class="crm-bimg"><img src="${evEsc(b.url)}" alt="${evEsc(b.caption || '')}" loading="lazy">${b.caption ? `<figcaption>${evEsc(b.caption)}</figcaption>` : ''}</figure>` : '';
+    if (b.type === 'list') { const it = (b.items || []).filter(x => String(x).trim()); return it.length ? `<ul class="crm-ul">${it.map((x, i) => `<li><i style="background:${CRM_DOTS[i % 3]}"></i>${evEsc(x)}</li>`).join('')}</ul>` : ''; }
+    if (b.type === 'video') { const v = crmParseVideo(b.url); return v ? crmIframe(v, false) : ''; }
+    if (b.type === 'divider') return '<hr class="crm-hr">';
+    return '';
+  }).join('');
+}
+async function crmUploadImage(file, folder) {
+  if (!file || !/^image\//.test(file.type)) { showToast('Elegí una imagen (JPG, PNG o WebP)', 'error'); return null; }
+  const blob = (file.type === 'image/gif' ? null : await compressProgressPhoto(file, 1600, 0.85)) || file;
+  if (blob.size > 5 * 1024 * 1024) { showToast('La imagen pesa más de 5 MB', 'error'); return null; }
+  const ext = blob.type === 'image/jpeg' ? 'jpg' : (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const path = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error } = await sb.storage.from(CRM_BUCKET).upload(path, blob, { contentType: blob.type || file.type, upsert: false });
+  if (error) { showToast('No se subió la imagen: ' + error.message, 'error'); return null; }
+  const { data } = sb.storage.from(CRM_BUCKET).getPublicUrl(path);
+  return data && data.publicUrl ? { url: data.publicUrl, name: file.name } : null;
+}
+
+// --- Coach · Build (42) ---
+function crmBuildCard() {
+  let seen = false; try { seen = !!localStorage.getItem('crmBuildSeen'); } catch (e) {}
+  return `<button type="button" class="ev-bcard" onclick="crmOpenCoach()">
+    <span class="ev-bico">${crmS(CRM_I.cap, 24, 1.75)}</span><span class="ev-bt"><b>Classroom</b>${seen ? '' : '<span class="ev-tag ev-tag-new">Nuevo</span>'}</span>${EV_ICO.chev}</button>`;
+}
+
+// --- Coach · Classroom (43) ---
+let crmC = null;
+async function crmOpenCoach() {
+  try { localStorage.setItem('crmBuildSeen', '1'); } catch (e) {}
+  let ov = document.getElementById('crm-coach');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'crm-coach'; ov.className = 'crm-ov';
+    ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-labelledby', 'crm-coach-t');
+    document.body.appendChild(ov);
+  }
+  crmC = crmC || { filter: 'all', closed: {} };
+  crmC.loading = true; crmRenderCoach();
+  await crmCoachLoad();
+}
+async function crmCoachLoad() {
+  const [c, i, v] = await Promise.all([
+    sb.from('classroom_categories').select('id,name,position').order('position', { ascending: true }),
+    sb.from('classroom_items').select('*').order('position', { ascending: true }),
+    sb.from('classroom_views').select('item_id')
+  ]);
+  if (!crmC) return;
+  crmC.loading = false;
+  crmC.error = c.error || i.error ? (c.error || i.error).message : null;
+  crmC.cats = c.data || []; crmC.items = i.data || [];
+  crmC.views = {}; (v.data || []).forEach(r => { crmC.views[r.item_id] = (crmC.views[r.item_id] || 0) + 1; });
+  crmRenderCoach();
+}
+function crmCloseCoach(then) { document.getElementById('crm-coach')?.remove(); crmC = null; if (then) coachNav(then); }
+function crmItemsOf(catId) { return (crmC.items || []).filter(it => String(it.category_id) === String(catId)).sort((a, b) => (a.position - b.position) || (a.id - b.id)); }
+function crmRenderCoach() {
+  const ov = document.getElementById('crm-coach'); if (!ov || !crmC) return;
+  const nav = (k, l, p) => `<button type="button" class="crm-sn${k === 'build' ? ' on' : ''}" onclick="crmCloseCoach('${k}')">${crmS(p, 22, 1.75)}${l}</button>`;
+  const side = `<aside class="crm-side"><div class="crm-logo">MOVE</div>
+    ${nav('clients', 'Clientes', '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>')}
+    ${nav('build', 'Build', '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>')}
+    ${nav('delivery', 'Delivery', '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>')}
+    ${nav('settings', 'Ajustes', '<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>')}
+  </aside>`;
+  const f = (k, l) => `<button type="button" class="ann-chip" aria-pressed="${crmC.filter === k}" onclick="crmC.filter='${k}';crmRenderCoach()">${l}</button>`;
+  let main;
+  if (crmC.loading) main = '<div class="spinner"></div>';
+  else if (crmC.error) main = `<div class="wkc-box"><p style="margin:0;color:#A63E10;">No se pudo cargar Classroom: ${evEsc(crmC.error)}. ¿Ya corriste sql/e13-classroom.sql?</p></div>`;
+  else {
+    const pass = it => crmC.filter === 'all' || (crmC.filter === 'class' && it.kind === 'class') || (crmC.filter === 'resource' && it.kind === 'resource') || (crmC.filter === 'draft' && it.status === 'draft');
+    main = crmC.cats.length ? crmC.cats.map(cat => {
+      const all = crmItemsOf(cat.id), list = all.filter(pass), closed = !!crmC.closed[cat.id];
+      return `<section class="crm-cat" data-cat="${cat.id}">
+        <div class="crm-cat-h">
+          <span class="crm-grip" draggable="true" data-dragcat="${cat.id}" title="Arrastrá para ordenar" aria-label="Mover categoría">${crmS(CRM_I.grip, 20, 2.4)}</span>
+          <h3>${evEsc(cat.name)}</h3>
+          <button type="button" class="crm-ib" aria-label="Renombrar ${evEsc(cat.name)}" onclick="crmCatName(${cat.id})">${crmS(CRM_I.pencil, 16)}</button>
+          <button type="button" class="crm-ib" aria-label="Eliminar ${evEsc(cat.name)}" onclick="crmCatDelete(${cat.id})">${crmS(CRM_I.trash, 16)}</button>
+          <span class="crm-cnt">${all.length} ${all.length === 1 ? 'clase' : 'clases'}</span>
+          <button type="button" class="crm-ib" aria-expanded="${!closed}" aria-label="${closed ? 'Abrir' : 'Cerrar'} ${evEsc(cat.name)}" onclick="crmC.closed[${cat.id}]=!crmC.closed[${cat.id}];crmRenderCoach()" style="${closed ? 'transform:rotate(-90deg)' : ''}">${crmS(CRM_I.chev, 20)}</button>
+        </div>
+        <div class="crm-rows" data-rows="${cat.id}" ${closed ? 'hidden' : ''}>${list.map(it => `
+          <div class="crm-row" draggable="true" data-item="${it.id}">
+            <span class="crm-grip" aria-hidden="true">${crmS(CRM_I.grip, 20, 2.4)}</span>
+            ${crmThumb(it, 112, 64)}
+            <span class="crm-rt"><b>${evEsc(it.title)}</b><small>${evEsc(crmMeta(it, true))}</small></span>
+            <span class="crm-tags">${it.status === 'draft' ? '<span class="crm-tg is-draft">Borrador</span>' : ''}<span class="crm-tg">${it.kind === 'class' ? 'Video' : 'Recurso'}</span>${it.access === 'vip' ? `<span class="crm-tg is-vip">${crmS(EVT_P.lock, 14, 2.4)}Solo VIP</span>` : '<span class="crm-tg is-all">Todos</span>'}</span>
+            <span class="crm-seen">${it.status === 'draft' ? '—' : `${crmC.views[it.id] || 0} vieron`}</span>
+            <button type="button" class="crm-ib crm-edit" aria-label="Editar ${evEsc(it.title)}" onclick="crmEdit(${it.id})">${crmS(CRM_I.pencil, 18)}</button>
+          </div>`).join('') || `<p class="crm-empty">${all.length ? 'Nada con este filtro.' : 'Todavía no hay clases en esta categoría.'}</p>`}</div>
+      </section>`;
+    }).join('') : '<div class="wkc-box"><p style="margin:0;font-size:15px;color:#4A3F35;">Empezá creando una categoría (por ejemplo «Empezá acá») y después tu primera clase.</p></div>';
+  }
+  const its = (crmC && crmC.items) || [];
+  const pub = its.filter(i => i.status === 'published').length, vip = its.filter(i => i.access === 'vip').length, dr = its.filter(i => i.status === 'draft').length;
+  ov.innerHTML = `<div class="crm-shell">${side}
+    <main class="crm-main">
+      <button type="button" class="crm-back" onclick="crmCloseCoach()">${crmS(EV_I.back, 18, 2.4)}Build</button>
+      <div class="crm-top"><div><div class="ev-eb-o">Build</div><h1 id="crm-coach-t">Classroom</h1><p>Lo que aprenden tus clientes dentro de Food. Arrastrá para ordenar.</p></div>
+        <div class="crm-acts"><button type="button" class="crm-btn ghost" onclick="crmCatName()">${crmS(ANN_I.plus, 18, 2.4)}Nueva categoría</button>
+        <div class="crm-newwrap"><button type="button" class="crm-btn" aria-haspopup="true" onclick="this.nextElementSibling.hidden=!this.nextElementSibling.hidden">${crmS(ANN_I.plus, 18, 2.4)}Nueva clase</button>
+          <div class="crm-newmenu" hidden><button type="button" onclick="crmEdit(null,'class')">${crmS(CRM_I.play, 18)}Clase con video<small>Pegá un link de Vimeo o YouTube</small></button><button type="button" onclick="crmEdit(null,'resource')">${crmS(CRM_I.book, 18)}Recurso<small>Texto, imágenes y listas</small></button></div></div></div></div>
+      <div class="ann-chips" style="margin:18px 0 18px;">${f('all', 'Todo')}${f('class', 'Videos')}${f('resource', 'Recursos')}${f('draft', 'Borradores')}</div>
+      ${main}
+    </main>
+    <aside class="crm-aside">
+      <div class="wkc-box"><div class="ev-eb-o">Resumen</div>
+        <div class="crm-sum"><span>Clases publicadas</span><b>${pub}</b></div><div class="crm-sum"><span>Solo VIP</span><b>${vip}</b></div><div class="crm-sum" style="border:0;"><span>Borradores</span><b>${dr}</b></div></div>
+      <div class="wkc-box" style="margin-top:16px;"><div class="ev-eb-o">Candado</div><p style="margin:10px 0 0;font-size:15px;line-height:1.5;color:#4A3F35;">Las clases "Solo VIP" las ven los clientes Entry con candado y un botón para pedir acceso por el chat.</p></div>
+    </aside></div>`;
+  crmWireDrag(ov);
+}
+// Arrastrar y soltar (compu): filas entre categorías y categorías entre sí. Se guarda position (y category_id).
+function crmWireDrag(ov) {
+  let drag = null;
+  ov.querySelectorAll('.crm-row[draggable]').forEach(r => {
+    r.addEventListener('dragstart', e => { drag = { kind: 'item', el: r }; r.classList.add('is-drag'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'i' + r.dataset.item); });
+    r.addEventListener('dragend', () => { r.classList.remove('is-drag'); if (drag && drag.kind === 'item') crmSaveItemOrder(); drag = null; });
+  });
+  ov.querySelectorAll('[data-dragcat]').forEach(h => {
+    const sec = h.closest('.crm-cat');
+    h.addEventListener('dragstart', e => { drag = { kind: 'cat', el: sec }; sec.classList.add('is-drag'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'c' + sec.dataset.cat); });
+    h.addEventListener('dragend', () => { sec.classList.remove('is-drag'); if (drag && drag.kind === 'cat') crmSaveCatOrder(); drag = null; });
+  });
+  ov.querySelectorAll('.crm-rows').forEach(list => {
+    list.addEventListener('dragover', e => {
+      if (!drag || drag.kind !== 'item') return;
+      e.preventDefault();
+      const after = [...list.querySelectorAll('.crm-row:not(.is-drag)')].find(x => e.clientY < x.getBoundingClientRect().top + x.offsetHeight / 2);
+      list.querySelector('.crm-empty')?.remove();
+      if (after) list.insertBefore(drag.el, after); else list.appendChild(drag.el);
+    });
+  });
+  const main = ov.querySelector('.crm-main');
+  main && main.addEventListener('dragover', e => {
+    if (!drag || drag.kind !== 'cat') return;
+    e.preventDefault();
+    const secs = [...main.querySelectorAll('.crm-cat:not(.is-drag)')];
+    const after = secs.find(x => e.clientY < x.getBoundingClientRect().top + x.offsetHeight / 2);
+    if (after) main.insertBefore(drag.el, after); else if (secs.length) secs[secs.length - 1].after(drag.el);
+  });
+}
+async function crmSaveItemOrder() {
+  const ov = document.getElementById('crm-coach'); if (!ov || !crmC) return;
+  const ups = [];
+  ov.querySelectorAll('.crm-rows').forEach(list => {
+    const cat = Number(list.dataset.rows);
+    [...list.querySelectorAll('.crm-row')].forEach((r, i) => {
+      const it = crmC.items.find(x => String(x.id) === r.dataset.item);
+      if (it && (it.position !== i || String(it.category_id) !== String(cat))) { it.position = i; it.category_id = cat; ups.push(sb.from('classroom_items').update({ position: i, category_id: cat, updated_at: new Date().toISOString() }).eq('id', it.id)); }
+    });
+  });
+  if (!ups.length) return;
+  const res = await Promise.all(ups);
+  const err = res.find(r => r.error);
+  if (err) showToast('No se guardó el orden: ' + err.error.message, 'error'); else showToast('Orden guardado', 'success');
+  crmRenderCoach();
+}
+async function crmSaveCatOrder() {
+  const ov = document.getElementById('crm-coach'); if (!ov || !crmC) return;
+  const ups = [];
+  [...ov.querySelectorAll('.crm-cat')].forEach((s, i) => {
+    const c = crmC.cats.find(x => String(x.id) === s.dataset.cat);
+    if (c && c.position !== i) { c.position = i; ups.push(sb.from('classroom_categories').update({ position: i }).eq('id', c.id)); }
+  });
+  if (!ups.length) return;
+  const res = await Promise.all(ups);
+  const err = res.find(r => r.error);
+  if (err) showToast('No se guardó el orden: ' + err.error.message, 'error'); else showToast('Orden guardado', 'success');
+  crmC.cats.sort((a, b) => a.position - b.position);
+  crmRenderCoach();
+}
+// Crear / renombrar categoría
+function crmCatName(id) {
+  const cat = id != null ? crmC.cats.find(c => c.id === id) : null;
+  const w = document.createElement('div');
+  w.className = 'ev-modal-wrap'; w.id = 'crm-catname'; w.style.zIndex = '10095';
+  w.innerHTML = `<div class="ev-modal" role="dialog" aria-modal="true" aria-labelledby="crm-catname-t" style="text-align:left;align-items:stretch;">
+    <h2 id="crm-catname-t" style="font-size:26px;">${cat ? 'Renombrar categoría' : 'Nueva categoría'}</h2>
+    <label class="ev-lf" for="crm-catname-i">Nombre</label><input class="ev-linp" id="crm-catname-i" maxlength="60" value="${evEsc(cat ? cat.name : '')}" placeholder="Empezá acá">
+    <button type="button" class="ev-lbtn" id="crm-catname-ok">${cat ? 'Guardar' : 'Crear categoría'}</button>
+    <button type="button" class="ev-lbtn ghost" style="background:none;color:#6F655B;" onclick="document.getElementById('crm-catname')?.remove()">Cancelar</button></div>`;
+  document.body.appendChild(w);
+  const inp = w.querySelector('input'); inp.focus(); inp.select();
+  const go = async () => {
+    const name = inp.value.trim(); if (!name) { inp.focus(); return; }
+    const r = cat ? await sb.from('classroom_categories').update({ name }).eq('id', cat.id)
+      : await sb.from('classroom_categories').insert([{ name, position: crmC.cats.length ? Math.max(...crmC.cats.map(c => c.position || 0)) + 1 : 0 }]);
+    if (r.error) { showToast('No se guardó: ' + r.error.message, 'error'); return; }
+    w.remove(); showToast(cat ? 'Categoría renombrada' : 'Categoría creada', 'success'); crmCoachLoad();
+  };
+  w.querySelector('#crm-catname-ok').onclick = go;
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+  w.addEventListener('click', e => { if (e.target === w) w.remove(); });
+}
+function crmCatDelete(id) {
+  const cat = crmC.cats.find(c => c.id === id); if (!cat) return;
+  const n = crmItemsOf(id).length;
+  const w = document.createElement('div');
+  w.className = 'ev-modal-wrap'; w.id = 'crm-catdel'; w.style.zIndex = '10095';
+  w.innerHTML = `<div class="ev-modal" role="dialog" aria-modal="true" aria-labelledby="crm-catdel-t">
+    <span class="ev-mico">${crmS(CRM_I.trash, 28)}</span>
+    <h2 id="crm-catdel-t" style="font-size:26px;margin-top:12px;">¿Eliminar «${evEsc(cat.name)}»?</h2>
+    <p class="ev-m-mute">${n ? `Tiene ${n} ${n === 1 ? 'clase o recurso' : 'clases y recursos'}. Se van a borrar también, junto con el registro de quién los vio. No se puede deshacer.` : 'Está vacía. No se puede deshacer.'}</p>
+    <button type="button" class="ev-lbtn" style="background:#B3261E;" id="crm-catdel-ok">${n ? `Eliminar categoría y ${n} ${n === 1 ? 'clase' : 'clases'}` : 'Eliminar categoría'}</button>
+    <button type="button" class="ev-lbtn ghost" style="background:none;color:#6F655B;" onclick="document.getElementById('crm-catdel')?.remove()">Cancelar</button></div>`;
+  document.body.appendChild(w);
+  w.addEventListener('click', e => { if (e.target === w) w.remove(); });
+  w.querySelector('#crm-catdel-ok').onclick = async () => {
+    if (n) { const r = await sb.from('classroom_items').delete().eq('category_id', id); if (r.error) { showToast('No se borró: ' + r.error.message, 'error'); return; } }
+    const r2 = await sb.from('classroom_categories').delete().eq('id', id);
+    if (r2.error) { showToast('No se borró: ' + r2.error.message, 'error'); return; }
+    w.remove(); showToast('Categoría eliminada', 'success'); crmCoachLoad();
+  };
+}
+
+// --- Coach · Crear / editar clase (44) y recurso (45) ---
+let crmE = null, crmEvT = null;
+function crmEdit(id, kind) {
+  document.querySelector('#crm-coach .crm-newmenu')?.setAttribute('hidden', '');
+  if (!crmC || !crmC.cats || !crmC.cats.length) { showToast('Primero creá una categoría', 'error'); crmCatName(); return; }
+  const it = id != null ? crmC.items.find(x => x.id === id) : null;
+  const k = it ? it.kind : kind;
+  crmE = it ? { ...it, blocks: JSON.parse(JSON.stringify(it.blocks || [])), notify: false, coverFrom: it.cover_url ? 'saved' : null, durText: crmDur(it.video_duration_seconds) }
+    : { id: null, kind: k, title: '', description: '', cover_url: null, video_url: '', video_provider: null, video_duration_seconds: null, blocks: k === 'resource' ? [{ type: 'text', text: '' }] : [],
+        access: 'all', status: 'draft', category_id: (crmC.cats[0] || {}).id, published_at: null, notify: true, coverFrom: null, durText: '' };
+  crmE.videoState = it && it.video_url ? 'ok' : null;
+  crmE.titleAuto = !it;
+  crmRenderEdit();
+}
+function crmCloseEdit() { document.getElementById('crm-edit')?.remove(); crmE = null; }
+function crmRenderEdit() {
+  const e = crmE; if (!e) return;
+  let w = document.getElementById('crm-edit');
+  const scroll = w?.querySelector('.crm-ed-form')?.scrollTop || 0;
+  if (!w) { w = document.createElement('div'); w.id = 'crm-edit'; w.className = 'crm-ed-wrap'; document.body.appendChild(w); w.addEventListener('click', ev => { if (ev.target === w) crmCloseEdit(); }); }
+  const cls = e.kind === 'class';
+  const seg = (field, a, b) => `<div class="crm-seg" role="radiogroup">${[a, b].map(([v, l, ico]) => `<button type="button" role="radio" aria-checked="${e[field] === v}" onclick="crmE.${field}='${v}';crmRenderEdit()">${ico ? crmS(ico, 18, 2.2) : ''}${l}</button>`).join('')}</div>`;
+  const catSel = `<select class="ev-linp crm-sel" id="crm-cat" onchange="crmE.category_id=Number(this.value);crmPreview()">${crmC.cats.map(c => `<option value="${c.id}"${String(c.id) === String(e.category_id) ? ' selected' : ''}>${evEsc(c.name)}</option>`).join('')}</select>`;
+  const v = crmParseVideo(e.video_url);
+  const pill = !e.video_url ? '' : e.videoState === 'loading' ? '<span class="crm-pill">Buscando…</span>'
+    : e.videoState === 'bad' ? '<span class="crm-pill is-bad">Link no válido</span>'
+    : e.videoState === 'fail' ? '<span class="crm-pill is-bad">No se pudo importar</span>'
+    : v ? `<span class="crm-pill">${v.provider === 'vimeo' ? 'Vimeo' : 'YouTube'}${e.video_duration_seconds ? ' · ' + crmDur(e.video_duration_seconds) : ''}</span>` : '';
+  const coverBadge = e.coverFrom === 'vimeo' || e.coverFrom === 'youtube' ? `<span class="crm-ok">${crmS(CRM_I.check, 16, 2.6)}Importada de ${e.coverFrom === 'vimeo' ? 'Vimeo' : 'YouTube'}</span>` : '';
+  const coverBox = cls
+    ? `<label class="ann-lab" style="margin-top:0;">Portada</label>
+       <div class="crm-cover" style="background:${CRM_GRAD[0]};">${e.cover_url ? `<img src="${evEsc(e.cover_url)}" alt="">` : ''}<span class="crm-play" style="width:72px;height:72px;">${crmS(CRM_I.play, 30, 2.2)}</span></div>
+       <div style="display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap;">${coverBadge}<label class="crm-link">${e.cover_url ? 'Subir otra' : 'Subir portada'}<input type="file" accept="image/*" hidden onchange="crmPickCover(this)"></label></div>`
+    : '';
+  const blocks = cls ? '' : `<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:18px;"><span class="ann-lab" style="margin:0;">Contenido</span><span style="font-size:13px;color:#8A7F73;">Arrastrá los bloques para ordenarlos</span></div>
+    <div id="crm-blocks">${e.blocks.map((b, i) => crmBlockEd(b, i)).join('')}</div>
+    <div class="crm-addb">${[['text', 'Texto', CRM_I.text], ['image', 'Imagen', CRM_I.img], ['list', 'Lista', CRM_I.list], ['video', 'Video', CRM_I.play], ['divider', 'Separador', CRM_I.minus]].map(([t, l, p]) => `<button type="button" onclick="crmAddBlock('${t}')">${crmS(p, 18, 2.2)}${l}</button>`).join('')}</div>`;
+  const firstPub = !e.published_at;
+  w.innerHTML = `<div class="crm-ed" role="dialog" aria-modal="true" aria-labelledby="crm-ed-t">
+    <div class="crm-ed-head"><div><h2 id="crm-ed-t">${e.id ? (cls ? 'Editar clase' : 'Editar recurso') : (cls ? 'Nueva clase' : 'Nuevo recurso')}</h2><p>${cls ? 'Video para Classroom' : 'Texto, imágenes y listas en un modal'}</p></div>
+      <button type="button" class="ann-x" style="position:static;" aria-label="Cerrar" onclick="crmCloseEdit()">${crmS(EV_I.x, 20, 2.2)}</button></div>
+    <div class="crm-ed-body">
+      <div class="crm-ed-form">
+        ${cls ? `<div class="crm-g2"><div>${coverBox}</div><div>
+          <label class="ann-lab" for="crm-title" style="margin-top:0;">Título</label><input class="ev-linp" id="crm-title" maxlength="120" value="${evEsc(e.title)}" placeholder="Se completa solo con el link" oninput="crmE.title=this.value;crmE.titleAuto=false;crmPreview()">
+          <label class="ann-lab" for="crm-url">Link del video</label>
+          <div class="crm-url${e.videoState === 'ok' && v ? ' is-ok' : ''}">${crmS(CRM_I.link, 20, 2.2)}<input id="crm-url" value="${evEsc(e.video_url || '')}" placeholder="https://vimeo.com/… o https://youtu.be/…" oninput="crmVideoInput(this.value)">${pill}</div>
+          <p class="crm-help">Pegá el link de Vimeo o YouTube. Sacamos el título y la portada solos.</p>
+          <label class="ann-lab" for="crm-dur">Duración <span style="font-weight:500;color:#8A7F73;">(min:seg, si no sale sola)</span></label><input class="ev-linp" id="crm-dur" style="max-width:160px;" value="${evEsc(e.durText || '')}" placeholder="12:40" oninput="crmE.durText=this.value;crmE.video_duration_seconds=crmParseDur(this.value);crmPreview()">
+        </div></div>
+        <label class="ann-lab" for="crm-desc">Descripción</label><textarea class="ev-linp" id="crm-desc" rows="3" maxlength="1200" oninput="crmE.description=this.value;crmPreview()">${evEsc(e.description || '')}</textarea>
+        <div class="crm-g3"><div><label class="ann-lab" for="crm-cat">Categoría</label>${catSel}</div><div><span class="ann-lab">Acceso</span>${seg('access', ['all', 'Todos'], ['vip', 'Solo VIP', EVT_P.lock])}</div><div><span class="ann-lab">Estado</span>${seg('status', ['draft', 'Borrador'], ['published', 'Publicada'])}</div></div>`
+        : `<div class="crm-g2"><div><label class="ann-lab" for="crm-title" style="margin-top:0;">Título</label><input class="ev-linp" id="crm-title" maxlength="120" value="${evEsc(e.title)}" placeholder="Cómo armar un plato" oninput="crmE.title=this.value;crmPreview()"></div><div><label class="ann-lab" for="crm-cat" style="margin-top:0;">Categoría</label>${catSel}</div></div>
+        <div class="crm-g2"><div><span class="ann-lab">Acceso</span>${seg('access', ['all', 'Todos'], ['vip', 'Solo VIP', EVT_P.lock])}</div><div><span class="ann-lab">Portada</span>
+          <div class="crm-file">${crmS(CRM_I.img, 20, 2.2)}<span>${e.cover_url ? 'Portada cargada' : 'Sin portada'}</span><label class="crm-link">${e.cover_url ? 'Cambiar' : 'Subir'}<input type="file" accept="image/*" hidden onchange="crmPickCover(this)"></label></div></div></div>
+        <div class="crm-g2"><div><span class="ann-lab">Estado</span>${seg('status', ['draft', 'Borrador'], ['published', 'Publicada'])}</div><div></div></div>
+        ${blocks}`}
+        ${e.id ? `<button type="button" class="crm-del" onclick="crmDeleteItem()">${crmS(CRM_I.trash, 16)}Eliminar ${cls ? 'clase' : 'recurso'}</button>` : ''}
+      </div>
+      <div class="crm-ed-prev"><div class="crm-prev-l">Así lo verá el cliente</div><div class="crm-phone"><div class="crm-notch"></div><div class="crm-screen" id="crm-prev"></div></div></div>
+    </div>
+    <div class="crm-ed-foot">
+      <label class="crm-chk"><input type="checkbox" ${e.notify ? 'checked' : ''} onchange="crmE.notify=this.checked"><span><b>Avisar a los clientes</b> con un aviso a pantalla completa${firstPub ? '' : ' (otra vez)'}</span></label>
+      <div style="display:flex;gap:12px;"><button type="button" class="crm-btn ghost" onclick="crmSave('draft')">Guardar borrador</button><button type="button" class="crm-btn" id="crm-pub" onclick="crmSave('published')">${e.status === 'published' && e.id ? 'Guardar y publicar' : 'Publicar'}</button></div>
+    </div></div>`;
+  const fm = w.querySelector('.crm-ed-form'); if (fm) fm.scrollTop = scroll;
+  crmWireBlockDrag(w);
+  crmPreview();
+}
+function crmBlockEd(b, i) {
+  const head = (ico, l) => `<div class="crm-bh"><span class="crm-grip" draggable="true" data-blk="${i}" aria-label="Mover bloque">${crmS(CRM_I.grip, 18, 2.4)}</span>${crmS(ico, 18, 2.2)}<span>${l}</span><button type="button" class="crm-ib" aria-label="Quitar bloque" onclick="crmDelBlock(${i})">${crmS(CRM_I.trash, 16)}</button></div>`;
+  let inner = '';
+  if (b.type === 'text') inner = head(CRM_I.text, 'Texto') + `<textarea class="ev-linp" rows="3" aria-label="Texto" oninput="crmE.blocks[${i}].text=this.value;crmPreview()">${evEsc(b.text || '')}</textarea>`;
+  else if (b.type === 'image') inner = head(CRM_I.img, 'Imagen') + (b.url ? `<img class="crm-bimgp" src="${evEsc(b.url)}" alt="">` : '') +
+    `<div style="display:flex;gap:12px;align-items:center;margin-top:8px;"><input class="ev-linp" style="flex:1;" aria-label="Texto de la imagen" placeholder="Texto debajo de la imagen (opcional)" value="${evEsc(b.caption || '')}" oninput="crmE.blocks[${i}].caption=this.value;crmPreview()"><label class="crm-link">${b.url ? 'Reemplazar' : 'Subir imagen'}<input type="file" accept="image/*" hidden onchange="crmPickBlockImg(this,${i})"></label></div>`;
+  else if (b.type === 'list') inner = head(CRM_I.list, 'Lista') + (b.items || []).map((x, j) => `<div style="display:flex;gap:8px;margin-top:8px;"><input class="ev-linp" aria-label="Ítem ${j + 1}" value="${evEsc(x)}" oninput="crmE.blocks[${i}].items[${j}]=this.value;crmPreview()" onkeydown="if(event.key==='Enter'){event.preventDefault();crmListAdd(${i})}"><button type="button" class="crm-ib" aria-label="Quitar ítem" onclick="crmE.blocks[${i}].items.splice(${j},1);crmRenderEdit()">${crmS(EV_I.x, 14, 2.4)}</button></div>`).join('') + `<button type="button" class="crm-link" style="margin-top:8px;" onclick="crmListAdd(${i})">+ Agregar ítem</button>`;
+  else if (b.type === 'video') { const v = crmParseVideo(b.url); inner = head(CRM_I.play, 'Video') + `<input class="ev-linp" aria-label="Link del video" placeholder="Link de Vimeo o YouTube" value="${evEsc(b.url || '')}" oninput="crmE.blocks[${i}].url=this.value;crmPreview();this.nextElementSibling.textContent=crmParseVideo(this.value)?'Link válido':(this.value?'Link no válido':'')"><p class="crm-help">${b.url ? (v ? 'Link válido' : 'Link no válido') : ''}</p>`; }
+  else inner = head(CRM_I.minus, 'Separador') + '<hr class="crm-hr" style="margin:6px 0 0;">';
+  return `<div class="crm-blk" data-bi="${i}">${inner}</div>`;
+}
+function crmAddBlock(t) { crmE.blocks.push(t === 'list' ? { type: 'list', items: [''] } : t === 'divider' ? { type: 'divider' } : { type: t }); crmRenderEdit(); const bl = document.querySelectorAll('#crm-blocks .crm-blk'); bl[bl.length - 1]?.scrollIntoView({ block: 'nearest' }); }
+function crmDelBlock(i) { crmE.blocks.splice(i, 1); crmRenderEdit(); }
+function crmListAdd(i) { crmE.blocks[i].items = crmE.blocks[i].items || []; crmE.blocks[i].items.push(''); crmRenderEdit(); const ins = document.querySelectorAll(`#crm-blocks .crm-blk[data-bi="${i}"] input`); ins[ins.length - 1]?.focus(); }
+function crmWireBlockDrag(w) {
+  let from = null;
+  w.querySelectorAll('[data-blk]').forEach(g => {
+    g.addEventListener('dragstart', ev => { from = Number(g.dataset.blk); g.closest('.crm-blk').classList.add('is-drag'); ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', 'b' + from); });
+    g.addEventListener('dragend', () => { from = null; crmRenderEdit(); });
+  });
+  w.querySelectorAll('.crm-blk').forEach(el => {
+    el.addEventListener('dragover', ev => { if (from == null) return; ev.preventDefault(); });
+    el.addEventListener('drop', ev => {
+      if (from == null) return; ev.preventDefault();
+      const to = Number(el.dataset.bi); if (to === from) return;
+      const [b] = crmE.blocks.splice(from, 1); crmE.blocks.splice(to, 0, b); from = null; crmRenderEdit();
+    });
+  });
+}
+async function crmPickCover(inp) {
+  const f = inp.files && inp.files[0]; if (!f) return;
+  const r = await crmUploadImage(f, 'covers'); if (!r || !crmE) return;
+  crmE.cover_url = r.url; crmE.coverFrom = 'upload'; crmRenderEdit();
+}
+async function crmPickBlockImg(inp, i) {
+  const f = inp.files && inp.files[0]; if (!f) return;
+  const r = await crmUploadImage(f, 'blocks'); if (!r || !crmE) return;
+  crmE.blocks[i].url = r.url; crmRenderEdit();
+}
+function crmVideoInput(val) {
+  crmE.video_url = val.trim();
+  clearTimeout(crmEvT);
+  const v = crmParseVideo(crmE.video_url);
+  crmE.videoState = !crmE.video_url ? null : v ? 'loading' : 'bad';
+  crmEvT = setTimeout(async () => {
+    if (!crmE || !v) { crmRenderEditKeepFocus(); return; }
+    const url = crmE.video_url;
+    let d = null;
+    try { const r = await fetch('/api/oembed?url=' + encodeURIComponent(url)); d = await r.json(); } catch (err) { d = null; }
+    if (!crmE || crmE.video_url !== url) return;
+    crmE.video_provider = v.provider;
+    if (!d || d.error) crmE.videoState = 'fail'; else crmE.videoState = 'ok';
+    if (d && d.title && (crmE.titleAuto || !crmE.title.trim())) { crmE.title = d.title; crmE.titleAuto = true; }
+    if (d && d.thumbnail && crmE.coverFrom !== 'upload') { crmE.cover_url = d.thumbnail; crmE.coverFrom = v.provider; }
+    if (d && d.duration) { crmE.video_duration_seconds = d.duration; crmE.durText = crmDur(d.duration); }
+    crmRenderEditKeepFocus();
+  }, 500);
+  crmRenderEditKeepFocus();
+}
+function crmRenderEditKeepFocus() {
+  const a = document.activeElement, id = a && a.id, pos = a && a.selectionStart;
+  crmRenderEdit();
+  if (id) { const n = document.getElementById(id); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} } }
+}
+function crmPreview() {
+  const box = document.getElementById('crm-prev'); if (!box || !crmE) return;
+  const e = crmE, cat = (crmC.cats || []).find(c => String(c.id) === String(e.category_id));
+  box.innerHTML = e.kind === 'class' ? crmClassHtml(e, cat, true) : crmResourceHtml(e, cat, true);
+}
+async function crmSave(status) {
+  const e = crmE; if (!e) return;
+  const cls = e.kind === 'class';
+  if (!e.title.trim()) { showToast('Escribí un título', 'error'); document.getElementById('crm-title')?.focus(); return; }
+  const v = cls ? crmParseVideo(e.video_url) : null;
+  if (cls && !v) { showToast('Pegá un link válido de Vimeo o YouTube', 'error'); document.getElementById('crm-url')?.focus(); return; }
+  const blocks = cls ? [] : e.blocks.map(b => b.type === 'list' ? { ...b, items: (b.items || []).map(x => String(x).trim()).filter(Boolean) } : b)
+    .filter(b => b.type === 'divider' || (b.type === 'text' && String(b.text || '').trim()) || (b.type === 'image' && b.url) || (b.type === 'list' && b.items.length) || (b.type === 'video' && crmParseVideo(b.url)));
+  if (!cls && status === 'published' && !blocks.length) { showToast('Agregá al menos un bloque con contenido', 'error'); return; }
+  const now = new Date().toISOString();
+  const row = { kind: e.kind, title: e.title.trim(), description: (e.description || '').trim() || null, cover_url: e.cover_url || null,
+    video_url: cls ? e.video_url : null, video_provider: cls ? v.provider : null, video_duration_seconds: cls ? (e.video_duration_seconds || null) : null,
+    blocks, access: e.access, status, category_id: Number(e.category_id), updated_at: now };
+  const firstPublish = status === 'published' && !e.published_at;
+  if (firstPublish) row.published_at = now;
+  const btns = document.querySelectorAll('#crm-edit .crm-ed-foot button'); btns.forEach(b => b.disabled = true);
+  let res;
+  if (e.id) res = await sb.from('classroom_items').update(row).eq('id', e.id).select('*').maybeSingle();
+  else {
+    const same = crmItemsOf(row.category_id);
+    row.position = same.length ? Math.max(...same.map(x => x.position || 0)) + 1 : 0;
+    res = await sb.from('classroom_items').insert([row]).select('*').maybeSingle();
+  }
+  btns.forEach(b => b.disabled = false);
+  if (res.error) { showToast('No se guardó: ' + res.error.message, 'error'); return; }
+  const saved = res.data || { ...e, ...row };
+  let sent = 0;
+  if (status === 'published' && e.notify) sent = await crmNotify(saved);
+  crmCloseEdit();
+  showToast(status === 'published' ? (sent ? `Publicado y avisado a ${sent} ${sent === 1 ? 'cliente' : 'clientes'}` : 'Publicado') : 'Borrador guardado', 'success');
+  crmCoachLoad();
+}
+// "Avisar a los clientes": aviso E11 con destino Classroom para quienes tienen acceso (sin churn, ocultos ni LIFT)
+async function crmNotify(it) {
+  const { data, error } = await sb.from('clients').select(ANN_CLIENT_COLS).eq('coach_id', currentUser.id);
+  if (error) { showToast('No se pudo avisar: ' + error.message, 'error'); return 0; }
+  const list = (data || []).filter(c => !c.is_churn && !c.hidden && annDestOk(c, 'classroom') && (it.access !== 'vip' || !evIsEntry(c)));
+  if (!list.length) return 0;
+  const cls = it.kind === 'class';
+  const rows = list.map(c => ({ client_id: c.id, title: cls ? 'Hay una clase nueva en Educación' : 'Hay un recurso nuevo en Educación',
+    body: `"${it.title}". Lo encontrás en Food, en la pestaña Educación.`, destination: 'classroom', destination_ref: String(it.id), source: 'bulk' }));
+  const r = await sb.from('client_announcements').insert(rows);
+  if (r.error) { showToast('Se guardó, pero no se avisó: ' + r.error.message, 'error'); return 0; }
+  return rows.length;
+}
+function crmDeleteItem() {
+  const e = crmE; if (!e || !e.id) return;
+  const w = document.createElement('div');
+  w.className = 'ev-modal-wrap'; w.id = 'crm-itdel'; w.style.zIndex = '10105';
+  w.innerHTML = `<div class="ev-modal" role="dialog" aria-modal="true" aria-labelledby="crm-itdel-t"><span class="ev-mico">${crmS(CRM_I.trash, 28)}</span>
+    <h2 id="crm-itdel-t" style="font-size:26px;margin-top:12px;">¿Eliminar «${evEsc(e.title)}»?</h2><p class="ev-m-mute">Se borra junto con el registro de quién la vio. No se puede deshacer.</p>
+    <button type="button" class="ev-lbtn" style="background:#B3261E;" id="crm-itdel-ok">Eliminar</button>
+    <button type="button" class="ev-lbtn ghost" style="background:none;color:#6F655B;" onclick="document.getElementById('crm-itdel')?.remove()">Cancelar</button></div>`;
+  document.body.appendChild(w);
+  w.querySelector('#crm-itdel-ok').onclick = async () => {
+    const r = await sb.from('classroom_items').delete().eq('id', e.id);
+    if (r.error) { showToast('No se borró: ' + r.error.message, 'error'); return; }
+    w.remove(); crmCloseEdit(); showToast('Eliminado', 'success'); crmCoachLoad();
+  };
+}
+
+// --- Cliente: vistas de clase (47) y recurso (48), compartidas con la vista previa del editor ---
+function crmClassHtml(it, cat, preview) {
+  const dur = crmDur(it.video_duration_seconds);
+  return `<div class="crm-cv">
+    <div class="crm-cv-top"><button type="button" class="crm-circ" aria-label="Volver" data-a="back">${crmS(EV_I.back, 20, 2.4)}</button><span class="ann-eb" style="margin:0;">${evEsc(cat ? cat.name : '')}</span></div>
+    <div class="crm-cv-media" style="background:${CRM_GRAD[Math.abs(Number(it.id) || 0) % CRM_GRAD.length]};" data-a="${preview ? '' : 'play'}" role="${preview ? '' : 'button'}" aria-label="Reproducir video">
+      ${it.cover_url ? `<img src="${evEsc(it.cover_url)}" alt="">` : ''}<span class="crm-play" style="width:78px;height:78px;">${crmS(CRM_I.play, 34, 2.2)}</span>${dur ? `<span class="crm-durb">${dur}</span>` : ''}</div>
+    <h1 class="crm-cv-t">${evEsc(it.title || 'Título de la clase')}</h1>
+    <div class="crm-cv-tags"><span class="crm-tg is-dark">Video${dur ? ' · ' + dur : ''}</span><span class="crm-tg">${it.access === 'vip' ? 'Solo VIP' : 'Para todos'}</span></div>
+    ${it.description ? `<p class="crm-cv-d">${evEsc(it.description)}</p>` : ''}
+    <button type="button" class="ev-btn crm-mark" data-a="seen">${crmS(CRM_I.check, 22, 2.6)}Marcar como vista</button>
+    <div class="crm-next-slot"></div>
+  </div>`;
+}
+function crmResourceHtml(it, cat, preview) {
+  return `<div class="crm-rv">
+    <div class="crm-rv-top"><div><div class="ann-eb" style="margin:0;">${evEsc(cat ? cat.name : '')}</div><h1 class="crm-cv-t" style="margin-top:6px;">${evEsc(it.title || 'Título del recurso')}</h1></div>
+      <button type="button" class="crm-circ" aria-label="Cerrar" data-a="back">${crmS(EV_I.x, 20, 2.4)}</button></div>
+    ${it.description ? `<p class="crm-bp">${evEsc(it.description)}</p>` : ''}
+    <div class="crm-rv-body">${crmBlocksHtml(it.blocks)}</div>
+    <div class="crm-rv-foot"><button type="button" class="ev-btn" data-a="done">Listo, ya lo vi</button></div>
+  </div>`;
+}
+
+// --- Cliente · Food en dos pestañas (46a / 46b) ---
+let crmFoodPending = null; // { itemId } cuando un aviso E11 lleva a Classroom
+let crmCl = null;          // { cats, items, seen:Set }
+function crmFoodHasEdu() { return !!currentClient && currentClient.program_type !== 'lift'; }
+function crmMountFoodTabs(body, noAccess) {
+  if (!body || !crmFoodHasEdu()) return;
+  body.querySelector('.crm-ftabs')?.remove(); body.querySelector('#crm-edu')?.remove(); body.querySelector('.crm-fhead')?.remove();
+  const bar = document.createElement('div');
+  bar.className = 'crm-ftabs'; bar.setAttribute('role', 'tablist'); bar.setAttribute('aria-label', 'Food');
+  bar.innerHTML = `<button type="button" role="tab" id="crm-tab-food" aria-controls="food-screen-body" onclick="crmSetFoodTab('food')">Tu alimentación</button><button type="button" role="tab" id="crm-tab-edu" aria-controls="crm-edu" onclick="crmSetFoodTab('edu')">Educación</button>`;
+  if (noAccess) {
+    const h = document.createElement('div'); h.className = 'crm-fhead';
+    h.innerHTML = '<div class="food-head-label">Move With Sau</div><h1 class="food-head-title">Food</h1>';
+    body.prepend(h); h.after(bar);
+  } else {
+    const head = body.querySelector('.food-head');
+    if (head) head.after(bar); else body.prepend(bar);
+  }
+  const edu = document.createElement('div'); edu.id = 'crm-edu'; edu.setAttribute('role', 'tabpanel'); edu.setAttribute('aria-labelledby', 'crm-tab-edu');
+  body.appendChild(edu);
+  crmSetFoodTab(crmFoodPending ? 'edu' : 'food');
+}
+function crmSetFoodTab(t) {
+  const body = document.getElementById('food-screen-body'); if (!body) return;
+  body.classList.toggle('crm-edu-on', t === 'edu');
+  document.getElementById('crm-tab-food')?.setAttribute('aria-selected', String(t !== 'edu'));
+  document.getElementById('crm-tab-edu')?.setAttribute('aria-selected', String(t === 'edu'));
+  if (t === 'edu') crmRenderEdu();
+}
+async function crmLoadClient() {
+  const c = currentClient; if (!c) return null;
+  const [cats, items, views] = await Promise.all([
+    sb.from('classroom_categories').select('id,name,position').order('position', { ascending: true }),
+    sb.from('classroom_items').select('*').eq('status', 'published').order('position', { ascending: true }),
+    sb.from('classroom_views').select('item_id').eq('client_id', c.id)
+  ]);
+  if (cats.error || items.error) return { error: (cats.error || items.error).message, cats: [], items: [], seen: new Set() };
+  const order = {}; (cats.data || []).forEach((k, i) => { order[k.id] = i; });
+  const its = (items.data || []).filter(it => order[it.category_id] != null)
+    .sort((a, b) => (order[a.category_id] - order[b.category_id]) || (a.position - b.position) || (a.id - b.id));
+  return { cats: cats.data || [], items: its, seen: new Set((views.data || []).map(r => String(r.item_id))) };
+}
+function crmLocked(it) { return it.access === 'vip' && evIsEntry(currentClient); }
+function crmIsNew(it) { return !!it.published_at && Date.now() - Date.parse(it.published_at) < CRM_NEW_DAYS * 864e5; }
+let crmEduFilter = 'all';
+async function crmRenderEdu() {
+  const box = document.getElementById('crm-edu'); if (!box) return;
+  if (!crmCl) box.innerHTML = '<div class="spinner"></div>';
+  crmCl = await crmLoadClient();
+  if (!crmCl || !document.getElementById('crm-edu')) return;
+  crmPaintEdu();
+  if (crmFoodPending) {
+    const id = crmFoodPending.itemId; crmFoodPending = null;
+    const it = id != null && crmCl.items.find(x => String(x.id) === String(id));
+    if (it) crmOpenItem(it.id);
+  }
+}
+function crmPaintEdu() {
+  const box = document.getElementById('crm-edu'); if (!box || !crmCl) return;
+  const acc = crmCl.items.filter(it => !crmLocked(it));
+  const seenN = acc.filter(it => crmCl.seen.has(String(it.id))).length;
+  const pct = acc.length ? Math.round(seenN / acc.length * 100) : 0;
+  const cats = crmCl.cats.filter(k => crmCl.items.some(it => String(it.category_id) === String(k.id)));
+  if (crmEduFilter !== 'all' && !cats.some(k => String(k.id) === String(crmEduFilter))) crmEduFilter = 'all';
+  const list = crmCl.items.filter(it => crmEduFilter === 'all' || String(it.category_id) === String(crmEduFilter));
+  const card = it => {
+    const lock = crmLocked(it), seen = crmCl.seen.has(String(it.id));
+    const meta = crmMeta(it, false) + (it.access === 'vip' ? ' · solo VIP' : '');
+    const tag = lock ? `<span class="crm-tg is-vip">${crmS(EVT_P.lock, 14, 2.4)}VIP</span>` : seen ? `<span class="crm-tg is-seen">${crmS(CRM_I.check, 14, 2.6)}Vista</span>` : crmIsNew(it) ? '<span class="crm-tg is-new">Nueva</span>' : '';
+    return `<button type="button" class="crm-card${lock ? ' is-lock' : ''}" onclick="crmOpenItem(${it.id})">${crmThumb(it, 96, 64, lock)}<span class="crm-rt"><b>${evEsc(it.title)}</b><small>${evEsc(meta)}</small>${tag}</span></button>`;
+  };
+  box.innerHTML = `<div class="crm-edu-h"><div><div class="food-head-label">Classroom</div><h2 class="crm-edu-t">Aprendé el sistema</h2></div><span class="crm-edu-n">${seenN} de ${acc.length} vistas</span></div>
+    <div class="crm-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${acc.length}" aria-valuenow="${seenN}" aria-label="Clases vistas"><i style="width:${pct}%"></i></div>
+    ${cats.length > 1 ? `<div class="crm-chips">${[['all', 'Todo'], ...cats.map(k => [k.id, k.name])].map(([k, l]) => `<button type="button" class="ann-chip" aria-pressed="${String(crmEduFilter) === String(k)}" onclick="crmEduFilter='${k}';crmPaintEdu()">${evEsc(l)}</button>`).join('')}</div>` : ''}
+    <div class="crm-list">${list.map(card).join('') || `<p class="crm-empty" style="padding:24px 4px;">${crmCl.error ? 'Educación todavía no está lista.' : 'Sau todavía no publicó clases. Pronto vas a ver acá videos y guías.'}</p>`}</div>`;
+}
+function crmOpenItem(id) {
+  const it = crmCl && crmCl.items.find(x => String(x.id) === String(id)); if (!it) return;
+  if (crmLocked(it)) { crmLockSheet(it); return; }
+  if (it.kind === 'class') crmOpenClass(it); else crmOpenResource(it);
+}
+async function crmSetSeen(it, on) {
+  const c = currentClient; if (!c) return false;
+  const r = on ? await sb.from('classroom_views').upsert([{ client_id: c.id, item_id: it.id }], { onConflict: 'client_id,item_id' })
+    : await sb.from('classroom_views').delete().eq('client_id', c.id).eq('item_id', it.id);
+  if (r.error) { showToast('No se guardó: ' + r.error.message, 'error'); return false; }
+  if (on) crmCl.seen.add(String(it.id)); else crmCl.seen.delete(String(it.id));
+  crmPaintEdu();
+  return true;
+}
+function crmOpenClass(it) {
+  document.getElementById('crm-view')?.remove();
+  const cat = crmCl.cats.find(k => String(k.id) === String(it.category_id));
+  const w = document.createElement('div');
+  w.id = 'crm-view'; w.className = 'ann-ov crm-viewov';
+  w.setAttribute('role', 'dialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-label', it.title);
+  w.innerHTML = crmClassHtml(it, cat, false);
+  const paintSeen = () => {
+    const b = w.querySelector('.crm-mark'), on = crmCl.seen.has(String(it.id));
+    b.classList.toggle('is-on', on);
+    b.innerHTML = `${crmS(CRM_I.check, 22, 2.6)}${on ? 'Vista · tocá para desmarcar' : 'Marcar como vista'}`;
+  };
+  // Siguiente: la próxima de la lista a la que tiene acceso
+  const acc = crmCl.items.filter(x => !crmLocked(x)), k = acc.findIndex(x => x.id === it.id), nx = k >= 0 ? acc[k + 1] : null;
+  if (nx) w.querySelector('.crm-next-slot').innerHTML = `<button type="button" class="crm-next" data-a="next">${crmThumb(nx, 72, 48)}<span class="crm-rt"><span class="ann-eb" style="margin:0;font-size:11px;">Siguiente</span><b>${evEsc(nx.title)}</b></span>${crmS(CRM_I.chevR, 20)}</button>`;
+  w.addEventListener('click', async e => {
+    const b = e.target.closest('[data-a]'); if (!b || !b.dataset.a) return;
+    if (b.dataset.a === 'back') w.remove();
+    else if (b.dataset.a === 'play') { const v = crmParseVideo(it.video_url); if (v) b.outerHTML = crmIframe(v, true).replace('class="crm-vid"', 'class="crm-vid crm-cv-media"'); }
+    else if (b.dataset.a === 'seen') { if (await crmSetSeen(it, !crmCl.seen.has(String(it.id)))) paintSeen(); }
+    else if (b.dataset.a === 'next') { w.remove(); crmOpenItem(nx.id); }
+  });
+  document.body.appendChild(w);
+  paintSeen();
+  w.querySelector('[data-a="back"]')?.focus();
+}
+function crmOpenResource(it) {
+  document.getElementById('crm-res')?.remove();
+  const cat = crmCl.cats.find(k => String(k.id) === String(it.category_id));
+  const dim = document.createElement('div');
+  dim.className = 'ev-dim'; dim.id = 'crm-res'; dim.style.zIndex = '10080';
+  dim.innerHTML = `<div class="ev-sheet lt crm-rsheet" role="dialog" aria-modal="true" aria-label="${evEsc(it.title)}"><div class="ev-handle"></div>${crmResourceHtml(it, cat, false)}</div>`;
+  dim.addEventListener('click', async e => {
+    if (e.target === dim) { dim.remove(); return; }
+    const b = e.target.closest('[data-a]'); if (!b) return;
+    if (b.dataset.a === 'back') dim.remove();
+    else if (b.dataset.a === 'done') { if (await crmSetSeen(it, true)) dim.remove(); }
+  });
+  document.body.appendChild(dim);
+}
+function crmLockSheet(it) {
+  document.getElementById('crm-lock')?.remove();
+  const dim = document.createElement('div');
+  dim.className = 'ev-dim'; dim.id = 'crm-lock'; dim.style.zIndex = '10080';
+  const cls = it.kind === 'class';
+  dim.innerHTML = `<div class="ev-sheet lt" role="dialog" aria-modal="true" aria-labelledby="crm-lock-t" style="text-align:center;">
+    <div class="ev-handle"></div>
+    <div style="display:flex;justify-content:center;">${annHexIcon(EVT_P.lock, 86)}</div>
+    <div class="ann-eb" style="margin-top:18px;">Solo VIP</div>
+    <h2 id="crm-lock-t" style="font-weight:900;font-size:28px;margin:8px 0 10px;">${cls ? 'Esta clase es parte de VIP' : 'Este recurso es parte de VIP'}</h2>
+    <p style="color:#6F655B;font-size:16px;line-height:1.5;">"${evEsc(it.title)}" está en el acompañamiento directo de Sau. Pedí acceso y te cuenta cómo sumarte.</p>
+    <button type="button" class="ev-lbtn" data-a="ask" style="height:54px;border-radius:16px;font-size:16px;gap:10px;margin-top:20px;">${crmS(CRM_I.send, 20, 2.2)}Pedir acceso por el chat</button>
+    <button type="button" class="ann-link" style="color:#6F655B;" data-a="no">Ahora no</button></div>`;
+  dim.addEventListener('click', e => {
+    if (e.target === dim) { dim.remove(); return; }
+    const b = e.target.closest('[data-a]'); if (!b) return;
+    dim.remove();
+    if (b.dataset.a === 'ask') evOpenChat(`Quiero pedir acceso a ${it.title}`);
+  });
+  document.body.appendChild(dim);
 }
 
 // ---------- E9 · Banner "Tenés nuevos mensajes de Tu Coach" (solo Entry) ----------

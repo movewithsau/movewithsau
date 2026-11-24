@@ -13,6 +13,7 @@ Servidor `python3 -m http.server 3000` en la raíz, ventana de 390 px. **Las pru
 | sql/entry-vip-base.sql | Corrido por Sau (23 nov) |
 | sql/entry-vip-engagement.sql | Corrido por Sau (24 nov): tablas `coach_feed` y `entry_nudges` (rowsecurity false) |
 | sql/entry-vip-minimal.sql | Corrido por Sau (24 nov): `workout_sessions.is_minimal` |
+| sql/e13-classroom.sql | **Pendiente** (lo corre Sau): `classroom_categories`, `classroom_items` (con `published_at`), `classroom_views`, bucket público `classroom` (solo imágenes, 5 MB) y policy `classroom_all_access` |
 | sql/e12-week-changes.sql | Corrido por Sau (24 nov): tablas `week_change_notes` y `coach_settings` (con `week_change_auto`=true y `week_change_default_note`='Seguimos mejorando.') |
 | sql/e11-announcements.sql | **Pendiente** (lo corre Sau): tabla `client_announcements` (E11). La purga de `coach_feed` no necesita SQL |
 | sql/entry-vip-extra.sql | Corrido por Sau (23 nov): `client_onboarding.completed_at`, `rate_us_dismissed_at`, bucket 15 MB, policy `support_chat_all_access` |
@@ -355,3 +356,37 @@ Probado (base simulada, 390 px):
 - [x] Coach: semana 6 vs 5 con "1 con más series"; guardar nota, volver a la predeterminada, apagar y prender el aviso (upsert por cliente+semana).
 - [x] Ajuste deload (node con las funciones reales): programa de 12 semanas, posición 8 (deload) se compara contra la 7 y la 9 contra la 8; programa de 5 semanas con deload en la 5 → 5 contra 4.
 - [ ] Real (Supabase y celular): **no probado**. SQL ya corrido por Sau.
+
+### E13: Classroom + Food en 2 pestañas + pantalla del tour — terminado, falta probar en real
+Mockups 42–49 y 07b (`docs/referencias/mockup-e11/`, sin trackear).
+
+Paso 0 (resumen): Food se arma en `loadFoodScreen` (cabecera con cuchara de miel, pastilla del Método del plato solo con `nutrition_mode='deficit'`, perfil nutricional, menú con chips de días, PDF, WhatsApp, protocolos y NutriFlex); sin `food_access` la pantalla entera es "Módulo exclusivo". Build = `evRenderBuild`. Buckets: `plans` público; `progress-photos`, `client-documents`, `diary-photos`, `support-chat` privados. Candado de Run = `evOpenRunLock`. Tour = `evTourList` (puntos y "N de M" salen de la lista). Sin CSP: los iframes de Vimeo/YouTube funcionan.
+
+Decisiones aprobadas por Sau (24 nov): VIP sin `food_access` ve la pestaña Educación ("Tu alimentación" le sigue mostrando "Módulo exclusivo"); LIFT no ve Classroom; duración de YouTube automática con campo manual de respaldo; "Avisar a los clientes" al publicar (aviso E11 destino Classroom, sin churn ni ocultos; LIFT tampoco porque no tiene Food; "Solo VIP" solo a VIP); "Nueva" = publicada hace menos de 14 días y sin ver; editor a pantalla completa con arrastrar y soltar; minutos de lectura por palabras (200 por minuto).
+
+Hecho:
+- `api/oembed.js`: GET `?url=` → título, portada y duración. Vimeo por oEmbed (incluye links privados con hash). YouTube por oEmbed + `lengthSeconds` de la página del video; si falla, `duration: null` y Sau la escribe. Solo consulta vimeo.com / youtube.com con el id del video.
+- Build (42): tarjeta "Classroom" primera, con "Nuevo" hasta que Sau la abre una vez (se recuerda en el equipo). Las otras tarjetas sin cambios.
+- Classroom coach (43): panel a pantalla completa (en compu con barra lateral y resumen; en celular apilado). Filtros Todo / Videos / Recursos / Borradores, categorías plegables con renombrar y eliminar (si tiene contenido, confirma y borra también sus clases y quién las vio), filas con portada, tipo, acceso, estado y "N vieron". Arrastrar y soltar filas (también entre categorías) y categorías; se guarda `position` y `category_id`.
+- "Nueva clase" abre: Clase con video o Recurso.
+- Crear clase (44): pegar el link llena título, portada ("Importada de Vimeo/YouTube") y duración; "Subir otra" portada propia; descripción, categoría, acceso, estado y vista previa tipo celular. Duración editable (min:seg).
+- Crear recurso (45): bloques Texto, Imagen (sube al bucket, con texto opcional), Lista (Enter agrega ítem), Video (link embebido) y Separador; arrastrar para ordenar; portada opcional; vista previa en vivo.
+- Pie de ambos: "Avisar a los clientes" (marcado en la primera publicación), "Guardar borrador" y "Publicar". `published_at` se llena en la primera publicación. Editar permite eliminar con confirmación.
+- Imágenes: se reducen a 1600 px JPEG con el mismo helper de Tu Progreso; límite 5 MB.
+- Food (46a): pestañas "Tu alimentación" (por defecto) y "Educación" debajo de la cabecera. Nada de Tu alimentación cambió (cuchara incluida); solo "Limpiar chat" pasó a una fila "NutriFlex · Limpiar chat" arriba del chat.
+- Educación (46b): "Aprendé el sistema", "N de M vistas" (M = lo que el cliente puede abrir), barra de progreso, chips de categoría con scroll, tarjetas con portada, tipo y duración / minutos de lectura, etiqueta Vista / Nueva / VIP. Borradores no se ven.
+- Clase (47): video embebido dentro del app (al tocar la portada), título, etiquetas, descripción, "Marcar como vista" (tocar de nuevo desmarca) y "Siguiente".
+- Recurso (48): hoja casi completa con los bloques y "Listo, ya lo vi" (marca vista).
+- Candado (49): Entry + "Solo VIP" → miniatura oscura con candado y etiqueta VIP; hoja "Esta clase es parte de VIP" → "Pedir acceso por el chat" abre el chat de Entry con "Quiero pedir acceso a {título}". VIP ve todo.
+- Tour (07b): pantalla `learn` "Aprendé a tu ritmo" después de Luz. Entry: 11 con fecha de pago (10 sin); VIP: 8 contadas sin fecha de pago y 9 con ella (la bienvenida no cuenta). La línea del candado solo en Entry. Quien ya vio el tour no lo vuelve a ver.
+- Aviso E11 "Classroom": abre Food › Educación y, con `destination_ref`, la clase (o el candado si es VIP y el cliente es Entry).
+- Desvío menor del mockup: los recursos sin portada llevan un ícono de libro en vez del botón de play.
+
+Probado (base simulada; `/api/oembed` real):
+- [x] `/api/oembed`: Vimeo (título, portada, 1:02) y YouTube (título, portada, 0:19); link de otro sitio → `link_no_valido`.
+- [x] Coach: crear 3 categorías; importar clase de Vimeo y de YouTube; recurso con los 5 bloques (imagen subida) y reordenar bloques; publicar "Todos" con aviso (3 avisos: Entry, VIP y VIP sin Food; sin LIFT, churn ni oculta), uno "Solo VIP" y uno en borrador. Mover un ítem a otra categoría, reordenar categorías, filtros, renombrar y eliminar una categoría con contenido.
+- [x] Entry: dos pestañas, ve "Todos", el "Solo VIP" con candado y el pedido por chat precargado, no ve el borrador; marcar como vista y "Listo, ya lo vi" actualizan "N de M"; desmarcar funciona.
+- [x] VIP: todo sin candado. VIP sin Food: pestañas; "Módulo exclusivo" solo en Tu alimentación. LIFT: sin pestañas.
+- [x] Tour: Entry `learn` = 5 de 11 con la línea del candado; VIP sin esa línea.
+- [ ] Reproducción del video dentro del app: el iframe carga pero el navegador de prueba no lo muestra; **probar en el celular**.
+- [ ] Real (Supabase, Storage y celular): **no probado**. Requiere correr `sql/e13-classroom.sql`.
