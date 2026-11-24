@@ -32391,8 +32391,8 @@ async function evOpenCoachFeed() {
 }
 
 // ---------- E10 · Entreno para poco tiempo (solo VIP) ----------
-// Regla: de cada circuito, solo el primer ejercicio, con 2 rondas (o menos si el plan tenía menos);
-// los ejercicios sueltos quedan con 2 series como máximo. Si el día es todo sueltos, solo los primeros 3. Se arma en memoria al dibujar el día:
+// Regla: de cada circuito, solo el primer ejercicio, pasado a suelto; los sueltos quedan; todos con
+// 2 series como máximo (o menos si el plan tenía menos) y como máximo 6 ejercicios en total. Se arma en memoria al dibujar el día:
 // no cambia los ejercicios del plan ni lo ya registrado. Lo que se guarda es lo de siempre
 // (exercise_logs de lo que se hace y workout_sessions al terminar), así cuenta como día entrenado.
 // La elección se recuerda en este equipo por cliente, día del plan y fecha.
@@ -32402,22 +32402,20 @@ function minWkIsOn(planDayId) { try { return localStorage.getItem(minWkKey(planD
 function minWkAvailable(exs) {
   return !!(currentClient && !evIsEntry(currentClient) && currentUser?.role !== 'coach' && exs && exs.length);
 }
-const MINWK_SOLO_ONLY_MAX = 3; // día sin circuitos (todo sueltos): solo los primeros 3
+const MINWK_MAX = 6; // tope de ejercicios en la versión mínima, haya los que haya
+// Cada circuito aporta su primer ejercicio, que pasa a ser suelto (sin superset_group);
+// los sueltos quedan igual. Todos con 2 series como máximo y en el orden del plan.
 function minWkReduce(exs) {
   const seen = new Set();
-  const soloOnly = !exs.some(ex => ex.superset_group);
-  return exs.filter((ex, i) => {
-    if (soloOnly) return i < MINWK_SOLO_ONLY_MAX;
+  return exs.filter(ex => {
     if (!ex.superset_group) return true;
     if (seen.has(ex.superset_group)) return false;
     seen.add(ex.superset_group); return true;
-  }).map(ex => {
+  }).slice(0, MINWK_MAX).map(ex => {
     const x = { ...ex };
-    if (x.superset_group) {
-      const r = x.circuit_rounds || x.sets || 1;
-      x.circuit_rounds = Math.min(r, MINWK_SETS);
-      if (x.sets) x.sets = Math.min(x.sets, MINWK_SETS);
-    } else if (x.sets) x.sets = Math.min(x.sets, MINWK_SETS);
+    const n = x.superset_group ? (x.circuit_rounds || x.sets || 1) : (x.sets || 1);
+    x.sets = Math.min(n, MINWK_SETS);
+    x.superset_group = null; x.circuit_rounds = null;
     return x;
   });
 }
@@ -32433,7 +32431,7 @@ function minWkSet(on) {
   if (!currentPlanDayId || isWorkoutStarted()) return;
   try { on ? localStorage.setItem(minWkKey(currentPlanDayId), '1') : localStorage.removeItem(minWkKey(currentPlanDayId)); } catch (e) {}
   loadClientExercises();
-  showToast(on ? 'Listo: primer ejercicio de cada circuito, 2 rondas (~15 min)' : 'Volviste al entreno completo');
+  showToast(on ? 'Listo: hasta 6 ejercicios sueltos, 2 series cada uno' : 'Volviste al entreno completo');
 }
 
 async function evRenderDelivery() {

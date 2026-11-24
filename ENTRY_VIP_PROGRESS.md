@@ -284,3 +284,6 @@ Probado:
 - [ ] Navegador y real: **no probados**.
 
 Aprobado por Sau (24 nov): días que son todo ejercicios sueltos → solo los primeros 3, con 2 series. Días mixtos siguen la regla general.
+
+### Ajuste de Sau (24 nov) a E10
+- La versión mínima ya no deja circuitos de un solo ejercicio: el primer ejercicio de cada circuito pasa a ser suelto. Sueltos se mantienen. Todos con 2 series como máximo (o las del plan si eran menos), en el orden del plan, con un tope de 6 ejercicios. Reemplaza la regla anterior de "solo los primeros 3" para días de solo sueltos.
