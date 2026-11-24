@@ -11,6 +11,8 @@ Servidor `python3 -m http.server 3000` en la raíz, ventana de 390 px. **Las pru
 | Archivo | Estado |
 |---|---|
 | sql/entry-vip-base.sql | Corrido por Sau (23 nov) |
+| sql/entry-vip-engagement.sql | Corrido por Sau (24 nov): tablas `coach_feed` y `entry_nudges` (rowsecurity false) |
+| sql/entry-vip-minimal.sql | Corrido por Sau (24 nov): `workout_sessions.is_minimal` |
 | sql/entry-vip-extra.sql | Corrido por Sau (23 nov): `client_onboarding.completed_at`, `rate_us_dismissed_at`, bucket 15 MB, policy `support_chat_all_access` |
 
 ## Decisiones de Sau (23 nov) que mandan sobre el prompt
@@ -242,3 +244,56 @@ Pendientes de Sau: nombre final de NoPain, horario de Aquí Estoy, si "sin costo
 - Tu Progreso: guía colapsable "Cómo tomarte las fotos" arriba del registro de la semana, con el texto de Sau (en ayunas, una vez por semana, sin forzar pose) y las 3 referencias (`img/pose-frente.webp`, `img/pose-costado.webp`, `img/pose-espalda.webp`); tocar una la abre a pantalla completa. Para todos los clientes.
 - Refiere y Gana: "+2 amigos en el mismo mes: ganás 15% por cada uno." y punto 3 "Cuando hace su primer pago, Sau te paga tu comisión al cierre de ese mismo mes."
 - Nota: "Te escucho. ¿Qué pasó hoy?" en NoPain era la respuesta del doble de prueba que quedó activo en la pestaña del navegador del app, no el modelo. NoPain real necesita `/api/chat` (Vercel), que no corre con `python3 -m http.server`.
+
+### E9: Engagement Entry — terminado
+Commit: (ver git log, "E9")
+
+Hecho:
+- 9.1 Mi meta (Hive): texto nuevo siempre visible debajo de "Días por semana", todos los tiers; hexágonos y lógica sin cambios. El texto viejo "Elegí cuántos días…" ya no se muestra.
+- 9.2 Encabezado del chat del cliente: "Tu Coach" (único lugar en el app; el mockup de referencia no se tocó).
+- 9.3 `api/coach-digest` (cron 9 p. m. CR): `runNudges` para `tier='entry'`, sin churn, sin ocultos y sin la pausa de pago (next_payment_date + 48 h, misma regla que el app). Inactivo = más de 3 días desde el último `workout_sessions` con `plan_day_id` (o desde `client_onboarding.completed_at` si nunca entrenó). Episodio 1: texto "hey hace un par de días…"; siguientes: "parece que otra vez…". Nombre = primer nombre en minúscula. Primero reserva el episodio en `entry_nudges` (único cliente+episodio: si el cron corre dos veces no hay doble mensaje), después inserta el mensaje como de Sau (`sender='coach'`, `status='answered'`) y deja el aviso en `coach_feed`. Los nudges corren aunque no haya nada que reportar en el resumen; el push no se usa para esto.
+- 9.4 Banner "Tenés nuevos mensajes de Tu Coach" (solo Entry): en `evPostLoginPopups`, antes de Rate us y la oferta VIP (un solo pop-up por apertura; pausa, churn, tour y Tu Progreso bloqueado ya cortan antes). Vista previa del último mensaje sin leer, "Ver mensaje" abre el chat. Se recuerda el id del último mensaje mostrado en el equipo (`localStorage`), así no vuelve hasta que llega uno más nuevo. VIP no ve nada.
+- 9.5 Delivery: fila fija "Coach" arriba de las conversaciones, abre el historial de `coach_feed` (resúmenes y avisos de nudges), solo lectura. El cron guarda cada resumen ahí antes de intentar el push. `coach_feed` no entra en la purga de 7 días.
+
+Probado:
+- [x] Cron con node y Supabase simulado: Entry inactivo con entreno viejo y Entry que nunca entrenó → 1 mensaje cada uno; churn, en pausa, reciente y VIP → nada; segunda corrida → nada; vuelve a entrenar y pasan 4 días → episodio 2 con "otra vez". Hilo Coach con los 3 avisos.
+- [x] Revisión de sintaxis de todo el JS de `index.html`.
+- [ ] Banner y hilo Coach en el navegador: **no probados** (no se pudo abrir la vista previa en esta sesión).
+- [ ] No probado en real.
+
+Decisiones:
+- Cuenta como entreno solo `workout_sessions` con `plan_day_id` (Run, hábitos, LIFT, comidas y check-in no cuentan).
+- "Más de 3 días" = 4 o más días calendario desde el último entreno (en la corrida de las 9 p. m.).
+- El banner va antes que Rate us y la oferta VIP.
+
+### E10: Entreno para poco tiempo (solo VIP) — terminado (regla pendiente de aprobación)
+Commit: (ver git log, "E10")
+
+Paso 0:
+- Run: la versión (completa / reducida 70 % / mínima 50 %) se calcula sobre la sesión planeada y se guarda en `run_sessions.version`.
+- Entreno del día: `exercises` del `monthly_plans` del día; circuito = mismo `superset_group` (rondas en `circuit_rounds`), suelto = `sets`.
+
+Hecho:
+- Debajo de "Iniciar entreno", botón estilo "Ir a Run": "Entreno para poco tiempo" (solo VIP, oculto para Entry). Al tocarlo cambia a "Poco tiempo activo · Volver al completo". Durante el entreno se ve la etiqueta "Entreno para poco tiempo" y no se puede cambiar.
+- Regla (`minWkReduce`, en memoria): de cada circuito, solo el primer ejercicio, con 2 rondas (o menos si el plan tenía menos); ejercicios sueltos con 2 series como máximo. No se escribe nada nuevo en el plan.
+- Cuenta como día entrenado: se guardan los mismos `exercise_logs` y la fila normal de `workout_sessions` al terminar.
+- La elección se recuerda en el equipo (cliente + día del plan + fecha). Al terminar (Finalizar o Terminar día) se guarda `workout_sessions.is_minimal` (SQL `sql/entry-vip-minimal.sql`, corrido por Sau el 24 nov). En la ficha del coach, el día muestra "Poco tiempo".
+
+Probado:
+- [x] `minWkReduce` con node: circuitos de 2 a 1 ejercicio, rondas 4→2, 1→1; sueltos 5→2, 1→1; el arreglo original no cambia.
+- [ ] Navegador y real: **no probados**.
+
+Aprobado por Sau (24 nov): días que son todo ejercicios sueltos → solo los primeros 3, con 2 series. Días mixtos siguen la regla general.
+
+### Ajuste de Sau (24 nov) a E10
+- La versión mínima ya no deja circuitos de un solo ejercicio: el primer ejercicio de cada circuito pasa a ser suelto. Sueltos se mantienen. Todos con 2 series como máximo (o las del plan si eran menos), en el orden del plan, con un tope de 6 ejercicios. Reemplaza la regla anterior de "solo los primeros 3" para días de solo sueltos.
+
+### Recordatorio de chequeo semanal (24 nov, pedido de Sau) — terminado
+Mockup: `docs/mockups/chequeo-semanal.html`.
+- Todos los clientes. Chequeo = fila de `client_progress_logs` de la semana con peso y foto de frente.
+- Viernes a domingo (hora CR) sin chequeo de esta semana: pop-up grande sobre Hoy ("Recordá subir tu chequeo", "Lo que no se mide, no mejora…", pastilla "Siempre en ayunas", lista peso / frente / costado y espalda). "Ir a Tu Progreso" abre Tu Progreso con el registro desplegado; "Más tarde" o la ✕ lo ocultan hasta el día siguiente.
+- Lunes sin chequeo de la semana pasada: mini recordatorio arriba ("Si no subiste el chequeo la semana pasada, subilo hoy. Recordá que es trabajo en equipo."), con "Ir a Tu Progreso" y "Ya lo subí". Sale como máximo 2 veces ese lunes. "Ya lo subí" lo cierra por hoy y deja un mensaje del cliente en Delivery ("Ya subí mi chequeo de la semana pasada…"), una vez por semana.
+- Un solo pop-up por apertura: después de pausa, churn, tour y banner de Tu Coach; antes de Rate us y la oferta VIP.
+- Sin cron de servidor ni SQL: el app mira el día al abrir; lo descartado se recuerda en el equipo.
+- Probado en el host con datos simulados en la página: viernes sale el grande, "Más tarde" no vuelve ese día, lunes sale el mini, "Ya lo subí" dos veces deja un solo aviso.
+- Nota: el aviso de un VIP aparece en Delivery como conversación; si Sau responde, el VIP no lo ve en el app (no tiene chat).

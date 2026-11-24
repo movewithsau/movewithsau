@@ -1016,6 +1016,8 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 .workout-start-btn { background:var(--orange); color:white; }
 .workout-finish-btn { background:#111; color:white; }
 .workout-goto-run-btn { background:var(--orange-light); color:var(--orange); }
+.minwk-btn.is-on { background:#1B1713; color:#F5B83D; }
+.minwk-note { display:flex; align-items:center; gap:8px; margin-bottom:10px; padding:10px 14px; border-radius:var(--radius); background:#1B1713; color:#F5B83D; font-size:13px; font-weight:700; }
   .ai-builder-input{width:100%;padding:14px;border:1.5px solid var(--gray2);border-radius:var(--radius-sm);font-size:13px;font-family:'DM Sans',sans-serif;color:var(--black);background:var(--white);outline:none;resize:vertical;line-height:1.65;min-height:190px;}
 .ai-builder-input:focus{border-color:var(--orange);}
 .ai-builder-input::placeholder{color:var(--gray4);}
@@ -4856,7 +4858,7 @@ async function finishLockedDay() {
     if (!existing) {
       const { error } = await sb.from('workout_sessions').insert([{
         client_id: currentClient.id, plan_day_id: lock.planDayId, week_number: lock.week,
-        session_date: todayCR(), duration_minutes: 0
+        session_date: todayCR(), duration_minutes: 0, is_minimal: minWkFlag(lock.planDayId)
       }]);
       if (error) { showToast('No se pudo terminar el día: ' + error.message, 'error', 4000); return; }
     }
@@ -5602,8 +5604,12 @@ async function loadClientExercises() {
   window._ckDay = null; // check-in de entreno: solo con un día del plan con ejercicios
   if(!planDay){list.innerHTML='<div class="empty-state"><div class="empty-icon">'+icon('moon', 44)+'</div><div class="empty-text">Sin ejercicios para este día.</div></div>';ckRefresh();return;}
   currentPlanDayId = planDay.id;
-  const {data:exs} = await sb.from('exercises').select('*').eq('plan_day_id',planDay.id).order('order_index');
+  let {data:exs} = await sb.from('exercises').select('*').eq('plan_day_id',planDay.id).order('order_index');
   if(requestId !== loadClientExercisesRequestId) return;
+  // E10: "Entreno para poco tiempo" (solo VIP): versión mínima armada en memoria, sin tocar datos
+  window._minWkAvail = minWkAvailable(exs);
+  window._minWk = window._minWkAvail && minWkIsOn(planDay.id);
+  if (window._minWk) exs = minWkReduce(exs);
   if(!exs||exs.length===0){list.innerHTML='<div class="empty-state"><div class="empty-icon">'+icon('moon', 44)+'</div><div class="empty-text">Sin ejercicios para este día.</div></div>';ckRefresh();return;}
   window._ckDay = { clientId: currentClient.id, planDayId: planDay.id, week: clientWeek, dayLabel: clientDay, exercises: exs.map(e => ({ id: String(e.id), name: e.name })) };
   ckRefresh();
@@ -5730,10 +5736,11 @@ async function loadClientExercises() {
         ${icon('timer', 18)} Ir a Run
       </button>`
     : '';
+  const minWkNote = workoutStarted && window._minWk ? `<div class="minwk-note fade-up">${icon('timer', 16)} Entreno para poco tiempo</div>` : '';
   const startBtnHtml = !workoutStarted
     ? `<button class="workout-action-btn workout-start-btn fade-up" onclick="handleStartWorkout()">
         ${icon('play', 18)} Iniciar entreno
-      </button>${gotoRunBtnHtml}`
+      </button>${minWkBtnHtml()}${gotoRunBtnHtml}`
     : (currentClient.program_type === 'lift'
       ? `<div class="fade-up" style="background:var(--green-light);border:1.5px solid var(--green);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
           <span aria-hidden="true" style="width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0;"></span>
@@ -6040,7 +6047,7 @@ async function loadClientExercises() {
     return `<div class="tl-row">${tlNode(chunk.slice(0, end))}<div class="tl-card">${chunk.slice(end + 3)}</div></div>`;
   }).join('');
   const finishRowHtml = finishBtnHtml ? `<div class="tl-plain">${finishBtnHtml}</div>` : '';
-  list.innerHTML = startBtnHtml + `<div class="tl">` + warmupBanner + tlItemsHtml + finishRowHtml + cooldownBanner + `</div>`;
+  list.innerHTML = startBtnHtml + minWkNote + `<div class="tl">` + warmupBanner + tlItemsHtml + finishRowHtml + cooldownBanner + `</div>`;
   evRenderRefer(); // Refiere y Gana $$ (E7)
   if (trDark) {
     const curIdx = firstPendingItem ? itemsOrder.indexOf(firstPendingItem) + 1 : itemsOrder.length;
@@ -6526,10 +6533,11 @@ function renderHive() {
     <div class="hive-card">
       <span class="pg-mono" style="color:var(--orange-text);">Mi meta</span>
       <div style="font-size:14px;color:var(--gray5);margin-top:4px;">Días por semana</div>
+      <p style="font-size:14px;line-height:1.45;color:var(--gray5);margin:6px 0 0;">Hacé una promesa con tu propia palabra. Cada semana que la cumplís, te demostrás cuánto pesa tu compromiso. Podés cambiarlo cuando quieras.</p>
       <div class="hive-goal-chips" role="group" aria-label="Meta de días por semana">
         ${[3, 4, 5].map(n => `<button type="button" class="hive-goal-chip" aria-pressed="${goal === n}" onclick="setHiveGoal(${n})">${n}</button>`).join('')}
       </div>
-      <div class="hive-week">${goal ? hiveMini(dd.weekDone, goal) + `<span>${Math.min(dd.weekDone, goal)} de ${goal} esta semana</span>` : '<span>Elegí cuántos días querés entrenar por semana.</span>'}</div>
+      <div class="hive-week">${goal ? hiveMini(dd.weekDone, goal) + `<span>${Math.min(dd.weekDone, goal)} de ${goal} esta semana</span>` : ''}</div>
     </div>
     <button type="button" class="hive-share" onclick="openHiveShare()">${icon('share', 20)}Compartir mi mes</button>`;
   mountConstancia('tc-client', currentClient, dd.ym);
@@ -9343,7 +9351,8 @@ async function handleFinishWorkout() {
           plan_day_id: currentPlanDayId,
           week_number: clientWeek,
           session_date: today,
-          duration_minutes: addedMin
+          duration_minutes: addedMin,
+          is_minimal: minWkFlag(currentPlanDayId)
         }], {onConflict:'client_id,plan_day_id'});
       } catch(e) { console.warn('workout_sessions not ready:', e); }
     }
@@ -16811,7 +16820,7 @@ async function renderWeeklyTracker(clientId) {
 
   // 4. Get workout_sessions for duration + id (for editing)
   const {data:sessions} = await sb.from('workout_sessions')
-    .select('id,plan_day_id,duration_minutes,session_date')
+    .select('id,plan_day_id,duration_minutes,session_date,is_minimal')
     .eq('client_id', clientId)
     .in('plan_day_id', planDayIds);
   const sessMap = {};
@@ -16851,7 +16860,7 @@ async function renderWeeklyTracker(clientId) {
           </div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:13px;font-weight:700;color:var(--black);">${label}</div>
-            <div style="font-size:10px;color:var(--gray4);">${dateStr}</div>
+            <div style="font-size:10px;color:var(--gray4);">${dateStr}${sess?.is_minimal ? ' · <span style="color:#A63E10;font-weight:700;">Poco tiempo</span>' : ''}</div>
           </div>
           <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
             ${sessId ? `
@@ -29978,6 +29987,22 @@ body:not(.ev-entry) .ev-chat-fab { display:none !important; }
 .ev-conv { display:flex; gap:12px; width:100%; text-align:left; padding:14px; margin-bottom:10px; border-radius:20px; border:1px solid #EADFD2; background:#fff; cursor:pointer; font-family:'DM Sans',sans-serif; }
 .ev-conv.is-new { border-color:#C24E18; background:#FFF6EF; }
 .ev-conv-b { flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
+.ev-conv-pin { border-color:#1B1713; border-width:1.5px; }
+.ckw-ayunas { display:inline-flex; margin-top:12px; padding:6px 12px; border-radius:999px; background:#F5B83D; color:#1B1713; font:500 11px 'DM Mono',monospace; letter-spacing:.12em; text-transform:uppercase; }
+.ckw-list { width:100%; box-sizing:border-box; margin-top:16px; background:#1B1713; border-radius:16px; padding:12px 14px; text-align:left; display:flex; flex-direction:column; gap:10px; }
+.ckw-row { display:flex; align-items:center; gap:10px; font-size:14px; color:#FBF6EF; }
+.ckw-dot { width:22px; height:22px; border-radius:50%; border:1.6px solid #F5B83D; color:#F5B83D; display:flex; align-items:center; justify-content:center; flex:none; font-size:11px; }
+.ckw-dot.off { border-color:#5A4E42; color:#A89C8D; }
+.ckw-row small { margin-left:auto; color:#A89C8D; font:500 10px 'DM Mono',monospace; letter-spacing:.1em; text-transform:uppercase; }
+.ckw-x { position:absolute; top:14px; right:14px; width:36px; height:36px; border-radius:50%; border:0; background:#3A3027; color:#CFC6BA; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.ckw-mini { position:fixed; left:14px; right:14px; top:calc(env(safe-area-inset-top, 0px) + 72px); z-index:10060; max-width:420px; margin:0 auto; background:#26201A; border:1.5px solid #F5B83D; border-radius:20px; padding:14px; color:#FBF6EF; box-shadow:0 14px 30px rgba(0,0,0,.25); font-family:'DM Sans',sans-serif; }
+.ckw-mini-top { display:flex; gap:12px; align-items:flex-start; }
+.ckw-mini p { margin:4px 0 0; font-size:14px; line-height:1.4; }
+.ckw-mini p span { color:#CFC6BA; }
+.ckw-mini-bt { display:flex; gap:8px; margin-top:12px; }
+.ckw-mini-bt button { flex:1; height:44px; border-radius:12px; border:0; font:700 14px 'DM Sans',sans-serif; cursor:pointer; }
+.ckw-go { background:#C24E18; color:#fff; } .ckw-done { background:#3A3027; color:#FBF6EF; }
+.ev-cb-prev { background:#F6EFE6; border-radius:14px; padding:12px 14px; text-align:left; color:#3A3128; }
 .ev-conv-top { display:flex; justify-content:space-between; gap:8px; align-items:baseline; }
 .ev-conv-top b { font-size:16px; color:#2A211B; }
 .ev-conv-tags { display:flex; gap:6px; flex-wrap:wrap; }
@@ -31201,7 +31226,7 @@ async function evOpenChat(preset) {
     w.innerHTML = `<div class="ev-chat-head">
         <button type="button" class="ev-cbtn" aria-label="Volver" onclick="evCloseChat()">${EVT_S(EV_I.back, 20, 2.2)}</button>
         <span class="ev-sau-av"><img id="ev-sau-av" alt="Sau" src="img/sau-color.jpg"></span>
-        <div class="ev-chat-who"><b>Sau</b><span>Tu coach en MOVE</span></div>
+        <div class="ev-chat-who"><b>Sau</b><span>Tu Coach</span></div>
       </div>
       <div class="ev-chat-body" id="ev-chat-body">
         <div class="ev-hours">${EVT_S(EVT_P.clock, 20, 2.2)}<div><b>Lunes a viernes · 12 md a 5 pm</b><span>Sau te responde en un plazo máximo de 24 horas.</span><span class="ev-hours-n">Los mensajes se borran a los 7 días, menos los que Sau destaca.</span></div></div>
@@ -31375,7 +31400,7 @@ function evDrawInbox() {
   const all = evConversations();
   const list = all.filter(v => (evDlTag === 'all' || v.allTags.has(evDlTag)) && (!evDlNew || v.fresh.length));
   const chip = (k, l) => `<button type="button" class="ev-fchip${evDlTag === k ? ' on' : ''}" aria-pressed="${evDlTag === k}" onclick="evDlTag='${k}';evDrawInbox()">${l}</button>`;
-  box.innerHTML = `<div class="ev-fchips">${chip('all', 'Todos')}${chip('support', 'Soporte')}${chip('vip', 'Quiero VIP')}${chip('run', 'Quiero Run')}</div>
+  box.innerHTML = `${evCoachFeedRow()}<div class="ev-fchips">${chip('all', 'Todos')}${chip('support', 'Soporte')}${chip('vip', 'Quiero VIP')}${chip('run', 'Quiero Run')}</div>
     <label class="ev-onlynew"><input type="checkbox" ${evDlNew ? 'checked' : ''} onchange="evDlNew=this.checked;evDrawInbox()"> Solo sin responder</label>
     ${list.length ? list.map(v => `<button type="button" class="ev-conv${v.fresh.length ? ' is-new' : ''}" onclick="evOpenCoachChat('${v.c.id}')">
         <span class="ev-av">${evEsc(getInitials(v.c.name || '?'))}</span>
@@ -31988,6 +32013,8 @@ async function evRateUsDue() {
 }
 async function evPostLoginPopups() {
   if (document.getElementById('ev-pause') || document.getElementById('evt') || document.getElementById('ev-onb') || evProgressLocked) return;
+  if (await evMaybeShowCoachBanner()) return;
+  if (await ckwMaybeShow()) return;
   if (await evRateUsDue()) { evShowRateUs(); return; }
   evMaybeShowVipOffer();
 }
@@ -32301,6 +32328,223 @@ async function evCloseNoPain(force) {
 }
 
 // Delivery: bandeja del coach (chat E4; rifa E5; calificaciones E7)
+// ---------- Recordatorio de chequeo semanal (todos los clientes) ----------
+// Chequeo = fila de client_progress_logs de la semana (lunes) con peso y foto de frente.
+// Viernes a domingo (hora CR), sin chequeo de esta semana: pop-up grande. "Más tarde" lo oculta
+// hasta el día siguiente. Lunes, sin chequeo de la semana pasada: mini recordatorio arriba de Hoy
+// (máximo 2 veces ese día);
+// "Ya lo subí" lo cierra por hoy y deja un aviso en Delivery (una vez por semana).
+// Sin cron de servidor: el app mira el día al abrir (el push no llega). Sin SQL nuevo.
+const CKW_HEX = `<path d="M36 3L69 22V60L36 79L3 60V22Z" fill="#F5B83D"/><g transform="translate(22 28)" fill="none" stroke="#1B1713" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"><path d="M2 8h5l2-4h10l2 4h5v16H2z"/><circle cx="14" cy="15" r="5"/></g>`;
+function ckwKey(k) { return `ckw:${currentClient && currentClient.id}:${k}`; }
+function ckwGet(k) { try { return localStorage.getItem(ckwKey(k)); } catch (e) { return null; } }
+function ckwSet(k, v) { try { localStorage.setItem(ckwKey(k), v); } catch (e) {} }
+function ckwDow() { return new Date(todayCR() + 'T12:00:00').getDay(); }
+async function ckwHasCheck(weekStart) {
+  const { data, error } = await sb.from('client_progress_logs').select('weight_kg,photo_front_path')
+    .eq('client_id', currentClient.id).eq('week_start_date', weekStart).limit(1);
+  if (error) return true; // ante la duda, no molestar
+  return !!(data && data[0] && data[0].weight_kg != null && data[0].photo_front_path);
+}
+async function ckwMaybeShow() {
+  const c = currentClient;
+  if (!c || currentUser?.role === 'coach' || c.is_churn || document.getElementById('ckw') || document.getElementById('ckw-mini')) return false;
+  const dow = ckwDow(), today = todayCR();
+  if ([5, 6, 0].includes(dow)) {
+    if (ckwGet('later') === today) return false;
+    const ws = fmtDateKey(getWeekDates(0)[0]);
+    if (await ckwHasCheck(ws)) return false;
+    ckwShowBig(ws);
+    return true;
+  }
+  if (dow === 1) {
+    if (ckwGet('mini') === today) return false;
+    // Máximo 2 veces (aperturas) por lunes
+    const [d, n] = String(ckwGet('miniN') || '').split('|');
+    const shown = d === today ? Number(n) || 0 : 0;
+    if (shown >= 2) return false;
+    if (await ckwHasCheck(fmtDateKey(getWeekDates(1)[0]))) return false;
+    ckwSet('miniN', today + '|' + (shown + 1));
+    ckwShowMini();
+    return true;
+  }
+  return false;
+}
+function ckwShowBig() {
+  ensureEvFonts();
+  const w = document.createElement('div');
+  w.className = 'ev-modal-wrap dk'; w.id = 'ckw';
+  w.innerHTML = `<div class="ev-modal dk" role="dialog" aria-modal="true" aria-labelledby="ckw-t" style="position:relative;">
+    <button type="button" class="ckw-x" aria-label="Cerrar" onclick="ckwLater()">${EVT_S(EV_I.x, 16, 2.2)}</button>
+    <svg width="72" height="82" viewBox="0 0 72 82" aria-hidden="true" style="margin-top:4px;">${CKW_HEX}</svg>
+    <div class="ev-eb" style="margin-top:12px;">Chequeo semanal · Semana ${clientWeek || ''}</div>
+    <h2 class="ev-dela" id="ckw-t" style="font-size:24px;margin-top:10px;">Recordá subir<br>tu chequeo</h2>
+    <p class="ev-p ev-soft" style="margin-top:10px;">Lo que no se mide, no mejora. Solo te toma 2 minutos y así vemos tus avances.</p>
+    <span class="ckw-ayunas">Siempre en ayunas</span>
+    <div class="ckw-list">
+      <div class="ckw-row"><span class="ckw-dot">1</span>Tu peso<small>Obligatorio</small></div>
+      <div class="ckw-row"><span class="ckw-dot">2</span>Foto de frente<small>Obligatorio</small></div>
+      <div class="ckw-row"><span class="ckw-dot off">3</span>Costado y espalda<small>Si querés</small></div>
+    </div>
+    <button type="button" class="ev-btn" style="margin-top:18px;" onclick="ckwGo('ckw')">Ir a Tu Progreso</button>
+    <button type="button" class="ev-rate-later" onclick="ckwLater()">Más tarde</button>
+  </div>`;
+  document.body.appendChild(w);
+  evFitTitles(w);
+}
+function ckwLater() { ckwSet('later', todayCR()); document.getElementById('ckw')?.remove(); }
+function ckwShowMini() {
+  ensureEvFonts();
+  const w = document.createElement('div');
+  w.className = 'ckw-mini'; w.id = 'ckw-mini'; w.setAttribute('role', 'status');
+  w.innerHTML = `<div class="ckw-mini-top">
+      <svg width="40" height="46" viewBox="0 0 72 82" aria-hidden="true" style="flex:none;">${CKW_HEX}</svg>
+      <div><div class="ev-eb" style="font-size:10px;">Chequeo semanal</div>
+      <p>Si no subiste el chequeo la semana pasada, subilo hoy. <span>Recordá que es trabajo en equipo.</span></p></div>
+    </div>
+    <div class="ckw-mini-bt"><button type="button" class="ckw-go" onclick="ckwGo('ckw-mini')">Ir a Tu Progreso</button><button type="button" class="ckw-done" onclick="ckwDone()">Ya lo subí</button></div>`;
+  document.body.appendChild(w);
+}
+function ckwGo(id) {
+  if (id === 'ckw-mini') ckwSet('mini', todayCR()); else ckwSet('later', todayCR());
+  document.getElementById(id)?.remove();
+  evGoToProgress();
+  if (document.getElementById('pg-week-body')?.hidden && typeof toggleProgressWeek === 'function') toggleProgressWeek();
+}
+async function ckwDone() {
+  ckwSet('mini', todayCR());
+  document.getElementById('ckw-mini')?.remove();
+  const wk = fmtDateKey(getWeekDates(1)[0]);
+  if (ckwGet('done') === wk) return;
+  ckwSet('done', wk);
+  // Aviso para Sau en Delivery (conversación del cliente): que revise si de verdad lo subió
+  const { error } = await sb.from('support_messages').insert([{ client_id: currentClient.id, sender: 'client', kind: 'text', tag: 'support', status: 'new',
+    body: `Ya subí mi chequeo de la semana pasada (semana del ${evFmtShort(wk)}).` }]);
+  if (error) console.warn('chequeo aviso:', error.message);
+  showToast('Listo, le avisamos a Sau', 'success');
+}
+
+// ---------- E9 · Banner "Tenés nuevos mensajes de Tu Coach" (solo Entry) ----------
+// Al abrir el app, si hay mensajes de Sau sin leer (incluye el nudge de inactividad que deja el cron).
+// Un solo pop-up por apertura (va antes que Rate us y la oferta VIP; la pausa y el churn ya cortan antes).
+// Al cerrarlo no vuelve hasta que llegue un mensaje más nuevo (se guarda el id visto en este equipo).
+function evBannerKey() { return 'evCoachBanner:' + (currentClient && currentClient.id); }
+async function evMaybeShowCoachBanner() {
+  const c = currentClient;
+  if (!c || !evIsEntry(c) || currentUser?.role === 'coach' || c.is_churn || document.getElementById('ev-cbanner') || document.getElementById('ev-chat')) return false;
+  const { data, error } = await sb.from('support_messages').select('id,kind,body,media_path,created_at')
+    .eq('client_id', c.id).eq('sender', 'coach').is('read_at', null).order('id', { ascending: false }).limit(1);
+  if (error || !data || !data.length) return false;
+  const m = data[0];
+  let seen = 0; try { seen = Number(localStorage.getItem(evBannerKey())) || 0; } catch (e) {}
+  if (Number(m.id) <= seen) return false;
+  ensureEvFonts();
+  const prev = m.kind === 'photo' ? 'Te mandó una foto' : m.kind === 'audio' ? 'Te mandó un audio' : String(m.body || '');
+  const w = document.createElement('div');
+  w.className = 'ev-modal-wrap'; w.id = 'ev-cbanner'; w.dataset.mid = m.id;
+  w.innerHTML = `<div class="ev-modal" role="dialog" aria-modal="true" aria-labelledby="ev-cbanner-t">
+    <div class="ev-eb">Tu Coach</div>
+    <h2 class="ev-dela" id="ev-cbanner-t" style="font-size:22px;margin-top:8px;">Tenés nuevos mensajes de Tu Coach</h2>
+    <p class="ev-p ev-soft ev-cb-prev" style="margin-top:12px;">${evEsc(prev.length > 140 ? prev.slice(0, 140) + '…' : prev)}</p>
+    <button type="button" class="ev-btn" style="margin-top:18px;" onclick="evCoachBannerClose(true)">Ver mensaje</button>
+    <button type="button" class="ev-rate-later" onclick="evCoachBannerClose(false)">Cerrar</button>
+  </div>`;
+  document.body.appendChild(w);
+  evFitTitles(w);
+  return true;
+}
+function evCoachBannerClose(open) {
+  const w = document.getElementById('ev-cbanner');
+  if (w) { try { localStorage.setItem(evBannerKey(), w.dataset.mid); } catch (e) {} w.remove(); }
+  if (open) evOpenChat();
+}
+
+// ---------- E9 · Hilo "Coach" del lado de Sau (coach_feed) ----------
+// Solo historial: resumen nocturno y nudges que mandó el cron. No se responde y no se purga.
+let evFeedLast = null;
+function evCoachFeedRow() {
+  const p = evFeedLast ? evEsc(String(evFeedLast.body).split('\n')[0]) : 'Resúmenes de cada noche y avisos de inactividad';
+  return `<button type="button" class="ev-conv ev-conv-pin" onclick="evOpenCoachFeed()">
+    <span class="ev-av" style="background:#1B1713;color:#F5B83D;">C</span>
+    <span class="ev-conv-b"><span class="ev-conv-top"><b>Coach</b><span class="ev-when">${evFeedLast ? evAgo(evFeedLast.created_at) : ''}</span></span>
+      <span class="ev-conv-tags"><span class="ev-tag ev-tag-soft">Fijo · solo lectura</span></span>
+      <span class="ev-conv-p">${p}</span></span>
+  </button>`;
+}
+async function evLoadFeedLast() {
+  const { data } = await sb.from('coach_feed').select('body,created_at').order('created_at', { ascending: false }).limit(1);
+  evFeedLast = (data && data[0]) || null;
+}
+function evFeedWhen(iso) {
+  const d = new Date(Date.parse(iso) - 6 * 3600 * 1000);
+  const dd = d.toISOString();
+  return `${dd.slice(8, 10)}/${dd.slice(5, 7)} · ${dd.slice(11, 16)}`;
+}
+async function evOpenCoachFeed() {
+  document.getElementById('ev-cfeed')?.remove();
+  const w = document.createElement('div');
+  w.id = 'ev-cfeed'; w.className = 'ev-chat';
+  w.setAttribute('role', 'dialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-label', 'Coach');
+  w.innerHTML = `<div class="ev-chat-head">
+      <button type="button" class="ev-cbtn" aria-label="Volver" onclick="document.getElementById('ev-cfeed').remove()">${EVT_S(EV_I.back, 20, 2.2)}</button>
+      <span class="ev-av lg" style="background:#1B1713;color:#F5B83D;">C</span>
+      <div class="ev-chat-who"><b>Coach</b><span>Resúmenes y avisos · solo historial</span></div>
+    </div>
+    <div class="ev-chat-body" id="ev-cfeed-body"><div id="ev-cfeed-list" class="ev-chat-list"><div class="spinner"></div></div></div>`;
+  document.body.appendChild(w);
+  const { data, error } = await sb.from('coach_feed').select('id,kind,body,created_at').order('created_at', { ascending: true }).limit(300);
+  const list = document.getElementById('ev-cfeed-list');
+  if (!list) return;
+  if (error) { list.innerHTML = '<div class="ev-empty">No se pudo cargar.</div>'; return; }
+  list.innerHTML = (data || []).length ? data.map(m => `<div class="ev-msg ev-them"><div class="ev-bub ev-text ev-them">${m.kind === 'nudge' ? '<b>Aviso</b><br>' : '<b>Resumen del día</b><br>'}${evEsc(m.body || '').replace(/\n/g, '<br>')}</div><div class="ev-meta">${evFeedWhen(m.created_at)}</div></div>`).join('')
+    : '<div class="ev-empty" style="padding:28px 10px;">Todavía no hay resúmenes. El primero llega hoy a las 9 p. m.</div>';
+  const b = document.getElementById('ev-cfeed-body'); if (b) b.scrollTop = b.scrollHeight;
+}
+
+// ---------- E10 · Entreno para poco tiempo (solo VIP) ----------
+// Regla: de cada circuito, solo el primer ejercicio, pasado a suelto; los sueltos quedan; todos con
+// 2 series como máximo (o menos si el plan tenía menos) y como máximo 6 ejercicios en total. Se arma en memoria al dibujar el día:
+// no cambia los ejercicios del plan ni lo ya registrado. Lo que se guarda es lo de siempre
+// (exercise_logs de lo que se hace y workout_sessions al terminar), así cuenta como día entrenado.
+// La elección se recuerda en este equipo por cliente, día del plan y fecha.
+const MINWK_SETS = 2;
+function minWkKey(planDayId) { return `minWk:${currentClient && currentClient.id}:${planDayId}:${todayCR()}`; }
+function minWkIsOn(planDayId) { try { return localStorage.getItem(minWkKey(planDayId)) === '1'; } catch (e) { return false; } }
+function minWkAvailable(exs) {
+  return !!(currentClient && !evIsEntry(currentClient) && currentUser?.role !== 'coach' && exs && exs.length);
+}
+const MINWK_MAX = 6; // tope de ejercicios en la versión mínima, haya los que haya
+// Cada circuito aporta su primer ejercicio, que pasa a ser suelto (sin superset_group);
+// los sueltos quedan igual. Todos con 2 series como máximo y en el orden del plan.
+function minWkReduce(exs) {
+  const seen = new Set();
+  return exs.filter(ex => {
+    if (!ex.superset_group) return true;
+    if (seen.has(ex.superset_group)) return false;
+    seen.add(ex.superset_group); return true;
+  }).slice(0, MINWK_MAX).map(ex => {
+    const x = { ...ex };
+    const n = x.superset_group ? (x.circuit_rounds || x.sets || 1) : (x.sets || 1);
+    x.sets = Math.min(n, MINWK_SETS);
+    x.superset_group = null; x.circuit_rounds = null;
+    return x;
+  });
+}
+function minWkBtnHtml() {
+  if (!window._minWkAvail) return '';
+  return window._minWk
+    ? `<button class="workout-action-btn workout-goto-run-btn minwk-btn is-on fade-up" onclick="minWkSet(false)" aria-pressed="true">${icon('timer', 18)} Poco tiempo activo · Volver al completo</button>`
+    : `<button class="workout-action-btn workout-goto-run-btn minwk-btn fade-up" onclick="minWkSet(true)" aria-pressed="false">${icon('timer', 18)} Entreno para poco tiempo</button>`;
+}
+// Marca en workout_sessions.is_minimal (SQL corrido por Sau el 24 nov)
+function minWkFlag(planDayId) { return !!(planDayId && currentClient && !evIsEntry(currentClient) && minWkIsOn(planDayId)); }
+function minWkSet(on) {
+  if (!currentPlanDayId || isWorkoutStarted()) return;
+  try { on ? localStorage.setItem(minWkKey(currentPlanDayId), '1') : localStorage.removeItem(minWkKey(currentPlanDayId)); } catch (e) {}
+  loadClientExercises();
+  showToast(on ? 'Listo: hasta 6 ejercicios sueltos, 2 series cada uno' : 'Volviste al entreno completo');
+}
+
 async function evRenderDelivery() {
   const box = document.getElementById('ev-delivery-body');
   if (!box) return;
@@ -32308,6 +32552,7 @@ async function evRenderDelivery() {
     <div id="ev-dl-raffle"></div>
     <div id="ev-dl-inbox"><div class="spinner"></div></div>
     <div id="ev-dl-rates"></div>`;
+  try { await evLoadFeedLast(); } catch (e) { /* sin hilo Coach */ }
   await evRenderInbox();
   if (typeof evRenderRaffle === 'function') evRenderRaffle();
   if (typeof evRenderRates === 'function') evRenderRates();
