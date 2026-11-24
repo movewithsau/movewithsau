@@ -149,6 +149,17 @@ async function runNudges(crToday) {
   return sent;
 }
 
+// Hilo "Coach" (coach_feed): se borra lo de más de 7 días al inicio de cada corrida (E11 · 11.5).
+// Solo esa tabla. Va antes de todo para que corra aunque esa noche no haya nada que reportar.
+async function purgeCoachFeed() {
+  const cutoff = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/coach_feed?created_at=lt.${encodeURIComponent(cutoff)}`, {
+    method: 'DELETE',
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: 'return=minimal' }
+  });
+  if (!r.ok) throw new Error(`Supabase ${r.status}: ${await r.text()}`);
+}
+
 export default async function handler(req, res) {
   const auth = req.headers['authorization'] || '';
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -156,6 +167,8 @@ export default async function handler(req, res) {
   }
 
   try {
+    try { await purgeCoachFeed(); } catch (e) { console.warn('coach-digest purge:', e.message); }
+
     const { crToday, crTomorrow } = getCRDateStrings();
 
     let nudges = [];

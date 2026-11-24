@@ -13,6 +13,9 @@ Servidor `python3 -m http.server 3000` en la raíz, ventana de 390 px. **Las pru
 | sql/entry-vip-base.sql | Corrido por Sau (23 nov) |
 | sql/entry-vip-engagement.sql | Corrido por Sau (24 nov): tablas `coach_feed` y `entry_nudges` (rowsecurity false) |
 | sql/entry-vip-minimal.sql | Corrido por Sau (24 nov): `workout_sessions.is_minimal` |
+| sql/e13-classroom.sql | Corrido por Sau (24 nov): `classroom_categories`, `classroom_items` (con `published_at`), `classroom_views`, bucket público `classroom` (solo imágenes, 5 MB) y policy `classroom_all_access` |
+| sql/e12-week-changes.sql | Corrido por Sau (24 nov): tablas `week_change_notes` y `coach_settings` (con `week_change_auto`=true y `week_change_default_note`='Seguimos mejorando.') |
+| sql/e11-announcements.sql | **Pendiente** (lo corre Sau): tabla `client_announcements` (E11). La purga de `coach_feed` no necesita SQL |
 | sql/entry-vip-extra.sql | Corrido por Sau (23 nov): `client_onboarding.completed_at`, `rate_us_dismissed_at`, bucket 15 MB, policy `support_chat_all_access` |
 
 ## Decisiones de Sau (23 nov) que mandan sobre el prompt
@@ -253,7 +256,7 @@ Hecho:
 - 9.2 Encabezado del chat del cliente: "Tu Coach" (único lugar en el app; el mockup de referencia no se tocó).
 - 9.3 `api/coach-digest` (cron 9 p. m. CR): `runNudges` para `tier='entry'`, sin churn, sin ocultos y sin la pausa de pago (next_payment_date + 48 h, misma regla que el app). Inactivo = más de 3 días desde el último `workout_sessions` con `plan_day_id` (o desde `client_onboarding.completed_at` si nunca entrenó). Episodio 1: texto "hey hace un par de días…"; siguientes: "parece que otra vez…". Nombre = primer nombre en minúscula. Primero reserva el episodio en `entry_nudges` (único cliente+episodio: si el cron corre dos veces no hay doble mensaje), después inserta el mensaje como de Sau (`sender='coach'`, `status='answered'`) y deja el aviso en `coach_feed`. Los nudges corren aunque no haya nada que reportar en el resumen; el push no se usa para esto.
 - 9.4 Banner "Tenés nuevos mensajes de Tu Coach" (solo Entry): en `evPostLoginPopups`, antes de Rate us y la oferta VIP (un solo pop-up por apertura; pausa, churn, tour y Tu Progreso bloqueado ya cortan antes). Vista previa del último mensaje sin leer, "Ver mensaje" abre el chat. Se recuerda el id del último mensaje mostrado en el equipo (`localStorage`), así no vuelve hasta que llega uno más nuevo. VIP no ve nada.
-- 9.5 Delivery: fila fija "Coach" arriba de las conversaciones, abre el historial de `coach_feed` (resúmenes y avisos de nudges), solo lectura. El cron guarda cada resumen ahí antes de intentar el push. `coach_feed` no entra en la purga de 7 días.
+- 9.5 Delivery: fila fija "Coach" arriba de las conversaciones, abre el historial de `coach_feed` (resúmenes y avisos de nudges), solo lectura. El cron guarda cada resumen ahí antes de intentar el push. `coach_feed` no entra en la purga de 7 días del chat; desde E11 el cron `coach-digest` lo borra a los 7 días.
 
 Probado:
 - [x] Cron con node y Supabase simulado: Entry inactivo con entreno viejo y Entry que nunca entrenó → 1 mensaje cada uno; churn, en pausa, reciente y VIP → nada; segunda corrida → nada; vuelve a entrenar y pasan 4 días → episodio 2 con "otra vez". Hilo Coach con los 3 avisos.
@@ -297,3 +300,114 @@ Mockup: `docs/mockups/chequeo-semanal.html`.
 - Sin cron de servidor ni SQL: el app mira el día al abrir; lo descartado se recuerda en el equipo.
 - Probado en el host con datos simulados en la página: viernes sale el grande, "Más tarde" no vuelve ese día, lunes sale el mini, "Ya lo subí" dos veces deja un solo aviso.
 - Nota: el aviso de un VIP aparece en Delivery como conversación; si Sau responde, el VIP no lo ve en el app (no tiene chat).
+
+### E11: Aviso a pantalla completa (botón wifi) — terminado, falta probar en real
+Mockups: `docs/referencias/mockup-e11/` 36–39 (sin trackear, a pedido de Sau). Rama `feat/entry-vip` adelantada a `main` (e5f2a97) sin commits nuevos.
+
+Decisiones de Sau (24 nov):
+- Pausa de 48 h por pago y churn bloquean: el aviso queda pendiente (si la pausa entra con el aviso abierto, se cierra sin marcarse visto). Con el recordatorio naranja de pago el aviso sale encima y el recordatorio sigue debajo.
+- Espera a que terminen onboarding, tour y la foto obligatoria de Entry.
+- Lista de clientes del coach: sin churn ni ocultos. LIFT no se excluye; los destinos que no aplican a un cliente no se ofrecen.
+- Ítem concreto solo para Entreno extra, Protocolos y Guías (y solo con un cliente elegido).
+- Un único polling de 60 s para todos los clientes (`evStartUnreadPoll`: chat sin leer solo Entry + avisos todos), más una revisión al volver al app.
+
+Hecho:
+- Cliente (36): aviso claro a pantalla completa con fondo de panal, hexágono con el ícono del destino, "Novedad de tu coach", título, texto, foto de Sau y "hace un momento", botón al destino, "Más tarde" y ✕. Cualquiera de los tres llena `seen_at`. Varios pendientes: de a uno, el más reciente primero ("Más tarde" muestra el siguiente; el botón principal navega y el siguiente sale en el próximo ciclo). Va primero en `evPostLoginPopups`.
+- Mockup vs prompt: el mockup dice "Más tarde" (no "Ahora no"); se siguió el mockup.
+- Destinos: Mi semana → Hoy; Entreno extra → Mi Espacio › Extras (abre la sesión); Protocolos → Food (abre el protocolo; LIFT: pestaña Coaching); Guías → Mi Espacio › Guías y recursos (abre la guideline; LIFT: Coaching); Run → Mi Espacio › Run; Classroom → Food por ahora (E13 lo conecta a Educación); Menú → Mi Espacio con The MOVE Menu abierto; Hive; Chat (solo Entry).
+- Qué destino se ofrece: Mi semana si tiene Entreno (o LIFT); Extras y Guías no para Entry; Protocolos si tiene Food (o LIFT); Run con `run_module_enabled`; Classroom no para LIFT (no tiene Food); Chat solo Entry. Con varios clientes, solo los destinos que aplican a todos.
+- Coach (37): botón wifi redondo a la derecha del nombre en la ficha (no sale para churn u ocultos). Hoja "Enviar aviso": Para (chips + "Agregar clientes"), ¿A dónde lo llevamos?, "¿Cuál?" (opcional), Título, Mensaje, "Enviar ahora" y "Ver cómo lo verá" (vista previa exacta, sin escribir nada).
+- Varios clientes (39): "Agregar clientes" abre "Elegí clientes" con Todos / Solo VIP / Solo Entry, "Elegir todos", contador "N seleccionados · X Entry · Y VIP". Su botón "Enviar aviso" envía si ya hay destino y título; si falta algo, vuelve al formulario. Un registro por cliente (`source='bulk'`, sin ítem).
+- Al guardar (38): hoja "¿Le avisamos a {nombre}?" con el destino puesto, "Editar" (abre la hoja precargada), "Enviar aviso" (envía con un texto por defecto, `source='after_save'`) y "Ahora no" (no hace nada). Mockup vs prompt: el mockup envía directo desde esta hoja; "Editar" cubre el modal precargado. Se engancha en: guardar día del plan (Mi semana), cerrar el editor de un entreno extra si se guardó algún ejercicio (Entreno extra), guardar o agregar desde la biblioteca un protocolo (Protocolos) o una guideline (Guías), y guardar/activar el plan de Run (no los borradores). Para poder apuntar al ítem nuevo, los insert de protocolo y guideline ahora piden `.select('id')`.
+- 11.5: `api/coach-digest` borra `coach_feed` de más de 7 días al inicio de cada corrida (antes de los "nada que reportar"). Solo esa tabla.
+
+Probado (base simulada, 390 px):
+- [x] Ficha: botón wifi; hoja con destinos de un VIP con Run (sin Chat); ítem "¿Cuál?" con las guidelines del cliente; vista previa igual al 36; envío de 1 registro con `destination_ref`.
+- [x] Varios: lista sin churn ni ocultos (LIFT incluido), filtro Solo Entry, Elegir todos, 3 registros `bulk`. Destinos para Entry+VIP mezclados: sin Extras, Guías ni Chat.
+- [x] "¿Le avisamos?" tras agregar guideline y protocolo; "Editar" precarga destino, ítem y textos (se arregló que el ítem se perdía mientras cargaba la lista); "Enviar aviso" directo. Entreno extra: pregunta al cerrar solo si se guardó un ejercicio.
+- [x] Cliente: al abrir sale el más reciente; el botón abre la guideline exacta; "Más tarde" muestra el siguiente y no vuelve; protocolo, extra, Run, Menú, Hive, Mi semana y Classroom navegan; con el app abierto, un aviso nuevo apareció a los 31 s (polling de 60 s).
+- [x] Bloqueos: Entry en pausa (aviso pendiente, sin `seen_at`), churn, cliente con tour pendiente → no sale. Entry con destino Chat abre el chat. Recordatorio naranja: el aviso sale encima y el recordatorio sigue debajo.
+- [x] Cron con node y `fetch` simulado: primero 1 DELETE a `coach_feed?created_at=lt.<hace 7 días>`, aunque esa noche no haya nada que reportar.
+- [ ] Real (Supabase y celular): **no probado**. Requiere correr `sql/e11-announcements.sql`.
+
+### E12: Cambios de semana automáticos — terminado, falta probar en real
+Mockups 40 y 41 (`docs/referencias/mockup-e11/`).
+
+Paso 0:
+- Programa por semana: `monthly_plans` (client_id, week_number, day_of_week, day_order) y `exercises` (plan_day_id, name, sets, superset_group, circuit_rounds, order_index). Circuito = mismo `superset_group`; rondas = `circuit_rounds` (o `sets` si falta).
+- Desbloqueo: solo existe en semana automática (`week_mode='auto'` + `program_week1_start`): cada domingo 8 p. m. CR avanza la posición (`getAutoWeekInfo`, `mapPositionToWeek`, `PROGRAM_SEQUENCE` con deload en la 8 o `deload_weeks`). En semanas manuales no hay desbloqueo (el cliente elige y Sau oculta/muestra con `hidden_weeks`).
+
+Decisiones (sin paro, documentadas para Sau):
+- Solo clientes con semana automática, que no sean LIFT y tengan Entreno (`training_access` no false). En la pantalla del coach, un cliente manual ve "Este cliente está en semanas manuales…".
+- Deload (ajuste de Sau, 24 nov): se trata como cualquier semana. La semana de deload avisa comparada contra la anterior (los cambios de series salen como cambio) y la semana siguiente se compara contra el deload, también con aviso. Se quitó la regla anterior que lo saltaba.
+- Días: se emparejan por orden (day_order, luego id) y la etiqueta es el `day_of_week` del plan ("Día 1", "Lunes"…). Ejercicios por posición (`order_index`). Nuevo = nombre distinto en esa posición (sin importar mayúsculas/espacios) o posición que antes no existía. Series = solo ejercicios sueltos. Rondas = misma letra de circuito en el mismo día. Ejercicios quitados no cuentan.
+- "Una vez por semana" se recuerda en el equipo (`localStorage wkc:<cliente>:<semana>`), igual que el chequeo de los viernes. Sin SQL extra.
+- Prioridad: justo después del aviso E11 en `evPostLoginPopups`; si el aviso se cierra con "Más tarde"/✕ y no quedan más, sale este.
+- Mockup vs prompt: el mockup 40 lista con etiquetas por fila (Nuevo / Series / Rondas), muestra 3 y "y N cambios más · Ver todos"; se siguió el mockup. Las filas de circuito llevan el día ("Día 2 · Circuito B · 4 rondas") para no confundir circuitos de días distintos. Título según el cambio principal: ejercicios > series > rondas.
+
+Hecho:
+- Cliente (40): pop-up claro con "Semana N · Novedades", lista, nota de Sau con su foto (personalizada si existe, si no la global, si no "Seguimos mejorando."), "Ver mi semana" (va a Hoy), "Más tarde" y ✕ (las tres lo marcan visto).
+- Coach (41): tarjeta "Cambios de semana" en la ficha (arriba de Plan mensual) que abre la pantalla de la semana siguiente: comparación detectada sola con chips resumen, interruptor "Avisar el domingo 8 p. m." (= no `skip`), nota "Predeterminada" o "Solo esta semana" con "Escribir otra solo para esta semana" / "Volver a la predeterminada", "Ver cómo lo verá" y "No avisar esta semana". Avisa si el global está apagado en Ajustes.
+- Global: `coach_settings.week_change_auto` (sin fila = activo) y `week_change_default_note`. Si las tablas todavía no existen, el cliente usa los valores por defecto.
+
+Probado (base simulada, 390 px):
+- [x] Semana 5 vs 4: cambio de ejercicio → "cambian tus ejercicios" con "Reemplaza a…"; cambio de series → "cambian tus series" (4, antes 3); cambio de rondas → "cambian tus rondas"; sin cambios → nada; `skip` → nada; nota personalizada → se muestra esa; cliente manual → nada; global apagado → nada.
+- [x] 5 cambios: muestra 3 + "y 2 cambios más", "Ver todos" despliega los 5. "Ver mi semana" lo marca y no vuelve a salir.
+- [x] Coach: semana 6 vs 5 con "1 con más series"; guardar nota, volver a la predeterminada, apagar y prender el aviso (upsert por cliente+semana).
+- [x] Ajuste deload (node con las funciones reales): programa de 12 semanas, posición 8 (deload) se compara contra la 7 y la 9 contra la 8; programa de 5 semanas con deload en la 5 → 5 contra 4.
+- [ ] Real (Supabase y celular): **no probado**. SQL ya corrido por Sau.
+
+### E13: Classroom + Food en 2 pestañas + pantalla del tour — terminado, falta probar en real
+Mockups 42–49 y 07b (`docs/referencias/mockup-e11/`, sin trackear).
+
+Paso 0 (resumen): Food se arma en `loadFoodScreen` (cabecera con cuchara de miel, pastilla del Método del plato solo con `nutrition_mode='deficit'`, perfil nutricional, menú con chips de días, PDF, WhatsApp, protocolos y NutriFlex); sin `food_access` la pantalla entera es "Módulo exclusivo". Build = `evRenderBuild`. Buckets: `plans` público; `progress-photos`, `client-documents`, `diary-photos`, `support-chat` privados. Candado de Run = `evOpenRunLock`. Tour = `evTourList` (puntos y "N de M" salen de la lista). Sin CSP: los iframes de Vimeo/YouTube funcionan.
+
+Decisiones aprobadas por Sau (24 nov): VIP sin `food_access` ve la pestaña Educación ("Tu alimentación" le sigue mostrando "Módulo exclusivo"); LIFT no ve Classroom; duración de YouTube automática con campo manual de respaldo; "Avisar a los clientes" al publicar (aviso E11 destino Classroom, sin churn ni ocultos; LIFT tampoco porque no tiene Food; "Solo VIP" solo a VIP); "Nueva" = publicada hace menos de 14 días y sin ver; editor a pantalla completa con arrastrar y soltar; minutos de lectura por palabras (200 por minuto).
+
+Hecho:
+- `api/oembed.js`: GET `?url=` → título, portada y duración. Vimeo por oEmbed (incluye links privados con hash). YouTube por oEmbed + `lengthSeconds` de la página del video; si falla, `duration: null` y Sau la escribe. Solo consulta vimeo.com / youtube.com con el id del video.
+- Build (42): tarjeta "Classroom" primera, con "Nuevo" hasta que Sau la abre una vez (se recuerda en el equipo). Las otras tarjetas sin cambios.
+- Classroom coach (43): panel a pantalla completa (en compu con barra lateral y resumen; en celular apilado). Filtros Todo / Videos / Recursos / Borradores, categorías plegables con renombrar y eliminar (si tiene contenido, confirma y borra también sus clases y quién las vio), filas con portada, tipo, acceso, estado y "N vieron". Arrastrar y soltar filas (también entre categorías) y categorías; se guarda `position` y `category_id`.
+- "Nueva clase" abre: Clase con video o Recurso.
+- Crear clase (44): pegar el link llena título, portada ("Importada de Vimeo/YouTube") y duración; "Subir otra" portada propia; descripción, categoría, acceso, estado y vista previa tipo celular. Duración editable (min:seg).
+- Crear recurso (45): bloques Texto, Imagen (sube al bucket, con texto opcional), Lista (Enter agrega ítem), Video (link embebido) y Separador; arrastrar para ordenar; portada opcional; vista previa en vivo.
+- Pie de ambos: "Avisar a los clientes" (marcado en la primera publicación), "Guardar borrador" y "Publicar". `published_at` se llena en la primera publicación. Editar permite eliminar con confirmación.
+- Imágenes: se reducen a 1600 px JPEG con el mismo helper de Tu Progreso; límite 5 MB.
+- Food (46a): pestañas "Tu alimentación" (por defecto) y "Educación" debajo de la cabecera. Nada de Tu alimentación cambió (cuchara incluida); solo "Limpiar chat" pasó a una fila "NutriFlex · Limpiar chat" arriba del chat.
+- Educación (46b): "Aprendé el sistema", "N de M vistas" (M = lo que el cliente puede abrir), barra de progreso, chips de categoría con scroll, tarjetas con portada, tipo y duración / minutos de lectura, etiqueta Vista / Nueva / VIP. Borradores no se ven.
+- Clase (47): video embebido dentro del app (al tocar la portada), título, etiquetas, descripción, "Marcar como vista" (tocar de nuevo desmarca) y "Siguiente".
+- Recurso (48): hoja casi completa con los bloques y "Listo, ya lo vi" (marca vista).
+- Candado (49): Entry + "Solo VIP" → miniatura oscura con candado y etiqueta VIP; hoja "Esta clase es parte de VIP" → "Pedir acceso por el chat" abre el chat de Entry con "Quiero pedir acceso a {título}". VIP ve todo.
+- Tour (07b): pantalla `learn` "Aprendé a tu ritmo" después de Luz. Entry: 11 con fecha de pago (10 sin); VIP: 8 contadas sin fecha de pago y 9 con ella (la bienvenida no cuenta). La línea del candado solo en Entry. Quien ya vio el tour no lo vuelve a ver.
+- Aviso E11 "Classroom": abre Food › Educación y, con `destination_ref`, la clase (o el candado si es VIP y el cliente es Entry).
+- Desvío menor del mockup: los recursos sin portada llevan un ícono de libro en vez del botón de play.
+
+Probado (base simulada; `/api/oembed` real):
+- [x] `/api/oembed`: Vimeo (título, portada, 1:02) y YouTube (título, portada, 0:19); link de otro sitio → `link_no_valido`.
+- [x] Coach: crear 3 categorías; importar clase de Vimeo y de YouTube; recurso con los 5 bloques (imagen subida) y reordenar bloques; publicar "Todos" con aviso (3 avisos: Entry, VIP y VIP sin Food; sin LIFT, churn ni oculta), uno "Solo VIP" y uno en borrador. Mover un ítem a otra categoría, reordenar categorías, filtros, renombrar y eliminar una categoría con contenido.
+- [x] Entry: dos pestañas, ve "Todos", el "Solo VIP" con candado y el pedido por chat precargado, no ve el borrador; marcar como vista y "Listo, ya lo vi" actualizan "N de M"; desmarcar funciona.
+- [x] VIP: todo sin candado. VIP sin Food: pestañas; "Módulo exclusivo" solo en Tu alimentación. LIFT: sin pestañas.
+- [x] Tour: Entry `learn` = 5 de 11 con la línea del candado; VIP sin esa línea.
+- [ ] Reproducción del video dentro del app: el iframe carga pero el navegador de prueba no lo muestra; **probar en el celular**.
+- [ ] Real (Supabase, Storage y celular): **no probado**. Requiere correr `sql/e13-classroom.sql`.
+
+### E14: Ajustes y Funciones (toggle de LIFT) — terminado, falta probar en real
+Mockup 50. Sin SQL nuevo: usa `coach_settings` de E12 con la clave `lift_enabled` (sin fila = encendido).
+
+Paso 0:
+- Ajustes del coach = `#screen-coach-settings` (barra Clientes / Build / Delivery / Ajustes ya existía). Ya tenía: foto de Sau para el chat (`evRenderSauPhotoSetting`, bucket `support-chat`), "Enviar notificación" a todos o a un cliente (`sendPushNotification` → `/api/notify`) y "Gestión de clientes" con Pago / Eliminar (`deleteClient`, con confirmación).
+- LIFT aparece en: LIFT Challenge de Entry en Mi Diario (`evRenderLift`, `#ev-lift`), pantalla `lift` del tour Entry, texto de Mi Diario en la pantalla "menu" del tour, fila "LIFT Challenge" de "Tu plan Entry" en Perfil, racha en la ficha (`evRenderCoachLiftRow`), rifa del mes en Delivery (`evRenderRaffle`), sección LIFT de la ficha con "Activar LIFT" (`renderCoachLiftCard`) y la línea "activa LIFT Challenge" al crear un cliente Entry.
+
+Hecho:
+- Ajustes (50) en tarjetas: Funciones (interruptor "Programa LIFT 28 días" con etiqueta "Oculto" cuando está apagado), Avisos (interruptor "Aviso automático de cambios de semana" y "Tu nota en los cambios de semana" con Guardar; alimentan E12), Mi perfil (la foto que ya existía, con los textos del mockup), Notificaciones (fila "Enviar notificación push · A todos o a una persona" que despliega el formulario que ya existía, sin lógica nueva) y Zona de peligro ("Borrar perfiles" → abre la Gestión de clientes que ya existía, donde cada "Eliminar" pide confirmación; no se agregó borrado nuevo). "Gestión de clientes" y "Cerrar sesión" siguen abajo.
+- Interruptor LIFT apagado: se ocultan el LIFT Challenge en Mi Diario, la pantalla del tour (la lista se recalcula sola: Entry 11 → 10), el texto del tour de Mi Diario, la fila de "Tu plan Entry", la racha y "Activar LIFT" en la ficha, y la rifa en Delivery. Encendido: todo vuelve igual. No se borra ni cambia ningún dato.
+- Decisión: un cliente que ya está en el programa LIFT 28 días (`program_type='lift'`) sigue viendo su app y su resumen en la ficha aunque el interruptor esté apagado, para no romperle el app (Sau confirmó que hoy no hay nadie activo).
+- El flag se lee al abrir (cliente: antes del tour; coach: al entrar) y se guarda una copia en el equipo para que no parpadee. La tarjeta "Coaching" de Build no se toca.
+
+Probado (base simulada):
+- [x] Encendido: "Activar LIFT" en la ficha, racha del LIFT Challenge, tour Entry con `lift` (11), LIFT Challenge en Mi Diario, fila en Tu plan Entry.
+- [x] Apagado desde Ajustes: guarda `lift_enabled=false`; desaparecen "Activar LIFT" y la sección, la racha, la pantalla del tour (10), Mi Diario y la fila; el cliente que ya es LIFT conserva su resumen; tablas intactas.
+- [x] Encender de nuevo: vuelve todo.
+- [x] Nota de cambios de semana guardada en Ajustes → aparece en el pop-up de E12; apagar/prender el aviso automático guarda `week_change_auto`.
+- [x] Notificaciones despliega el formulario existente; "Borrar" abre la gestión de clientes con sus botones Eliminar.
+- [ ] Real (Supabase y celular): **no probado**.
