@@ -13,6 +13,7 @@ Servidor `python3 -m http.server 3000` en la raíz, ventana de 390 px. **Las pru
 | sql/entry-vip-base.sql | Corrido por Sau (23 nov) |
 | sql/entry-vip-engagement.sql | Corrido por Sau (24 nov): tablas `coach_feed` y `entry_nudges` (rowsecurity false) |
 | sql/entry-vip-minimal.sql | Corrido por Sau (24 nov): `workout_sessions.is_minimal` |
+| sql/e12-week-changes.sql | **Pendiente** (lo corre Sau): tablas `week_change_notes` y `coach_settings` (con `week_change_auto`=true y `week_change_default_note`='Seguimos mejorando.') |
 | sql/e11-announcements.sql | **Pendiente** (lo corre Sau): tabla `client_announcements` (E11). La purga de `coach_feed` no necesita SQL |
 | sql/entry-vip-extra.sql | Corrido por Sau (23 nov): `client_onboarding.completed_at`, `rate_us_dismissed_at`, bucket 15 MB, policy `support_chat_all_access` |
 
@@ -327,3 +328,29 @@ Probado (base simulada, 390 px):
 - [x] Bloqueos: Entry en pausa (aviso pendiente, sin `seen_at`), churn, cliente con tour pendiente → no sale. Entry con destino Chat abre el chat. Recordatorio naranja: el aviso sale encima y el recordatorio sigue debajo.
 - [x] Cron con node y `fetch` simulado: primero 1 DELETE a `coach_feed?created_at=lt.<hace 7 días>`, aunque esa noche no haya nada que reportar.
 - [ ] Real (Supabase y celular): **no probado**. Requiere correr `sql/e11-announcements.sql`.
+
+### E12: Cambios de semana automáticos — terminado, falta probar en real
+Mockups 40 y 41 (`docs/referencias/mockup-e11/`).
+
+Paso 0:
+- Programa por semana: `monthly_plans` (client_id, week_number, day_of_week, day_order) y `exercises` (plan_day_id, name, sets, superset_group, circuit_rounds, order_index). Circuito = mismo `superset_group`; rondas = `circuit_rounds` (o `sets` si falta).
+- Desbloqueo: solo existe en semana automática (`week_mode='auto'` + `program_week1_start`): cada domingo 8 p. m. CR avanza la posición (`getAutoWeekInfo`, `mapPositionToWeek`, `PROGRAM_SEQUENCE` con deload en la 8 o `deload_weeks`). En semanas manuales no hay desbloqueo (el cliente elige y Sau oculta/muestra con `hidden_weeks`).
+
+Decisiones (sin paro, documentadas para Sau):
+- Solo clientes con semana automática, que no sean LIFT y tengan Entreno (`training_access` no false). En la pantalla del coach, un cliente manual ve "Este cliente está en semanas manuales…".
+- Deload: la semana de deload no avisa, y la semana siguiente se compara con la de antes del deload (si no, saldrían todas las series como cambio).
+- Días: se emparejan por orden (day_order, luego id) y la etiqueta es el `day_of_week` del plan ("Día 1", "Lunes"…). Ejercicios por posición (`order_index`). Nuevo = nombre distinto en esa posición (sin importar mayúsculas/espacios) o posición que antes no existía. Series = solo ejercicios sueltos. Rondas = misma letra de circuito en el mismo día. Ejercicios quitados no cuentan.
+- "Una vez por semana" se recuerda en el equipo (`localStorage wkc:<cliente>:<semana>`), igual que el chequeo de los viernes. Sin SQL extra.
+- Prioridad: justo después del aviso E11 en `evPostLoginPopups`; si el aviso se cierra con "Más tarde"/✕ y no quedan más, sale este.
+- Mockup vs prompt: el mockup 40 lista con etiquetas por fila (Nuevo / Series / Rondas), muestra 3 y "y N cambios más · Ver todos"; se siguió el mockup. Las filas de circuito llevan el día ("Día 2 · Circuito B · 4 rondas") para no confundir circuitos de días distintos. Título según el cambio principal: ejercicios > series > rondas.
+
+Hecho:
+- Cliente (40): pop-up claro con "Semana N · Novedades", lista, nota de Sau con su foto (personalizada si existe, si no la global, si no "Seguimos mejorando."), "Ver mi semana" (va a Hoy), "Más tarde" y ✕ (las tres lo marcan visto).
+- Coach (41): tarjeta "Cambios de semana" en la ficha (arriba de Plan mensual) que abre la pantalla de la semana siguiente: comparación detectada sola con chips resumen, interruptor "Avisar el domingo 8 p. m." (= no `skip`), nota "Predeterminada" o "Solo esta semana" con "Escribir otra solo para esta semana" / "Volver a la predeterminada", "Ver cómo lo verá" y "No avisar esta semana". Avisa si el global está apagado en Ajustes.
+- Global: `coach_settings.week_change_auto` (sin fila = activo) y `week_change_default_note`. Si las tablas todavía no existen, el cliente usa los valores por defecto.
+
+Probado (base simulada, 390 px):
+- [x] Semana 5 vs 4: cambio de ejercicio → "cambian tus ejercicios" con "Reemplaza a…"; cambio de series → "cambian tus series" (4, antes 3); cambio de rondas → "cambian tus rondas"; sin cambios → nada; `skip` → nada; nota personalizada → se muestra esa; cliente manual → nada; global apagado → nada.
+- [x] 5 cambios: muestra 3 + "y 2 cambios más", "Ver todos" despliega los 5. "Ver mi semana" lo marca y no vuelve a salir.
+- [x] Coach: semana 6 vs 5 con "1 con más series"; guardar nota, volver a la predeterminada, apagar y prender el aviso (upsert por cliente+semana).
+- [ ] Real (Supabase y celular): **no probado**. Requiere correr `sql/e12-week-changes.sql`.

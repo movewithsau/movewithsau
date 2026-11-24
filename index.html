@@ -2602,6 +2602,7 @@ span.tr-next-name { cursor:default; }
       <span id="coach-c-days-adj-saved" style="font-size:11px;color:var(--green);opacity:0;transition:opacity .3s;">✓ Guardado</span>
     </div>
     <div id="coach-entrenos"></div>
+    <div id="wkc-coach-card"></div>
 
     <div class="section-header">
       <div class="section-title">Plan mensual</div>
@@ -4081,7 +4082,7 @@ function handleLogout() {
   currentUser=null; currentClient=null; clientWeek=1; clientDay=null; screenHistory=[];
   document.body.classList.remove('lift-mode', 'ev-entry', 'ev-locked'); // Entry / VIP
   if (typeof evProgressLocked !== 'undefined') evProgressLocked = false;
-  ['evt', 'ev-onb', 'ev-lock-note', 'ev-chat', 'ev-cchat', 'ev-vipoffer', 'ev-pause', 'ev-rate', 'ev-refer', 'ev-rules', 'ev-habit', 'ev-runlock', 'ev-terms-sheet', 'ev-rfs', 'ev-np', 'ev-np-harvest', 'ev-ann', 'ev-ann-prev', 'ann-send', 'ann-pick', 'ann-ask'].forEach(id => document.getElementById(id)?.remove());
+  ['evt', 'ev-onb', 'ev-lock-note', 'ev-chat', 'ev-cchat', 'ev-vipoffer', 'ev-pause', 'ev-rate', 'ev-refer', 'ev-rules', 'ev-habit', 'ev-runlock', 'ev-terms-sheet', 'ev-rfs', 'ev-np', 'ev-np-harvest', 'ev-ann', 'ev-ann-prev', 'ann-send', 'ann-pick', 'ann-ask', 'wkc', 'wkc-prev', 'wkc-coach'].forEach(id => document.getElementById(id)?.remove());
   if (typeof annGateOk !== 'undefined') annGateOk = false;
   if (typeof evNp !== 'undefined') evNp = { msgs: [], busy: false }; // NoPain: nada queda en memoria
   document.body.classList.remove('ev-paused');
@@ -11266,6 +11267,7 @@ async function openCoachClient(clientId) {
   exxRenderCoachAssist(c);
   evRenderCoachTier(c);
   evRenderCoachEntryCard(c);
+  wkcCoachCard(c); // E12
   const startDateStr = c.start_date ? formatDate(c.start_date) : null;
   const endDateStr = c.program_end_date ? formatDate(c.program_end_date) : null;
   const typeTag = c.client_type ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:10px;font-weight:800;background:var(--orange-light);color:var(--orange);border:1.5px solid var(--orange-mid);font-family:'DM Mono',monospace;margin-left:6px;">${c.client_type==='Virtual'?'V':'H'}</span>` : '';
@@ -29955,6 +29957,35 @@ body.ev-entry .tr-act-sep { display:none; }
 .ann-row .ev-tag { margin-left:auto; }
 .ann-pick-foot { background:#fff; border-radius:24px 24px 0 0; padding:16px 20px calc(18px + env(safe-area-inset-bottom,0px)); box-shadow:0 -6px 20px rgba(42,33,27,.06); }
 .ann-pick-foot > div { max-width:440px; margin:0 auto; }
+/* E12 · Cambios de semana */
+.wkc-card { width:100%; margin-top:22px; background:#fff; border:1px solid #EADFD2; border-radius:26px; padding:4px 16px; text-align:left; }
+.wkc-row { display:flex; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid #EFE6DA; }
+.wkc-more .wkc-row:last-child, .wkc-card > .wkc-row:last-of-type { border-bottom:1px solid #EFE6DA; }
+.wkc-row b { display:block; font-size:16px; line-height:1.3; color:#2A211B; }
+.wkc-row small { display:block; font-size:14px; color:#6F655B; margin-top:2px; }
+.wkc-tag { display:inline-flex; align-items:center; height:28px; padding:0 11px; border-radius:999px; background:#F8E7B8; color:#7A5A0C; font:700 13px 'DM Sans',sans-serif; flex:none; }
+.wkc-foot { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px 0; font-size:14px; color:#6F655B; }
+.wkc-foot button { border:0; background:none; color:#A63E10; font:700 15px 'DM Sans',sans-serif; cursor:pointer; min-height:40px; padding:0; }
+.wkc-note { width:100%; margin-top:12px; display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:22px; background:#FBEEE5; border-left:4px solid #C24E18; text-align:left; }
+.wkc-note img { width:42px; height:42px; border-radius:50%; object-fit:cover; flex:none; }
+.wkc-note b { display:block; font-family:'Playfair Display',serif; font-weight:900; font-size:19px; line-height:1.25; color:#2A211B; }
+.wkc-note small { display:block; font-size:13px; color:#6F655B; margin-top:2px; }
+.wkc-entry { display:flex; align-items:center; gap:12px; width:100%; min-height:64px; margin:6px 0 14px; padding:10px 14px; border:1px solid #EADFD2; border-radius:18px; background:#fff; color:#2A211B; font-family:'DM Sans',sans-serif; cursor:pointer; }
+.wkc-entry .ann-hic { border-radius:50%; background:#F6E6DB; color:#C24E18; display:flex; align-items:center; justify-content:center; flex:none; }
+.wkc-entry b { display:block; font-size:15px; } .wkc-entry small { display:block; font-size:12px; color:#6F655B; margin-top:2px; }
+.wkc-info { display:flex; gap:12px; align-items:flex-start; margin-top:16px; padding:14px 16px; border-radius:18px; background:#F6E3D9; color:#A63E10; }
+.wkc-info > svg { flex:none; margin-top:1px; }
+.wkc-info span { color:#4A3F35; font-size:14px; line-height:1.45; }
+.wkc-box { background:#fff; border:1px solid #EADFD2; border-radius:24px; padding:18px 16px; }
+.wkc-ok { display:inline-flex; align-items:center; height:30px; padding:0 12px; border-radius:999px; background:#DDF1E3; color:#1E6B3A; font:700 13px 'DM Sans',sans-serif; white-space:nowrap; }
+.wkc-crow { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 0; border-top:1px solid #EFE6DA; }
+.wkc-crow b { font-size:15px; line-height:1.3; } .wkc-crow span { font-size:13px; color:#6F655B; text-align:right; }
+.wkc-sw { position:relative; width:58px; height:34px; border-radius:999px; border:0; background:#D8CBBB; cursor:pointer; flex:none; transition:background .2s; }
+.wkc-sw span { position:absolute; top:4px; left:4px; width:26px; height:26px; border-radius:50%; background:#fff; transition:left .2s; }
+.wkc-sw[aria-checked="true"] { background:#1E7A3F; } .wkc-sw[aria-checked="true"] span { left:28px; }
+.wkc-notev { margin-top:12px; padding:14px 16px; border:1px solid #E3D6C7; border-radius:14px; font-family:'Playfair Display',serif; font-weight:900; font-size:19px; color:#2A211B; }
+.wkc-alt { display:flex; align-items:center; gap:8px; margin-top:10px; min-height:40px; border:0; background:none; padding:0; color:#A63E10; font:700 15px 'DM Sans',sans-serif; cursor:pointer; text-align:left; }
+.wkc-prevbtn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; height:56px; border:1px solid #E3D6C7; border-radius:18px; background:transparent; color:#A63E10; font:700 17px 'DM Sans',sans-serif; cursor:pointer; }
 /* Chat con Sau (E4), tema claro del mockup */
 .ev-chat { position:fixed; inset:0; z-index:10080; background:#F7F1E8; color:#2A211B; display:flex; flex-direction:column; font-family:'DM Sans',system-ui,sans-serif; }
 .ev-chat * { box-sizing:border-box; }
@@ -32079,6 +32110,7 @@ async function evRateUsDue() {
 async function evPostLoginPopups() {
   if (document.getElementById('ev-pause') || document.getElementById('evt') || document.getElementById('ev-onb') || evProgressLocked) return;
   if (await annCheck()) return; // E11: el aviso de Sau va antes que todo lo demás
+  if (await wkcCheck()) return; // E12: cambios de la semana nueva (una vez por semana)
   if (await evMaybeShowCoachBanner()) return;
   if (await ckwMaybeShow()) return;
   if (await evRateUsDue()) { evShowRateUs(); return; }
@@ -32593,7 +32625,7 @@ async function annShow(a, preview) {
     if (preview) return;
     annMarkSeen(a.id);
     if (b.dataset.a === 'go') annGo(a.destination, a.destination_ref);
-    else setTimeout(annCheck, 700); // el siguiente pendiente, si hay
+    else setTimeout(async () => { if (!(await annCheck())) wkcCheck(); }, 700); // el siguiente pendiente; si no hay, los cambios de semana (E12)
   });
   document.body.appendChild(w);
   w.querySelector('[data-a="go"]')?.focus();
@@ -32876,6 +32908,255 @@ let annExtraDirty = null, annExtraNewId = null, annExtraName = '';
 function annExtraEditorClosed() {
   const d = annExtraDirty; annExtraDirty = null;
   if (d) annAfterSave({ dest: 'extra', ref: d.id, label: d.name, edited: d.edited });
+}
+
+// ---------- E12 · Cambios de semana automáticos ----------
+// Solo clientes con semana automática (week_mode='auto'): es la única forma en que una semana se
+// "desbloquea" (domingo 8 p. m. CR). Al abrir el app en la semana nueva, si cambió algo respecto
+// a la anterior, sale un pop-up una vez por semana (se recuerda en el equipo). Cuenta como cambio:
+// ejercicio distinto en la misma posición del mismo día, otra cantidad de series (sueltos) u otra
+// cantidad de rondas (circuitos). Nada más. Las semanas de deload no avisan y no se usan de base:
+// la semana después del deload se compara con la de antes del deload.
+// Nota por cliente/semana y "No avisar esta semana": week_change_notes. Global: coach_settings
+// (week_change_auto, week_change_default_note; E14 los edita). Sin fila = activo y "Seguimos mejorando."
+const WKC_DEFAULT_NOTE = 'Seguimos mejorando.';
+const WKC_I = '<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>';
+let wkcSettingsCache = null;
+async function wkcSettings(force) {
+  if (wkcSettingsCache && !force) return wkcSettingsCache;
+  const { data, error } = await sb.from('coach_settings').select('key,value').in('key', ['week_change_auto', 'week_change_default_note']);
+  const m = {}; (error ? [] : data || []).forEach(r => { m[r.key] = r.value; });
+  wkcSettingsCache = { auto: m.week_change_auto !== 'false', note: (m.week_change_default_note || '').trim() || WKC_DEFAULT_NOTE };
+  return wkcSettingsCache;
+}
+function wkcNorm(s) { return String(s || '').trim().toLowerCase().replace(/\s+/g, ' '); }
+// Semana nueva y su base para una posición del programa (auto). null si no aplica.
+function wkcPair(c, weeks, position) {
+  const seq = getProgramSequence(c);
+  if (!(position >= 2) || position > seq.length) return null;
+  const cur = mapPositionToWeek(position, weeks, seq, c.deload_weeks);
+  if (!cur || cur.isDeload || !cur.hasContent) return null;
+  for (let p = position - 1; p >= 1; p--) {
+    const prev = mapPositionToWeek(p, weeks, seq, c.deload_weeks);
+    if (prev && !prev.isDeload && prev.hasContent) return { week: Number(cur.week), prevWeek: Number(prev.week), position, label: cur.label, prevLabel: prev.label };
+  }
+  return null;
+}
+async function wkcWeeks(cid) {
+  const { data } = await sb.from('monthly_plans').select('week_number').eq('client_id', cid).limit(5000);
+  return [...new Set((data || []).map(r => r.week_number))];
+}
+// Lista de cambios de la semana `week` contra `prevWeek` (mismo cliente)
+async function wkcDiff(cid, week, prevWeek) {
+  const { data: days, error } = await sb.from('monthly_plans').select('id,week_number,day_of_week,day_order')
+    .eq('client_id', cid).in('week_number', [week, prevWeek]);
+  if (error || !days) return null;
+  const sortDays = w => days.filter(d => Number(d.week_number) === Number(w))
+    .sort((a, b) => ((a.day_order ?? 1e9) - (b.day_order ?? 1e9)) || (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
+  const cur = sortDays(week), prev = sortDays(prevWeek);
+  const ids = days.map(d => d.id);
+  if (!ids.length) return [];
+  const { data: exs, error: e2 } = await sb.from('exercises').select('id,plan_day_id,name,sets,superset_group,circuit_rounds,order_index').in('plan_day_id', ids);
+  if (e2) return null;
+  const byDay = {};
+  (exs || []).forEach(x => { (byDay[x.plan_day_id] = byDay[x.plan_day_id] || []).push(x); });
+  Object.values(byDay).forEach(l => l.sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)));
+  const out = [];
+  cur.forEach((d, i) => {
+    const p = prev[i];
+    const dayLbl = d.day_of_week || `Día ${i + 1}`;
+    const now = byDay[d.id] || [], before = p ? (byDay[p.id] || []) : [];
+    now.forEach((x, k) => {
+      const o = before[k];
+      if (!o || wkcNorm(o.name) !== wkcNorm(x.name)) {
+        out.push({ kind: 'nuevo', day: dayLbl, title: `${dayLbl} · ${x.name}`, sub: o ? `Reemplaza a ${o.name}` : 'Ejercicio nuevo', coach: o ? `antes: ${o.name}` : 'nuevo' });
+      } else if (!x.superset_group && !o.superset_group && Number(x.sets || 0) !== Number(o.sets || 0) && x.sets != null && o.sets != null) {
+        out.push({ kind: 'series', more: Number(x.sets) > Number(o.sets), day: dayLbl, title: `${dayLbl} · ${x.name}: ${x.sets} series`, sub: `Antes eran ${o.sets}`, coachTitle: `${dayLbl} · ${x.name}`, coach: `${o.sets} → ${x.sets} series` });
+      }
+    });
+    // Circuitos: misma letra del día anterior equivalente
+    const rounds = l => { const m = {}; l.forEach(x => { if (x.superset_group && m[x.superset_group] == null) m[x.superset_group] = Number(x.circuit_rounds || x.sets || 1); }); return m; };
+    const rn = rounds(now), rb = rounds(before);
+    Object.keys(rn).forEach(g => {
+      if (rb[g] != null && rb[g] !== rn[g]) out.push({ kind: 'rondas', more: rn[g] > rb[g], diff: rn[g] - rb[g], day: dayLbl, title: `${dayLbl} · Circuito ${g} · ${rn[g]} rondas`, sub: `Antes eran ${rb[g]}`, coachTitle: `${dayLbl} · Circuito ${g}`, coach: `${rb[g]} → ${rn[g]} rondas` });
+    });
+  });
+  return out;
+}
+function wkcHeadline(list) {
+  if (list.some(c => c.kind === 'nuevo')) return 'Esta semana cambian tus ejercicios';
+  if (list.some(c => c.kind === 'series')) return 'Esta semana cambian tus series';
+  return 'Esta semana cambian tus rondas';
+}
+const WKC_TAG = { nuevo: 'Nuevo', series: 'Series', rondas: 'Rondas' };
+function wkcKey(cid, week) { return `wkc:${cid}:${week}`; }
+// Cliente: se llama al abrir (después del aviso E11)
+async function wkcCheck() {
+  const c = currentClient;
+  if (!c || annBlocked() || document.getElementById('wkc') || !isAutoWeekClient(c) || c.training_access === false) return false;
+  const weeks = await wkcWeeks(c.id);
+  const info = getAutoWeekInfo(c, weeks);
+  if (!info || info.state !== 'active') return false;
+  const pair = wkcPair(c, weeks, info.position);
+  if (!pair) return false;
+  try { if (localStorage.getItem(wkcKey(c.id, pair.week))) return false; } catch (e) {}
+  const st = await wkcSettings(true);
+  if (!st.auto) return false;
+  const { data: row, error: nErr } = await sb.from('week_change_notes').select('note,skip').eq('client_id', c.id).eq('week_number', pair.week).maybeSingle();
+  if (nErr && !/does not exist|schema cache/i.test(nErr.message || '')) return false;
+  if (row && row.skip) return false;
+  const list = await wkcDiff(c.id, pair.week, pair.prevWeek);
+  if (!list || !list.length || annBlocked() || currentClient?.id !== c.id) return false;
+  await wkcShow({ list, label: pair.label, note: (row && row.note && row.note.trim()) || st.note }, false, () => { try { localStorage.setItem(wkcKey(c.id, pair.week), new Date().toISOString()); } catch (e) {} });
+  return true;
+}
+async function wkcShow(o, preview, onSeen) {
+  const photo = await evSauPhotoUrl();
+  const id = preview ? 'wkc-prev' : 'wkc';
+  document.getElementById(id)?.remove();
+  const row = ch => `<div class="wkc-row"><span class="wkc-tag">${WKC_TAG[ch.kind]}</span><div><b>${evEsc(ch.title)}</b><small>${evEsc(ch.sub)}</small></div></div>`;
+  const first = o.list.slice(0, 3), rest = o.list.slice(3);
+  const w = document.createElement('div');
+  w.id = id; w.className = 'ann-ov';
+  w.setAttribute('role', 'dialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-labelledby', id + '-t');
+  w.innerHTML = `<div class="ann-wrap">
+    <button type="button" class="ann-x" data-a="x" aria-label="Cerrar">${EVT_S(EV_I.x, 20, 2.2)}</button>
+    <div class="ann-mid" style="padding-top:64px;">
+      ${annHexIcon(WKC_I, 76)}
+      <div class="ann-eb" style="margin-top:22px;">${evEsc(o.label)} · Novedades</div>
+      <h1 class="ann-t" id="${id}-t" style="font-weight:700;">${wkcHeadline(o.list)}</h1>
+      <div class="wkc-card">${first.map(row).join('')}<div class="wkc-more" hidden>${rest.map(row).join('')}</div>
+        ${rest.length ? `<div class="wkc-foot"><span>y ${rest.length} ${rest.length === 1 ? 'cambio más' : 'cambios más'} en tu semana</span><button type="button" data-a="all">Ver todos</button></div>` : ''}</div>
+      <div class="wkc-note"><img src="${evEsc(photo)}" alt=""><div><b>${evEsc(o.note)}</b><small>Sau</small></div></div>
+    </div>
+    <div class="ann-foot">
+      <button type="button" class="ev-btn" data-a="go">Ver mi semana</button>
+      <button type="button" class="ann-later" data-a="x">Más tarde</button>
+    </div>
+  </div>`;
+  w.addEventListener('click', e => {
+    const b = e.target.closest('[data-a]'); if (!b) return;
+    if (b.dataset.a === 'all') { w.querySelector('.wkc-more').hidden = false; b.parentElement.remove(); return; }
+    w.remove();
+    if (preview) return;
+    onSeen && onSeen();
+    if (b.dataset.a === 'go') annNav('home', 'screen-client-home', 1);
+  });
+  document.body.appendChild(w);
+  w.querySelector('[data-a="go"]')?.focus();
+}
+
+// Coach (41): tarjeta en la ficha y pantalla "Cambios de semana" de la semana siguiente
+let wkcC = null;
+async function wkcCoachCard(c) {
+  const el = document.getElementById('wkc-coach-card');
+  if (!el) return;
+  el.innerHTML = '';
+  if (!c || c.program_type === 'lift' || c.is_churn) return;
+  el.innerHTML = `<button type="button" class="wkc-entry" onclick="wkcOpenCoach()"><span class="ann-hic" style="width:40px;height:40px;">${EVT_S(WKC_I, 20, 2.2)}</span><span style="flex:1;text-align:left;"><b>Cambios de semana</b><small id="wkc-entry-sub">${isAutoWeekClient(c) ? 'Revisá qué cambia la semana que viene' : 'Solo con semana automática'}</small></span>${EVT_S('<path d="m9 18 6-6-6-6"/>', 18, 2.2)}</button>`;
+}
+async function wkcOpenCoach() {
+  const c = currentClient; if (!c) return;
+  const ov = document.createElement('div');
+  ov.id = 'wkc-coach'; ov.className = 'ann-pick'; ov.style.overflowY = 'auto';
+  ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-labelledby', 'wkc-coach-t');
+  document.getElementById('wkc-coach')?.remove();
+  document.body.appendChild(ov);
+  wkcC = { c, loading: true };
+  wkcRenderCoach();
+  const st = await wkcSettings(true);
+  let pair = null, list = null, row = null, msg = '';
+  if (!isAutoWeekClient(c)) msg = 'Este cliente está en semanas manuales. El aviso automático solo funciona con semana automática (se desbloquea el domingo 8 p. m.).';
+  else {
+    const weeks = await wkcWeeks(c.id);
+    const nowInfo = getAutoWeekInfo(c, weeks);
+    const nextPos = nowInfo ? (nowInfo.state === 'before' ? 1 : nowInfo.position + 1) : null;
+    pair = nextPos ? wkcPair(c, weeks, nextPos) : null;
+    if (!pair) {
+      const seq = getProgramSequence(c), m = nextPos ? mapPositionToWeek(nextPos, weeks, seq, c.deload_weeks) : null;
+      msg = !nextPos || nextPos > seq.length ? 'No hay una semana siguiente en su programa.'
+        : m && m.isDeload ? 'La semana que viene es de deload: no se avisa.'
+        : m && !m.hasContent ? `La ${m.label.toLowerCase()} todavía no tiene días cargados.` : 'No hay semana anterior para comparar.';
+    } else {
+      list = await wkcDiff(c.id, pair.week, pair.prevWeek);
+      const r = await sb.from('week_change_notes').select('id,note,skip').eq('client_id', c.id).eq('week_number', pair.week).maybeSingle();
+      row = r.data || null;
+    }
+  }
+  if (!wkcC || wkcC.c !== c) return;
+  Object.assign(wkcC, { loading: false, st, pair, list: list || [], row, msg, editing: false });
+  wkcRenderCoach();
+}
+function wkcRenderCoach() {
+  const ov = document.getElementById('wkc-coach'); if (!ov || !wkcC) return;
+  const { c } = wkcC, first = annFirst(c);
+  const head = `<div class="ann-pick-top" style="padding-bottom:0;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button type="button" class="ev-xbtn" style="width:44px;height:44px;background:#EDE3D6;color:#2A211B;" aria-label="Volver" onclick="wkcCloseCoach()">${EVT_S(EV_I.back, 20, 2.4)}</button>
+      <div style="flex:1;min-width:0;"><h2 id="wkc-coach-t" style="margin:0;font-size:28px;line-height:1.1;">${evEsc(c.name)}</h2><div style="font-size:14px;color:#6F655B;">Cambios de semana</div></div>
+      ${evTierTagHtml(c)}
+    </div>
+    <div class="wkc-info">${EVT_S(WKC_I, 22, 2.2)}<span>Esta pantalla se arma sola en la ficha de cada cliente. La app compara su semana nueva con la anterior y vos solo revisás.</span></div>
+  </div>`;
+  let body = '';
+  if (wkcC.loading) body = '<div class="spinner"></div>';
+  else if (wkcC.msg) body = `<div class="wkc-box"><p style="margin:0;font-size:15px;color:#4A3F35;">${evEsc(wkcC.msg)}</p></div>`;
+  else {
+    const L = wkcC.list, skip = !!(wkcC.row && wkcC.row.skip), custom = wkcC.row && wkcC.row.note && wkcC.row.note.trim();
+    const n = k => L.filter(x => x.kind === k);
+    const chips = [];
+    if (n('nuevo').length) chips.push(`${n('nuevo').length} ${n('nuevo').length === 1 ? 'ejercicio nuevo' : 'ejercicios nuevos'}`);
+    const sm = n('series').filter(x => x.more).length, sl = n('series').length - sm;
+    if (sm) chips.push(`${sm} con más series`); if (sl) chips.push(`${sl} con menos series`);
+    const r = n('rondas');
+    if (r.length === 1) chips.push(`1 circuito: ${r[0].diff > 0 ? '+' : ''}${r[0].diff} ${Math.abs(r[0].diff) === 1 ? 'ronda' : 'rondas'}`);
+    else if (r.length) chips.push(`${r.length} circuitos con otras rondas`);
+    body = `<div class="wkc-box">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><span class="ev-eb-o" style="font-size:12px;">${evEsc(wkcC.pair.label)} vs ${evEsc(wkcC.pair.prevLabel.toLowerCase())}</span><span class="wkc-ok">Detectado solo</span></div>
+        ${L.length ? `<div class="ann-chips" style="margin-top:14px;">${chips.map(t => `<span class="wkc-tag" style="height:34px;padding:0 14px;">${t}</span>`).join('')}</div>
+        <div style="margin-top:12px;">${L.map(x => `<div class="wkc-crow"><b>${evEsc(x.coachTitle || x.title)}</b><span>${evEsc(x.coach)}</span></div>`).join('')}</div>`
+        : '<p style="margin:12px 0 0;font-size:15px;color:#6F655B;">Sin cambios contra la semana anterior: no le sale nada.</p>'}
+      </div>
+      ${wkcC.st.auto ? '' : '<div class="wkc-box" style="background:#FBEEE5;border-color:#F1D3C0;"><p style="margin:0;font-size:14px;color:#A63E10;">El aviso automático de cambios de semana está apagado en Ajustes: no le sale a nadie.</p></div>'}
+      <div class="wkc-box" style="display:flex;align-items:center;gap:14px;">
+        <div style="flex:1;"><b style="font-size:17px;">Avisar el domingo 8 p. m.</b><div style="font-size:14px;color:#6F655B;margin-top:2px;">Sale cuando se desbloquea la semana. Sin cambios, no sale nada.</div></div>
+        <button type="button" class="wkc-sw" role="switch" aria-checked="${!skip}" aria-label="Avisar el domingo 8 p. m." onclick="wkcSetSkip(${!skip})"><span></span></button>
+      </div>
+      <div class="wkc-box">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><b style="font-size:15px;color:#4A3F35;">Nota para ${evEsc(first)}</b><span class="wkc-ok">${custom ? 'Solo esta semana' : 'Predeterminada'}</span></div>
+        ${wkcC.editing
+          ? `<textarea class="ev-linp" id="wkc-note" rows="2" maxlength="160" style="margin-top:12px;" placeholder="${evEsc(wkcC.st.note)}">${evEsc(custom || '')}</textarea>
+             <button type="button" class="ev-lbtn" style="margin-top:12px;" onclick="wkcSaveNote()">Guardar nota</button>
+             <button type="button" class="ann-link" onclick="wkcC.editing=false;wkcRenderCoach();">Cancelar</button>`
+          : `<div class="wkc-notev">${evEsc(custom || wkcC.st.note)}</div>
+             <button type="button" class="wkc-alt" onclick="wkcC.editing=true;wkcRenderCoach();document.getElementById('wkc-note')?.focus();">${EVT_S(WKC_I, 18, 2.2)}${custom ? 'Cambiar la nota de esta semana' : 'Escribir otra solo para esta semana'}</button>
+             ${custom ? '<button type="button" class="wkc-alt" style="color:#6F655B;" onclick="wkcSaveNote(true)">Volver a la predeterminada</button>' : ''}`}
+        <p style="margin:8px 0 0;font-size:13px;line-height:1.5;color:#6F655B;">Si no escribís nada, sale «${evEsc(wkcC.st.note)}». La de siempre se cambia en Ajustes.</p>
+      </div>
+      ${L.length ? `<button type="button" class="wkc-prevbtn" onclick="wkcPreview()">${EVT_S('<path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/><circle cx="12" cy="12" r="3"/>', 22, 2.2)}Ver cómo lo verá</button>` : ''}
+      <button type="button" class="ann-link" style="color:#6F655B;font-size:16px;margin-bottom:24px;" onclick="wkcSetSkip(${!skip})">${skip ? 'Volver a avisar esta semana' : 'No avisar esta semana'}</button>`;
+  }
+  ov.innerHTML = head + `<div class="ann-pick-list" style="flex:none;overflow:visible;gap:14px;padding-top:14px;">${body}</div>`;
+}
+function wkcCloseCoach() { document.getElementById('wkc-coach')?.remove(); wkcC = null; }
+async function wkcUpsert(patch) {
+  const s = wkcC; if (!s || !s.pair) return false;
+  const row = { client_id: s.c.id, week_number: s.pair.week, updated_at: new Date().toISOString(), ...patch };
+  const { data, error } = await sb.from('week_change_notes').upsert([row], { onConflict: 'client_id,week_number' }).select('id,note,skip').maybeSingle();
+  if (error) { showToast('No se guardó: ' + error.message, 'error'); return false; }
+  s.row = data || { ...(s.row || {}), ...patch };
+  return true;
+}
+async function wkcSetSkip(skip) {
+  if (await wkcUpsert({ skip: !!skip })) { showToast(skip ? 'No se le avisa esta semana' : 'Se le avisa el domingo 8 p. m.', 'success'); wkcRenderCoach(); }
+}
+async function wkcSaveNote(reset) {
+  const v = reset ? '' : (document.getElementById('wkc-note')?.value || '').trim();
+  if (await wkcUpsert({ note: v || null })) { wkcC.editing = false; showToast(v ? 'Nota guardada para esta semana' : 'Usa la nota predeterminada', 'success'); wkcRenderCoach(); }
+}
+function wkcPreview() {
+  const s = wkcC; if (!s || !s.list.length) return;
+  wkcShow({ list: s.list, label: s.pair.label, note: (s.row && s.row.note && s.row.note.trim()) || s.st.note }, true);
 }
 
 // ---------- E9 · Banner "Tenés nuevos mensajes de Tu Coach" (solo Entry) ----------
