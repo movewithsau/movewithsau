@@ -32331,7 +32331,8 @@ async function evCloseNoPain(force) {
 // ---------- Recordatorio de chequeo semanal (todos los clientes) ----------
 // Chequeo = fila de client_progress_logs de la semana (lunes) con peso y foto de frente.
 // Viernes a domingo (hora CR), sin chequeo de esta semana: pop-up grande. "Más tarde" lo oculta
-// hasta el día siguiente. Lunes, sin chequeo de la semana pasada: mini recordatorio arriba de Hoy;
+// hasta el día siguiente. Lunes, sin chequeo de la semana pasada: mini recordatorio arriba de Hoy
+// (máximo 2 veces ese día);
 // "Ya lo subí" lo cierra por hoy y deja un aviso en Delivery (una vez por semana).
 // Sin cron de servidor: el app mira el día al abrir (el push no llega). Sin SQL nuevo.
 const CKW_HEX = `<path d="M36 3L69 22V60L36 79L3 60V22Z" fill="#F5B83D"/><g transform="translate(22 28)" fill="none" stroke="#1B1713" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"><path d="M2 8h5l2-4h10l2 4h5v16H2z"/><circle cx="14" cy="15" r="5"/></g>`;
@@ -32358,7 +32359,12 @@ async function ckwMaybeShow() {
   }
   if (dow === 1) {
     if (ckwGet('mini') === today) return false;
+    // Máximo 2 veces (aperturas) por lunes
+    const [d, n] = String(ckwGet('miniN') || '').split('|');
+    const shown = d === today ? Number(n) || 0 : 0;
+    if (shown >= 2) return false;
     if (await ckwHasCheck(fmtDateKey(getWeekDates(1)[0]))) return false;
+    ckwSet('miniN', today + '|' + (shown + 1));
     ckwShowMini();
     return true;
   }
