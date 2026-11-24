@@ -13,7 +13,7 @@ Servidor `python3 -m http.server 3000` en la raíz, ventana de 390 px. **Las pru
 | sql/entry-vip-base.sql | Corrido por Sau (23 nov) |
 | sql/entry-vip-engagement.sql | Corrido por Sau (24 nov): tablas `coach_feed` y `entry_nudges` (rowsecurity false) |
 | sql/entry-vip-minimal.sql | Corrido por Sau (24 nov): `workout_sessions.is_minimal` |
-| sql/e12-week-changes.sql | **Pendiente** (lo corre Sau): tablas `week_change_notes` y `coach_settings` (con `week_change_auto`=true y `week_change_default_note`='Seguimos mejorando.') |
+| sql/e12-week-changes.sql | Corrido por Sau (24 nov): tablas `week_change_notes` y `coach_settings` (con `week_change_auto`=true y `week_change_default_note`='Seguimos mejorando.') |
 | sql/e11-announcements.sql | **Pendiente** (lo corre Sau): tabla `client_announcements` (E11). La purga de `coach_feed` no necesita SQL |
 | sql/entry-vip-extra.sql | Corrido por Sau (23 nov): `client_onboarding.completed_at`, `rate_us_dismissed_at`, bucket 15 MB, policy `support_chat_all_access` |
 
@@ -338,7 +338,7 @@ Paso 0:
 
 Decisiones (sin paro, documentadas para Sau):
 - Solo clientes con semana automática, que no sean LIFT y tengan Entreno (`training_access` no false). En la pantalla del coach, un cliente manual ve "Este cliente está en semanas manuales…".
-- Deload: la semana de deload no avisa, y la semana siguiente se compara con la de antes del deload (si no, saldrían todas las series como cambio).
+- Deload (ajuste de Sau, 24 nov): se trata como cualquier semana. La semana de deload avisa comparada contra la anterior (los cambios de series salen como cambio) y la semana siguiente se compara contra el deload, también con aviso. Se quitó la regla anterior que lo saltaba.
 - Días: se emparejan por orden (day_order, luego id) y la etiqueta es el `day_of_week` del plan ("Día 1", "Lunes"…). Ejercicios por posición (`order_index`). Nuevo = nombre distinto en esa posición (sin importar mayúsculas/espacios) o posición que antes no existía. Series = solo ejercicios sueltos. Rondas = misma letra de circuito en el mismo día. Ejercicios quitados no cuentan.
 - "Una vez por semana" se recuerda en el equipo (`localStorage wkc:<cliente>:<semana>`), igual que el chequeo de los viernes. Sin SQL extra.
 - Prioridad: justo después del aviso E11 en `evPostLoginPopups`; si el aviso se cierra con "Más tarde"/✕ y no quedan más, sale este.
@@ -353,4 +353,5 @@ Probado (base simulada, 390 px):
 - [x] Semana 5 vs 4: cambio de ejercicio → "cambian tus ejercicios" con "Reemplaza a…"; cambio de series → "cambian tus series" (4, antes 3); cambio de rondas → "cambian tus rondas"; sin cambios → nada; `skip` → nada; nota personalizada → se muestra esa; cliente manual → nada; global apagado → nada.
 - [x] 5 cambios: muestra 3 + "y 2 cambios más", "Ver todos" despliega los 5. "Ver mi semana" lo marca y no vuelve a salir.
 - [x] Coach: semana 6 vs 5 con "1 con más series"; guardar nota, volver a la predeterminada, apagar y prender el aviso (upsert por cliente+semana).
-- [ ] Real (Supabase y celular): **no probado**. Requiere correr `sql/e12-week-changes.sql`.
+- [x] Ajuste deload (node con las funciones reales): programa de 12 semanas, posición 8 (deload) se compara contra la 7 y la 9 contra la 8; programa de 5 semanas con deload en la 5 → 5 contra 4.
+- [ ] Real (Supabase y celular): **no probado**. SQL ya corrido por Sau.

@@ -32915,8 +32915,8 @@ function annExtraEditorClosed() {
 // "desbloquea" (domingo 8 p. m. CR). Al abrir el app en la semana nueva, si cambió algo respecto
 // a la anterior, sale un pop-up una vez por semana (se recuerda en el equipo). Cuenta como cambio:
 // ejercicio distinto en la misma posición del mismo día, otra cantidad de series (sueltos) u otra
-// cantidad de rondas (circuitos). Nada más. Las semanas de deload no avisan y no se usan de base:
-// la semana después del deload se compara con la de antes del deload.
+// cantidad de rondas (circuitos). Nada más. El deload se trata como cualquier semana: avisa contra
+// la anterior, y la semana siguiente se compara contra el deload (decisión de Sau, 24 nov).
 // Nota por cliente/semana y "No avisar esta semana": week_change_notes. Global: coach_settings
 // (week_change_auto, week_change_default_note; E14 los edita). Sin fila = activo y "Seguimos mejorando."
 const WKC_DEFAULT_NOTE = 'Seguimos mejorando.';
@@ -32935,10 +32935,10 @@ function wkcPair(c, weeks, position) {
   const seq = getProgramSequence(c);
   if (!(position >= 2) || position > seq.length) return null;
   const cur = mapPositionToWeek(position, weeks, seq, c.deload_weeks);
-  if (!cur || cur.isDeload || !cur.hasContent) return null;
+  if (!cur || !cur.hasContent) return null;
   for (let p = position - 1; p >= 1; p--) {
     const prev = mapPositionToWeek(p, weeks, seq, c.deload_weeks);
-    if (prev && !prev.isDeload && prev.hasContent) return { week: Number(cur.week), prevWeek: Number(prev.week), position, label: cur.label, prevLabel: prev.label };
+    if (prev && prev.hasContent) return { week: Number(cur.week), prevWeek: Number(prev.week), position, label: cur.label, prevLabel: prev.label };
   }
   return null;
 }
@@ -33075,7 +33075,6 @@ async function wkcOpenCoach() {
     if (!pair) {
       const seq = getProgramSequence(c), m = nextPos ? mapPositionToWeek(nextPos, weeks, seq, c.deload_weeks) : null;
       msg = !nextPos || nextPos > seq.length ? 'No hay una semana siguiente en su programa.'
-        : m && m.isDeload ? 'La semana que viene es de deload: no se avisa.'
         : m && !m.hasContent ? `La ${m.label.toLowerCase()} todavía no tiene días cargados.` : 'No hay semana anterior para comparar.';
     } else {
       list = await wkcDiff(c.id, pair.week, pair.prevWeek);
