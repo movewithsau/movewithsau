@@ -282,4 +282,4 @@ Probado:
 - [x] `minWkReduce` con node: circuitos de 2 a 1 ejercicio, rondas 4→2, 1→1; sueltos 5→2, 1→1; el arreglo original no cambia.
 - [ ] Navegador y real: **no probados**.
 
-Pendiente de Sau: aprobar la regla; qué hacer con los días que son todo ejercicios sueltos (hoy se quedan todos con 2 series, puede pasar de 15 min).
+Aprobado por Sau (24 nov): días que son todo ejercicios sueltos → solo los primeros 3, con 2 series. Días mixtos siguen la regla general.

@@ -32391,7 +32391,7 @@ async function evOpenCoachFeed() {
 
 // ---------- E10 · Entreno para poco tiempo (solo VIP) ----------
 // Regla: de cada circuito, solo el primer ejercicio, con 2 rondas (o menos si el plan tenía menos);
-// los ejercicios sueltos quedan con 2 series como máximo. Se arma en memoria al dibujar el día:
+// los ejercicios sueltos quedan con 2 series como máximo. Si el día es todo sueltos, solo los primeros 3. Se arma en memoria al dibujar el día:
 // no cambia los ejercicios del plan ni lo ya registrado. Lo que se guarda es lo de siempre
 // (exercise_logs de lo que se hace y workout_sessions al terminar), así cuenta como día entrenado.
 // La elección se recuerda en este equipo por cliente, día del plan y fecha.
@@ -32401,9 +32401,12 @@ function minWkIsOn(planDayId) { try { return localStorage.getItem(minWkKey(planD
 function minWkAvailable(exs) {
   return !!(currentClient && !evIsEntry(currentClient) && currentUser?.role !== 'coach' && exs && exs.length);
 }
+const MINWK_SOLO_ONLY_MAX = 3; // día sin circuitos (todo sueltos): solo los primeros 3
 function minWkReduce(exs) {
   const seen = new Set();
-  return exs.filter(ex => {
+  const soloOnly = !exs.some(ex => ex.superset_group);
+  return exs.filter((ex, i) => {
+    if (soloOnly) return i < MINWK_SOLO_ONLY_MAX;
     if (!ex.superset_group) return true;
     if (seen.has(ex.superset_group)) return false;
     seen.add(ex.superset_group); return true;
