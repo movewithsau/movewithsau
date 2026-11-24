@@ -13,7 +13,7 @@ Servidor `python3 -m http.server 3000` en la raíz, ventana de 390 px. **Las pru
 | sql/entry-vip-base.sql | Corrido por Sau (23 nov) |
 | sql/entry-vip-engagement.sql | Corrido por Sau (24 nov): tablas `coach_feed` y `entry_nudges` (rowsecurity false) |
 | sql/entry-vip-minimal.sql | Corrido por Sau (24 nov): `workout_sessions.is_minimal` |
-| sql/e13-classroom.sql | **Pendiente** (lo corre Sau): `classroom_categories`, `classroom_items` (con `published_at`), `classroom_views`, bucket público `classroom` (solo imágenes, 5 MB) y policy `classroom_all_access` |
+| sql/e13-classroom.sql | Corrido por Sau (24 nov): `classroom_categories`, `classroom_items` (con `published_at`), `classroom_views`, bucket público `classroom` (solo imágenes, 5 MB) y policy `classroom_all_access` |
 | sql/e12-week-changes.sql | Corrido por Sau (24 nov): tablas `week_change_notes` y `coach_settings` (con `week_change_auto`=true y `week_change_default_note`='Seguimos mejorando.') |
 | sql/e11-announcements.sql | **Pendiente** (lo corre Sau): tabla `client_announcements` (E11). La purga de `coach_feed` no necesita SQL |
 | sql/entry-vip-extra.sql | Corrido por Sau (23 nov): `client_onboarding.completed_at`, `rate_us_dismissed_at`, bucket 15 MB, policy `support_chat_all_access` |
@@ -390,3 +390,24 @@ Probado (base simulada; `/api/oembed` real):
 - [x] Tour: Entry `learn` = 5 de 11 con la línea del candado; VIP sin esa línea.
 - [ ] Reproducción del video dentro del app: el iframe carga pero el navegador de prueba no lo muestra; **probar en el celular**.
 - [ ] Real (Supabase, Storage y celular): **no probado**. Requiere correr `sql/e13-classroom.sql`.
+
+### E14: Ajustes y Funciones (toggle de LIFT) — terminado, falta probar en real
+Mockup 50. Sin SQL nuevo: usa `coach_settings` de E12 con la clave `lift_enabled` (sin fila = encendido).
+
+Paso 0:
+- Ajustes del coach = `#screen-coach-settings` (barra Clientes / Build / Delivery / Ajustes ya existía). Ya tenía: foto de Sau para el chat (`evRenderSauPhotoSetting`, bucket `support-chat`), "Enviar notificación" a todos o a un cliente (`sendPushNotification` → `/api/notify`) y "Gestión de clientes" con Pago / Eliminar (`deleteClient`, con confirmación).
+- LIFT aparece en: LIFT Challenge de Entry en Mi Diario (`evRenderLift`, `#ev-lift`), pantalla `lift` del tour Entry, texto de Mi Diario en la pantalla "menu" del tour, fila "LIFT Challenge" de "Tu plan Entry" en Perfil, racha en la ficha (`evRenderCoachLiftRow`), rifa del mes en Delivery (`evRenderRaffle`), sección LIFT de la ficha con "Activar LIFT" (`renderCoachLiftCard`) y la línea "activa LIFT Challenge" al crear un cliente Entry.
+
+Hecho:
+- Ajustes (50) en tarjetas: Funciones (interruptor "Programa LIFT 28 días" con etiqueta "Oculto" cuando está apagado), Avisos (interruptor "Aviso automático de cambios de semana" y "Tu nota en los cambios de semana" con Guardar; alimentan E12), Mi perfil (la foto que ya existía, con los textos del mockup), Notificaciones (fila "Enviar notificación push · A todos o a una persona" que despliega el formulario que ya existía, sin lógica nueva) y Zona de peligro ("Borrar perfiles" → abre la Gestión de clientes que ya existía, donde cada "Eliminar" pide confirmación; no se agregó borrado nuevo). "Gestión de clientes" y "Cerrar sesión" siguen abajo.
+- Interruptor LIFT apagado: se ocultan el LIFT Challenge en Mi Diario, la pantalla del tour (la lista se recalcula sola: Entry 11 → 10), el texto del tour de Mi Diario, la fila de "Tu plan Entry", la racha y "Activar LIFT" en la ficha, y la rifa en Delivery. Encendido: todo vuelve igual. No se borra ni cambia ningún dato.
+- Decisión: un cliente que ya está en el programa LIFT 28 días (`program_type='lift'`) sigue viendo su app y su resumen en la ficha aunque el interruptor esté apagado, para no romperle el app (Sau confirmó que hoy no hay nadie activo).
+- El flag se lee al abrir (cliente: antes del tour; coach: al entrar) y se guarda una copia en el equipo para que no parpadee. La tarjeta "Coaching" de Build no se toca.
+
+Probado (base simulada):
+- [x] Encendido: "Activar LIFT" en la ficha, racha del LIFT Challenge, tour Entry con `lift` (11), LIFT Challenge en Mi Diario, fila en Tu plan Entry.
+- [x] Apagado desde Ajustes: guarda `lift_enabled=false`; desaparecen "Activar LIFT" y la sección, la racha, la pantalla del tour (10), Mi Diario y la fila; el cliente que ya es LIFT conserva su resumen; tablas intactas.
+- [x] Encender de nuevo: vuelve todo.
+- [x] Nota de cambios de semana guardada en Ajustes → aparece en el pop-up de E12; apagar/prender el aviso automático guarda `week_change_auto`.
+- [x] Notificaciones despliega el formulario existente; "Borrar" abre la gestión de clientes con sus botones Eliminar.
+- [ ] Real (Supabase y celular): **no probado**.
