@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Mockup · Recordatorio de chequeo semanal</title>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#EDE6DC;font-family:'DM Sans',sans-serif;display:flex;gap:40px;justify-content:center;padding:32px;flex-wrap:wrap}
+.cap{font:500 12px 'DM Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#6F655B;margin-bottom:10px;text-align:center}
+.ph{width:390px;height:844px;border-radius:44px;overflow:hidden;position:relative;background:#FBF6EF;box-shadow:0 20px 50px rgba(0,0,0,.18);border:8px solid #1B1713}
+/* Fondo: Hoy */
+.hoy{padding:56px 20px 0}
+.hoy .eb{font:500 11px 'DM Mono',monospace;letter-spacing:.14em;color:#A63E10;text-transform:uppercase}
+.hoy h1{font-family:'Dela Gothic One';font-weight:400;font-size:30px;margin:6px 0 18px;color:#2A211B;text-transform:uppercase}
+.card{background:#fff;border:1px solid #EADFD2;border-radius:20px;padding:16px;margin-bottom:12px;height:90px}
+.card.o{background:#F75A0E;border:0;height:120px}
+.nav{position:absolute;bottom:0;left:0;right:0;height:78px;background:#fff;border-top:1px solid #EADFD2}
+/* Pop-up */
+.wrap{position:absolute;inset:0;background:rgba(10,8,6,.72);display:flex;align-items:center;justify-content:center;padding:20px}
+.m{width:100%;max-width:350px;background:#26201A;border:1px solid #3A3027;border-radius:26px;padding:24px 20px 18px;text-align:center;color:#FBF6EF;position:relative;overflow:hidden}
+.x{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:50%;border:0;background:#3A3027;color:#CFC6BA;font-size:16px}
+.hex{display:block;margin:4px auto 0}
+.m .eb{font:500 11px 'DM Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#F5B83D;margin-top:12px}
+.m h2{font-family:'Dela Gothic One';font-weight:400;text-transform:uppercase;font-size:24px;line-height:1.08;margin:10px 0 0}
+.m p{color:#CFC6BA;font-size:15px;line-height:1.45;margin:10px 0 0}
+.chk{margin:16px 0 0;background:#1B1713;border-radius:16px;padding:12px 14px;text-align:left;display:flex;flex-direction:column;gap:10px}
+.row{display:flex;align-items:center;gap:10px;font-size:14px;color:#FBF6EF}
+.dot{width:22px;height:22px;border-radius:50%;border:1.6px solid #F5B83D;display:flex;align-items:center;justify-content:center;flex:none;color:#F5B83D;font-size:11px}
+.row small{margin-left:auto;color:#A89C8D;font:500 10px 'DM Mono',monospace;letter-spacing:.1em;text-transform:uppercase}
+.btn{margin-top:18px;width:100%;height:54px;border:0;border-radius:16px;background:#C24E18;color:#fff;font:700 16px 'DM Sans'}
+.later{margin-top:6px;height:44px;border:0;background:none;color:#A89C8D;font:700 14px 'DM Sans'}
+/* Destino: Tu Progreso */
+.tp{padding:56px 20px}
+.tp .eb{font:500 11px 'DM Mono',monospace;letter-spacing:.14em;color:#A63E10;text-transform:uppercase}
+.tp h1{font-family:'Dela Gothic One';font-weight:400;font-size:30px;margin:6px 0 14px;color:#2A211B;text-transform:uppercase}
+.note{background:#FFF6EF;border:1.5px solid #C24E18;border-radius:16px;padding:12px 14px;font-size:14px;color:#2A211B;display:flex;gap:10px;align-items:center;margin-bottom:12px}
+.reg{background:#fff;border:1px solid #EADFD2;border-radius:20px;padding:16px}
+.reg b{font-size:16px;color:#2A211B}
+.in{margin-top:12px;height:48px;border-radius:14px;border:1.5px solid #EADFD2;display:flex;align-items:center;padding:0 14px;color:#8B8075;font-size:14px}
+.ph3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.ph3 div{aspect-ratio:3/4;border-radius:14px;border:1.5px dashed #D9CCBD;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;font:500 10px 'DM Mono',monospace;letter-spacing:.1em;color:#8B8075;text-transform:uppercase}
+.ph3 div.req{border-color:#C24E18;color:#A63E10}
+.save{margin-top:14px;width:100%;height:52px;border:0;border-radius:16px;background:#C24E18;color:#fff;font:700 16px 'DM Sans'}
+.ayunas{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:6px 12px;border-radius:999px;background:#F5B83D;color:#1B1713;font:500 11px 'DM Mono',monospace;letter-spacing:.12em;text-transform:uppercase}
+.mini{position:absolute;left:14px;right:14px;top:150px;background:#26201A;border:1.5px solid #F5B83D;border-radius:20px;padding:14px;color:#FBF6EF;box-shadow:0 14px 30px rgba(0,0,0,.25)}
+.mini .top{display:flex;gap:12px;align-items:flex-start}
+.mini .eb{font:500 10px 'DM Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#F5B83D}
+.mini p{margin:4px 0 0;font-size:14px;line-height:1.4;color:#FBF6EF}
+.mini p span{color:#CFC6BA}
+.mini .bt{display:flex;gap:8px;margin-top:12px}
+.mini .bt button{flex:1;height:42px;border-radius:12px;font:700 14px 'DM Sans';border:0}
+.mini .go{background:#C24E18;color:#fff}.mini .done{background:#3A3027;color:#FBF6EF}
+</style></head><body>
+
+<div><div class="cap">1 · Viernes · al abrir el app</div>
+<div class="ph">
+  <div class="hoy"><div class="eb">Viernes · Semana 3</div><h1>Hola, Ana</h1>
+    <div class="card o"></div><div class="card"></div><div class="card"></div></div>
+  <div class="nav"></div>
+  <div class="wrap"><div class="m">
+    <button class="x" aria-label="Cerrar">✕</button>
+    <svg class="hex" width="72" height="82" viewBox="0 0 72 82"><path d="M36 3L69 22V60L36 79L3 60V22Z" fill="#F5B83D"/><g transform="translate(22 28)" fill="none" stroke="#1B1713" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"><path d="M2 8h5l2-4h10l2 4h5v16H2z"/><circle cx="14" cy="15" r="5"/></g></svg>
+    <div class="eb">Chequeo semanal · Semana 3</div>
+    <h2>Recordá subir<br>tu chequeo</h2>
+    <p>Lo que no se mide, no mejora. Solo te toma 2 minutos y así vemos tus avances.</p>
+    <div class="ayunas">Siempre en ayunas</div>
+    <div class="chk">
+      <div class="row"><span class="dot">1</span>Tu peso<small>Obligatorio</small></div>
+      <div class="row"><span class="dot">2</span>Foto de frente<small>Obligatorio</small></div>
+      <div class="row"><span class="dot" style="border-color:#5A4E42;color:#A89C8D">3</span>Costado y espalda<small>Si querés</small></div>
+    </div>
+    <button class="btn">Ir a Tu Progreso</button>
+    <button class="later">Más tarde</button>
+  </div></div>
+</div></div>
+
+<div><div class="cap">2 · "Ir a Tu Progreso"</div>
+<div class="ph">
+  <div class="tp"><div class="eb">The MOVE Menu</div><h1>Tu Progreso</h1>
+    <div class="note"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C24E18" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Tu chequeo de la semana 3 está pendiente</div>
+    <div class="reg"><b>Registro de la semana</b>
+      <div class="in">Peso (kg)</div>
+      <div class="ph3"><div class="req">Frente</div><div>Costado</div><div>Espalda</div></div>
+      <button class="save">Guardar chequeo</button>
+    </div>
+  </div>
+  <div class="nav"></div>
+</div></div>
+
+<div><div class="cap">3 · Lunes · mini recordatorio</div>
+<div class="ph">
+  <div class="hoy"><div class="eb">Lunes · Semana 4</div><h1>Hola, Ana</h1>
+    <div style="height:96px"></div><div class="card o"></div><div class="card"></div><div class="card"></div></div>
+  <div class="nav"></div>
+  <div class="mini">
+    <div class="top">
+      <svg width="40" height="46" viewBox="0 0 72 82" style="flex:none"><path d="M36 3L69 22V60L36 79L3 60V22Z" fill="#F5B83D"/><g transform="translate(22 28)" fill="none" stroke="#1B1713" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M2 8h5l2-4h10l2 4h5v16H2z"/><circle cx="14" cy="15" r="5"/></g></svg>
+      <div><div class="eb">Chequeo semanal</div>
+      <p>Si no subiste el chequeo la semana pasada, subilo hoy. <span>Recordá que es trabajo en equipo.</span></p></div>
+    </div>
+    <div class="bt"><button class="go">Ir a Tu Progreso</button><button class="done">Ya lo subí</button></div>
+  </div>
+</div></div>
+
+</body></html>

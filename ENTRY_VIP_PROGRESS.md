@@ -287,3 +287,13 @@ Aprobado por Sau (24 nov): días que son todo ejercicios sueltos → solo los pr
 
 ### Ajuste de Sau (24 nov) a E10
 - La versión mínima ya no deja circuitos de un solo ejercicio: el primer ejercicio de cada circuito pasa a ser suelto. Sueltos se mantienen. Todos con 2 series como máximo (o las del plan si eran menos), en el orden del plan, con un tope de 6 ejercicios. Reemplaza la regla anterior de "solo los primeros 3" para días de solo sueltos.
+
+### Recordatorio de chequeo semanal (24 nov, pedido de Sau) — terminado
+Mockup: `docs/mockups/chequeo-semanal.html`.
+- Todos los clientes. Chequeo = fila de `client_progress_logs` de la semana con peso y foto de frente.
+- Viernes a domingo (hora CR) sin chequeo de esta semana: pop-up grande sobre Hoy ("Recordá subir tu chequeo", "Lo que no se mide, no mejora…", pastilla "Siempre en ayunas", lista peso / frente / costado y espalda). "Ir a Tu Progreso" abre Tu Progreso con el registro desplegado; "Más tarde" o la ✕ lo ocultan hasta el día siguiente.
+- Lunes sin chequeo de la semana pasada: mini recordatorio arriba ("Si no subiste el chequeo la semana pasada, subilo hoy. Recordá que es trabajo en equipo."), con "Ir a Tu Progreso" y "Ya lo subí". "Ya lo subí" lo cierra por hoy y deja un mensaje del cliente en Delivery ("Ya subí mi chequeo de la semana pasada…"), una vez por semana.
+- Un solo pop-up por apertura: después de pausa, churn, tour y banner de Tu Coach; antes de Rate us y la oferta VIP.
+- Sin cron de servidor ni SQL: el app mira el día al abrir; lo descartado se recuerda en el equipo.
+- Probado en el host con datos simulados en la página: viernes sale el grande, "Más tarde" no vuelve ese día, lunes sale el mini, "Ya lo subí" dos veces deja un solo aviso.
+- Nota: el aviso de un VIP aparece en Delivery como conversación; si Sau responde, el VIP no lo ve en el app (no tiene chat).

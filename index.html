@@ -29988,6 +29988,20 @@ body:not(.ev-entry) .ev-chat-fab { display:none !important; }
 .ev-conv.is-new { border-color:#C24E18; background:#FFF6EF; }
 .ev-conv-b { flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
 .ev-conv-pin { border-color:#1B1713; border-width:1.5px; }
+.ckw-ayunas { display:inline-flex; margin-top:12px; padding:6px 12px; border-radius:999px; background:#F5B83D; color:#1B1713; font:500 11px 'DM Mono',monospace; letter-spacing:.12em; text-transform:uppercase; }
+.ckw-list { width:100%; box-sizing:border-box; margin-top:16px; background:#1B1713; border-radius:16px; padding:12px 14px; text-align:left; display:flex; flex-direction:column; gap:10px; }
+.ckw-row { display:flex; align-items:center; gap:10px; font-size:14px; color:#FBF6EF; }
+.ckw-dot { width:22px; height:22px; border-radius:50%; border:1.6px solid #F5B83D; color:#F5B83D; display:flex; align-items:center; justify-content:center; flex:none; font-size:11px; }
+.ckw-dot.off { border-color:#5A4E42; color:#A89C8D; }
+.ckw-row small { margin-left:auto; color:#A89C8D; font:500 10px 'DM Mono',monospace; letter-spacing:.1em; text-transform:uppercase; }
+.ckw-x { position:absolute; top:14px; right:14px; width:36px; height:36px; border-radius:50%; border:0; background:#3A3027; color:#CFC6BA; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.ckw-mini { position:fixed; left:14px; right:14px; top:calc(env(safe-area-inset-top, 0px) + 72px); z-index:10060; max-width:420px; margin:0 auto; background:#26201A; border:1.5px solid #F5B83D; border-radius:20px; padding:14px; color:#FBF6EF; box-shadow:0 14px 30px rgba(0,0,0,.25); font-family:'DM Sans',sans-serif; }
+.ckw-mini-top { display:flex; gap:12px; align-items:flex-start; }
+.ckw-mini p { margin:4px 0 0; font-size:14px; line-height:1.4; }
+.ckw-mini p span { color:#CFC6BA; }
+.ckw-mini-bt { display:flex; gap:8px; margin-top:12px; }
+.ckw-mini-bt button { flex:1; height:44px; border-radius:12px; border:0; font:700 14px 'DM Sans',sans-serif; cursor:pointer; }
+.ckw-go { background:#C24E18; color:#fff; } .ckw-done { background:#3A3027; color:#FBF6EF; }
 .ev-cb-prev { background:#F6EFE6; border-radius:14px; padding:12px 14px; text-align:left; color:#3A3128; }
 .ev-conv-top { display:flex; justify-content:space-between; gap:8px; align-items:baseline; }
 .ev-conv-top b { font-size:16px; color:#2A211B; }
@@ -32000,6 +32014,7 @@ async function evRateUsDue() {
 async function evPostLoginPopups() {
   if (document.getElementById('ev-pause') || document.getElementById('evt') || document.getElementById('ev-onb') || evProgressLocked) return;
   if (await evMaybeShowCoachBanner()) return;
+  if (await ckwMaybeShow()) return;
   if (await evRateUsDue()) { evShowRateUs(); return; }
   evMaybeShowVipOffer();
 }
@@ -32313,6 +32328,96 @@ async function evCloseNoPain(force) {
 }
 
 // Delivery: bandeja del coach (chat E4; rifa E5; calificaciones E7)
+// ---------- Recordatorio de chequeo semanal (todos los clientes) ----------
+// Chequeo = fila de client_progress_logs de la semana (lunes) con peso y foto de frente.
+// Viernes a domingo (hora CR), sin chequeo de esta semana: pop-up grande. "Más tarde" lo oculta
+// hasta el día siguiente. Lunes, sin chequeo de la semana pasada: mini recordatorio arriba de Hoy;
+// "Ya lo subí" lo cierra por hoy y deja un aviso en Delivery (una vez por semana).
+// Sin cron de servidor: el app mira el día al abrir (el push no llega). Sin SQL nuevo.
+const CKW_HEX = `<path d="M36 3L69 22V60L36 79L3 60V22Z" fill="#F5B83D"/><g transform="translate(22 28)" fill="none" stroke="#1B1713" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"><path d="M2 8h5l2-4h10l2 4h5v16H2z"/><circle cx="14" cy="15" r="5"/></g>`;
+function ckwKey(k) { return `ckw:${currentClient && currentClient.id}:${k}`; }
+function ckwGet(k) { try { return localStorage.getItem(ckwKey(k)); } catch (e) { return null; } }
+function ckwSet(k, v) { try { localStorage.setItem(ckwKey(k), v); } catch (e) {} }
+function ckwDow() { return new Date(todayCR() + 'T12:00:00').getDay(); }
+async function ckwHasCheck(weekStart) {
+  const { data, error } = await sb.from('client_progress_logs').select('weight_kg,photo_front_path')
+    .eq('client_id', currentClient.id).eq('week_start_date', weekStart).limit(1);
+  if (error) return true; // ante la duda, no molestar
+  return !!(data && data[0] && data[0].weight_kg != null && data[0].photo_front_path);
+}
+async function ckwMaybeShow() {
+  const c = currentClient;
+  if (!c || currentUser?.role === 'coach' || c.is_churn || document.getElementById('ckw') || document.getElementById('ckw-mini')) return false;
+  const dow = ckwDow(), today = todayCR();
+  if ([5, 6, 0].includes(dow)) {
+    if (ckwGet('later') === today) return false;
+    const ws = fmtDateKey(getWeekDates(0)[0]);
+    if (await ckwHasCheck(ws)) return false;
+    ckwShowBig(ws);
+    return true;
+  }
+  if (dow === 1) {
+    if (ckwGet('mini') === today) return false;
+    if (await ckwHasCheck(fmtDateKey(getWeekDates(1)[0]))) return false;
+    ckwShowMini();
+    return true;
+  }
+  return false;
+}
+function ckwShowBig() {
+  ensureEvFonts();
+  const w = document.createElement('div');
+  w.className = 'ev-modal-wrap dk'; w.id = 'ckw';
+  w.innerHTML = `<div class="ev-modal dk" role="dialog" aria-modal="true" aria-labelledby="ckw-t" style="position:relative;">
+    <button type="button" class="ckw-x" aria-label="Cerrar" onclick="ckwLater()">${EVT_S(EV_I.x, 16, 2.2)}</button>
+    <svg width="72" height="82" viewBox="0 0 72 82" aria-hidden="true" style="margin-top:4px;">${CKW_HEX}</svg>
+    <div class="ev-eb" style="margin-top:12px;">Chequeo semanal · Semana ${clientWeek || ''}</div>
+    <h2 class="ev-dela" id="ckw-t" style="font-size:24px;margin-top:10px;">Recordá subir<br>tu chequeo</h2>
+    <p class="ev-p ev-soft" style="margin-top:10px;">Lo que no se mide, no mejora. Solo te toma 2 minutos y así vemos tus avances.</p>
+    <span class="ckw-ayunas">Siempre en ayunas</span>
+    <div class="ckw-list">
+      <div class="ckw-row"><span class="ckw-dot">1</span>Tu peso<small>Obligatorio</small></div>
+      <div class="ckw-row"><span class="ckw-dot">2</span>Foto de frente<small>Obligatorio</small></div>
+      <div class="ckw-row"><span class="ckw-dot off">3</span>Costado y espalda<small>Si querés</small></div>
+    </div>
+    <button type="button" class="ev-btn" style="margin-top:18px;" onclick="ckwGo('ckw')">Ir a Tu Progreso</button>
+    <button type="button" class="ev-rate-later" onclick="ckwLater()">Más tarde</button>
+  </div>`;
+  document.body.appendChild(w);
+  evFitTitles(w);
+}
+function ckwLater() { ckwSet('later', todayCR()); document.getElementById('ckw')?.remove(); }
+function ckwShowMini() {
+  ensureEvFonts();
+  const w = document.createElement('div');
+  w.className = 'ckw-mini'; w.id = 'ckw-mini'; w.setAttribute('role', 'status');
+  w.innerHTML = `<div class="ckw-mini-top">
+      <svg width="40" height="46" viewBox="0 0 72 82" aria-hidden="true" style="flex:none;">${CKW_HEX}</svg>
+      <div><div class="ev-eb" style="font-size:10px;">Chequeo semanal</div>
+      <p>Si no subiste el chequeo la semana pasada, subilo hoy. <span>Recordá que es trabajo en equipo.</span></p></div>
+    </div>
+    <div class="ckw-mini-bt"><button type="button" class="ckw-go" onclick="ckwGo('ckw-mini')">Ir a Tu Progreso</button><button type="button" class="ckw-done" onclick="ckwDone()">Ya lo subí</button></div>`;
+  document.body.appendChild(w);
+}
+function ckwGo(id) {
+  if (id === 'ckw-mini') ckwSet('mini', todayCR()); else ckwSet('later', todayCR());
+  document.getElementById(id)?.remove();
+  evGoToProgress();
+  if (document.getElementById('pg-week-body')?.hidden && typeof toggleProgressWeek === 'function') toggleProgressWeek();
+}
+async function ckwDone() {
+  ckwSet('mini', todayCR());
+  document.getElementById('ckw-mini')?.remove();
+  const wk = fmtDateKey(getWeekDates(1)[0]);
+  if (ckwGet('done') === wk) return;
+  ckwSet('done', wk);
+  // Aviso para Sau en Delivery (conversación del cliente): que revise si de verdad lo subió
+  const { error } = await sb.from('support_messages').insert([{ client_id: currentClient.id, sender: 'client', kind: 'text', tag: 'support', status: 'new',
+    body: `Ya subí mi chequeo de la semana pasada (semana del ${evFmtShort(wk)}).` }]);
+  if (error) console.warn('chequeo aviso:', error.message);
+  showToast('Listo, le avisamos a Sau', 'success');
+}
+
 // ---------- E9 · Banner "Tenés nuevos mensajes de Tu Coach" (solo Entry) ----------
 // Al abrir el app, si hay mensajes de Sau sin leer (incluye el nudge de inactividad que deja el cron).
 // Un solo pop-up por apertura (va antes que Rate us y la oferta VIP; la pausa y el churn ya cortan antes).
