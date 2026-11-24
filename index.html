@@ -1016,6 +1016,8 @@ button.exx-pill { cursor:pointer; min-height:28px; }
 .workout-start-btn { background:var(--orange); color:white; }
 .workout-finish-btn { background:#111; color:white; }
 .workout-goto-run-btn { background:var(--orange-light); color:var(--orange); }
+.minwk-btn.is-on { background:#1B1713; color:#F5B83D; }
+.minwk-note { display:flex; align-items:center; gap:8px; margin-bottom:10px; padding:10px 14px; border-radius:var(--radius); background:#1B1713; color:#F5B83D; font-size:13px; font-weight:700; }
   .ai-builder-input{width:100%;padding:14px;border:1.5px solid var(--gray2);border-radius:var(--radius-sm);font-size:13px;font-family:'DM Sans',sans-serif;color:var(--black);background:var(--white);outline:none;resize:vertical;line-height:1.65;min-height:190px;}
 .ai-builder-input:focus{border-color:var(--orange);}
 .ai-builder-input::placeholder{color:var(--gray4);}
@@ -5602,8 +5604,12 @@ async function loadClientExercises() {
   window._ckDay = null; // check-in de entreno: solo con un día del plan con ejercicios
   if(!planDay){list.innerHTML='<div class="empty-state"><div class="empty-icon">'+icon('moon', 44)+'</div><div class="empty-text">Sin ejercicios para este día.</div></div>';ckRefresh();return;}
   currentPlanDayId = planDay.id;
-  const {data:exs} = await sb.from('exercises').select('*').eq('plan_day_id',planDay.id).order('order_index');
+  let {data:exs} = await sb.from('exercises').select('*').eq('plan_day_id',planDay.id).order('order_index');
   if(requestId !== loadClientExercisesRequestId) return;
+  // E10: "Entreno para poco tiempo" (solo VIP): versión mínima armada en memoria, sin tocar datos
+  window._minWkAvail = minWkAvailable(exs);
+  window._minWk = window._minWkAvail && minWkIsOn(planDay.id);
+  if (window._minWk) exs = minWkReduce(exs);
   if(!exs||exs.length===0){list.innerHTML='<div class="empty-state"><div class="empty-icon">'+icon('moon', 44)+'</div><div class="empty-text">Sin ejercicios para este día.</div></div>';ckRefresh();return;}
   window._ckDay = { clientId: currentClient.id, planDayId: planDay.id, week: clientWeek, dayLabel: clientDay, exercises: exs.map(e => ({ id: String(e.id), name: e.name })) };
   ckRefresh();
@@ -5730,10 +5736,11 @@ async function loadClientExercises() {
         ${icon('timer', 18)} Ir a Run
       </button>`
     : '';
+  const minWkNote = workoutStarted && window._minWk ? `<div class="minwk-note fade-up">${icon('timer', 16)} Entreno para poco tiempo</div>` : '';
   const startBtnHtml = !workoutStarted
     ? `<button class="workout-action-btn workout-start-btn fade-up" onclick="handleStartWorkout()">
         ${icon('play', 18)} Iniciar entreno
-      </button>${gotoRunBtnHtml}`
+      </button>${minWkBtnHtml()}${gotoRunBtnHtml}`
     : (currentClient.program_type === 'lift'
       ? `<div class="fade-up" style="background:var(--green-light);border:1.5px solid var(--green);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
           <span aria-hidden="true" style="width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0;"></span>
@@ -6040,7 +6047,7 @@ async function loadClientExercises() {
     return `<div class="tl-row">${tlNode(chunk.slice(0, end))}<div class="tl-card">${chunk.slice(end + 3)}</div></div>`;
   }).join('');
   const finishRowHtml = finishBtnHtml ? `<div class="tl-plain">${finishBtnHtml}</div>` : '';
-  list.innerHTML = startBtnHtml + `<div class="tl">` + warmupBanner + tlItemsHtml + finishRowHtml + cooldownBanner + `</div>`;
+  list.innerHTML = startBtnHtml + minWkNote + `<div class="tl">` + warmupBanner + tlItemsHtml + finishRowHtml + cooldownBanner + `</div>`;
   evRenderRefer(); // Refiere y Gana $$ (E7)
   if (trDark) {
     const curIdx = firstPendingItem ? itemsOrder.indexOf(firstPendingItem) + 1 : itemsOrder.length;
@@ -32380,6 +32387,47 @@ async function evOpenCoachFeed() {
   list.innerHTML = (data || []).length ? data.map(m => `<div class="ev-msg ev-them"><div class="ev-bub ev-text ev-them">${m.kind === 'nudge' ? '<b>Aviso</b><br>' : '<b>Resumen del día</b><br>'}${evEsc(m.body || '').replace(/\n/g, '<br>')}</div><div class="ev-meta">${evFeedWhen(m.created_at)}</div></div>`).join('')
     : '<div class="ev-empty" style="padding:28px 10px;">Todavía no hay resúmenes. El primero llega hoy a las 9 p. m.</div>';
   const b = document.getElementById('ev-cfeed-body'); if (b) b.scrollTop = b.scrollHeight;
+}
+
+// ---------- E10 · Entreno para poco tiempo (solo VIP) ----------
+// Regla: de cada circuito, solo el primer ejercicio, con 2 rondas (o menos si el plan tenía menos);
+// los ejercicios sueltos quedan con 2 series como máximo. Se arma en memoria al dibujar el día:
+// no cambia los ejercicios del plan ni lo ya registrado. Lo que se guarda es lo de siempre
+// (exercise_logs de lo que se hace y workout_sessions al terminar), así cuenta como día entrenado.
+// La elección se recuerda en este equipo por cliente, día del plan y fecha.
+const MINWK_SETS = 2;
+function minWkKey(planDayId) { return `minWk:${currentClient && currentClient.id}:${planDayId}:${todayCR()}`; }
+function minWkIsOn(planDayId) { try { return localStorage.getItem(minWkKey(planDayId)) === '1'; } catch (e) { return false; } }
+function minWkAvailable(exs) {
+  return !!(currentClient && !evIsEntry(currentClient) && currentUser?.role !== 'coach' && exs && exs.length);
+}
+function minWkReduce(exs) {
+  const seen = new Set();
+  return exs.filter(ex => {
+    if (!ex.superset_group) return true;
+    if (seen.has(ex.superset_group)) return false;
+    seen.add(ex.superset_group); return true;
+  }).map(ex => {
+    const x = { ...ex };
+    if (x.superset_group) {
+      const r = x.circuit_rounds || x.sets || 1;
+      x.circuit_rounds = Math.min(r, MINWK_SETS);
+      if (x.sets) x.sets = Math.min(x.sets, MINWK_SETS);
+    } else if (x.sets) x.sets = Math.min(x.sets, MINWK_SETS);
+    return x;
+  });
+}
+function minWkBtnHtml() {
+  if (!window._minWkAvail) return '';
+  return window._minWk
+    ? `<button class="workout-action-btn workout-goto-run-btn minwk-btn is-on fade-up" onclick="minWkSet(false)" aria-pressed="true">${icon('timer', 18)} Poco tiempo activo · Volver al completo</button>`
+    : `<button class="workout-action-btn workout-goto-run-btn minwk-btn fade-up" onclick="minWkSet(true)" aria-pressed="false">${icon('timer', 18)} Entreno para poco tiempo</button>`;
+}
+function minWkSet(on) {
+  if (!currentPlanDayId || isWorkoutStarted()) return;
+  try { on ? localStorage.setItem(minWkKey(currentPlanDayId), '1') : localStorage.removeItem(minWkKey(currentPlanDayId)); } catch (e) {}
+  loadClientExercises();
+  showToast(on ? 'Listo: primer ejercicio de cada circuito, 2 rondas (~15 min)' : 'Volviste al entreno completo');
 }
 
 async function evRenderDelivery() {
