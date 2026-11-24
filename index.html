@@ -4081,7 +4081,8 @@ function handleLogout() {
   currentUser=null; currentClient=null; clientWeek=1; clientDay=null; screenHistory=[];
   document.body.classList.remove('lift-mode', 'ev-entry', 'ev-locked'); // Entry / VIP
   if (typeof evProgressLocked !== 'undefined') evProgressLocked = false;
-  ['evt', 'ev-onb', 'ev-lock-note', 'ev-chat', 'ev-cchat', 'ev-vipoffer', 'ev-pause', 'ev-rate', 'ev-refer', 'ev-rules', 'ev-habit', 'ev-runlock', 'ev-terms-sheet', 'ev-rfs', 'ev-np', 'ev-np-harvest'].forEach(id => document.getElementById(id)?.remove());
+  ['evt', 'ev-onb', 'ev-lock-note', 'ev-chat', 'ev-cchat', 'ev-vipoffer', 'ev-pause', 'ev-rate', 'ev-refer', 'ev-rules', 'ev-habit', 'ev-runlock', 'ev-terms-sheet', 'ev-rfs', 'ev-np', 'ev-np-harvest', 'ev-ann', 'ev-ann-prev', 'ann-send', 'ann-pick', 'ann-ask'].forEach(id => document.getElementById(id)?.remove());
+  if (typeof annGateOk !== 'undefined') annGateOk = false;
   if (typeof evNp !== 'undefined') evNp = { msgs: [], busy: false }; // NoPain: nada queda en memoria
   document.body.classList.remove('ev-paused');
   if (typeof evPausePoll !== 'undefined') clearInterval(evPausePoll);
@@ -11277,7 +11278,8 @@ async function openCoachClient(clientId) {
       <div class="profile-name" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">${c.name}${evoTag}<span id="ev-head-tag" style="display:inline-flex;">${evTierTagHtml(c)}</span></div>
       <div class="profile-username">@${c.username}</div>
       ${startDateStr?`<div style="font-size:11px;color:var(--orange);margin-top:2px;">Inicio: ${startDateStr}${endDateStr?` · Fin: ${endDateStr}`:''}</div>`:''}
-    </div>`;
+    </div>
+    ${c.is_churn || c.hidden ? '' : `<button type="button" class="ann-wifi" aria-label="Enviar aviso a ${evEsc(c.name)}" onclick="annOpenSend()">${EVT_S(ANN_I.wifi, 24, 2.4)}</button>`}`;
   const d=daysUntil(c.next_payment_date);
   const dColor = d!==null&&d<=2?'var(--red)':d!==null&&d<=5?'var(--yellow)':'var(--black)';
   document.getElementById('coach-payment-card').innerHTML=`
@@ -14067,6 +14069,7 @@ async function savePlanDay() {
   for(const e of exercises){ await saveExerciseToLibrary(e.name,e.tag,e.muscle_group,e.video_url); }
   showToast('✅ Día guardado');
   await buildWeekTabs(); await buildDayStrip();
+  annAfterSave({ dest: 'semana', label: `Semana ${builderWeek} · ${builderDay}` }); // E11
 }
 
 async function copyWeekFromPrevious() {
@@ -18174,6 +18177,7 @@ function openProtocolEditor(p) {
 }
 
 async function saveProtocol(id) {
+  let newId = null;
   const title = document.getElementById('proto-title').value.trim();
   const content = document.getElementById('proto-body').innerHTML.trim();
   if (!title) { showToast('Escribe un título', 'error'); return; }
@@ -18183,12 +18187,14 @@ async function saveProtocol(id) {
   } else {
     const {data: last} = await sb.from('nutrition_protocols').select('order_index').eq('client_id', currentClient.id).order('order_index',{ascending:false}).limit(1);
     const nextOrder = last?.length ? (last[0].order_index+1) : 0;
-    const {error} = await sb.from('nutrition_protocols').insert([{client_id:currentClient.id, title, content, order_index:nextOrder}]);
+    const {data: ins, error} = await sb.from('nutrition_protocols').insert([{client_id:currentClient.id, title, content, order_index:nextOrder}]).select('id').maybeSingle();
     if(error){ showToast(error.message, 'error'); return; }
+    newId = ins?.id;
   }
   showToast('Protocolo guardado', 'success');
   document.getElementById('protocol-editor-sheet')?.remove();
   await buildProtocolsList();
+  annAfterSave({ dest: 'protocolos', ref: id || newId, label: title, edited: !!id }); // E11
 }
 
 async function deleteProtocol(id) {
@@ -18282,11 +18288,12 @@ async function addProtocolFromLibrary(p) {
     .select('order_index').eq('client_id', currentClient.id)
     .order('order_index', {ascending: false}).limit(1);
   const nextOrder = last?.length ? (last[0].order_index + 1) : 0;
-  const {error} = await sb.from('nutrition_protocols')
-    .insert([{client_id: currentClient.id, title: p.title, content: p.content||'', order_index: nextOrder}]);
+  const {data: ins, error} = await sb.from('nutrition_protocols')
+    .insert([{client_id: currentClient.id, title: p.title, content: p.content||'', order_index: nextOrder}]).select('id').maybeSingle();
   if (error) { showToast(error.message, 'error'); return; }
   showToast('Protocolo agregado', 'success');
   buildProtocolsList();
+  annAfterSave({ dest: 'protocolos', ref: ins?.id, label: p.title }); // E11
 }
 
 // ===== SHOPPING LIST =====
@@ -18673,6 +18680,7 @@ function openGuidelineEditor(g) {
 }
 
 async function saveGuideline(id) {
+  let newId = null;
   const title = document.getElementById('guideline-title').value.trim();
   const content = document.getElementById('guideline-body').innerHTML.trim();
   if (!title) { showToast('Escribe un título', 'error'); return; }
@@ -18682,12 +18690,14 @@ async function saveGuideline(id) {
   } else {
     const {data: last} = await sb.from('client_guidelines').select('order_index').eq('client_id', currentClient.id).order('order_index',{ascending:false}).limit(1);
     const nextOrder = last?.length ? (last[0].order_index+1) : 0;
-    const {error} = await sb.from('client_guidelines').insert([{client_id:currentClient.id, title, content, order_index:nextOrder}]);
+    const {data: ins, error} = await sb.from('client_guidelines').insert([{client_id:currentClient.id, title, content, order_index:nextOrder}]).select('id').maybeSingle();
     if(error){ showToast(error.message, 'error'); return; }
+    newId = ins?.id;
   }
   showToast('Guideline guardada', 'success');
   document.getElementById('guideline-editor-sheet')?.remove();
   await buildGuidelinesList(currentClient.id);
+  annAfterSave({ dest: 'guias', ref: id || newId, label: title, edited: !!id }); // E11
 }
 
 async function deleteGuideline(id) {
@@ -18777,11 +18787,12 @@ async function addGuidelineFromLibrary(g) {
     .select('order_index').eq('client_id', currentClient.id)
     .order('order_index', {ascending: false}).limit(1);
   const nextOrder = last?.length ? (last[0].order_index + 1) : 0;
-  const {error} = await sb.from('client_guidelines')
-    .insert([{client_id: currentClient.id, title: g.title, content: g.content||'', order_index: nextOrder}]);
+  const {data: ins, error} = await sb.from('client_guidelines')
+    .insert([{client_id: currentClient.id, title: g.title, content: g.content||'', order_index: nextOrder}]).select('id').maybeSingle();
   if (error) { showToast(error.message, 'error'); return; }
   showToast('Guideline agregada', 'success');
   buildGuidelinesList(currentClient.id);
+  annAfterSave({ dest: 'guias', ref: ins?.id, label: g.title }); // E11
 }
 
 // ===== MENÚ POR SEMANAS =====
@@ -22633,6 +22644,7 @@ async function createExtraSession() {
   document.getElementById('extra-session-name-sheet')?.remove();
   await loadCoachExtras(currentClient.id);
   openExtraSessionEditor(sess.id, sess.name);
+  annExtraNewId = String(sess.id); // E11: "Te agregué un entreno extra" (y no "Actualicé")
 }
 
 function openRenameExtraSession(sessionId, currentName) {
@@ -22670,6 +22682,7 @@ async function deleteExtraSession(sessionId) {
 
 async function openExtraSessionEditor(sessionId, sessionName) {
   document.getElementById('extra-editor-sheet')?.remove();
+  annExtraDirty = null; annExtraNewId = null; annExtraName = sessionName; // E11
   const sheet = document.createElement('div');
   sheet.id = 'extra-editor-sheet';
   sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:400;display:flex;align-items:flex-end;justify-content:center;';
@@ -22677,7 +22690,7 @@ async function openExtraSessionEditor(sessionId, sessionName) {
     <div style="background:var(--white);border-radius:20px 20px 0 0;width:100%;max-width:480px;height:88vh;display:flex;flex-direction:column;overflow:hidden;">
       <div style="padding:18px 20px 12px;border-bottom:1px solid var(--gray1);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
         <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;">${sessionName}</div>
-        <button onclick="document.getElementById('extra-editor-sheet').remove();loadCoachExtras(currentClient.id);" style="background:var(--gray1);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;">✕</button>
+        <button onclick="document.getElementById('extra-editor-sheet').remove();loadCoachExtras(currentClient.id);annExtraEditorClosed();" style="background:var(--gray1);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;">✕</button>
       </div>
       <div id="extra-ex-list" style="flex:1;overflow-y:auto;padding:12px 20px;"></div>
       <div style="padding:12px 20px 32px;border-top:1px solid var(--gray1);flex-shrink:0;display:flex;gap:8px;">
@@ -22790,6 +22803,7 @@ async function saveExtraExercise(sessionId, exId) {
   if (error) { showToast(error.message, 'error'); return; }
   document.getElementById('extra-ex-form-sheet')?.remove();
   showToast('Ejercicio guardado', 'success');
+  annExtraDirty = { id: sessionId, name: annExtraName || '', edited: annExtraNewId !== String(sessionId) }; // E11
   await refreshExtraExList(sessionId);
 }
 
@@ -28052,6 +28066,7 @@ async function rnPlanSave(status) {
     await rnPlanLoad(); rnPlanRender();
   }
   rnRenderCoachSection();
+  if (status !== 'draft' && String(currentClient?.id) === String(cid)) annAfterSave({ dest: 'run', label: status === 'active' ? 'Plan activado' : 'Cambios en el plan' }); // E11
 }
 
 // Cambiar la fecha de inicio: mueve en qué semana va el cliente. Las corridas hechas no se tocan.
@@ -29893,6 +29908,53 @@ body.ev-entry .tr-act-sep { display:none; }
 .ev-modal .ev-m-small { font-size:12px; color:#6F655B; margin-top:12px; }
 .ev-modal .ev-lbtn { margin-top:20px; height:54px; border-radius:16px; font-size:16px; }
 .ev-modal .ev-lbtn.ghost { margin-top:10px; height:44px; font-size:14px; }
+/* E11 · Aviso a pantalla completa (cliente, claro) y "Enviar aviso" (coach) */
+.ann-ov { position:fixed; inset:0; z-index:10080; overflow-y:auto; -webkit-overflow-scrolling:touch; color:#2A211B; font-family:'DM Sans',system-ui,sans-serif; background-color:#F7F0E6; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='103.92' height='180'%3E%3Cpath d='M0 30 L51.96 0 L103.92 30 M0 30 V90 M103.92 30 V90 M0 90 L51.96 120 L103.92 90 M51.96 120 V180' fill='none' stroke='%232A211B' stroke-opacity='0.05' stroke-width='1'/%3E%3C/svg%3E"); background-repeat:repeat; }
+.ann-ov *, .ann-pick * { box-sizing:border-box; }
+.ann-wrap { position:relative; max-width:430px; min-height:100%; margin:0 auto; padding:calc(44px + env(safe-area-inset-top,0px)) 20px calc(26px + env(safe-area-inset-bottom,0px)); display:flex; flex-direction:column; }
+.ann-x { position:absolute; top:calc(44px + env(safe-area-inset-top,0px)); right:20px; width:44px; height:44px; border-radius:50%; border:0; background:#EDE3D6; color:#2A211B; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.ann-mid { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:80px 4px 24px; }
+.ann-hexi { position:relative; width:100px; height:112px; display:flex; align-items:center; justify-content:center; color:#A63E10; }
+.ann-hexi svg.ann-hexbg { position:absolute; inset:0; }
+.ann-hexi > span { position:relative; display:flex; }
+.ann-eb { margin-top:34px; font-family:'DM Mono',monospace; font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:#A63E10; }
+.ann-t { margin:12px 0 0; font-family:'Playfair Display',serif; font-weight:900; font-size:34px; line-height:1.12; color:#2A211B; overflow-wrap:anywhere; }
+.ann-b { margin:14px 0 0; font-size:17px; line-height:1.5; color:#6F655B; white-space:pre-line; overflow-wrap:anywhere; }
+.ann-meta { margin-top:24px; display:flex; align-items:center; gap:10px; font-size:14px; color:#6F655B; }
+.ann-meta img { width:34px; height:34px; border-radius:50%; object-fit:cover; }
+.ann-foot { display:flex; flex-direction:column; align-items:center; gap:6px; padding-top:20px; }
+.ann-later { min-height:48px; border:0; background:none; color:#A63E10; font:700 16px 'DM Sans',sans-serif; cursor:pointer; padding:0 16px; }
+.ann-wifi { margin-left:auto; width:52px; height:52px; border-radius:50%; border:0; background:#C24E18; color:#fff; display:flex; align-items:center; justify-content:center; flex:none; cursor:pointer; box-shadow:0 4px 14px rgba(194,78,24,.28); }
+.ann-head { display:flex; align-items:center; gap:14px; }
+.ann-head .ann-hic { width:52px; height:52px; border-radius:50%; background:#F6E6DB; color:#C24E18; display:flex; align-items:center; justify-content:center; flex:none; }
+.ann-head h2 { margin:0; font-family:'Playfair Display',serif; font-weight:900; font-size:24px; line-height:1.1; }
+.ann-head p { margin:3px 0 0; font-size:13px; color:#6F655B; }
+.ann-lab { display:block; margin:18px 0 8px; font:700 13px 'DM Sans',sans-serif; color:#4A3F35; }
+.ann-chips { display:flex; flex-wrap:wrap; gap:8px; }
+.ann-chip { min-height:40px; padding:0 15px; border-radius:999px; border:1px solid #E3D6C7; background:#fff; color:#4A3F35; font:500 14px 'DM Sans',sans-serif; cursor:pointer; }
+.ann-chip[aria-pressed="true"] { background:#F6E6DB; border-color:#C24E18; color:#A63E10; font-weight:700; }
+.ann-to { display:inline-flex; align-items:center; gap:6px; min-height:38px; padding:0 6px 0 14px; border-radius:999px; background:#F6E6DB; color:#A63E10; font:700 14px 'DM Sans',sans-serif; }
+.ann-to button { width:26px; height:26px; border-radius:50%; border:0; background:#fff; color:#A63E10; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
+.ann-add { display:inline-flex; align-items:center; gap:6px; min-height:38px; padding:0 14px; border-radius:999px; border:1.5px dashed #C24E18; background:none; color:#A63E10; font:700 14px 'DM Sans',sans-serif; cursor:pointer; }
+.ann-link { display:block; margin:8px auto 0; min-height:44px; border:0; background:none; color:#A63E10; font:700 14px 'DM Sans',sans-serif; cursor:pointer; }
+.ann-dcard { display:flex; align-items:center; gap:12px; margin-top:18px; padding:14px; border:1px solid #EADFD2; border-radius:18px; text-align:left; }
+.ann-dcard .ann-dic { width:44px; height:44px; border-radius:50%; background:#F6E6DB; color:#A63E10; display:flex; align-items:center; justify-content:center; flex:none; }
+.ann-dcard b { display:block; font-size:15px; line-height:1.3; color:#2A211B; overflow-wrap:anywhere; }
+.ann-dcard small { display:block; font-size:13px; color:#6F655B; margin-top:2px; }
+.ann-dcard button { margin-left:auto; border:0; background:none; color:#A63E10; font:700 14px 'DM Sans',sans-serif; cursor:pointer; min-height:44px; padding:0 4px; }
+.ann-pick { position:fixed; inset:0; z-index:10075; background:#F7F0E6; color:#2A211B; display:flex; flex-direction:column; font-family:'DM Sans',system-ui,sans-serif; }
+.ann-pick-top { padding:calc(28px + env(safe-area-inset-top,0px)) 20px 10px; max-width:480px; width:100%; margin:0 auto; }
+.ann-pk-f { display:flex; align-items:center; gap:6px; margin-top:14px; }
+.ann-pk-f .ann-chip { padding:0 13px; white-space:nowrap; }
+.ann-pick-top h2 { margin:4px 0 0; font-family:'Playfair Display',serif; font-weight:900; font-size:30px; }
+.ann-pick-list { flex:1; overflow-y:auto; padding:6px 20px 20px; max-width:480px; width:100%; margin:0 auto; display:flex; flex-direction:column; gap:10px; }
+.ann-row { display:flex; align-items:center; gap:14px; width:100%; min-height:56px; padding:0 14px; border-radius:20px; border:1px solid #EADFD2; background:#fff; color:#2A211B; font:600 16px 'DM Sans',sans-serif; text-align:left; cursor:pointer; }
+.ann-row[aria-checked="true"] { border-color:#C24E18; background:#FFF8F3; }
+.ann-row .ann-ck { width:26px; height:26px; border-radius:50%; border:2px solid #D8CBBB; display:flex; align-items:center; justify-content:center; flex:none; color:#fff; }
+.ann-row[aria-checked="true"] .ann-ck { background:#C24E18; border-color:#C24E18; }
+.ann-row .ev-tag { margin-left:auto; }
+.ann-pick-foot { background:#fff; border-radius:24px 24px 0 0; padding:16px 20px calc(18px + env(safe-area-inset-bottom,0px)); box-shadow:0 -6px 20px rgba(42,33,27,.06); }
+.ann-pick-foot > div { max-width:440px; margin:0 auto; }
 /* Chat con Sau (E4), tema claro del mockup */
 .ev-chat { position:fixed; inset:0; z-index:10080; background:#F7F1E8; color:#2A211B; display:flex; flex-direction:column; font-family:'DM Sans',system-ui,sans-serif; }
 .ev-chat * { box-sizing:border-box; }
@@ -30350,9 +30412,11 @@ window._evOnbRow = null;
 // Se llama desde initClient. Clientes viejos (onboarding_required != true) no ven nada.
 async function evClientGate(cd) {
   window._evOnbRow = null;
+  annGateOk = false; // E11: el aviso espera a saber si falta onboarding o tour
   if (!cd || currentUser?.role === 'coach') return;
   const { data, error } = await sb.from('client_onboarding').select('*').eq('client_id', cd.id).maybeSingle();
   if (!currentClient || currentClient.id !== cd.id) return;
+  annGateOk = true;
   if (error) { console.warn('client_onboarding:', error.message); return; }
   window._evOnbRow = data || null;
   loadGoalDisplay(currentClient.goal_text); // motivación tal cual si viene del onboarding
@@ -30998,7 +31062,7 @@ function evApplyTier(c) {
   // Chat con Sau (E4): burbuja en el lugar de la de WhatsApp y aviso de respuesta nueva
   evMountChatFabs();
   clearInterval(evUnreadPoll);
-  if (entry) evStartUnreadPoll();
+  if (currentUser?.role !== 'coach') evStartUnreadPoll(); // polling único de 60 s: chat (solo Entry) y avisos E11 (todos)
   // Entry: The MOVE Menu arranca en Mi Diario (Guías, Evaluaciones y Extras no existen para Entry)
   if (entry && ['plans', 'tests', 'extras'].includes(mmCurrentTab()) && !evProgressLocked) {
     const chip = mmChip('habits');
@@ -31214,7 +31278,7 @@ async function evCheckUnread() {
 function evStartUnreadPoll() {
   clearInterval(evUnreadPoll);
   evCheckUnread();
-  evUnreadPoll = setInterval(evCheckUnread, 60000);
+  evUnreadPoll = setInterval(() => { evCheckUnread(); annCheck(); }, 60000);
 }
 async function evOpenChat(preset) {
   if (!currentClient || currentUser?.role === 'coach') return;
@@ -31899,6 +31963,7 @@ function evApplyPause() {
     return false;
   }
   document.body.classList.add('ev-paused');
+  document.getElementById('ev-ann')?.remove(); // E11: el aviso queda pendiente (no se marca visto)
   if (ov && ov.dataset.d === d) return true;
   ov?.remove();
   ensureEvFonts();
@@ -32013,6 +32078,7 @@ async function evRateUsDue() {
 }
 async function evPostLoginPopups() {
   if (document.getElementById('ev-pause') || document.getElementById('evt') || document.getElementById('ev-onb') || evProgressLocked) return;
+  if (await annCheck()) return; // E11: el aviso de Sau va antes que todo lo demás
   if (await evMaybeShowCoachBanner()) return;
   if (await ckwMaybeShow()) return;
   if (await evRateUsDue()) { evShowRateUs(); return; }
@@ -32424,6 +32490,394 @@ async function ckwDone() {
   showToast('Listo, le avisamos a Sau', 'success');
 }
 
+// ---------- E11 · Aviso a pantalla completa (botón wifi) ----------
+// Sau le manda a uno o varios clientes (VIP y Entry) un aviso que los lleva a algo nuevo.
+// Tabla client_announcements (sql/e11-announcements.sql): un registro por cliente destino.
+// Cliente: sale al abrir el app (primero en evPostLoginPopups) y, con el app abierto, en el polling
+// único de 60 s (evStartUnreadPoll). Gana sobre todo menos la pausa por pago y el churn; espera a que
+// terminen el onboarding, el tour y la foto obligatoria de Entry. Tocar el botón, "Más tarde" o la X
+// llena seen_at y no vuelve. Si hay varios, de a uno, el más reciente primero.
+const ANN_I = {
+  wifi: '<path d="M12 20h.01"/><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.86a10 10 0 0 1 14 0"/><path d="M8.5 16.43a5 5 0 0 1 7 0"/>',
+  play: '<rect width="20" height="15" x="2" y="4.5" rx="3"/><path d="m10 9 5 3-5 3z"/>',
+  menu: '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>',
+  hex: '<path d="M12 2.5 20.5 7.25v9.5L12 21.5 3.5 16.75v-9.5Z"/>',
+  plus: '<path d="M12 5v14"/><path d="M5 12h14"/>'
+};
+// Destinos: etiqueta del chip (coach), ícono, texto del botón (cliente) y si admite un ítem concreto
+const ANN_DEST = {
+  semana:     { chip: 'Mi semana', label: 'Mi semana', icon: EVT_P.calendar, cta: 'Ver mi semana' },
+  extra:      { chip: 'Entreno extra', label: 'Entreno extra', icon: EVT_P.zap, cta: 'Ver mi entreno extra', item: 'el entreno extra' },
+  protocolos: { chip: 'Protocolos (Food)', label: 'Protocolos', icon: EVT_P.utensils, cta: 'Ver mis protocolos', item: 'el protocolo' },
+  guias:      { chip: 'Guidelines', label: 'Guidelines', icon: EVT_P.guides, cta: 'Ver mi guideline', item: 'la guideline' },
+  run:        { chip: 'Run', label: 'Run', icon: EVT_P.pulse, cta: 'Ver mi plan de Run' },
+  classroom:  { chip: 'Classroom', label: 'Classroom', icon: ANN_I.play, cta: 'Ir a Classroom' },
+  menu:       { chip: 'Menú', label: 'The MOVE Menu', icon: ANN_I.menu, cta: 'Abrir The MOVE Menu' },
+  hive:       { chip: 'Hive', label: 'The Hive', icon: ANN_I.hex, cta: 'Ir a The Hive' },
+  chat:       { chip: 'Chat', label: 'Chat', icon: EVT_P.msg, cta: 'Abrir el chat con Sau' }
+};
+// Un destino que no aplica a un cliente no se ofrece (Guías/Extras no existen para Entry, Chat solo Entry…)
+function annDestOk(c, d) {
+  if (!c) return false;
+  const lift = c.program_type === 'lift', entry = evIsEntry(c);
+  if (d === 'semana') return lift || c.training_access !== false;
+  if (d === 'extra' || d === 'guias') return !entry;
+  if (d === 'protocolos') return lift || c.food_access !== false;
+  if (d === 'run') return c.run_module_enabled === true;
+  if (d === 'classroom') return !lift; // vive en Food (E13); LIFT no tiene Food
+  if (d === 'chat') return entry;
+  return true;
+}
+function annHexIcon(d, size) {
+  return `<span class="ann-hexi" style="width:${size}px;height:${Math.round(size * 1.12)}px;"><svg class="ann-hexbg" viewBox="0 0 100 112" width="${size}" height="${Math.round(size * 1.12)}" aria-hidden="true" focusable="false"><path d="M50 3 96 29.5v53L50 109 4 82.5v-53Z" fill="#F6E6DB" stroke="#C24E18" stroke-width="2.5" stroke-linejoin="round"/></svg><span>${EVT_S(d, Math.round(size * 0.4), 2.2)}</span></span>`;
+}
+function annAgo(iso) {
+  const m = Math.round((Date.now() - Date.parse(iso)) / 60000);
+  if (!(m >= 2)) return 'hace un momento';
+  return evAgo(iso).toLowerCase();
+}
+
+// --- Cliente ---
+let annGateOk = false;      // evClientGate ya cargó client_onboarding (sabemos si falta onboarding o tour)
+let annBusy = false;
+const annSeenLocal = new Set(); // por si falla el update: no repetirlo en esta apertura
+function annBlocked() {
+  const c = currentClient;
+  if (!c || !currentUser || currentUser.role === 'coach' || c.is_churn) return true;
+  if (!annGateOk || evProgressLocked) return true;
+  if (c.onboarding_required === true) {
+    const r = window._evOnbRow;
+    if (!r || !r.completed_at || !r.tour_seen_at) return true;
+  }
+  return ['ev-pause', 'evt', 'ev-onb', 'ev-ann'].some(id => document.getElementById(id));
+}
+async function annCheck() {
+  if (annBusy || annBlocked()) return false;
+  annBusy = true;
+  try {
+    const cid = currentClient.id;
+    const { data, error } = await sb.from('client_announcements').select('id,title,body,destination,destination_ref,created_at')
+      .eq('client_id', cid).is('seen_at', null).order('created_at', { ascending: false }).limit(5);
+    if (error || !data) return false;
+    const a = data.find(r => !annSeenLocal.has(String(r.id)));
+    if (!a || annBlocked() || currentClient?.id !== cid) return false;
+    await annShow(a, false);
+    return true;
+  } finally { annBusy = false; }
+}
+async function annShow(a, preview) {
+  const d = ANN_DEST[a.destination] || ANN_DEST.semana;
+  const photo = await evSauPhotoUrl();
+  const id = preview ? 'ev-ann-prev' : 'ev-ann';
+  document.getElementById(id)?.remove();
+  const w = document.createElement('div');
+  w.id = id; w.className = 'ann-ov';
+  w.setAttribute('role', 'dialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-labelledby', id + '-t');
+  w.innerHTML = `<div class="ann-wrap">
+    <button type="button" class="ann-x" data-a="x" aria-label="Cerrar">${EVT_S(EV_I.x, 20, 2.2)}</button>
+    <div class="ann-mid">
+      ${annHexIcon(d.icon, 100)}
+      <div class="ann-eb">Novedad de tu coach</div>
+      <h1 class="ann-t" id="${id}-t">${evEsc(a.title)}</h1>
+      ${a.body ? `<p class="ann-b">${evEsc(a.body)}</p>` : ''}
+      <div class="ann-meta"><img src="${evEsc(photo)}" alt=""><span>Sau · ${annAgo(a.created_at || new Date().toISOString())}</span></div>
+    </div>
+    <div class="ann-foot">
+      <button type="button" class="ev-btn" data-a="go">${evEsc(d.cta)}</button>
+      <button type="button" class="ann-later" data-a="x">Más tarde</button>
+    </div>
+  </div>`;
+  w.addEventListener('click', e => {
+    const b = e.target.closest('[data-a]'); if (!b) return;
+    w.remove();
+    if (preview) return;
+    annMarkSeen(a.id);
+    if (b.dataset.a === 'go') annGo(a.destination, a.destination_ref);
+    else setTimeout(annCheck, 700); // el siguiente pendiente, si hay
+  });
+  document.body.appendChild(w);
+  w.querySelector('[data-a="go"]')?.focus();
+}
+async function annMarkSeen(id) {
+  annSeenLocal.add(String(id));
+  const { error } = await sb.from('client_announcements').update({ seen_at: new Date().toISOString() }).eq('id', id).is('seen_at', null);
+  if (error) console.warn('aviso seen_at:', error.message);
+}
+// Navegación a cada destino
+function annNav(tab, screen, n) {
+  const el = document.querySelector(`#${screen} .bottom-nav .nav-item:nth-child(${n})`) || document.querySelector(`#screen-client-home .bottom-nav .nav-item:nth-child(${n})`);
+  if (el) clientNav(tab, el);
+}
+function annPlanTab(tab) {
+  annNav('plan', 'screen-client-plan', 4);
+  const chip = mmChip(tab);
+  if (chip) switchClientPlanTab(tab, chip);
+  if (typeof mmSync === 'function') mmSync();
+}
+async function annWaitEl(sel, ms) {
+  for (let t = 0; t < (ms || 4000); t += 150) {
+    const el = typeof sel === 'function' ? sel() : document.querySelector(sel);
+    if (el) return el;
+    await new Promise(r => setTimeout(r, 150));
+  }
+  return null;
+}
+// Abre un ítem concreto de una lista renderizada por índice (mismo orden que la pantalla: order_index)
+async function annOpenItem(table, ref, elId, open) {
+  if (ref == null || ref === '' || !currentClient) return false;
+  const { data } = await sb.from(table).select('id').eq('client_id', currentClient.id).order('order_index', { ascending: true });
+  const i = (data || []).findIndex(r => String(r.id) === String(ref));
+  if (i < 0) return false;
+  const el = await annWaitEl('#' + elId(i));
+  if (!el) return false;
+  if (el.style.display === 'none') open(i);
+  (el.previousElementSibling || el).scrollIntoView({ block: 'start', behavior: 'smooth' });
+  return true;
+}
+// Vacía la lista vieja antes de navegar: así se espera a la versión que la pantalla vuelve a dibujar
+function annClear(id) { const el = document.getElementById(id); if (el) el.innerHTML = ''; }
+async function annGo(dest, ref) {
+  const c = currentClient; if (!c) return;
+  const lift = c.program_type === 'lift';
+  if (ref != null && ref !== '') ['c-extras-list', 'c-guidelines-list', 'client-protocols', 'lift-coaching-guidelines-list', 'lift-coaching-protocols-list'].forEach(annClear);
+  if (dest === 'semana') { annNav('home', 'screen-client-home', 1); return; }
+  if (dest === 'hive') { annNav('hive', 'screen-client-hive', 3); return; }
+  if (dest === 'chat') { evOpenChat(); return; }
+  if (dest === 'classroom') { annNav('food', 'screen-client-food', 2); return; } // E13 conecta la pestaña Educación
+  if (dest === 'run') { annPlanTab('run'); return; }
+  if (dest === 'menu') { annNav('plan', 'screen-client-plan', 4); if (document.getElementById('mm-panel')?.hidden !== false) mmToggle(); return; }
+  if (dest === 'extra') {
+    annPlanTab('extras');
+    await annOpenItem('extra_sessions', ref, i => `cex-${i}`, i => toggleClientExtra(`cex-${i}`));
+    return;
+  }
+  if (dest === 'guias') {
+    if (lift) {
+      annNav('coaching', 'screen-client-coaching', 2);
+      await annOpenItem('client_guidelines', ref, i => `lgn-${i}`, i => toggleClientGuideline(`lgn-${i}`, `lgn-arr-${i}`));
+    } else {
+      annPlanTab('plans');
+      if (!(await annOpenItem('client_guidelines', ref, i => `cg-${i}`, i => toggleClientGuideline(`cg-${i}`, `cg-arr-${i}`))))
+        (await annWaitEl('#c-guidelines-list > *'))?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
+    return;
+  }
+  if (dest === 'protocolos') {
+    if (lift) {
+      annNav('coaching', 'screen-client-coaching', 2);
+      await annOpenItem('nutrition_protocols', ref, i => `lift-proto-${i}`, i => toggleClientGuideline(`lift-proto-${i}`, `lift-proto-arr-${i}`));
+    } else {
+      annNav('food', 'screen-client-food', 2);
+      if (!(await annOpenItem('nutrition_protocols', ref, i => `cp-${i}`, i => toggleClientProtocol(`cp-${i}`))))
+        (await annWaitEl('#client-protocols > *'))?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
+  }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && currentClient && currentUser && currentUser.role !== 'coach') setTimeout(annCheck, 800);
+});
+
+// --- Coach: "Enviar aviso" (37), varios clientes (39) y "¿Le avisamos?" al guardar (38) ---
+const ANN_CLIENT_COLS = 'id,name,tier,program_type,training_access,food_access,run_module_enabled,is_churn,hidden';
+let annC = null;
+function annFirst(c) { return String(c?.name || '').trim().split(/\s+/)[0] || ''; }
+function annAvail(clients) { return Object.keys(ANN_DEST).filter(d => clients.length && clients.every(c => annDestOk(c, d))); }
+function annOpenSend(opts) {
+  opts = opts || {};
+  const base = opts.clients || (currentClient ? [currentClient] : []);
+  annC = { clients: base.filter(c => c && !c.is_churn && !c.hidden), dest: opts.dest || null, ref: opts.ref ?? null,
+    title: opts.title || '', body: opts.body || '', source: opts.source || 'manual', items: null, itemsFor: null };
+  if (annC.dest && !annAvail(annC.clients).includes(annC.dest)) { annC.dest = null; annC.ref = null; }
+  annRenderSend();
+}
+function annCapture() {
+  if (!annC) return;
+  const t = document.getElementById('ann-title'), b = document.getElementById('ann-body'), s = document.getElementById('ann-item');
+  if (t) annC.title = t.value;
+  if (b) annC.body = b.value;
+  if (s && !s.disabled) annC.ref = s.value || null; // mientras carga la lista no se pierde el ítem precargado
+}
+function annRenderSend() {
+  if (!annC) return;
+  annCapture();
+  const avail = annAvail(annC.clients);
+  if (annC.dest && !avail.includes(annC.dest)) { annC.dest = null; annC.ref = null; }
+  const d = annC.dest && ANN_DEST[annC.dest];
+  const oneClient = annC.clients.length === 1;
+  const wantsItem = !!(d && d.item && oneClient);
+  if (!wantsItem) annC.ref = null;
+  let dim = document.getElementById('ann-send');
+  const scroll = dim?.querySelector('.ev-sheet')?.scrollTop || 0;
+  if (!dim) {
+    dim = document.createElement('div');
+    dim.className = 'ev-dim'; dim.id = 'ann-send';
+    dim.addEventListener('click', e => { if (e.target === dim) annCloseSend(); });
+    document.body.appendChild(dim);
+  }
+  const toHtml = annC.clients.map(c => `<span class="ann-to">${evEsc(c.name)}<button type="button" aria-label="Quitar a ${evEsc(c.name)}" onclick="annRemoveTo('${evEsc(String(c.id))}')">${EVT_S(EV_I.x, 14, 2.6)}</button></span>`).join('');
+  let itemHtml = '';
+  if (wantsItem) {
+    const ready = annC.itemsFor === annC.dest + ':' + annC.clients[0].id;
+    const opts = ready ? annC.items.map(it => `<option value="${evEsc(String(it.id))}"${String(it.id) === String(annC.ref) ? ' selected' : ''}>${evEsc(it.title)}</option>`).join('') : '';
+    itemHtml = `<label class="ann-lab" for="ann-item">¿Cuál? <span style="font-weight:500;color:#8A7F73;">(opcional)</span></label>
+      <select class="ev-linp" id="ann-item"${ready ? '' : ' disabled'}><option value="">${ready ? (annC.items.length ? 'Toda la sección' : 'Todavía no tiene ninguno') : 'Cargando…'}</option>${opts}</select>`;
+    if (!ready) annLoadItems();
+  }
+  dim.innerHTML = `<div class="ev-sheet lt" role="dialog" aria-modal="true" aria-labelledby="ann-send-t">
+    <div class="ev-handle"></div>
+    <div class="ann-head"><span class="ann-hic">${EVT_S(ANN_I.wifi, 26, 2.4)}</span><div><h2 id="ann-send-t">Enviar aviso</h2><p>Le sale a pantalla completa apenas abra la app</p></div></div>
+    <span class="ann-lab">Para</span>
+    <div class="ann-chips">${toHtml}<button type="button" class="ann-add" onclick="annOpenPicker()">${EVT_S(ANN_I.plus, 16, 2.6)}Agregar clientes</button></div>
+    <span class="ann-lab" id="ann-dest-l">¿A dónde lo llevamos?</span>
+    <div class="ann-chips" role="group" aria-labelledby="ann-dest-l">${avail.map(k => `<button type="button" class="ann-chip" aria-pressed="${k === annC.dest}" onclick="annPickDest('${k}')">${ANN_DEST[k].chip}</button>`).join('') || '<span style="font-size:14px;color:#6F655B;">Elegí al menos un cliente.</span>'}</div>
+    ${itemHtml}
+    <label class="ann-lab" for="ann-title">Título</label>
+    <input class="ev-linp" id="ann-title" maxlength="80" value="${evEsc(annC.title)}" placeholder="Te agregué una guideline nueva">
+    <label class="ann-lab" for="ann-body">Mensaje</label>
+    <textarea class="ev-linp" id="ann-body" rows="3" maxlength="400" placeholder="Contale en una o dos líneas qué cambió">${evEsc(annC.body)}</textarea>
+    <button type="button" class="ev-lbtn" id="ann-send-btn" style="height:54px;border-radius:16px;font-size:16px;gap:10px;margin-top:20px;" onclick="annSend()">${EVT_S(ANN_I.wifi, 22, 2.4)}Enviar ahora</button>
+    <button type="button" class="ann-link" onclick="annPreview()">Ver cómo lo verá</button>
+  </div>`;
+  const sh = dim.querySelector('.ev-sheet'); if (sh) sh.scrollTop = scroll;
+}
+function annCloseSend() { document.getElementById('ann-send')?.remove(); annC = null; }
+function annPickDest(k) { annCapture(); if (annC.dest !== k) annC.ref = null; annC.dest = k; annRenderSend(); }
+function annRemoveTo(id) { annCapture(); annC.clients = annC.clients.filter(c => String(c.id) !== id); annC.items = null; annC.itemsFor = null; annRenderSend(); }
+async function annLoadItems() {
+  const dest = annC?.dest, c = annC?.clients[0];
+  if (!dest || !c) return;
+  const key = dest + ':' + c.id;
+  if (annC.loading === key) return;
+  annC.loading = key;
+  const q = dest === 'extra' ? sb.from('extra_sessions').select('id,name') : sb.from(dest === 'guias' ? 'client_guidelines' : 'nutrition_protocols').select('id,title');
+  const { data, error } = await q.eq('client_id', c.id).order('order_index', { ascending: true });
+  if (!annC || annC.loading !== key) return;
+  annC.loading = null;
+  annC.items = error ? [] : (data || []).map(r => ({ id: r.id, title: r.title || r.name || 'Sin título' }));
+  annC.itemsFor = key;
+  if (annC.dest + ':' + (annC.clients[0] && annC.clients[0].id) === key) annRenderSend();
+}
+function annPreview() {
+  annCapture();
+  if (!annC.title.trim()) { showToast('Escribí un título para ver cómo queda', 'error'); return; }
+  annShow({ title: annC.title.trim(), body: annC.body.trim(), destination: annC.dest || 'semana', created_at: new Date().toISOString() }, true);
+}
+async function annSend() {
+  annCapture();
+  const s = annC;
+  if (!s.clients.length) { showToast('Elegí al menos un cliente', 'error'); return false; }
+  if (!s.dest) { showToast('Elegí a dónde lo llevamos', 'error'); return false; }
+  if (!s.title.trim()) { showToast('Escribí un título', 'error'); document.getElementById('ann-title')?.focus(); return false; }
+  const btn = document.getElementById('ann-send-btn'); if (btn) btn.disabled = true;
+  const many = s.clients.length > 1;
+  const rows = s.clients.map(c => ({ client_id: c.id, title: s.title.trim(), body: s.body.trim() || null, destination: s.dest,
+    destination_ref: !many && s.ref ? String(s.ref) : null, source: many ? 'bulk' : s.source }));
+  const { error } = await sb.from('client_announcements').insert(rows);
+  if (error) { if (btn) btn.disabled = false; showToast('No se envió: ' + error.message, 'error'); return false; }
+  annCloseSend();
+  document.getElementById('ann-pick')?.remove();
+  showToast(many ? `Aviso enviado a ${rows.length} clientes` : 'Aviso enviado', 'success');
+  return true;
+}
+// Varios clientes (39): activos, sin churn ni ocultos, filtro por tier
+let annPk = null;
+async function annOpenPicker() {
+  annCapture();
+  const { data, error } = await sb.from('clients').select(ANN_CLIENT_COLS).eq('coach_id', currentUser.id).order('name');
+  if (error) { showToast('No se pudo cargar la lista: ' + error.message, 'error'); return; }
+  annPk = { list: (data || []).filter(c => !c.is_churn && !c.hidden), sel: new Set(annC.clients.map(c => String(c.id))), filter: 'all' };
+  annRenderPicker();
+}
+function annPkVisible() { return annPk.list.filter(c => annPk.filter === 'all' || evTier(c) === annPk.filter); }
+function annRenderPicker() {
+  let w = document.getElementById('ann-pick');
+  const scroll = w?.querySelector('.ann-pick-list')?.scrollTop || 0;
+  if (!w) { w = document.createElement('div'); w.id = 'ann-pick'; w.className = 'ann-pick'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-labelledby', 'ann-pick-t'); document.body.appendChild(w); }
+  const vis = annPkVisible();
+  const allOn = vis.length && vis.every(c => annPk.sel.has(String(c.id)));
+  const chosen = annPk.list.filter(c => annPk.sel.has(String(c.id)));
+  const nE = chosen.filter(c => evIsEntry(c)).length, nV = chosen.length - nE;
+  const f = (k, l) => `<button type="button" class="ann-chip" aria-pressed="${annPk.filter === k}" onclick="annPkFilter('${k}')">${l}</button>`;
+  w.innerHTML = `<div class="ann-pick-top">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;">
+        <div><div class="ev-eb-o">Coach</div><h2 id="ann-pick-t">Elegí clientes</h2></div>
+        <button type="button" class="ann-later" style="padding:0 4px;" onclick="document.getElementById('ann-pick')?.remove()">Cancelar</button>
+      </div>
+      <div class="ann-pk-f">${f('all', 'Todos')}${f('vip', 'Solo VIP')}${f('entry', 'Solo Entry')}
+        <button type="button" class="ann-later" style="margin-left:auto;font-size:15px;padding:0 2px;white-space:nowrap;" onclick="annPkAll()">${allOn ? 'Quitar todos' : 'Elegir todos'}</button></div>
+    </div>
+    <div class="ann-pick-list" role="group" aria-label="Clientes">${vis.map(c => { const on = annPk.sel.has(String(c.id)); return `<button type="button" class="ann-row" role="checkbox" aria-checked="${on}" onclick="annPkToggle('${evEsc(String(c.id))}')"><span class="ann-ck">${on ? EV_SVG_CHECK : ''}</span><span>${evEsc(c.name)}</span>${evTierTagHtml(c)}</button>`; }).join('') || '<p style="color:#6F655B;font-size:14px;">No hay clientes en este filtro.</p>'}</div>
+    <div class="ann-pick-foot"><div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;"><b style="font-size:17px;">${chosen.length} ${chosen.length === 1 ? 'seleccionado' : 'seleccionados'}</b><span style="font-size:14px;color:#6F655B;">${nE} Entry · ${nV} VIP</span></div>
+      <button type="button" class="ev-lbtn" style="height:54px;border-radius:16px;font-size:16px;gap:10px;" onclick="annPkDone()">${EVT_S(ANN_I.wifi, 22, 2.4)}Enviar aviso</button>
+    </div></div>`;
+  const l = w.querySelector('.ann-pick-list'); if (l) l.scrollTop = scroll;
+}
+function annPkFilter(k) { annPk.filter = k; annRenderPicker(); }
+function annPkToggle(id) { annPk.sel.has(id) ? annPk.sel.delete(id) : annPk.sel.add(id); annRenderPicker(); }
+function annPkAll() {
+  const vis = annPkVisible(), allOn = vis.every(c => annPk.sel.has(String(c.id)));
+  vis.forEach(c => allOn ? annPk.sel.delete(String(c.id)) : annPk.sel.add(String(c.id)));
+  annRenderPicker();
+}
+// "Enviar aviso" del selector: aplica la selección y envía si título y destino ya están; si no, vuelve al formulario
+async function annPkDone() {
+  const chosen = annPk.list.filter(c => annPk.sel.has(String(c.id)));
+  if (!chosen.length) { showToast('Elegí al menos un cliente', 'error'); return; }
+  annC.clients = chosen; annC.items = null; annC.itemsFor = null;
+  const ready = annC.dest && annAvail(chosen).includes(annC.dest) && annC.title.trim();
+  document.getElementById('ann-pick')?.remove();
+  annRenderSend();
+  if (ready) await annSend();
+  else showToast(annC.dest ? 'Escribí el título y enviá' : 'Elegí a dónde lo llevamos y enviá', 'info', 3000);
+}
+// "¿Le avisamos?" después de guardar algo que le llega al cliente (38). Opcional: "Ahora no" no hace nada.
+const ANN_AUTO = {
+  semana:     (n, l, ed) => ['Tu entreno cambió', `${n}, actualicé tu semana de entreno. Mirala antes de tu próxima sesión.`],
+  extra:      (n, l, ed) => [ed ? 'Actualicé tu entreno extra' : 'Te agregué un entreno extra', `${n}, ${ed ? 'actualicé' : 'sumé'} el entreno extra "${l}". Dale un vistazo hoy.`],
+  protocolos: (n, l, ed) => [ed ? 'Actualicé un protocolo' : 'Te agregué un protocolo', `${n}, ${ed ? 'actualicé' : 'sumé'} el protocolo "${l}". Dale un vistazo hoy.`],
+  guias:      (n, l, ed) => [ed ? 'Actualicé una guideline' : 'Te agregué una guideline nueva', `${n}, ${ed ? 'actualicé' : 'sumé'} la guideline "${l}". Dale un vistazo hoy.`],
+  run:        (n, l, ed) => ['Tu plan de Run cambió', `${n}, actualicé tu plan de Run. Revisá tu semana antes de salir a correr.`]
+};
+function annAfterSave(o) {
+  const c = currentClient;
+  if (!c || currentUser?.role !== 'coach' || c.is_churn || c.hidden || !annDestOk(c, o.dest)) return;
+  const d = ANN_DEST[o.dest];
+  const [title, body] = ANN_AUTO[o.dest](annFirst(c), o.label || '', !!o.edited);
+  const pre = { clients: [c], dest: o.dest, ref: d.item && o.ref != null ? String(o.ref) : null, title, body, source: 'after_save' };
+  document.getElementById('ann-ask')?.remove();
+  const dim = document.createElement('div');
+  dim.className = 'ev-dim'; dim.id = 'ann-ask';
+  const what = { semana: 'a su semana', extra: 'al entreno extra', protocolos: 'al protocolo', guias: 'a la guideline', run: 'a su plan de Run' }[o.dest];
+  dim.innerHTML = `<div class="ev-sheet lt" role="dialog" aria-modal="true" aria-labelledby="ann-ask-t" style="text-align:center;">
+    <div class="ev-handle"></div>
+    <div style="display:flex;justify-content:center;">${annHexIcon(ANN_I.wifi, 84)}</div>
+    <h2 id="ann-ask-t" style="font-weight:900;font-size:28px;margin:16px 0 8px;">¿Le avisamos a ${evEsc(annFirst(c))}?</h2>
+    <p style="color:#6F655B;font-size:15px;">Le sale un aviso a pantalla completa con un botón directo ${what}.</p>
+    <div class="ann-dcard"><span class="ann-dic">${EVT_S(d.icon, 22, 2.2)}</span><div><b>${evEsc(d.label)}${o.label ? ' › ' + evEsc(o.label) : ''}</b><small>Destino puesto automático</small></div><button type="button" data-a="edit">Editar</button></div>
+    <button type="button" class="ev-lbtn" data-a="send" style="height:54px;border-radius:16px;font-size:16px;gap:10px;margin-top:18px;">${EVT_S(ANN_I.wifi, 22, 2.4)}Enviar aviso</button>
+    <button type="button" class="ann-link" data-a="no">Ahora no</button>
+  </div>`;
+  dim.addEventListener('click', async e => {
+    if (e.target === dim) { dim.remove(); return; }
+    const b = e.target.closest('[data-a]'); if (!b) return;
+    if (b.dataset.a === 'no') { dim.remove(); return; }
+    if (b.dataset.a === 'edit') { dim.remove(); annOpenSend(pre); return; }
+    b.disabled = true;
+    const { error } = await sb.from('client_announcements').insert([{ client_id: c.id, title, body, destination: o.dest, destination_ref: pre.ref, source: 'after_save' }]);
+    if (error) { b.disabled = false; showToast('No se envió: ' + error.message, 'error'); return; }
+    dim.remove();
+    showToast('Aviso enviado', 'success');
+  });
+  document.body.appendChild(dim);
+}
+// Entreno extra: se pregunta al cerrar el editor de la sesión si se guardó algún ejercicio
+let annExtraDirty = null, annExtraNewId = null, annExtraName = '';
+function annExtraEditorClosed() {
+  const d = annExtraDirty; annExtraDirty = null;
+  if (d) annAfterSave({ dest: 'extra', ref: d.id, label: d.name, edited: d.edited });
+}
+
 // ---------- E9 · Banner "Tenés nuevos mensajes de Tu Coach" (solo Entry) ----------
 // Al abrir el app, si hay mensajes de Sau sin leer (incluye el nudge de inactividad que deja el cron).
 // Un solo pop-up por apertura (va antes que Rate us y la oferta VIP; la pausa y el churn ya cortan antes).
@@ -32460,7 +32914,7 @@ function evCoachBannerClose(open) {
 }
 
 // ---------- E9 · Hilo "Coach" del lado de Sau (coach_feed) ----------
-// Solo historial: resumen nocturno y nudges que mandó el cron. No se responde y no se purga.
+// Solo historial: resumen nocturno y nudges que mandó el cron. No se responde. El cron borra lo de más de 7 días (E11).
 let evFeedLast = null;
 function evCoachFeedRow() {
   const p = evFeedLast ? evEsc(String(evFeedLast.body).split('\n')[0]) : 'Resúmenes de cada noche y avisos de inactividad';

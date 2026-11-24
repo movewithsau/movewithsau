@@ -13,6 +13,7 @@ Servidor `python3 -m http.server 3000` en la raíz, ventana de 390 px. **Las pru
 | sql/entry-vip-base.sql | Corrido por Sau (23 nov) |
 | sql/entry-vip-engagement.sql | Corrido por Sau (24 nov): tablas `coach_feed` y `entry_nudges` (rowsecurity false) |
 | sql/entry-vip-minimal.sql | Corrido por Sau (24 nov): `workout_sessions.is_minimal` |
+| sql/e11-announcements.sql | **Pendiente** (lo corre Sau): tabla `client_announcements` (E11). La purga de `coach_feed` no necesita SQL |
 | sql/entry-vip-extra.sql | Corrido por Sau (23 nov): `client_onboarding.completed_at`, `rate_us_dismissed_at`, bucket 15 MB, policy `support_chat_all_access` |
 
 ## Decisiones de Sau (23 nov) que mandan sobre el prompt
@@ -253,7 +254,7 @@ Hecho:
 - 9.2 Encabezado del chat del cliente: "Tu Coach" (único lugar en el app; el mockup de referencia no se tocó).
 - 9.3 `api/coach-digest` (cron 9 p. m. CR): `runNudges` para `tier='entry'`, sin churn, sin ocultos y sin la pausa de pago (next_payment_date + 48 h, misma regla que el app). Inactivo = más de 3 días desde el último `workout_sessions` con `plan_day_id` (o desde `client_onboarding.completed_at` si nunca entrenó). Episodio 1: texto "hey hace un par de días…"; siguientes: "parece que otra vez…". Nombre = primer nombre en minúscula. Primero reserva el episodio en `entry_nudges` (único cliente+episodio: si el cron corre dos veces no hay doble mensaje), después inserta el mensaje como de Sau (`sender='coach'`, `status='answered'`) y deja el aviso en `coach_feed`. Los nudges corren aunque no haya nada que reportar en el resumen; el push no se usa para esto.
 - 9.4 Banner "Tenés nuevos mensajes de Tu Coach" (solo Entry): en `evPostLoginPopups`, antes de Rate us y la oferta VIP (un solo pop-up por apertura; pausa, churn, tour y Tu Progreso bloqueado ya cortan antes). Vista previa del último mensaje sin leer, "Ver mensaje" abre el chat. Se recuerda el id del último mensaje mostrado en el equipo (`localStorage`), así no vuelve hasta que llega uno más nuevo. VIP no ve nada.
-- 9.5 Delivery: fila fija "Coach" arriba de las conversaciones, abre el historial de `coach_feed` (resúmenes y avisos de nudges), solo lectura. El cron guarda cada resumen ahí antes de intentar el push. `coach_feed` no entra en la purga de 7 días.
+- 9.5 Delivery: fila fija "Coach" arriba de las conversaciones, abre el historial de `coach_feed` (resúmenes y avisos de nudges), solo lectura. El cron guarda cada resumen ahí antes de intentar el push. `coach_feed` no entra en la purga de 7 días del chat; desde E11 el cron `coach-digest` lo borra a los 7 días.
 
 Probado:
 - [x] Cron con node y Supabase simulado: Entry inactivo con entreno viejo y Entry que nunca entrenó → 1 mensaje cada uno; churn, en pausa, reciente y VIP → nada; segunda corrida → nada; vuelve a entrenar y pasan 4 días → episodio 2 con "otra vez". Hilo Coach con los 3 avisos.
@@ -297,3 +298,32 @@ Mockup: `docs/mockups/chequeo-semanal.html`.
 - Sin cron de servidor ni SQL: el app mira el día al abrir; lo descartado se recuerda en el equipo.
 - Probado en el host con datos simulados en la página: viernes sale el grande, "Más tarde" no vuelve ese día, lunes sale el mini, "Ya lo subí" dos veces deja un solo aviso.
 - Nota: el aviso de un VIP aparece en Delivery como conversación; si Sau responde, el VIP no lo ve en el app (no tiene chat).
+
+### E11: Aviso a pantalla completa (botón wifi) — terminado, falta probar en real
+Mockups: `docs/referencias/mockup-e11/` 36–39 (sin trackear, a pedido de Sau). Rama `feat/entry-vip` adelantada a `main` (e5f2a97) sin commits nuevos.
+
+Decisiones de Sau (24 nov):
+- Pausa de 48 h por pago y churn bloquean: el aviso queda pendiente (si la pausa entra con el aviso abierto, se cierra sin marcarse visto). Con el recordatorio naranja de pago el aviso sale encima y el recordatorio sigue debajo.
+- Espera a que terminen onboarding, tour y la foto obligatoria de Entry.
+- Lista de clientes del coach: sin churn ni ocultos. LIFT no se excluye; los destinos que no aplican a un cliente no se ofrecen.
+- Ítem concreto solo para Entreno extra, Protocolos y Guías (y solo con un cliente elegido).
+- Un único polling de 60 s para todos los clientes (`evStartUnreadPoll`: chat sin leer solo Entry + avisos todos), más una revisión al volver al app.
+
+Hecho:
+- Cliente (36): aviso claro a pantalla completa con fondo de panal, hexágono con el ícono del destino, "Novedad de tu coach", título, texto, foto de Sau y "hace un momento", botón al destino, "Más tarde" y ✕. Cualquiera de los tres llena `seen_at`. Varios pendientes: de a uno, el más reciente primero ("Más tarde" muestra el siguiente; el botón principal navega y el siguiente sale en el próximo ciclo). Va primero en `evPostLoginPopups`.
+- Mockup vs prompt: el mockup dice "Más tarde" (no "Ahora no"); se siguió el mockup.
+- Destinos: Mi semana → Hoy; Entreno extra → Mi Espacio › Extras (abre la sesión); Protocolos → Food (abre el protocolo; LIFT: pestaña Coaching); Guías → Mi Espacio › Guías y recursos (abre la guideline; LIFT: Coaching); Run → Mi Espacio › Run; Classroom → Food por ahora (E13 lo conecta a Educación); Menú → Mi Espacio con The MOVE Menu abierto; Hive; Chat (solo Entry).
+- Qué destino se ofrece: Mi semana si tiene Entreno (o LIFT); Extras y Guías no para Entry; Protocolos si tiene Food (o LIFT); Run con `run_module_enabled`; Classroom no para LIFT (no tiene Food); Chat solo Entry. Con varios clientes, solo los destinos que aplican a todos.
+- Coach (37): botón wifi redondo a la derecha del nombre en la ficha (no sale para churn u ocultos). Hoja "Enviar aviso": Para (chips + "Agregar clientes"), ¿A dónde lo llevamos?, "¿Cuál?" (opcional), Título, Mensaje, "Enviar ahora" y "Ver cómo lo verá" (vista previa exacta, sin escribir nada).
+- Varios clientes (39): "Agregar clientes" abre "Elegí clientes" con Todos / Solo VIP / Solo Entry, "Elegir todos", contador "N seleccionados · X Entry · Y VIP". Su botón "Enviar aviso" envía si ya hay destino y título; si falta algo, vuelve al formulario. Un registro por cliente (`source='bulk'`, sin ítem).
+- Al guardar (38): hoja "¿Le avisamos a {nombre}?" con el destino puesto, "Editar" (abre la hoja precargada), "Enviar aviso" (envía con un texto por defecto, `source='after_save'`) y "Ahora no" (no hace nada). Mockup vs prompt: el mockup envía directo desde esta hoja; "Editar" cubre el modal precargado. Se engancha en: guardar día del plan (Mi semana), cerrar el editor de un entreno extra si se guardó algún ejercicio (Entreno extra), guardar o agregar desde la biblioteca un protocolo (Protocolos) o una guideline (Guías), y guardar/activar el plan de Run (no los borradores). Para poder apuntar al ítem nuevo, los insert de protocolo y guideline ahora piden `.select('id')`.
+- 11.5: `api/coach-digest` borra `coach_feed` de más de 7 días al inicio de cada corrida (antes de los "nada que reportar"). Solo esa tabla.
+
+Probado (base simulada, 390 px):
+- [x] Ficha: botón wifi; hoja con destinos de un VIP con Run (sin Chat); ítem "¿Cuál?" con las guidelines del cliente; vista previa igual al 36; envío de 1 registro con `destination_ref`.
+- [x] Varios: lista sin churn ni ocultos (LIFT incluido), filtro Solo Entry, Elegir todos, 3 registros `bulk`. Destinos para Entry+VIP mezclados: sin Extras, Guías ni Chat.
+- [x] "¿Le avisamos?" tras agregar guideline y protocolo; "Editar" precarga destino, ítem y textos (se arregló que el ítem se perdía mientras cargaba la lista); "Enviar aviso" directo. Entreno extra: pregunta al cerrar solo si se guardó un ejercicio.
+- [x] Cliente: al abrir sale el más reciente; el botón abre la guideline exacta; "Más tarde" muestra el siguiente y no vuelve; protocolo, extra, Run, Menú, Hive, Mi semana y Classroom navegan; con el app abierto, un aviso nuevo apareció a los 31 s (polling de 60 s).
+- [x] Bloqueos: Entry en pausa (aviso pendiente, sin `seen_at`), churn, cliente con tour pendiente → no sale. Entry con destino Chat abre el chat. Recordatorio naranja: el aviso sale encima y el recordatorio sigue debajo.
+- [x] Cron con node y `fetch` simulado: primero 1 DELETE a `coach_feed?created_at=lt.<hace 7 días>`, aunque esa noche no haya nada que reportar.
+- [ ] Real (Supabase y celular): **no probado**. Requiere correr `sql/e11-announcements.sql`.
