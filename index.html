@@ -6526,10 +6526,11 @@ function renderHive() {
     <div class="hive-card">
       <span class="pg-mono" style="color:var(--orange-text);">Mi meta</span>
       <div style="font-size:14px;color:var(--gray5);margin-top:4px;">Días por semana</div>
+      <p style="font-size:14px;line-height:1.45;color:var(--gray5);margin:6px 0 0;">Hacé una promesa con tu propia palabra. Cada semana que la cumplís, te demostrás cuánto pesa tu compromiso. Podés cambiarlo cuando quieras.</p>
       <div class="hive-goal-chips" role="group" aria-label="Meta de días por semana">
         ${[3, 4, 5].map(n => `<button type="button" class="hive-goal-chip" aria-pressed="${goal === n}" onclick="setHiveGoal(${n})">${n}</button>`).join('')}
       </div>
-      <div class="hive-week">${goal ? hiveMini(dd.weekDone, goal) + `<span>${Math.min(dd.weekDone, goal)} de ${goal} esta semana</span>` : '<span>Elegí cuántos días querés entrenar por semana.</span>'}</div>
+      <div class="hive-week">${goal ? hiveMini(dd.weekDone, goal) + `<span>${Math.min(dd.weekDone, goal)} de ${goal} esta semana</span>` : ''}</div>
     </div>
     <button type="button" class="hive-share" onclick="openHiveShare()">${icon('share', 20)}Compartir mi mes</button>`;
   mountConstancia('tc-client', currentClient, dd.ym);
@@ -29978,6 +29979,8 @@ body:not(.ev-entry) .ev-chat-fab { display:none !important; }
 .ev-conv { display:flex; gap:12px; width:100%; text-align:left; padding:14px; margin-bottom:10px; border-radius:20px; border:1px solid #EADFD2; background:#fff; cursor:pointer; font-family:'DM Sans',sans-serif; }
 .ev-conv.is-new { border-color:#C24E18; background:#FFF6EF; }
 .ev-conv-b { flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
+.ev-conv-pin { border-color:#1B1713; border-width:1.5px; }
+.ev-cb-prev { background:#F6EFE6; border-radius:14px; padding:12px 14px; text-align:left; color:#3A3128; }
 .ev-conv-top { display:flex; justify-content:space-between; gap:8px; align-items:baseline; }
 .ev-conv-top b { font-size:16px; color:#2A211B; }
 .ev-conv-tags { display:flex; gap:6px; flex-wrap:wrap; }
@@ -31201,7 +31204,7 @@ async function evOpenChat(preset) {
     w.innerHTML = `<div class="ev-chat-head">
         <button type="button" class="ev-cbtn" aria-label="Volver" onclick="evCloseChat()">${EVT_S(EV_I.back, 20, 2.2)}</button>
         <span class="ev-sau-av"><img id="ev-sau-av" alt="Sau" src="img/sau-color.jpg"></span>
-        <div class="ev-chat-who"><b>Sau</b><span>Tu coach en MOVE</span></div>
+        <div class="ev-chat-who"><b>Sau</b><span>Tu Coach</span></div>
       </div>
       <div class="ev-chat-body" id="ev-chat-body">
         <div class="ev-hours">${EVT_S(EVT_P.clock, 20, 2.2)}<div><b>Lunes a viernes · 12 md a 5 pm</b><span>Sau te responde en un plazo máximo de 24 horas.</span><span class="ev-hours-n">Los mensajes se borran a los 7 días, menos los que Sau destaca.</span></div></div>
@@ -31375,7 +31378,7 @@ function evDrawInbox() {
   const all = evConversations();
   const list = all.filter(v => (evDlTag === 'all' || v.allTags.has(evDlTag)) && (!evDlNew || v.fresh.length));
   const chip = (k, l) => `<button type="button" class="ev-fchip${evDlTag === k ? ' on' : ''}" aria-pressed="${evDlTag === k}" onclick="evDlTag='${k}';evDrawInbox()">${l}</button>`;
-  box.innerHTML = `<div class="ev-fchips">${chip('all', 'Todos')}${chip('support', 'Soporte')}${chip('vip', 'Quiero VIP')}${chip('run', 'Quiero Run')}</div>
+  box.innerHTML = `${evCoachFeedRow()}<div class="ev-fchips">${chip('all', 'Todos')}${chip('support', 'Soporte')}${chip('vip', 'Quiero VIP')}${chip('run', 'Quiero Run')}</div>
     <label class="ev-onlynew"><input type="checkbox" ${evDlNew ? 'checked' : ''} onchange="evDlNew=this.checked;evDrawInbox()"> Solo sin responder</label>
     ${list.length ? list.map(v => `<button type="button" class="ev-conv${v.fresh.length ? ' is-new' : ''}" onclick="evOpenCoachChat('${v.c.id}')">
         <span class="ev-av">${evEsc(getInitials(v.c.name || '?'))}</span>
@@ -31988,6 +31991,7 @@ async function evRateUsDue() {
 }
 async function evPostLoginPopups() {
   if (document.getElementById('ev-pause') || document.getElementById('evt') || document.getElementById('ev-onb') || evProgressLocked) return;
+  if (await evMaybeShowCoachBanner()) return;
   if (await evRateUsDue()) { evShowRateUs(); return; }
   evMaybeShowVipOffer();
 }
@@ -32301,6 +32305,83 @@ async function evCloseNoPain(force) {
 }
 
 // Delivery: bandeja del coach (chat E4; rifa E5; calificaciones E7)
+// ---------- E9 · Banner "Tenés nuevos mensajes de Tu Coach" (solo Entry) ----------
+// Al abrir el app, si hay mensajes de Sau sin leer (incluye el nudge de inactividad que deja el cron).
+// Un solo pop-up por apertura (va antes que Rate us y la oferta VIP; la pausa y el churn ya cortan antes).
+// Al cerrarlo no vuelve hasta que llegue un mensaje más nuevo (se guarda el id visto en este equipo).
+function evBannerKey() { return 'evCoachBanner:' + (currentClient && currentClient.id); }
+async function evMaybeShowCoachBanner() {
+  const c = currentClient;
+  if (!c || !evIsEntry(c) || currentUser?.role === 'coach' || c.is_churn || document.getElementById('ev-cbanner') || document.getElementById('ev-chat')) return false;
+  const { data, error } = await sb.from('support_messages').select('id,kind,body,media_path,created_at')
+    .eq('client_id', c.id).eq('sender', 'coach').is('read_at', null).order('id', { ascending: false }).limit(1);
+  if (error || !data || !data.length) return false;
+  const m = data[0];
+  let seen = 0; try { seen = Number(localStorage.getItem(evBannerKey())) || 0; } catch (e) {}
+  if (Number(m.id) <= seen) return false;
+  ensureEvFonts();
+  const prev = m.kind === 'photo' ? 'Te mandó una foto' : m.kind === 'audio' ? 'Te mandó un audio' : String(m.body || '');
+  const w = document.createElement('div');
+  w.className = 'ev-modal-wrap'; w.id = 'ev-cbanner'; w.dataset.mid = m.id;
+  w.innerHTML = `<div class="ev-modal" role="dialog" aria-modal="true" aria-labelledby="ev-cbanner-t">
+    <div class="ev-eb">Tu Coach</div>
+    <h2 class="ev-dela" id="ev-cbanner-t" style="font-size:22px;margin-top:8px;">Tenés nuevos mensajes de Tu Coach</h2>
+    <p class="ev-p ev-soft ev-cb-prev" style="margin-top:12px;">${evEsc(prev.length > 140 ? prev.slice(0, 140) + '…' : prev)}</p>
+    <button type="button" class="ev-btn" style="margin-top:18px;" onclick="evCoachBannerClose(true)">Ver mensaje</button>
+    <button type="button" class="ev-rate-later" onclick="evCoachBannerClose(false)">Cerrar</button>
+  </div>`;
+  document.body.appendChild(w);
+  evFitTitles(w);
+  return true;
+}
+function evCoachBannerClose(open) {
+  const w = document.getElementById('ev-cbanner');
+  if (w) { try { localStorage.setItem(evBannerKey(), w.dataset.mid); } catch (e) {} w.remove(); }
+  if (open) evOpenChat();
+}
+
+// ---------- E9 · Hilo "Coach" del lado de Sau (coach_feed) ----------
+// Solo historial: resumen nocturno y nudges que mandó el cron. No se responde y no se purga.
+let evFeedLast = null;
+function evCoachFeedRow() {
+  const p = evFeedLast ? evEsc(String(evFeedLast.body).split('\n')[0]) : 'Resúmenes de cada noche y avisos de inactividad';
+  return `<button type="button" class="ev-conv ev-conv-pin" onclick="evOpenCoachFeed()">
+    <span class="ev-av" style="background:#1B1713;color:#F5B83D;">C</span>
+    <span class="ev-conv-b"><span class="ev-conv-top"><b>Coach</b><span class="ev-when">${evFeedLast ? evAgo(evFeedLast.created_at) : ''}</span></span>
+      <span class="ev-conv-tags"><span class="ev-tag ev-tag-soft">Fijo · solo lectura</span></span>
+      <span class="ev-conv-p">${p}</span></span>
+  </button>`;
+}
+async function evLoadFeedLast() {
+  const { data } = await sb.from('coach_feed').select('body,created_at').order('created_at', { ascending: false }).limit(1);
+  evFeedLast = (data && data[0]) || null;
+}
+function evFeedWhen(iso) {
+  const d = new Date(Date.parse(iso) - 6 * 3600 * 1000);
+  const dd = d.toISOString();
+  return `${dd.slice(8, 10)}/${dd.slice(5, 7)} · ${dd.slice(11, 16)}`;
+}
+async function evOpenCoachFeed() {
+  document.getElementById('ev-cfeed')?.remove();
+  const w = document.createElement('div');
+  w.id = 'ev-cfeed'; w.className = 'ev-chat';
+  w.setAttribute('role', 'dialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-label', 'Coach');
+  w.innerHTML = `<div class="ev-chat-head">
+      <button type="button" class="ev-cbtn" aria-label="Volver" onclick="document.getElementById('ev-cfeed').remove()">${EVT_S(EV_I.back, 20, 2.2)}</button>
+      <span class="ev-av lg" style="background:#1B1713;color:#F5B83D;">C</span>
+      <div class="ev-chat-who"><b>Coach</b><span>Resúmenes y avisos · solo historial</span></div>
+    </div>
+    <div class="ev-chat-body" id="ev-cfeed-body"><div id="ev-cfeed-list" class="ev-chat-list"><div class="spinner"></div></div></div>`;
+  document.body.appendChild(w);
+  const { data, error } = await sb.from('coach_feed').select('id,kind,body,created_at').order('created_at', { ascending: true }).limit(300);
+  const list = document.getElementById('ev-cfeed-list');
+  if (!list) return;
+  if (error) { list.innerHTML = '<div class="ev-empty">No se pudo cargar.</div>'; return; }
+  list.innerHTML = (data || []).length ? data.map(m => `<div class="ev-msg ev-them"><div class="ev-bub ev-text ev-them">${m.kind === 'nudge' ? '<b>Aviso</b><br>' : '<b>Resumen del día</b><br>'}${evEsc(m.body || '').replace(/\n/g, '<br>')}</div><div class="ev-meta">${evFeedWhen(m.created_at)}</div></div>`).join('')
+    : '<div class="ev-empty" style="padding:28px 10px;">Todavía no hay resúmenes. El primero llega hoy a las 9 p. m.</div>';
+  const b = document.getElementById('ev-cfeed-body'); if (b) b.scrollTop = b.scrollHeight;
+}
+
 async function evRenderDelivery() {
   const box = document.getElementById('ev-delivery-body');
   if (!box) return;
@@ -32308,6 +32389,7 @@ async function evRenderDelivery() {
     <div id="ev-dl-raffle"></div>
     <div id="ev-dl-inbox"><div class="spinner"></div></div>
     <div id="ev-dl-rates"></div>`;
+  try { await evLoadFeedLast(); } catch (e) { /* sin hilo Coach */ }
   await evRenderInbox();
   if (typeof evRenderRaffle === 'function') evRenderRaffle();
   if (typeof evRenderRates === 'function') evRenderRates();

@@ -70,6 +70,85 @@ async function getTestsCompletedToday(crToday, crTomorrow) {
   return sbFetch(`tests?status=eq.completed&completed_at=gte.${encodeURIComponent(startUTC)}&completed_at=lt.${encodeURIComponent(endUTC)}&select=client_id`);
 }
 
+async function sbPost(path, rows, returnRep = false) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json',
+      Prefer: returnRep ? 'return=representation' : 'return=minimal'
+    },
+    body: JSON.stringify(rows)
+  });
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+  return returnRep ? res.json() : null;
+}
+async function sbPatch(path, row) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method: 'PATCH',
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    body: JSON.stringify(row)
+  });
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+}
+
+// ---------- E9 · Nudge de inactividad (solo tier='entry') ----------
+// Inactivo = más de 3 días sin un entreno de la semana habitual (fila en workout_sessions con
+// plan_day_id; Run, hábitos, LIFT y comidas no cuentan). Si nunca entrenó, se cuenta desde
+// client_onboarding.completed_at. Fuera: churn, ocultos y la pausa de pago activa (misma regla que
+// el app: next_payment_date + 48 h desde el inicio de ese día en CR).
+// Un mensaje por episodio (entry_nudges): no se repite hasta que haya un entreno posterior al
+// registrado en el último nudge y vuelvan a pasar los 3 días.
+const NUDGE_DAYS = 3;
+function daysBetween(a, b) { return Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 86400000); }
+function crDateOf(iso) { return new Date(Date.parse(iso) - 6 * 3600 * 1000).toISOString().slice(0, 10); }
+function isPaused(c) {
+  const d = String(c.next_payment_date || '').slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
+  return Date.now() >= Date.parse(d + 'T00:00:00-06:00') + 48 * 3600 * 1000;
+}
+function nudgeText(firstName, episode) {
+  return episode === 1
+    ? `${firstName} hey hace un par de días no te veo por acá, contame qué pasó, y qué vas a hacer para que no se siga repitiendo`
+    : `${firstName} parece que otra vez no tenés actividad.. ¿cómo vamos a cambiarlo?`;
+}
+async function runNudges(crToday) {
+  const clients = (await sbFetch(`clients?tier=eq.entry&select=id,name,is_churn,hidden,next_payment_date`))
+    .filter(c => c.is_churn !== true && c.hidden !== true && !isPaused(c));
+  if (!clients.length) return [];
+  const ids = clients.map(c => c.id).join(',');
+  const [onb, nudges] = await Promise.all([
+    sbFetch(`client_onboarding?client_id=in.(${ids})&select=client_id,completed_at`),
+    sbFetch(`entry_nudges?client_id=in.(${ids})&select=client_id,episode,last_training_date&order=episode.desc`)
+  ]);
+  const doneAt = Object.fromEntries(onb.filter(o => o.completed_at).map(o => [o.client_id, crDateOf(o.completed_at)]));
+  const lastNudge = {};
+  nudges.forEach(n => { if (!lastNudge[n.client_id]) lastNudge[n.client_id] = n; });
+  const sent = [];
+  for (const c of clients) {
+    try {
+      const s = await sbFetch(`workout_sessions?client_id=eq.${c.id}&plan_day_id=not.is.null&select=session_date&order=session_date.desc&limit=1`);
+      const lastTrain = s.length ? String(s[0].session_date).slice(0, 10) : null;
+      const base = lastTrain || doneAt[c.id];
+      if (!base || daysBetween(base, crToday) <= NUDGE_DAYS) continue;
+      const prev = lastNudge[c.id];
+      // Mismo episodio: no entrenó desde el último nudge
+      if (prev && (!lastTrain || (prev.last_training_date && lastTrain <= prev.last_training_date))) continue;
+      const episode = (prev ? prev.episode : 0) + 1;
+      // Primero se reserva el episodio (unique client_id+episode): si el cron corre dos veces, no hay doble mensaje
+      const [row] = await sbPost('entry_nudges', [{ client_id: c.id, episode, last_training_date: lastTrain }], true);
+      const first = String(c.name || '').trim().split(/\s+/)[0].toLowerCase();
+      const [msg] = await sbPost('support_messages', [{ client_id: c.id, sender: 'coach', kind: 'text', tag: 'support', status: 'answered', body: nudgeText(first, episode) }], true);
+      await sbPatch(`entry_nudges?id=eq.${row.id}`, { message_id: msg.id });
+      const name = String(c.name || 'Cliente').trim();
+      await sbPost('coach_feed', [{ kind: 'nudge', client_id: c.id, body: episode === 1 ? `${name} lleva 3+ días sin entrenar, se le escribió` : `${name} otra vez lleva 3+ días sin entrenar, se le escribió` }]);
+      sent.push({ client_id: c.id, episode });
+    } catch (e) {
+      console.warn('coach-digest nudge:', c.id, e.message);
+    }
+  }
+  return sent;
+}
+
 export default async function handler(req, res) {
   const auth = req.headers['authorization'] || '';
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -78,6 +157,9 @@ export default async function handler(req, res) {
 
   try {
     const { crToday, crTomorrow } = getCRDateStrings();
+
+    let nudges = [];
+    try { nudges = await runNudges(crToday); } catch (e) { console.warn('coach-digest nudges:', e.message); }
 
     const sessions = await getClientsWhoTrainedToday(crToday, crTomorrow);
     const trainedClientIds = [...new Set(sessions.map(s => s.client_id))];
@@ -114,7 +196,7 @@ export default async function handler(req, res) {
     }
 
     if (trainedLines.length === 0 && testNames.length === 0) {
-      return res.status(200).json({ ok: true, sent: false, reason: 'nada que reportar hoy' });
+      return res.status(200).json({ ok: true, sent: false, reason: 'nada que reportar hoy', nudges });
     }
 
     const bodyLines = [];
@@ -122,9 +204,12 @@ export default async function handler(req, res) {
     if (testNames.length > 0) bodyLines.push(`✅ Evaluación completada: ${testNames.join(', ')}`);
     const message = bodyLines.join('\n');
 
+    // Hilo "Coach" (E9): el resumen queda guardado aunque el push no llegue
+    try { await sbPost('coach_feed', [{ kind: 'digest', body: message }]); } catch (e) { console.warn('coach-digest feed:', e.message); }
+
     const coaches = await sbFetch(`users?role=eq.coach&select=username&limit=1`);
     if (coaches.length === 0) {
-      return res.status(200).json({ ok: true, sent: false, reason: 'no hay coach registrado' });
+      return res.status(200).json({ ok: true, sent: false, reason: 'no hay coach registrado', nudges });
     }
 
     const notifyBody = {
@@ -141,13 +226,13 @@ export default async function handler(req, res) {
     });
     const onesignalData = await onesignalRes.json();
     if (!onesignalRes.ok) {
-      return res.status(500).json({ error: onesignalData.errors?.[0] || 'Error OneSignal' });
+      return res.status(500).json({ error: onesignalData.errors?.[0] || 'Error OneSignal', nudges });
     }
 
     if (!onesignalData.recipients) {
       console.warn('coach-digest: OneSignal aceptó el envío pero recipients=0 — revisar que el coach tenga el tag username seteado (requiere haber aceptado push notifications en la app).');
     }
-    return res.status(200).json({ ok: true, sent: true, message, recipients: onesignalData.recipients });
+    return res.status(200).json({ ok: true, sent: true, message, recipients: onesignalData.recipients, nudges });
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
