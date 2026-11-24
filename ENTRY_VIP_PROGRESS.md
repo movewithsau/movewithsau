@@ -12,6 +12,7 @@ Servidor `python3 -m http.server 3000` en la raíz, ventana de 390 px. **Las pru
 |---|---|
 | sql/entry-vip-base.sql | Corrido por Sau (23 nov) |
 | sql/entry-vip-engagement.sql | Corrido por Sau (24 nov): tablas `coach_feed` y `entry_nudges` (rowsecurity false) |
+| sql/entry-vip-minimal.sql | Corrido por Sau (24 nov): `workout_sessions.is_minimal` |
 | sql/entry-vip-extra.sql | Corrido por Sau (23 nov): `client_onboarding.completed_at`, `rate_us_dismissed_at`, bucket 15 MB, policy `support_chat_all_access` |
 
 ## Decisiones de Sau (23 nov) que mandan sobre el prompt
@@ -276,7 +277,7 @@ Hecho:
 - Debajo de "Iniciar entreno", botón estilo "Ir a Run": "Entreno para poco tiempo" (solo VIP, oculto para Entry). Al tocarlo cambia a "Poco tiempo activo · Volver al completo". Durante el entreno se ve la etiqueta "Entreno para poco tiempo" y no se puede cambiar.
 - Regla (`minWkReduce`, en memoria): de cada circuito, solo el primer ejercicio, con 2 rondas (o menos si el plan tenía menos); ejercicios sueltos con 2 series como máximo. No se escribe nada nuevo en el plan.
 - Cuenta como día entrenado: se guardan los mismos `exercise_logs` y la fila normal de `workout_sessions` al terminar.
-- Sin columna nueva: la elección se recuerda en el equipo (cliente + día del plan + fecha). Sau no puede ver si el día fue versión mínima; para eso haría falta una columna (`workout_sessions.is_minimal`), no se agregó.
+- La elección se recuerda en el equipo (cliente + día del plan + fecha). Al terminar (Finalizar o Terminar día) se guarda `workout_sessions.is_minimal` (SQL `sql/entry-vip-minimal.sql`, corrido por Sau el 24 nov). En la ficha del coach, el día muestra "Poco tiempo".
 
 Probado:
 - [x] `minWkReduce` con node: circuitos de 2 a 1 ejercicio, rondas 4→2, 1→1; sueltos 5→2, 1→1; el arreglo original no cambia.

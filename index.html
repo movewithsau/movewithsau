@@ -4858,7 +4858,7 @@ async function finishLockedDay() {
     if (!existing) {
       const { error } = await sb.from('workout_sessions').insert([{
         client_id: currentClient.id, plan_day_id: lock.planDayId, week_number: lock.week,
-        session_date: todayCR(), duration_minutes: 0
+        session_date: todayCR(), duration_minutes: 0, is_minimal: minWkFlag(lock.planDayId)
       }]);
       if (error) { showToast('No se pudo terminar el día: ' + error.message, 'error', 4000); return; }
     }
@@ -9351,7 +9351,8 @@ async function handleFinishWorkout() {
           plan_day_id: currentPlanDayId,
           week_number: clientWeek,
           session_date: today,
-          duration_minutes: addedMin
+          duration_minutes: addedMin,
+          is_minimal: minWkFlag(currentPlanDayId)
         }], {onConflict:'client_id,plan_day_id'});
       } catch(e) { console.warn('workout_sessions not ready:', e); }
     }
@@ -16819,7 +16820,7 @@ async function renderWeeklyTracker(clientId) {
 
   // 4. Get workout_sessions for duration + id (for editing)
   const {data:sessions} = await sb.from('workout_sessions')
-    .select('id,plan_day_id,duration_minutes,session_date')
+    .select('id,plan_day_id,duration_minutes,session_date,is_minimal')
     .eq('client_id', clientId)
     .in('plan_day_id', planDayIds);
   const sessMap = {};
@@ -16859,7 +16860,7 @@ async function renderWeeklyTracker(clientId) {
           </div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:13px;font-weight:700;color:var(--black);">${label}</div>
-            <div style="font-size:10px;color:var(--gray4);">${dateStr}</div>
+            <div style="font-size:10px;color:var(--gray4);">${dateStr}${sess?.is_minimal ? ' · <span style="color:#A63E10;font-weight:700;">Poco tiempo</span>' : ''}</div>
           </div>
           <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
             ${sessId ? `
@@ -32426,6 +32427,8 @@ function minWkBtnHtml() {
     ? `<button class="workout-action-btn workout-goto-run-btn minwk-btn is-on fade-up" onclick="minWkSet(false)" aria-pressed="true">${icon('timer', 18)} Poco tiempo activo · Volver al completo</button>`
     : `<button class="workout-action-btn workout-goto-run-btn minwk-btn fade-up" onclick="minWkSet(true)" aria-pressed="false">${icon('timer', 18)} Entreno para poco tiempo</button>`;
 }
+// Marca en workout_sessions.is_minimal (SQL corrido por Sau el 24 nov)
+function minWkFlag(planDayId) { return !!(planDayId && currentClient && !evIsEntry(currentClient) && minWkIsOn(planDayId)); }
 function minWkSet(on) {
   if (!currentPlanDayId || isWorkoutStarted()) return;
   try { on ? localStorage.setItem(minWkKey(currentPlanDayId), '1') : localStorage.removeItem(minWkKey(currentPlanDayId)); } catch (e) {}
